@@ -9,6 +9,7 @@ PROCESSED_DIR = ROOT_DIR / "processed"
 CITIES = {
     "boston": {
         "raw_file": RAW_DIR / "boston" / "boston_parcels_2024_raw.csv",
+        "assessment_file": RAW_DIR / "boston" / "boston_assessment.csv",
         "source_crs": "EPSG:4326",
         "local_crs": "EPSG:26986",
         "parcel_id_col": "MAP_PAR_ID",
@@ -27,6 +28,23 @@ CITIES = {
         ],
         "valid_poly_types": ["FEE"],
         "invalid_parcel_ids": ["MASSGIS", "ISLAND"],
+        "assessment_column_map": {
+            "PID": "parcel_id",
+            "BED_RMS": "bedrooms",
+            "FULL_BTH": "full_baths",
+            "HLF_BTH": "half_baths",
+            "TT_RMS": "total_rooms",
+            "LIVING_AREA": "living_area_sqft",
+            "GROSS_AREA": "bldg_area_sqft",
+            "LAND_SF": "lot_area_sqft",
+            "YR_BUILT": "year_built",
+            "LAND_VALUE": "assessed_land",
+            "BLDG_VALUE": "assessed_bldg",
+            "TOTAL_VALUE": "assessed_total",
+            "OVERALL_COND": "condition",
+            "LU_DESC": "land_use_desc",
+            "RES_UNITS": "units_res",
+        },
     },
     "nyc": {
         "raw_file": RAW_DIR / "nyc" / "pluto.csv",
@@ -65,6 +83,7 @@ CITIES = {
             "lot_num": "lot",
         },
         "assessor_file": RAW_DIR / "sf" / "sf_assessor_rolls.csv",
+        "inferred_prices_file": RAW_DIR / "sf" / "sf_inferred_prices.csv",
         "assessor_join_col": "parcel_number",
         "assessor_column_map": {
             "parcel_number": "parcel_id",
