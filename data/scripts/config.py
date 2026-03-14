@@ -120,7 +120,7 @@ OSM_AMENITY_TAGS = {
     "retail": {"shop": ["supermarket", "convenience", "mall", "clothes"]},
     "services": {"amenity": ["bank", "post_office", "clinic", "hospital", "pharmacy"]},
     "recreation": {"leisure": ["park", "fitness_centre", "playground", "sports_centre"]},
-    "transportation": {"highway": ["bus_stop"], "railway": ["station", "subway_entrance"]},
+    "transportation": {"public_transport": ["stop_position", "station"]},
     "education": {"amenity": ["school", "library", "university", "college"]},
 }
 

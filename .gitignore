@@ -3,6 +3,8 @@ data/processed/
 data/raw/nyc/
 data/raw/sf/
 data/raw/census/
+data/raw/crime/
+data/raw/amenities/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

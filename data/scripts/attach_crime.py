@@ -1,0 +1,83 @@
+import sys
+import numpy as np
+import pandas as pd
+import geopandas as gpd
+from scipy.spatial import cKDTree
+from config import CITIES, RAW_DIR, PROCESSED_DIR, CRIME_KDE_BANDWIDTH_M
+from utils import ensure_dirs, save_geopackage
+from download_crime import CRIME_CROSSWALK
+
+CRIME_DIR = RAW_DIR / "crime"
+
+
+def classify_crime(offense_desc, city):
+    offense_upper = str(offense_desc).upper().strip()
+    for category, city_terms in CRIME_CROSSWALK.items():
+        terms = city_terms.get(city, [])
+        for term in terms:
+            if term.upper() in offense_upper:
+                return category
+    return "other"
+
+
+def count_within_radius(tree, query_points, radius):
+    return np.array(tree.query_ball_point(query_points, r=radius, return_length=True))
+
+
+def attach_crime(city):
+    parcels_path = PROCESSED_DIR / f"{city}_parcels_census.gpkg"
+    crime_path = CRIME_DIR / f"{city}_crime.csv"
+
+    parcels = gpd.read_file(parcels_path, layer=city)
+    crime = pd.read_csv(crime_path)
+
+    cfg = CITIES[city]
+    crime_gdf = gpd.GeoDataFrame(
+        crime,
+        geometry=gpd.points_from_xy(crime["longitude"], crime["latitude"]),
+        crs="EPSG:4326",
+    )
+
+    parcels_proj = parcels.to_crs(cfg["local_crs"])
+    crime_proj = crime_gdf.to_crs(cfg["local_crs"])
+
+    crime_proj["crime_category"] = crime_proj["offense_desc"].apply(
+        lambda x: classify_crime(x, city)
+    )
+
+    centroids = parcels_proj.geometry.centroid
+    parcel_coords = np.column_stack([centroids.x, centroids.y])
+
+    for category in ["violent", "property", "quality_of_life", "other"]:
+        subset = crime_proj[crime_proj["crime_category"] == category]
+        if len(subset) == 0:
+            parcels[f"crime_{category}"] = 0.0
+            continue
+
+        crime_coords = np.column_stack([subset.geometry.x, subset.geometry.y])
+        tree = cKDTree(crime_coords)
+        parcels[f"crime_{category}"] = count_within_radius(
+            tree, parcel_coords, CRIME_KDE_BANDWIDTH_M
+        )
+
+    all_coords = np.column_stack([crime_proj.geometry.x, crime_proj.geometry.y])
+    tree_all = cKDTree(all_coords)
+    parcels["crime_total"] = count_within_radius(
+        tree_all, parcel_coords, CRIME_KDE_BANDWIDTH_M
+    )
+
+    out_path = PROCESSED_DIR / f"{city}_parcels_crime.gpkg"
+    save_geopackage(parcels, out_path, layer=city)
+    print(f"{city}: attached crime KDE to {len(parcels)} parcels → {out_path}")
+    print(f"  {len(crime)} total incidents, {len(crime_proj[crime_proj['crime_category'] != 'other'])} classified")
+
+
+def main():
+    ensure_dirs()
+    cities = sys.argv[1:] if len(sys.argv) > 1 else list(CITIES.keys())
+    for city in cities:
+        attach_crime(city)
+
+
+if __name__ == "__main__":
+    main()
