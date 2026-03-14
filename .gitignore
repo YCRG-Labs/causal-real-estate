@@ -5,6 +5,7 @@ data/raw/sf/
 data/raw/census/
 data/raw/crime/
 data/raw/amenities/
+data/raw/descriptions/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
