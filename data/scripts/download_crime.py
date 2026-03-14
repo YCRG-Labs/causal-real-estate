@@ -136,15 +136,33 @@ def download_soda_crime(endpoint, dest, city, id_col, desc_col, date_col, lat_co
 
 def download_nyc():
     download_soda_crime(
-        "https://data.cityofnewyork.us/resource/5uac-w243.csv",
-        CRIME_DIR / "nyc_crime.csv",
-        "nyc",
+        "https://data.cityofnewyork.us/resource/qgea-i56i.csv",
+        CRIME_DIR / "nyc_crime_historic.csv",
+        "nyc (historic)",
         id_col="cmplnt_num",
         desc_col="ofns_desc",
         date_col="cmplnt_fr_dt",
         lat_col="latitude",
         lon_col="longitude",
     )
+    download_soda_crime(
+        "https://data.cityofnewyork.us/resource/5uac-w243.csv",
+        CRIME_DIR / "nyc_crime_ytd.csv",
+        "nyc (ytd)",
+        id_col="cmplnt_num",
+        desc_col="ofns_desc",
+        date_col="cmplnt_fr_dt",
+        lat_col="latitude",
+        lon_col="longitude",
+    )
+
+    import pandas as pd
+    hist = pd.read_csv(CRIME_DIR / "nyc_crime_historic.csv")
+    ytd = pd.read_csv(CRIME_DIR / "nyc_crime_ytd.csv")
+    combined = pd.concat([hist, ytd], ignore_index=True)
+    combined = combined.drop_duplicates(subset=["incident_id"])
+    combined.to_csv(CRIME_DIR / "nyc_crime.csv", index=False)
+    print(f"  Combined: {len(combined)} total incidents")
 
 
 def download_sf():
