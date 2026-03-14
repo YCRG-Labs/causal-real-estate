@@ -51,6 +51,7 @@ CITIES = {
             "longitude": "longitude",
         },
         "residential_land_use": [1, 2, 3],
+        "boroughs": ["MN", "BK"],
     },
     "sf": {
         "raw_file": RAW_DIR / "sf" / "sf_parcels.csv",
