@@ -98,7 +98,35 @@ CENSUS_VARIABLES = {
     "B25064_001E": "median_gross_rent",
     "B23025_002E": "labor_force",
     "B23025_001E": "labor_force_total",
+    "B03002_001E": "race_total",
+    "B03002_003E": "race_white",
+    "B03002_004E": "race_black",
+    "B03002_006E": "race_asian",
+    "B03002_012E": "race_hispanic",
+    "B01001_001E": "age_total",
+    "B01001_003E": "age_5_9",
+    "B01001_007E": "age_18_19",
+    "B01001_011E": "age_25_29",
+    "B01001_015E": "age_40_44",
+    "B01001_020E": "age_60_61",
+    "B01001_025E": "age_85_plus",
 }
+
+CENSUS_DERIVED = {
+    "pct_white": ("race_white", "race_total"),
+    "pct_black": ("race_black", "race_total"),
+    "pct_asian": ("race_asian", "race_total"),
+    "pct_hispanic": ("race_hispanic", "race_total"),
+    "pct_bachelors": ("bachelors_degree_count", "education_total"),
+    "labor_force_participation": ("labor_force", "labor_force_total"),
+}
+
+CENSUS_DROP_RAW = [
+    "bachelors_degree_count", "education_total",
+    "labor_force", "labor_force_total",
+    "race_total", "race_white", "race_black", "race_asian", "race_hispanic",
+    "age_total", "age_5_9", "age_18_19", "age_25_29", "age_40_44", "age_60_61", "age_85_plus",
+]
 
 STATE_FIPS = {
     "boston": "25",
@@ -126,3 +154,9 @@ OSM_AMENITY_TAGS = {
 
 EMBEDDING_MODEL = "all-mpnet-base-v2"
 EMBEDDING_DIM = 768
+
+EMBEDDING_ALTERNATIVES = {
+    "all-MiniLM-L6-v2": 384,
+}
+
+CRIME_TEMPORAL_WINDOW_DAYS = 365

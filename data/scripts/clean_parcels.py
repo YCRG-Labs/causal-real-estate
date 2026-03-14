@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 import pandas as pd
-from config import CITIES, CLEANED_DIR, MIN_PARCEL_AREA_SQM
+from config import CITIES, CLEANED_DIR, MIN_PARCEL_AREA_SQM, MIN_SALE_PRICE, MAX_SALE_PRICE
 from utils import load_geopackage, save_geopackage, drop_slivers, compute_area_sqm
 
 
@@ -33,6 +33,19 @@ def filter_year_built(gdf):
     return gdf
 
 
+def filter_sale_price(gdf):
+    if "sale_price" in gdf.columns:
+        before = len(gdf)
+        gdf = gdf[
+            gdf["sale_price"].isna()
+            | ((gdf["sale_price"] >= MIN_SALE_PRICE) & (gdf["sale_price"] <= MAX_SALE_PRICE))
+        ]
+        dropped = before - len(gdf)
+        if dropped > 0:
+            print(f"  Dropped {dropped} parcels with price outside ${MIN_SALE_PRICE:,}-${MAX_SALE_PRICE:,}")
+    return gdf
+
+
 def add_area_sqm(gdf, local_crs):
     has_area = gdf.geometry.geom_type.isin(["Polygon", "MultiPolygon"])
     if has_area.any():
@@ -54,6 +67,7 @@ def main(city):
     gdf = clean_parcel_ids(gdf)
     gdf = clean_numeric_cols(gdf)
     gdf = filter_year_built(gdf)
+    gdf = filter_sale_price(gdf)
     gdf = drop_slivers(gdf, cfg["local_crs"])
     gdf = add_area_sqm(gdf, cfg["local_crs"])
 

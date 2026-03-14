@@ -72,10 +72,16 @@ def attach_amenities(city):
         unique_subcats, subcat_counts = np.unique(subcats, return_counts=True)
         parcels.iloc[i, parcels.columns.get_loc("amenity_diversity")] = shannon_entropy(subcat_counts)
 
+    radius_km = AMENITY_RADIUS_M / 1000.0
+    area_sqkm = np.pi * radius_km ** 2
+    for cat in categories:
+        parcels[f"amenity_{cat}_density"] = parcels[f"amenity_{cat}"] / area_sqkm
+    parcels["amenity_total_density"] = parcels["amenity_total"] / area_sqkm
+
     out_path = PROCESSED_DIR / f"{city}_parcels_amenities.gpkg"
     save_geopackage(parcels, out_path, layer=city)
     print(f"{city}: attached amenities to {len(parcels)} parcels → {out_path}")
-    print(f"  mean total: {parcels['amenity_total'].mean():.1f}, mean diversity: {parcels['amenity_diversity'].mean():.2f}")
+    print(f"  mean total: {parcels['amenity_total'].mean():.1f}, mean density/sqkm: {parcels['amenity_total_density'].mean():.1f}, mean diversity: {parcels['amenity_diversity'].mean():.2f}")
 
 
 def main():

@@ -1,25 +1,29 @@
 import sys
 import numpy as np
 import geopandas as gpd
-from config import CITIES, RAW_DIR, PROCESSED_DIR, CENSUS_VARIABLES
+from config import CITIES, RAW_DIR, PROCESSED_DIR, CENSUS_VARIABLES, CENSUS_DERIVED, CENSUS_DROP_RAW
 from utils import ensure_dirs, save_geopackage
 
 CENSUS_DIR = RAW_DIR / "census"
 
 
 def compute_derived_vars(gdf):
-    if "bachelors_degree_count" in gdf.columns and "education_total" in gdf.columns:
-        gdf["pct_bachelors"] = (
-            gdf["bachelors_degree_count"] / gdf["education_total"].replace(0, np.nan)
-        )
+    for derived_name, (numerator, denominator) in CENSUS_DERIVED.items():
+        if numerator in gdf.columns and denominator in gdf.columns:
+            gdf[derived_name] = (
+                gdf[numerator] / gdf[denominator].replace(0, np.nan)
+            )
 
-    if "labor_force" in gdf.columns and "labor_force_total" in gdf.columns:
-        gdf["labor_force_participation"] = (
-            gdf["labor_force"] / gdf["labor_force_total"].replace(0, np.nan)
-        )
+    if "age_total" in gdf.columns:
+        young_cols = [c for c in ["age_5_9", "age_18_19"] if c in gdf.columns]
+        old_cols = [c for c in ["age_60_61", "age_85_plus"] if c in gdf.columns]
+        total = gdf["age_total"].replace(0, np.nan)
+        if young_cols:
+            gdf["pct_under_25"] = gdf[young_cols].sum(axis=1) / total
+        if old_cols:
+            gdf["pct_over_60"] = gdf[old_cols].sum(axis=1) / total
 
-    drop = ["bachelors_degree_count", "education_total", "labor_force", "labor_force_total"]
-    gdf = gdf.drop(columns=[c for c in drop if c in gdf.columns])
+    gdf = gdf.drop(columns=[c for c in CENSUS_DROP_RAW if c in gdf.columns])
     return gdf
 
 
