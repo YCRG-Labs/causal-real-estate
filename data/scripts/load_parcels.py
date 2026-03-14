@@ -29,9 +29,12 @@ def load_boston(cfg):
 def load_nyc(cfg):
     from shapely.geometry import Point
 
-    keep_cols = list(cfg["column_map"].keys()) + ["BBL"]
+    keep_cols = list(cfg["column_map"].keys()) + ["BBL", "borough"]
     df = pd.read_csv(cfg["raw_file"], low_memory=False, usecols=keep_cols)
     df = df[df["landuse"].isin(cfg["residential_land_use"])]
+    if "boroughs" in cfg:
+        df = df[df["borough"].isin(cfg["boroughs"])]
+        df = df.drop(columns=["borough"])
     df = df.dropna(subset=["latitude", "longitude"])
     df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
     df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
@@ -49,11 +52,11 @@ def load_nyc(cfg):
     )
     sales = sales.dropna(subset=["SALE PRICE", "BBL"])
     sales = sales[sales["SALE PRICE"] > 0]
-    sales["BBL"] = sales["BBL"].astype(str)
+    sales["BBL"] = sales["BBL"].astype(float).astype(int).astype(str)
     sales = sales.sort_values("SALE DATE").drop_duplicates(subset=["BBL"], keep="last")
     sales = sales.rename(columns={"SALE PRICE": "sale_price", "SALE DATE": "sale_date"})
 
-    gdf["BBL"] = gdf["BBL"].astype(str)
+    gdf["BBL"] = gdf["BBL"].astype(int).astype(str)
     gdf = gdf.merge(sales[["BBL", "sale_price", "sale_date"]], on="BBL", how="left")
     gdf = standardize_columns(gdf, cfg["column_map"])
 
