@@ -96,8 +96,8 @@ CENSUS_VARIABLES = {
     "B15003_001E": "education_total",
     "B25077_001E": "median_home_value",
     "B25064_001E": "median_gross_rent",
-    "B23025_003E": "labor_force",
-    "B23025_002E": "labor_force_total",
+    "B23025_002E": "labor_force",
+    "B23025_001E": "labor_force_total",
 }
 
 STATE_FIPS = {

@@ -7,6 +7,7 @@ SCRIPTS = [
     "load_parcels.py",
     "clean_parcels.py",
     "geocode_and_centroids.py",
+    "attach_census.py",
 ]
 
 
