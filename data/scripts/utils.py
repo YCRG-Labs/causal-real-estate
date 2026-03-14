@@ -42,8 +42,11 @@ def compute_area_sqm(gdf, local_crs):
 
 
 def drop_slivers(gdf, local_crs, min_area=MIN_PARCEL_AREA_SQM):
+    has_area = gdf.geometry.geom_type.isin(["Polygon", "MultiPolygon"])
+    if not has_area.any():
+        return gdf
     areas = compute_area_sqm(gdf, local_crs)
-    return gdf[areas >= min_area].copy()
+    return gdf[~has_area | (areas >= min_area)].copy()
 
 
 def standardize_columns(df, column_map, drop_cols=None):

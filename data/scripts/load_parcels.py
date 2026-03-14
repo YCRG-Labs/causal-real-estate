@@ -27,28 +27,57 @@ def load_boston(cfg):
 
 
 def load_nyc(cfg):
-    gdf = load_geopackage(cfg["raw_file"])
+    from shapely.geometry import Point
 
-    if gdf.crs is None or str(gdf.crs) != cfg["source_crs"]:
-        gdf = gdf.set_crs(cfg["source_crs"], allow_override=True)
+    keep_cols = list(cfg["column_map"].keys()) + ["BBL"]
+    df = pd.read_csv(cfg["raw_file"], low_memory=False, usecols=keep_cols)
+    df = df[df["landuse"].isin(cfg["residential_land_use"])]
+    df = df.dropna(subset=["latitude", "longitude"])
+    df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
+    df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
+    df = df.dropna(subset=["latitude", "longitude"])
+    df = df[(df["latitude"] != 0) & (df["longitude"] != 0)]
 
-    gdf = gdf[gdf["LandUse"].isin(cfg["residential_land_use"])]
-    gdf = gdf.dropna(subset=["geometry"])
-    gdf = fix_invalid_geometries(gdf)
+    geometry = [Point(lon, lat) for lon, lat in zip(df["longitude"], df["latitude"])]
+    gdf = gpd.GeoDataFrame(df, geometry=geometry, crs=cfg["source_crs"])
+
+    sales = pd.read_csv(cfg["sales_file"], low_memory=False)
+    sales.columns = sales.columns.str.strip()
+    sales["SALE PRICE"] = pd.to_numeric(
+        sales["SALE PRICE"].astype(str).str.replace(",", "").str.replace("$", ""),
+        errors="coerce",
+    )
+    sales = sales.dropna(subset=["SALE PRICE", "BBL"])
+    sales = sales[sales["SALE PRICE"] > 0]
+    sales["BBL"] = sales["BBL"].astype(str)
+    sales = sales.sort_values("SALE DATE").drop_duplicates(subset=["BBL"], keep="last")
+    sales = sales.rename(columns={"SALE PRICE": "sale_price", "SALE DATE": "sale_date"})
+
+    gdf["BBL"] = gdf["BBL"].astype(str)
+    gdf = gdf.merge(sales[["BBL", "sale_price", "sale_date"]], on="BBL", how="left")
     gdf = standardize_columns(gdf, cfg["column_map"])
 
     return gdf
 
 
 def load_sf(cfg):
-    gdf = load_geopackage(cfg["raw_file"])
+    from shapely.geometry import Point
 
-    if gdf.crs is None or str(gdf.crs) != cfg["source_crs"]:
-        gdf = gdf.set_crs(cfg["source_crs"], allow_override=True)
+    df = pd.read_csv(cfg["raw_file"])
 
-    gdf = gdf[gdf["active"] == True]
-    gdf = gdf.dropna(subset=["geometry"])
-    gdf = fix_invalid_geometries(gdf)
+    if "active" in df.columns:
+        df = df[df["active"] == True]
+
+    df["centroid_latitude"] = pd.to_numeric(df["centroid_latitude"], errors="coerce")
+    df["centroid_longitude"] = pd.to_numeric(df["centroid_longitude"], errors="coerce")
+    df = df.dropna(subset=["centroid_latitude", "centroid_longitude"])
+    df = df[(df["centroid_latitude"] != 0) & (df["centroid_longitude"] != 0)]
+
+    geometry = [
+        Point(lon, lat)
+        for lon, lat in zip(df["centroid_longitude"], df["centroid_latitude"])
+    ]
+    gdf = gpd.GeoDataFrame(df, geometry=geometry, crs=cfg["source_crs"])
     gdf = standardize_columns(gdf, cfg["column_map"])
 
     assessor = pd.read_csv(cfg["assessor_file"])

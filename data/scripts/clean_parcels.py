@@ -34,7 +34,11 @@ def filter_year_built(gdf):
 
 
 def add_area_sqm(gdf, local_crs):
-    gdf["area_sqm"] = compute_area_sqm(gdf, local_crs)
+    has_area = gdf.geometry.geom_type.isin(["Polygon", "MultiPolygon"])
+    if has_area.any():
+        gdf["area_sqm"] = compute_area_sqm(gdf, local_crs)
+    else:
+        gdf["area_sqm"] = np.nan
     return gdf
 
 
