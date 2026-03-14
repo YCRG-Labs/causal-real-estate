@@ -2,6 +2,7 @@ data/cleaned/
 data/processed/
 data/raw/nyc/
 data/raw/sf/
+data/raw/census/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
