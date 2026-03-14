@@ -101,7 +101,7 @@ def fetch_description(url):
         return ""
 
 
-def scrape_city(city, max_listings=500):
+def scrape_city(city, max_listings=200):
     print(f"\n{city}:")
 
     listings = fetch_redfin_listings(city)
@@ -112,23 +112,21 @@ def scrape_city(city, max_listings=500):
     listings = listings[:max_listings]
     print(f"  Fetching descriptions for {len(listings)} listings...")
 
+    out_path = DESC_DIR / f"{city}_descriptions.csv"
+    saved = 0
+
     for i, listing in enumerate(listings):
         if listing.get("url"):
             listing["description"] = fetch_description(listing["url"])
+            if listing["description"] and len(listing["description"]) > 50:
+                row = pd.DataFrame([listing])
+                row.to_csv(out_path, mode="a", header=(saved == 0), index=False)
+                saved += 1
             if (i + 1) % 10 == 0:
-                print(f"\r  {i + 1}/{len(listings)} descriptions fetched", end="", flush=True)
-            time.sleep(random.uniform(2, 5))
-        else:
-            listing["description"] = ""
+                print(f"\r  {i + 1}/{len(listings)} fetched, {saved} saved", end="", flush=True)
+            time.sleep(random.uniform(2, 4))
 
-    print()
-
-    df = pd.DataFrame(listings)
-    df = df[df["description"].str.len() > 50]
-
-    out_path = DESC_DIR / f"{city}_descriptions.csv"
-    df.to_csv(out_path, index=False)
-    print(f"  Saved {len(df)} descriptions → {out_path}")
+    print(f"\n  Saved {saved} descriptions → {out_path}")
 
 
 def main():
