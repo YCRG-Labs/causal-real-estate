@@ -1,5 +1,7 @@
 data/cleaned/
 data/processed/
+data/raw/nyc/
+data/raw/sf/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
