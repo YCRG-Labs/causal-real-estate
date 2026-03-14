@@ -70,43 +70,19 @@ def attach_crime(city):
             print(f"  <10% parcels have sale dates, using all crimes")
 
     if use_temporal:
-        print(f"  Using {CRIME_TEMPORAL_WINDOW_DAYS}-day temporal window from {sale_col}")
-        crime_dates = crime_proj["date"].values
-        crime_coords_all = np.column_stack([crime_proj.geometry.x, crime_proj.geometry.y])
-        crime_cats = crime_proj["crime_category"].values
-
-        for category in ["violent", "property", "quality_of_life", "other"]:
-            parcels[f"crime_{category}"] = 0.0
-        parcels["crime_total"] = 0.0
-
-        tree = cKDTree(crime_coords_all)
-        spatial_neighbors = tree.query_ball_point(parcel_coords, r=CRIME_KDE_BANDWIDTH_M)
-
-        for i in range(len(parcels)):
-            sale_dt = parcels["_sale_dt"].iloc[i]
-            if pd.isna(sale_dt):
-                continue
-
-            idx_list = spatial_neighbors[i]
-            if not idx_list:
-                continue
-
-            idx_arr = np.array(idx_list)
-            dates = crime_dates[idx_arr]
-            window_start = sale_dt - pd.Timedelta(days=CRIME_TEMPORAL_WINDOW_DAYS)
-            temporal_mask = (dates >= np.datetime64(window_start)) & (dates <= np.datetime64(sale_dt))
-            filtered_idx = idx_arr[temporal_mask]
-
-            if len(filtered_idx) == 0:
-                continue
-
-            parcels.iat[i, parcels.columns.get_loc("crime_total")] = len(filtered_idx)
-            cats = crime_cats[filtered_idx]
-            for category in ["violent", "property", "quality_of_life", "other"]:
-                parcels.iat[i, parcels.columns.get_loc(f"crime_{category}")] = int(np.sum(cats == category))
-
+        median_sale = parcels["_sale_dt"].dropna().median()
+        window_start = median_sale - pd.Timedelta(days=CRIME_TEMPORAL_WINDOW_DAYS)
+        filtered = crime_proj[
+            (crime_proj["date"] >= window_start) & (crime_proj["date"] <= median_sale)
+        ]
+        if len(filtered) > 1000:
+            crime_proj = filtered
+            print(f"  Filtered crimes to {window_start.date()} - {median_sale.date()}: {len(crime_proj)} incidents")
+        else:
+            print(f"  Temporal window too sparse ({len(filtered)} incidents), using all {len(crime_proj)} incidents")
         parcels = parcels.drop(columns=["_sale_dt"])
-    else:
+
+    if True:
         for category in ["violent", "property", "quality_of_life", "other"]:
             subset = crime_proj[crime_proj["crime_category"] == category]
             if len(subset) == 0:
