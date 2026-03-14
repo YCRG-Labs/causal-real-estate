@@ -1,27 +1,40 @@
-"""
-Causal Real Estate Pipeline
-
-...
-
-This script runs the complete end-to-end pipeline for the Causal Real Estate project.
-"""
-
 import subprocess
+import sys
 
-cities = ["boston", "nyc", "sf"]
+CITIES = ["boston", "nyc", "sf"]
 
-scripts = [
-"load_parcels.py",
-"clean_parcels.py",
-"geocode_and_centroids.py",
-# process listings
-# attach census
-# attach crime
-# attach amenities
-# feature engineering
-# final build
+SCRIPTS = [
+    "load_parcels.py",
+    "clean_parcels.py",
+    "geocode_and_centroids.py",
 ]
 
-for city in cities: # Each script receives the city as an argument
-    for script in scripts:
-        subprocess.run(["python", f"scripts/{script}", city])
+
+def run(script, city):
+    print(f"\n{'='*60}")
+    print(f"Running {script} for {city}")
+    print(f"{'='*60}")
+    result = subprocess.run(
+        [sys.executable, f"scripts/{script}", city],
+        capture_output=True,
+        text=True,
+    )
+    print(result.stdout, end="")
+    if result.returncode != 0:
+        print(f"FAILED: {script} for {city}")
+        print(result.stderr)
+        sys.exit(1)
+
+
+def main():
+    cities = sys.argv[1:] if len(sys.argv) > 1 else CITIES
+
+    for city in cities:
+        for script in SCRIPTS:
+            run(script, city)
+
+    print(f"\nPipeline complete for: {', '.join(cities)}")
+
+
+if __name__ == "__main__":
+    main()
