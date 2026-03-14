@@ -23,6 +23,18 @@ def load_boston(cfg):
     gdf = fix_invalid_geometries(gdf)
     gdf = standardize_columns(gdf, cfg["column_map"], cfg["drop_cols"])
 
+    if "assessment_file" in cfg and cfg["assessment_file"].exists():
+        assess = pd.read_csv(cfg["assessment_file"], low_memory=False)
+        assess = assess.rename(columns=cfg["assessment_column_map"])
+        assess["parcel_id"] = assess["parcel_id"].astype(str).str.strip().str.zfill(10)
+        assess = assess.drop_duplicates(subset=["parcel_id"], keep="last")
+
+        gdf["parcel_id"] = gdf["parcel_id"].astype(str).str.strip().str.zfill(10)
+
+        keep_cols = list(cfg["assessment_column_map"].values())
+        available = [c for c in keep_cols if c in assess.columns]
+        gdf = gdf.merge(assess[available], on="parcel_id", how="left")
+
     return gdf
 
 
@@ -90,6 +102,12 @@ def load_sf(cfg):
     assessor = assessor.drop_duplicates(subset=["parcel_id"], keep="last")
 
     gdf = gdf.merge(assessor, on="parcel_id", how="left")
+
+    if "inferred_prices_file" in cfg and cfg["inferred_prices_file"].exists():
+        prices = pd.read_csv(cfg["inferred_prices_file"])
+        prices["parcel_id"] = prices["parcel_id"].astype(str).str.strip()
+        prices = prices.drop_duplicates(subset=["parcel_id"], keep="last")
+        gdf = gdf.merge(prices[["parcel_id", "sale_price", "sale_date"]], on="parcel_id", how="left")
 
     return gdf
 

@@ -18,10 +18,12 @@ def clean_numeric_cols(gdf):
         "property_area_sqft", "units_res", "units", "num_floors",
         "num_bldgs", "year_built", "bedrooms", "bathrooms",
         "rooms", "stories", "assessed_land", "assessed_total",
-        "assessed_improvement",
+        "assessed_improvement", "assessed_bldg", "living_area_sqft",
+        "full_baths", "half_baths", "total_rooms",
     ]
     for col in numeric_candidates:
         if col in gdf.columns:
+            gdf[col] = gdf[col].astype(str).str.replace(",", "").str.strip()
             gdf[col] = pd.to_numeric(gdf[col], errors="coerce")
     return gdf
 
