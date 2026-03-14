@@ -8,6 +8,8 @@ SCRIPTS = [
     "clean_parcels.py",
     "geocode_and_centroids.py",
     "attach_census.py",
+    "attach_crime.py",
+    "attach_amenities.py",
 ]
 
 
