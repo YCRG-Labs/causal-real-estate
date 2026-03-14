@@ -1,0 +1,9 @@
+pandas
+geopandas
+numpy
+scipy
+shapely
+requests
+beautifulsoup4
+sentence-transformers
+pyarrow
