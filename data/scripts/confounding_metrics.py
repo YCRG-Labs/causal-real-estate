@@ -144,7 +144,8 @@ def run_metrics(city):
         else:
             print("    → WEAK: embeddings not spatially structured")
 
-    print(f"\n  Summary: NMI={nmi:.4f}, Acc={acc:.4f}, ρ={rho:.4f}")
+    acc_str = f"{acc:.4f}" if acc is not None else "N/A"
+    print(f"\n  Summary: NMI={nmi:.4f}, Acc={acc_str}")
 
 
 def main():

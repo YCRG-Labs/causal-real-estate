@@ -34,35 +34,34 @@ def get_features_and_target(emb_df, parcels):
     available_emb = [c for c in emb_cols if c in emb_df.columns]
     T = emb_df[available_emb].values
 
-    location_cols = ["latitude", "longitude"]
-    L = emb_df[location_cols].values.astype(float)
-
-    if parcels is not None and "sale_price" in parcels.columns:
-        Y = parcels["sale_price"].values.astype(float)
-    elif "price" in emb_df.columns:
-        Y = emb_df["price"].values.astype(float)
+    if "price" in emb_df.columns:
+        Y = pd.to_numeric(emb_df["price"], errors="coerce").values
+    elif parcels is not None and "sale_price" in parcels.columns:
+        Y = parcels["sale_price"].values[:len(T)].astype(float)
     else:
         return None
 
-    covariate_cols = []
-    if parcels is not None:
-        candidates = [
-            "median_household_income", "median_home_value", "median_gross_rent",
-            "pct_white", "pct_black", "pct_asian", "pct_hispanic",
-            "pct_bachelors", "labor_force_participation",
-            "crime_total", "crime_violent", "crime_property",
-            "amenity_total", "amenity_diversity",
-            "lot_area_sqft", "bldg_area_sqft", "year_built",
-        ]
-        covariate_cols = [c for c in candidates if c in parcels.columns]
-        X = parcels[covariate_cols].values.astype(float)
+    if "zip" in emb_df.columns:
+        from sklearn.preprocessing import LabelEncoder
+        zips = emb_df["zip"].fillna(0).astype(float).astype(int).astype(str)
+        le = LabelEncoder()
+        zip_encoded = le.fit_transform(zips)
+        n_bins = min(len(le.classes_), 20)
+        L = np.zeros((len(T), n_bins))
+        for i, z in enumerate(zip_encoded):
+            L[i, z % n_bins] = 1.0
+    elif "latitude" in emb_df.columns and "longitude" in emb_df.columns:
+        lat = pd.to_numeric(emb_df["latitude"], errors="coerce").values
+        lon = pd.to_numeric(emb_df["longitude"], errors="coerce").values
+        L = np.column_stack([lat, lon])
     else:
-        X = np.zeros((len(T), 0))
+        L = np.zeros((len(T), 1))
+
+    X = np.zeros((len(T), 0))
 
     valid = ~(np.isnan(Y) | np.isinf(Y) | (Y <= 0))
-    valid &= ~np.any(np.isnan(L), axis=1)
-    if X.shape[1] > 0:
-        valid &= ~np.any(np.isnan(X), axis=1)
+    if L.shape[1] > 0:
+        valid &= ~np.any(np.isnan(L), axis=1)
 
     T, L, X, Y = T[valid], L[valid], X[valid], Y[valid]
     Y = np.log(Y)
