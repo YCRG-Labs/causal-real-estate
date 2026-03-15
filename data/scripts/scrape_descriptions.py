@@ -101,7 +101,7 @@ def fetch_description(url):
         return ""
 
 
-def scrape_city(city, max_listings=200):
+def scrape_city(city, max_listings=1000):
     print(f"\n{city}:")
 
     listings = fetch_redfin_listings(city)
