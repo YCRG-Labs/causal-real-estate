@@ -222,13 +222,9 @@ def run_and_plot(city, epochs=150, n_pca=50, n_loc_bins=20, lr=1e-3):
 
     plt.tight_layout(w_pad=2.5)
 
-    out_path = PROCESSED_DIR / f"{city}_training_curves.pdf"
-    fig.savefig(out_path)
-    print(f"Saved training curves to {out_path}")
-
-    out_png = PROCESSED_DIR / f"{city}_training_curves.png"
-    fig.savefig(out_png)
-    print(f"Saved training curves to {out_png}")
+    fig.savefig(PROCESSED_DIR / f"{city}_training_curves.png", dpi=600)
+    fig.savefig(PROCESSED_DIR / f"{city}_training_curves.pdf")
+    print(f"Saved training curves to {PROCESSED_DIR / f'{city}_training_curves.png'}")
 
     print(f"\nFinal metrics (test set):")
     print(f"  Predictor loss: {h['pred_loss_test'].iloc[-1]:.4f}")
