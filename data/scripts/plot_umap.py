@@ -79,9 +79,8 @@ def plot_umap(city):
     ax.set_title(f"Property Embeddings by Location ({city.upper()})", fontweight="normal")
     ax.tick_params(length=3, width=0.5)
 
-    for fmt in ["pdf", "png"]:
-        out = PROCESSED_DIR / f"{city}_umap.{fmt}"
-        fig.savefig(out)
+    fig.savefig(PROCESSED_DIR / f"{city}_umap.png", dpi=600)
+    fig.savefig(PROCESSED_DIR / f"{city}_umap.pdf")
     print(f"Saved UMAP figure to {PROCESSED_DIR / f'{city}_umap.pdf'}")
 
 

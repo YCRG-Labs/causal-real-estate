@@ -65,8 +65,8 @@ def plot_corr_vs_causal():
 
     plt.tight_layout(w_pad=3)
 
-    for fmt in ["pdf", "png"]:
-        fig.savefig(PROCESSED_DIR / f"correlation_vs_causation.{fmt}")
+    fig.savefig(PROCESSED_DIR / f"correlation_vs_causation.png", dpi=600)
+    fig.savefig(PROCESSED_DIR / f"correlation_vs_causation.pdf")
     print(f"Saved to {PROCESSED_DIR / 'correlation_vs_causation.pdf'}")
 
 

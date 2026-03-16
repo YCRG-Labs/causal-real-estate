@@ -89,19 +89,15 @@ def run_and_plot(city, n_permutations=100):
     ax.axvline(x=np.mean(r2_permuted), color="#333333", linewidth=1.0, linestyle=":",
                label=f"Permuted mean ($R^2 = {np.mean(r2_permuted):.4f}$)")
 
-    y_top = ax.get_ylim()[1]
-    ax.text(r2_original + (ax.get_xlim()[1] - ax.get_xlim()[0]) * 0.02,
-            y_top * 0.88,
-            f"$p = {p_value:.2f}$",
-            fontsize=10, color="#d7191c")
+    pass
 
     ax.set_xlabel(r"$R^2$ on held-out test set")
     ax.set_ylabel("Count")
     ax.set_title(f"Randomization Test ({city.upper()})", fontweight="normal")
-    ax.legend(frameon=False, fontsize=9, loc="upper left")
+    ax.legend(frameon=False, fontsize=9, loc="upper right")
 
-    for fmt in ["pdf", "png"]:
-        fig.savefig(PROCESSED_DIR / f"{city}_randomization.{fmt}")
+    fig.savefig(PROCESSED_DIR / f"{city}_randomization.png", dpi=600)
+    fig.savefig(PROCESSED_DIR / f"{city}_randomization.pdf")
     print(f"Saved to {PROCESSED_DIR / f'{city}_randomization.pdf'}")
     print(f"Original R2: {r2_original:.4f}, Permuted mean: {np.mean(r2_permuted):.4f}, p={p_value:.2f}")
 
