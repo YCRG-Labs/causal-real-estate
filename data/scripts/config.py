@@ -180,3 +180,8 @@ EMBEDDING_ALTERNATIVES = {
 }
 
 CRIME_TEMPORAL_WINDOW_DAYS = 365
+
+MICRO_GEO_COLS = [
+    "dist_park_m", "dist_transit_m", "dist_school_m",
+    "dist_restaurant_m", "dist_retail_m", "dist_medical_m",
+]
