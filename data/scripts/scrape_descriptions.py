@@ -23,7 +23,8 @@ REDFIN_SEARCH_URL = "https://www.redfin.com/stingray/api/gis?al=1&num_homes=350&
 CITY_PARAMS = {
     "boston": {"region_id": 1826, "region_type": 6, "max_pages": 10},
     "nyc": {"region_id": 30749, "region_type": 6, "max_pages": 10},
-    "sf": {"region_id": 20330, "region_type": 6, "max_pages": 30},
+    "sf": {"region_id": 17151, "region_type": 6, "max_pages": 30,
+           "bbox": {"lat_min": 37.70, "lat_max": 37.83, "lon_min": -122.52, "lon_max": -122.36}},
 }
 
 
@@ -39,6 +40,9 @@ def fetch_redfin_listings(city, max_pages=None):
 
     for page in range(1, max_pages + 1):
         url = REDFIN_SEARCH_URL + f"&region_id={params['region_id']}&region_type={params['region_type']}&page={page}"
+        if "bbox" in params:
+            bb = params["bbox"]
+            url += f"&lat_min={bb['lat_min']}&lat_max={bb['lat_max']}&long_min={bb['lon_min']}&long_max={bb['lon_max']}"
         try:
             resp = requests.get(url, headers=HEADERS, timeout=30)
             if resp.status_code != 200:
