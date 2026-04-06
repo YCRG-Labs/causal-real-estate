@@ -23,21 +23,34 @@ AMENITY_COLS = [
     "amenity_recreation", "amenity_transportation", "amenity_education",
     "amenity_total", "amenity_diversity",
 ]
+MICRO_GEO_COLS = [
+    "dist_park_m", "dist_transit_m", "dist_school_m",
+    "dist_restaurant_m", "dist_retail_m", "dist_medical_m",
+]
 PROPERTY_COLS = ["bedrooms", "bldg_area_sqft", "lot_area_sqft", "year_built"]
-CONTEXTUAL_COLS = CENSUS_COLS + CRIME_COLS + AMENITY_COLS
+CONTEXTUAL_COLS = CENSUS_COLS + CRIME_COLS + AMENITY_COLS + MICRO_GEO_COLS
 
 
-def load_analysis_data(city):
-    emb_path = PROCESSED_DIR / f"{city}_embeddings.parquet"
-    parcels_path = PROCESSED_DIR / f"{city}_parcels_amenities.gpkg"
+def load_analysis_data(city, embedding_model=None):
+    if embedding_model:
+        safe_name = embedding_model.replace("/", "_").replace("-", "_")
+        emb_path = PROCESSED_DIR / f"{city}_embeddings_{safe_name}.parquet"
+    else:
+        emb_path = PROCESSED_DIR / f"{city}_embeddings.parquet"
+
+    micro_geo_path = PROCESSED_DIR / f"{city}_parcels_micro_geo.gpkg"
+    amenities_path = PROCESSED_DIR / f"{city}_parcels_amenities.gpkg"
 
     if not emb_path.exists():
         return None
 
     import geopandas as gpd
     emb_df = pd.read_parquet(emb_path)
-    if parcels_path.exists():
-        parcels = gpd.read_file(parcels_path, layer=city)
+
+    if micro_geo_path.exists():
+        parcels = gpd.read_file(micro_geo_path, layer=city)
+    elif amenities_path.exists():
+        parcels = gpd.read_file(amenities_path, layer=city)
     else:
         parcels = None
 

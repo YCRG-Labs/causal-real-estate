@@ -21,18 +21,20 @@ HEADERS = {
 REDFIN_SEARCH_URL = "https://www.redfin.com/stingray/api/gis?al=1&num_homes=350&ord=redfin-recommended-asc&page=1&sf=1,2,3,5,6,7&status=9&uipt=1,2,3&v=8"
 
 CITY_PARAMS = {
-    "boston": {"region_id": 1826, "region_type": 6},
-    "nyc": {"region_id": 30749, "region_type": 6},
-    "sf": {"region_id": 20330, "region_type": 6},
+    "boston": {"region_id": 1826, "region_type": 6, "max_pages": 10},
+    "nyc": {"region_id": 30749, "region_type": 6, "max_pages": 10},
+    "sf": {"region_id": 20330, "region_type": 6, "max_pages": 30},
 }
 
 
-def fetch_redfin_listings(city, max_pages=10):
+def fetch_redfin_listings(city, max_pages=None):
     if city not in CITY_PARAMS:
         print(f"  No Redfin params for {city}, skipping")
         return []
 
     params = CITY_PARAMS[city]
+    if max_pages is None:
+        max_pages = params.get("max_pages", 10)
     all_listings = []
 
     for page in range(1, max_pages + 1):
@@ -129,8 +131,51 @@ def scrape_city(city, max_listings=1000):
     print(f"\n  Saved {saved} descriptions → {out_path}")
 
 
+def import_external_descriptions(city, csv_path):
+    print(f"\n{city}: importing external descriptions from {csv_path}")
+    ext = pd.read_csv(csv_path)
+
+    required = ["description"]
+    if not all(c in ext.columns for c in required):
+        print(f"  ERROR: CSV must have columns: {required}")
+        print(f"  Found: {list(ext.columns)}")
+        return
+
+    for col in ["address", "city_name", "state", "zip", "latitude", "longitude", "price"]:
+        if col not in ext.columns:
+            ext[col] = ""
+
+    ext = ext[ext["description"].str.len() > 50]
+    if "source" not in ext.columns:
+        ext["source"] = Path(csv_path).stem
+
+    out_path = DESC_DIR / f"{city}_descriptions.csv"
+    if out_path.exists():
+        existing = pd.read_csv(out_path)
+        combined = pd.concat([existing, ext], ignore_index=True)
+        combined = combined.drop_duplicates(subset=["description"], keep="first")
+        combined.to_csv(out_path, index=False)
+        new_count = len(combined) - len(existing)
+        print(f"  Added {new_count} new descriptions (total: {len(combined)})")
+    else:
+        ext.to_csv(out_path, index=False)
+        print(f"  Saved {len(ext)} descriptions → {out_path}")
+
+
 def main():
     DESC_DIR.mkdir(parents=True, exist_ok=True)
+
+    if "--import" in sys.argv:
+        idx = sys.argv.index("--import")
+        if idx + 2 < len(sys.argv):
+            city = sys.argv[idx + 1]
+            csv_path = sys.argv[idx + 2]
+            import_external_descriptions(city, csv_path)
+            return
+        else:
+            print("Usage: --import <city> <csv_path>")
+            return
+
     cities = sys.argv[1:] if len(sys.argv) > 1 else list(CITIES.keys())
     for city in cities:
         scrape_city(city)

@@ -10,6 +10,7 @@ SCRIPTS = [
     "attach_census.py",
     "attach_crime.py",
     "attach_amenities.py",
+    "attach_micro_geo.py",
 ]
 
 
