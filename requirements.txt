@@ -7,3 +7,6 @@ requests
 beautifulsoup4
 sentence-transformers
 pyarrow
+torch
+scikit-learn
+umap-learn

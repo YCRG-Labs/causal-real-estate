@@ -334,6 +334,96 @@ def partial_r2_decomposition(T, L, Y):
     return r2_L, r2_T, r2_LT, unique_L, unique_T, shared
 
 
+def cate_by_property_type(T, L, Y, df):
+    print("\n" + "="*60)
+    print("6. CATE BY PROPERTY TYPE / PRICE SEGMENT")
+    print("="*60)
+
+    n_pca = min(20, T.shape[1], len(T) - 2)
+    pca = PCA(n_components=n_pca, random_state=42)
+    T_pca = pca.fit_transform(T)
+
+    scaler_t = StandardScaler()
+    T_s = scaler_t.fit_transform(T_pca)
+    scaler_l = StandardScaler()
+    L_s = scaler_l.fit_transform(L)
+
+    T_norm = np.linalg.norm(T_s, axis=1)
+    treatment = (T_norm > np.median(T_norm)).astype(float)
+
+    n_quantiles = 4
+    quantile_edges = np.percentile(Y, np.linspace(0, 100, n_quantiles + 1))
+    quantile_labels = np.digitize(Y, quantile_edges[1:-1])
+
+    segment_names = ["Budget", "Mid-Low", "Mid-High", "Luxury"]
+
+    results = []
+    for q in range(n_quantiles):
+        mask = quantile_labels == q
+        n_q = mask.sum()
+        if n_q < 20:
+            print(f"  {segment_names[q]}: n={n_q} (too few)")
+            results.append({"segment": segment_names[q], "n": n_q, "ate": np.nan})
+            continue
+
+        Y_q, D_q, C_q = Y[mask], treatment[mask], L_s[mask]
+
+        if len(np.unique(D_q)) < 2:
+            print(f"  {segment_names[q]}: n={n_q}, no treatment variation")
+            results.append({"segment": segment_names[q], "n": n_q, "ate": np.nan})
+            continue
+
+        outcome = GradientBoostingRegressor(
+            n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42,
+        )
+        outcome.fit(np.hstack([D_q.reshape(-1, 1), C_q]), Y_q)
+
+        propensity = LogisticRegression(max_iter=1000, random_state=42)
+        propensity.fit(C_q, D_q)
+        e_q = np.clip(propensity.predict_proba(C_q)[:, 1], 0.05, 0.95)
+
+        mu1 = outcome.predict(np.hstack([np.ones((n_q, 1)), C_q]))
+        mu0 = outcome.predict(np.hstack([np.zeros((n_q, 1)), C_q]))
+
+        ate = np.mean(
+            mu1 - mu0
+            + D_q * (Y_q - mu1) / e_q
+            - (1 - D_q) * (Y_q - mu0) / (1 - e_q)
+        )
+
+        from scipy.stats import bootstrap as bs
+        def stat(idx, d=D_q, y=Y_q, m1=mu1, m0=mu0, ps=e_q):
+            i = idx[0]
+            return np.mean(m1[i] - m0[i] + d[i]*(y[i]-m1[i])/ps[i] - (1-d[i])*(y[i]-m0[i])/(1-ps[i]))
+
+        rng = np.random.default_rng(42 + q)
+        ci = bs((np.arange(n_q),), stat, n_resamples=500, random_state=rng, method="percentile")
+        contains_zero = ci.confidence_interval.low <= 0 <= ci.confidence_interval.high
+
+        price_lo = np.exp(quantile_edges[q])
+        price_hi = np.exp(quantile_edges[q + 1])
+        print(f"  {segment_names[q]} (${price_lo:,.0f}-${price_hi:,.0f}): n={n_q}, "
+              f"ATE={ate:.4f} [{ci.confidence_interval.low:.4f}, {ci.confidence_interval.high:.4f}] "
+              f"{'(zero in CI)' if contains_zero else '*** SIGNIFICANT ***'}")
+
+        results.append({
+            "segment": segment_names[q], "n": n_q, "ate": ate,
+            "ci_low": ci.confidence_interval.low, "ci_high": ci.confidence_interval.high,
+        })
+
+    any_sig = any(
+        not np.isnan(r.get("ate", np.nan))
+        and not (r.get("ci_low", -1) <= 0 <= r.get("ci_high", 1))
+        for r in results
+    )
+    if any_sig:
+        print("\n  -> HETEROGENEOUS EFFECTS DETECTED: text may matter in some segments")
+    else:
+        print("\n  -> No significant effects in any price segment")
+
+    return results
+
+
 def main():
     cities = sys.argv[1:] if len(sys.argv) > 1 else ["nyc", "sf"]
     cities_data = {}
@@ -360,6 +450,7 @@ def main():
     test_conditional_independence(T, L, Y)
     partial_r2_decomposition(T, L, Y)
     cinelli_hazlett_sensitivity(T, L, Y)
+    cate_by_property_type(T, L, Y, df)
 
     if len(cities_data) >= 2:
         cross_market_transfer(cities_data)
