@@ -334,6 +334,137 @@ def partial_r2_decomposition(T, L, Y):
     return r2_L, r2_T, r2_LT, unique_L, unique_T, shared
 
 
+def competing_scm_test(cities_data):
+    print("\n" + "="*60)
+    print("7. COMPETING SCM TEST (SCM_0 vs SCM_1)")
+    print("="*60)
+    print("  SCM_0: T has NO direct effect on Y (text encodes location)")
+    print("  SCM_1: T has a direct effect on Y (text carries semantic signal)")
+    print()
+
+    print("  Test 1: Cross-market portability")
+    print("  Under SCM_1, semantic content is portable across cities.")
+    print("  Under SCM_0, text-price associations are location-specific.")
+    print()
+
+    city_names = list(cities_data.keys())
+    if len(city_names) < 2:
+        print("  Need >= 2 cities for cross-market test, skipping")
+        return {"verdict": "insufficient_cities"}
+
+    transfer_r2s = []
+    self_r2s = []
+    for train_city in city_names:
+        T_tr, L_tr, Y_tr, _ = cities_data[train_city]
+        n_pca = min(20, T_tr.shape[1], len(T_tr) - 2)
+        pca = PCA(n_components=n_pca, random_state=42)
+        T_tr_pca = pca.fit_transform(T_tr)
+        model = GradientBoostingRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
+        model.fit(T_tr_pca, Y_tr)
+        self_r2s.append(model.score(T_tr_pca, Y_tr))
+
+        for test_city in city_names:
+            if test_city == train_city:
+                continue
+            T_te, _, Y_te, _ = cities_data[test_city]
+            T_te_pca = pca.transform(T_te)
+            transfer_r2s.append(model.score(T_te_pca, Y_te))
+
+    mean_self = np.mean(self_r2s)
+    mean_transfer = np.mean(transfer_r2s)
+    print(f"  Within-city R2:  {mean_self:.4f}")
+    print(f"  Cross-city R2:   {mean_transfer:.4f}")
+
+    if mean_transfer < 0:
+        print(f"  Cross-city R2 is NEGATIVE (worse than predicting the mean).")
+        print(f"  This is inconsistent with SCM_1: if text encodes universal")
+        print(f"  property semantics, cross-city transfer should work.")
+        portability_verdict = "rejects_SCM1"
+    elif mean_transfer < mean_self * 0.3:
+        print(f"  Cross-city R2 is <30% of within-city.")
+        print(f"  Weak evidence for SCM_1.")
+        portability_verdict = "weak_SCM1"
+    else:
+        print(f"  Cross-city transfer partially succeeds.")
+        print(f"  Consistent with SCM_1.")
+        portability_verdict = "supports_SCM1"
+
+    print()
+    print("  Test 2: Effect stability under richer confounders")
+    print("  Under SCM_0, the estimated effect shrinks toward zero as")
+    print("  confounders improve (bias is being removed).")
+    print("  Under SCM_1, the effect stays stable (it's real, not bias).")
+    print()
+
+    primary_city = city_names[0]
+    T_p, L_p, Y_p, _ = cities_data[primary_city]
+
+    n_pca = min(20, T_p.shape[1], len(T_p) - 2)
+    pca = PCA(n_components=n_pca, random_state=42)
+    T_pca = pca.fit_transform(T_p)
+    T_norm = np.linalg.norm(StandardScaler().fit_transform(T_pca), axis=1)
+    treatment = (T_norm > np.median(T_norm)).astype(float)
+
+    def quick_dr(D, Y, conf):
+        if conf.shape[1] == 0:
+            conf = np.zeros((len(Y), 1))
+        sc = StandardScaler()
+        C = sc.fit_transform(conf)
+        out = GradientBoostingRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
+        out.fit(np.hstack([D.reshape(-1, 1), C]), Y)
+        prop = LogisticRegression(max_iter=1000, random_state=42)
+        prop.fit(C, D)
+        e = np.clip(prop.predict_proba(C)[:, 1], 0.05, 0.95)
+        m1 = out.predict(np.hstack([np.ones((len(Y), 1)), C]))
+        m0 = out.predict(np.hstack([np.zeros((len(Y), 1)), C]))
+        return float(np.mean(m1 - m0 + D*(Y-m1)/e - (1-D)*(Y-m0)/(1-e)))
+
+    ate_no_conf = quick_dr(treatment, Y_p, np.zeros((len(Y_p), 0)))
+    ate_with_conf = quick_dr(treatment, Y_p, StandardScaler().fit_transform(L_p))
+
+    print(f"  ATE with no confounders:  {ate_no_conf:.4f}")
+    print(f"  ATE with location conf:   {ate_with_conf:.4f}")
+
+    if abs(ate_no_conf) > 0.001:
+        shrinkage = 1 - abs(ate_with_conf) / abs(ate_no_conf)
+        print(f"  Shrinkage: {shrinkage*100:.1f}%")
+        if shrinkage > 0.5:
+            stability_verdict = "rejects_SCM1"
+            print(f"  Effect shrinks >50% under confounders: consistent with SCM_0")
+        elif shrinkage > 0.2:
+            stability_verdict = "ambiguous"
+            print(f"  Moderate shrinkage: ambiguous")
+        else:
+            stability_verdict = "supports_SCM1"
+            print(f"  Effect is stable: consistent with SCM_1")
+    else:
+        stability_verdict = "near_zero"
+        print(f"  Effect already near zero without confounders")
+
+    print()
+    print("  OVERALL VERDICT:")
+    if portability_verdict == "rejects_SCM1" and stability_verdict in ("rejects_SCM1", "near_zero"):
+        print("  Both tests reject SCM_1. Data are consistent with SCM_0:")
+        print("  text has no direct causal effect on price.")
+        overall = "SCM_0"
+    elif portability_verdict == "supports_SCM1" and stability_verdict == "supports_SCM1":
+        print("  Both tests support SCM_1. Evidence for a direct T->Y effect.")
+        overall = "SCM_1"
+    else:
+        print("  Mixed evidence. Neither model is clearly favored.")
+        overall = "ambiguous"
+
+    return {
+        "portability": portability_verdict,
+        "stability": stability_verdict,
+        "overall": overall,
+        "mean_self_r2": mean_self,
+        "mean_transfer_r2": mean_transfer,
+        "ate_no_conf": ate_no_conf,
+        "ate_with_conf": ate_with_conf,
+    }
+
+
 def cate_by_property_type(T, L, Y, df):
     print("\n" + "="*60)
     print("6. CATE BY PROPERTY TYPE / PRICE SEGMENT")
@@ -454,6 +585,7 @@ def main():
 
     if len(cities_data) >= 2:
         cross_market_transfer(cities_data)
+        competing_scm_test(cities_data)
 
     if "clean_description" in df.columns:
         embedding_ablation(df, T, L, Y)
