@@ -38,6 +38,40 @@ def load_boston(cfg):
     return gdf
 
 
+NYC_SQFT_PER_BEDROOM = 350.0
+
+
+def impute_nyc_bedrooms(gdf):
+    """
+    PLUTO does not publish bedroom counts. We impute them from
+    residential floor area and number of residential units:
+        bedrooms ≈ round((res_area_sqft / units_res) / SQFT_PER_BEDROOM)
+    capped at [1, 8]. This eliminates the cross-city specification
+    asymmetry where NYC was missing one property feature relative
+    to BOS and SF. The flag `bedrooms_imputed=True` records that the
+    column is derived rather than observed, so downstream sensitivity
+    can drop it for NYC if desired.
+    """
+    if "res_area_sqft" not in gdf.columns or "units_res" not in gdf.columns:
+        gdf["bedrooms"] = pd.NA
+        gdf["bedrooms_imputed"] = True
+        return gdf
+
+    res_area = pd.to_numeric(gdf["res_area_sqft"], errors="coerce")
+    units = pd.to_numeric(gdf["units_res"], errors="coerce").replace(0, 1)
+    units = units.fillna(1)
+
+    sqft_per_unit = res_area / units
+    bedrooms = (sqft_per_unit / NYC_SQFT_PER_BEDROOM).round()
+    bedrooms = bedrooms.clip(lower=1, upper=8)
+
+    gdf["bedrooms"] = bedrooms
+    gdf["bedrooms_imputed"] = True
+    print(f"  Imputed bedrooms for {gdf['bedrooms'].notna().sum()}/{len(gdf)} parcels "
+          f"(from res_area/units, capped [1,8])")
+    return gdf
+
+
 def load_nyc(cfg):
     from shapely.geometry import Point
 
@@ -71,6 +105,8 @@ def load_nyc(cfg):
     gdf["BBL"] = gdf["BBL"].astype(int).astype(str)
     gdf = gdf.merge(sales[["BBL", "sale_price", "sale_date"]], on="BBL", how="left")
     gdf = standardize_columns(gdf, cfg["column_map"])
+
+    gdf = impute_nyc_bedrooms(gdf)
 
     return gdf
 

@@ -107,7 +107,16 @@ def _spatial_join_parcels(emb_df, parcels):
     return result
 
 
-def get_features_and_target(emb_df, parcels):
+def get_features_and_target(emb_df, parcels, drop_mismatched_crime=False):
+    """
+    Builds the (T, confounders, Y, meta) tuple for the causal estimators.
+
+    drop_mismatched_crime:
+      When True, crime_* columns are excluded from the confounder set if the
+      parcels file flags `crime_temporal_match=False` for the majority of
+      rows. This is the conservative spec for cities (e.g., NYC at the time
+      of writing) where the crime extract does not overlap the sale period.
+    """
     emb_cols = [f"emb_{i}" for i in range(EMBEDDING_DIM)]
     available_emb = [c for c in emb_cols if c in emb_df.columns]
     T = emb_df[available_emb].values
@@ -118,6 +127,15 @@ def get_features_and_target(emb_df, parcels):
         Y = parcels["sale_price"].values[:len(T)].astype(float)
     else:
         return None
+
+    crime_temporal_ok = True
+    if parcels is not None and "crime_temporal_match" in parcels.columns:
+        match_rate = pd.to_numeric(parcels["crime_temporal_match"], errors="coerce").mean()
+        crime_temporal_ok = bool(match_rate >= 0.5)
+        if not crime_temporal_ok:
+            print(f"  ⚠ Crime data temporal mismatch ({match_rate*100:.0f}% of parcels in window)")
+            if drop_mismatched_crime:
+                print(f"  → dropping crime_* features from confounder set")
 
     lat = pd.to_numeric(emb_df.get("latitude", pd.Series(dtype=float)), errors="coerce").values
     lon = pd.to_numeric(emb_df.get("longitude", pd.Series(dtype=float)), errors="coerce").values
@@ -135,6 +153,12 @@ def get_features_and_target(emb_df, parcels):
             joined = _spatial_join_parcels(emb_df, parcels)
         except Exception as e:
             print(f"    Warning: spatial join failed ({e}), falling back to zip-only")
+
+    if joined and drop_mismatched_crime and not crime_temporal_ok and "contextual" in joined:
+        ctx_cols = joined["contextual_cols"]
+        keep_idx = [i for i, c in enumerate(ctx_cols) if not c.startswith("crime_")]
+        joined["contextual"] = joined["contextual"][:, keep_idx]
+        joined["contextual_cols"] = [ctx_cols[i] for i in keep_idx]
 
     confounder_parts = []
 
@@ -182,6 +206,8 @@ def get_features_and_target(emb_df, parcels):
         "income": income_v,
         "n_confounders": confounders.shape[1],
         "has_rich_confounders": joined is not None and "contextual" in joined,
+        "crime_temporal_ok": crime_temporal_ok,
+        "crime_dropped": (drop_mismatched_crime and not crime_temporal_ok),
     }
 
     return T, confounders, Y, meta
@@ -234,7 +260,15 @@ def backdoor_adjustment(T, confounders, Y, n_pca=50):
 
 
 def doubly_robust_estimation(T, confounders, Y, n_pca=50):
-    print("\n  [2] Doubly-Robust Estimation")
+    """
+    Doubly-robust ATE for a binarized text treatment.
+
+    Reports BOTH bootstrap CI (which is wide and well-known to be conservative
+    in moderate samples) AND influence-function (IF) SE plus minimum detectable
+    effect at 80% power. The MDE makes "CI contains zero" interpretable by
+    saying what effect sizes the test could and could not have detected.
+    """
+    print("\n  [2] Doubly-Robust Estimation (binarized treatment)")
     n_pca = min(n_pca, T.shape[1], T.shape[0])
     pca = PCA(n_components=n_pca, random_state=42)
     T_pca = pca.fit_transform(T)
@@ -262,11 +296,22 @@ def doubly_robust_estimation(T, confounders, Y, n_pca=50):
     mu1 = outcome_model.predict(np.hstack([np.ones((len(Y), 1)), conf_s]))
     mu0 = outcome_model.predict(np.hstack([np.zeros((len(Y), 1)), conf_s]))
 
-    dr_effect = np.mean(
+    psi = (
         mu1 - mu0
         + treatment * (Y - mu1) / e
         - (1 - treatment) * (Y - mu0) / (1 - e)
     )
+    dr_effect = float(np.mean(psi))
+
+    n = len(Y)
+    if_var = float(np.var(psi - dr_effect, ddof=1)) / n
+    if_se = float(np.sqrt(if_var))
+    if_ci_low = dr_effect - 1.96 * if_se
+    if_ci_high = dr_effect + 1.96 * if_se
+
+    z_alpha = 1.96
+    z_beta = 0.84
+    mde = (z_alpha + z_beta) * if_se
 
     def dr_statistic(indices):
         idx = indices[0]
@@ -283,16 +328,104 @@ def doubly_robust_estimation(T, confounders, Y, n_pca=50):
         random_state=rng,
         method="percentile",
     )
+    boot_low = float(ci.confidence_interval.low)
+    boot_high = float(ci.confidence_interval.high)
 
     print(f"    DR estimate (ATE): {dr_effect:.4f}")
-    print(f"    95% CI: [{ci.confidence_interval.low:.4f}, {ci.confidence_interval.high:.4f}]")
+    print(f"    Influence-function SE: {if_se:.4f}")
+    print(f"    95% CI (IF):       [{if_ci_low:.4f}, {if_ci_high:.4f}]")
+    print(f"    95% CI (bootstrap): [{boot_low:.4f}, {boot_high:.4f}]  ← wider, percentile method")
+    print(f"    Min detectable effect (80% power, two-sided 5%): ±{mde:.4f}")
+    print(f"      i.e., this test cannot rule out true effects with |τ| < {mde:.3f} log-points")
+    print(f"      ({100*(np.exp(mde)-1):.1f}% in price terms)")
 
-    if ci.confidence_interval.low <= 0 <= ci.confidence_interval.high:
-        print("    → CI contains zero: no significant causal effect of text")
+    if if_ci_low <= 0 <= if_ci_high:
+        print("    → IF CI contains zero: no significant causal effect of text")
     else:
-        print("    → CI excludes zero: significant effect detected")
+        print("    → IF CI excludes zero: significant effect detected")
 
-    return dr_effect, (ci.confidence_interval.low, ci.confidence_interval.high)
+    return dr_effect, (boot_low, boot_high), {
+        "if_se": if_se,
+        "if_ci": (if_ci_low, if_ci_high),
+        "mde": mde,
+    }
+
+
+def dml_continuous_treatment(T, confounders, Y, n_pca=50, k_folds=5):
+    """
+    Double Machine Learning estimate of the partial effect of the first text
+    principal component on log-price, after partialling out confounders via
+    cross-fitted gradient boosting.
+
+    This is a "continuous treatment" alternative to the binarized DR and
+    avoids the awkward "median PCA norm" treatment definition. The estimand
+    is: per-unit-σ change in PC1 of the text embedding → expected change in
+    log-price, holding confounders fixed.
+
+    Returns: theta (effect per σ of PC1), SE (Neyman-orthogonal IF SE).
+    """
+    print("\n  [2b] DML Continuous Treatment (PC1 of text)")
+    n_pca = min(n_pca, T.shape[1], T.shape[0] - 1)
+    pca = PCA(n_components=n_pca, random_state=42)
+    T_pca = pca.fit_transform(T)
+
+    pc1 = T_pca[:, 0]
+    pc1 = (pc1 - pc1.mean()) / (pc1.std() if pc1.std() > 0 else 1.0)
+
+    scaler = StandardScaler()
+    conf_s = scaler.fit_transform(confounders)
+
+    n = len(Y)
+    kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+    Y_resid = np.zeros(n)
+    T_resid = np.zeros(n)
+
+    for tr, te in kf.split(np.arange(n)):
+        m_y = GradientBoostingRegressor(
+            n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42,
+        )
+        m_y.fit(conf_s[tr], Y[tr])
+        Y_resid[te] = Y[te] - m_y.predict(conf_s[te])
+
+        m_t = GradientBoostingRegressor(
+            n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42,
+        )
+        m_t.fit(conf_s[tr], pc1[tr])
+        T_resid[te] = pc1[te] - m_t.predict(conf_s[te])
+
+    denom = float(np.mean(T_resid ** 2))
+    if denom < 1e-12:
+        print("    Treatment fully explained by confounders; effect undefined")
+        return None
+
+    theta = float(np.mean(T_resid * Y_resid)) / denom
+
+    psi = (Y_resid - theta * T_resid) * T_resid / denom
+    var_theta = float(np.var(psi, ddof=1)) / n
+    se = float(np.sqrt(var_theta))
+    ci_low = theta - 1.96 * se
+    ci_high = theta + 1.96 * se
+
+    z_alpha = 1.96
+    z_beta = 0.84
+    mde = (z_alpha + z_beta) * se
+
+    print(f"    DML θ (per σ of PC1):    {theta:.4f}")
+    print(f"    Neyman-orthogonal SE:    {se:.4f}")
+    print(f"    95% CI:                  [{ci_low:.4f}, {ci_high:.4f}]")
+    print(f"    Min detectable effect:   ±{mde:.4f} ({100*(np.exp(mde)-1):.1f}% in price)")
+
+    if ci_low <= 0 <= ci_high:
+        print("    → CI contains zero: no significant continuous effect")
+    else:
+        print("    → CI excludes zero: significant continuous effect")
+
+    return {
+        "theta": theta,
+        "se": se,
+        "ci": (ci_low, ci_high),
+        "mde": mde,
+    }
 
 
 def cate_by_price_quantile(T, confounders, Y, n_quantiles=4, n_pca=50):
@@ -442,8 +575,75 @@ class GradientReversal(torch.autograd.Function):
         return -ctx.alpha * grad_output, None
 
 
+def _frozen_encoder_probe(encoder, T_tensor, lat, lon, zip_labels, income):
+    """
+    After adversarial training, freeze the encoder and train a fresh,
+    independent probe classifier on the deconfounded representation.
+
+    The discriminator's accuracy at training time can be misleading: gradient
+    reversal can drive it to random *during* training while the underlying
+    representation still contains location information that a fresh probe
+    can recover. This probe is the cleanest test of whether location was
+    actually removed.
+
+    Returns a dict of probe scores. If they exceed the in-training
+    discriminator accuracy, the adversarial training "fooled" the live
+    discriminator but the location signal is still in the representation.
+    """
+    encoder.eval()
+    with torch.no_grad():
+        z = encoder(T_tensor).numpy()
+
+    n = len(z)
+    split = int(n * 0.7)
+    perm = np.random.RandomState(123).permutation(n)
+    tr, te = perm[:split], perm[split:]
+
+    probes = {}
+
+    le_zip = LabelEncoder()
+    zip_enc = le_zip.fit_transform(zip_labels)
+    if len(np.unique(zip_enc[tr])) >= 2:
+        clf = LogisticRegression(max_iter=2000, random_state=42)
+        clf.fit(z[tr], zip_enc[tr])
+        probes["zip_probe_acc"] = float(clf.score(z[te], zip_enc[te]))
+        probes["zip_random"] = 1.0 / len(np.unique(zip_enc))
+
+    inc_clean = np.nan_to_num(income, nan=np.nanmedian(income) if np.any(~np.isnan(income)) else 0)
+    if np.std(inc_clean) > 0:
+        try:
+            inc_q = pd.qcut(inc_clean, q=5, labels=False, duplicates="drop")
+            if len(np.unique(inc_q[tr])) >= 2:
+                clf = LogisticRegression(max_iter=2000, random_state=42)
+                clf.fit(z[tr], inc_q[tr])
+                probes["income_probe_acc"] = float(clf.score(z[te], inc_q[te]))
+                probes["income_random"] = 1.0 / len(np.unique(inc_q))
+        except Exception:
+            pass
+
+    coords = np.column_stack([
+        np.nan_to_num(lat, nan=0.0),
+        np.nan_to_num(lon, nan=0.0),
+    ])
+    coord_scaler = StandardScaler()
+    coords_s = coord_scaler.fit_transform(coords)
+    if coords_s[tr].shape[0] >= 10:
+        from sklearn.linear_model import Ridge as _Ridge
+        ridge_lat = _Ridge(alpha=1.0).fit(z[tr], coords_s[tr, 0])
+        ridge_lon = _Ridge(alpha=1.0).fit(z[tr], coords_s[tr, 1])
+        pred = np.column_stack([
+            ridge_lat.predict(z[te]),
+            ridge_lon.predict(z[te]),
+        ])
+        ss_res = float(np.sum((coords_s[te] - pred) ** 2))
+        ss_tot = float(np.sum((coords_s[te] - coords_s[te].mean(axis=0)) ** 2))
+        probes["geo_probe_r2"] = float(1 - ss_res / max(ss_tot, 1e-8))
+
+    return probes
+
+
 def adversarial_deconfounding(T, Y, meta, n_pca=50, epochs=150, lr=1e-3):
-    print("\n  [3] Adversarial Deconfounding (Multi-Head)")
+    print("\n  [3] Adversarial Deconfounding (Multi-Head + Frozen Probe)")
 
     n_pca = min(n_pca, T.shape[1], T.shape[0])
     pca = PCA(n_components=n_pca, random_state=42)
@@ -564,17 +764,51 @@ def adversarial_deconfounding(T, Y, meta, n_pca=50, epochs=150, lr=1e-3):
         inc_random = 1.0 / max(n_income_bins, 1)
 
     print(f"    Predictor R² (deconfounded): {pred_r2:.4f}")
-    print(f"    Zip head accuracy:    {zip_acc:.4f} (random: {zip_random:.4f})")
-    print(f"    Geo head R²:          {geo_r2:.4f}")
-    print(f"    Income head accuracy: {inc_acc:.4f} (random: {inc_random:.4f})")
+    print(f"    Live discriminator (during training):")
+    print(f"      Zip head accuracy:    {zip_acc:.4f} (random: {zip_random:.4f})")
+    print(f"      Geo head R²:          {geo_r2:.4f}")
+    print(f"      Income head accuracy: {inc_acc:.4f} (random: {inc_random:.4f})")
 
-    avg_disc = (zip_acc / max(zip_random, 1e-8) + max(geo_r2, 0) + inc_acc / max(inc_random, 1e-8)) / 3
-    if zip_acc < zip_random * 1.5 and geo_r2 < 0.1 and inc_acc < inc_random * 1.5:
-        print("    → Location successfully removed across all heads")
+    print(f"\n    Frozen-encoder probe (independent fresh classifier):")
+    T_all = torch.FloatTensor(T_s)
+    probes = _frozen_encoder_probe(encoder, T_all, lat, lon, zip_labels, income)
+    if "zip_probe_acc" in probes:
+        ratio = probes["zip_probe_acc"] / max(probes["zip_random"], 1e-8)
+        print(f"      Zip probe acc:    {probes['zip_probe_acc']:.4f} "
+              f"(random: {probes['zip_random']:.4f}, ratio: {ratio:.1f}x)")
+    if "income_probe_acc" in probes:
+        ratio = probes["income_probe_acc"] / max(probes["income_random"], 1e-8)
+        print(f"      Income probe acc: {probes['income_probe_acc']:.4f} "
+              f"(random: {probes['income_random']:.4f}, ratio: {ratio:.1f}x)")
+    if "geo_probe_r2" in probes:
+        print(f"      Geo probe R²:     {probes['geo_probe_r2']:.4f}")
+
+    live_random = (zip_acc < zip_random * 1.5 and geo_r2 < 0.1 and inc_acc < inc_random * 1.5)
+    probe_random = True
+    if "zip_probe_acc" in probes and probes["zip_probe_acc"] > probes["zip_random"] * 1.5:
+        probe_random = False
+    if "geo_probe_r2" in probes and probes["geo_probe_r2"] > 0.1:
+        probe_random = False
+    if "income_probe_acc" in probes and probes["income_probe_acc"] > probes["income_random"] * 1.5:
+        probe_random = False
+
+    print()
+    if live_random and probe_random:
+        print("    → Location successfully removed (live discriminator AND frozen probe random).")
+        print("      Residual predictor R² is location-INDEPENDENT — small SCM_1 refinement plausible.")
+    elif live_random and not probe_random:
+        print("    → ⚠ Live discriminator looks random but frozen probe recovers location.")
+        print("      Residual predictor R² is location-DEPENDENT — adversarial training was fooled.")
+        print("      The R²=0.898 in SF is more consistent with subtle residual location encoding")
+        print("      than with a genuine semantic effect.")
     else:
-        print("    → Some location signal remains")
+        print("    → Some location signal remains (live discriminator above random).")
 
-    return pred_r2, {"zip_acc": zip_acc, "geo_r2": geo_r2, "inc_acc": inc_acc}
+    out = {"zip_acc": zip_acc, "geo_r2": geo_r2, "inc_acc": inc_acc}
+    out.update(probes)
+    out["live_random"] = live_random
+    out["probe_random"] = probe_random
+    return pred_r2, out
 
 
 def randomization_test(T, confounders, Y, n_permutations=100, n_pca=50):
@@ -653,7 +887,8 @@ def run_causal_analysis(city):
     print(f"  Rich confounders: {meta['has_rich_confounders']}")
 
     delta_r2 = backdoor_adjustment(T, confounders, Y)
-    dr_effect, dr_ci = doubly_robust_estimation(T, confounders, Y)
+    dr_effect, dr_ci, dr_extras = doubly_robust_estimation(T, confounders, Y)
+    dml_result = dml_continuous_treatment(T, confounders, Y)
     pred_r2, disc_metrics = adversarial_deconfounding(T, Y, meta)
     r2_orig, r2_perm, p_val = randomization_test(T, confounders, Y)
     cate_results = cate_by_price_quantile(T, confounders, Y)
@@ -662,7 +897,12 @@ def run_causal_analysis(city):
     print(f"SUMMARY: {city}")
     print(f"{'='*60}")
     print(f"  Backdoor ΔR²:              {delta_r2:.4f}")
-    print(f"  DR causal effect (ATE):    {dr_effect:.4f} [{dr_ci[0]:.4f}, {dr_ci[1]:.4f}]")
+    print(f"  DR causal effect (ATE):    {dr_effect:.4f} [{dr_ci[0]:.4f}, {dr_ci[1]:.4f}] (boot)")
+    print(f"    IF SE: {dr_extras['if_se']:.4f}, MDE: ±{dr_extras['mde']:.4f}")
+    if dml_result is not None:
+        print(f"  DML continuous θ:          {dml_result['theta']:.4f} "
+              f"[{dml_result['ci'][0]:.4f}, {dml_result['ci'][1]:.4f}] "
+              f"(MDE: ±{dml_result['mde']:.4f})")
     print(f"  Adversarial predictor R²:  {pred_r2:.4f}")
     print(f"    Zip disc acc:            {disc_metrics['zip_acc']:.4f}")
     print(f"    Geo disc R²:             {disc_metrics['geo_r2']:.4f}")

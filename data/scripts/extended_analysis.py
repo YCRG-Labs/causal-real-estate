@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.metrics import r2_score
@@ -12,7 +12,14 @@ from scipy.stats import spearmanr
 from config import PROCESSED_DIR, EMBEDDING_DIM
 
 
-def load_city(city):
+def load_city(city, with_rich_confounders=True):
+    """
+    Loads embeddings and price for a city.
+    Returns: T (text), L_zip (zip-only one-hot, legacy), Y (log price), df (full).
+    If with_rich_confounders=True, also attaches the 35-feature confounder
+    matrix used by the DR estimator (lat/lon + property + census + crime + amenity + micro-geo)
+    via a spatial join — accessible as df.attrs["rich_confounders"].
+    """
     path = PROCESSED_DIR / f"{city}_embeddings.parquet"
     df = pd.read_parquet(path)
     emb_cols = [f"emb_{i}" for i in range(EMBEDDING_DIM)]
@@ -33,13 +40,96 @@ def load_city(city):
     for i, z in enumerate(zip_enc):
         L[i, z % n_bins] = 1.0
 
+    if with_rich_confounders:
+        try:
+            from causal_inference import (
+                load_analysis_data, get_features_and_target,
+            )
+            data = load_analysis_data(city)
+            if data is not None:
+                emb_df_full, parcels = data
+                feat = get_features_and_target(emb_df_full, parcels)
+                if feat is not None:
+                    _, rich_conf, Y_rich, meta = feat
+                    if len(rich_conf) == len(T):
+                        df.attrs["rich_confounders"] = rich_conf
+                        df.attrs["n_rich_features"] = rich_conf.shape[1]
+                    else:
+                        df.attrs["rich_confounders"] = None
+                        df.attrs["n_rich_features"] = 0
+        except Exception as e:
+            print(f"  Note: rich confounders unavailable ({e})")
+            df.attrs["rich_confounders"] = None
+            df.attrs["n_rich_features"] = 0
+
     return T, L, Y, df
 
 
-def test_conditional_independence(T, L, Y):
+def _ci_partial_corr_test(T_s, Y, conf_s, n_permutations=500, label=""):
+    """
+    Tests Y indep T | conf via partial Spearman correlations on
+    nonparametrically residualized Y and each T component.
+
+    Residualization uses Ridge regression rather than OLS so the test is
+    well-defined when conf is high-dimensional relative to n.
+    """
+    ridge_y = Ridge(alpha=1.0).fit(conf_s, Y)
+    resid_Y = Y - ridge_y.predict(conf_s)
+
+    resid_T = np.zeros_like(T_s)
+    for j in range(T_s.shape[1]):
+        ridge_t = Ridge(alpha=1.0).fit(conf_s, T_s[:, j])
+        resid_T[:, j] = T_s[:, j] - ridge_t.predict(conf_s)
+
+    partial_corrs = []
+    for j in range(resid_T.shape[1]):
+        r, _ = spearmanr(resid_Y, resid_T[:, j])
+        partial_corrs.append(abs(r) if not np.isnan(r) else 0.0)
+
+    mean_partial = float(np.mean(partial_corrs))
+    max_partial = float(np.max(partial_corrs))
+
+    n_components_used = min(10, resid_T.shape[1])
+    null_means = []
+    for p in range(n_permutations):
+        perm = np.random.RandomState(p).permutation(len(resid_Y))
+        perm_corrs = []
+        for j in range(n_components_used):
+            r, _ = spearmanr(resid_Y[perm], resid_T[:, j])
+            perm_corrs.append(abs(r) if not np.isnan(r) else 0.0)
+        null_means.append(np.mean(perm_corrs))
+
+    null_means = np.array(null_means)
+    p_value = float((np.sum(null_means >= mean_partial) + 1) / (n_permutations + 1))
+
+    print(f"  [{label}]  conf_dim={conf_s.shape[1]:>3d}  "
+          f"mean|ρ|={mean_partial:.4f}  max|ρ|={max_partial:.4f}  "
+          f"p={p_value:.4f}  "
+          f"{'REJECT' if p_value < 0.05 else 'consistent with CI'}")
+
+    return {
+        "label": label,
+        "conf_dim": int(conf_s.shape[1]),
+        "mean_partial": mean_partial,
+        "max_partial": max_partial,
+        "p_value": p_value,
+    }
+
+
+def test_conditional_independence(T, L, Y, rich_confounders=None):
+    """
+    Tests Y indep T | conf at two levels of adjustment:
+      (1) conf = zip-only one-hot (the legacy spec the paper currently uses)
+      (2) conf = rich 35-feature DR adjustment set, if provided
+
+    The headline result is whether the rejection at level (1) survives
+    finer-grained adjustment at level (2). Under SCM_0, the rejection
+    should weaken as confounders improve.
+    """
     print("\n" + "="*60)
     print("1. CONDITIONAL INDEPENDENCE TESTS")
     print("="*60)
+    print("  H0: Y ⫫ T | conf  (text has no information about price beyond conf)")
 
     n_pca = min(30, T.shape[1], len(T) - 2)
     pca = PCA(n_components=n_pca, random_state=42)
@@ -50,88 +140,170 @@ def test_conditional_independence(T, L, Y):
     scaler_l = StandardScaler()
     L_s = scaler_l.fit_transform(L)
 
-    reg_Y_L = LinearRegression().fit(L_s, Y)
-    resid_Y = Y - reg_Y_L.predict(L_s)
+    print()
+    zip_result = _ci_partial_corr_test(T_s, Y, L_s, label="zip-only ")
 
-    reg_T_L = LinearRegression().fit(L_s, T_s)
-    resid_T = T_s - reg_T_L.predict(L_s)
+    rich_result = None
+    if rich_confounders is not None and len(rich_confounders) == len(Y):
+        scaler_r = StandardScaler()
+        rich_s = scaler_r.fit_transform(rich_confounders)
+        rich_result = _ci_partial_corr_test(T_s, Y, rich_s, label="rich 35d")
 
-    partial_corrs = []
-    for j in range(resid_T.shape[1]):
-        r, _ = spearmanr(resid_Y, resid_T[:, j])
-        partial_corrs.append(abs(r))
-
-    mean_partial = np.mean(partial_corrs)
-    max_partial = np.max(partial_corrs)
-
-    print(f"  Partial correlation (Y, T | L):")
-    print(f"    Mean |rho|: {mean_partial:.4f}")
-    print(f"    Max |rho|:  {max_partial:.4f}")
-
-    n_permutations = 500
-    null_means = []
-    for p in range(n_permutations):
-        perm = np.random.RandomState(p).permutation(len(resid_Y))
-        perm_corrs = [abs(spearmanr(resid_Y[perm], resid_T[:, j])[0]) for j in range(min(10, resid_T.shape[1]))]
-        null_means.append(np.mean(perm_corrs))
-
-    p_value = np.mean(np.array(null_means) >= mean_partial)
-    print(f"    Permutation p-value: {p_value:.4f}")
-
-    if p_value > 0.05:
-        print("    -> CONSISTENT with conditional independence (Y indep T | L)")
+        if zip_result["p_value"] < 0.05 and rich_result["p_value"] >= 0.05:
+            print("\n  → Zip-only test REJECTED but rich-confounder test does NOT.")
+            print("    The earlier rejection was incomplete adjustment, not real signal.")
+            print("    This is the SCM_0 prediction: refuting confounding shrinks the residual.")
+        elif zip_result["p_value"] < 0.05 and rich_result["p_value"] < 0.05:
+            print("\n  → Both tests reject. Either confounding remains at finer scales,")
+            print("    or there is a small genuine direct effect of T on Y.")
+        else:
+            print("\n  → Neither test rejects (or only the rich one does).")
     else:
-        print("    -> REJECTS conditional independence at alpha=0.05")
+        print("\n  Note: rich confounders unavailable; only the zip-only test was run.")
+        print("        Re-run with df.attrs['rich_confounders'] populated to get the")
+        print("        full 35-feature adjustment that matches the DR estimator.")
 
-    return mean_partial, max_partial, p_value
+    return {"zip_only": zip_result, "rich": rich_result}
+
+
+def _shared_pca_basis(cities_data, n_components):
+    """
+    Fits a single PCA basis on the union of all cities' text embeddings,
+    so train- and test-city projections share the same axes (avoids the
+    sign/rotation arbitrariness of fitting per-city PCA bases).
+    """
+    all_T = np.vstack([cities_data[c][0] for c in cities_data])
+    n_components = min(n_components, all_T.shape[1], all_T.shape[0] - 1)
+    pca = PCA(n_components=n_components, random_state=42)
+    pca.fit(all_T)
+    return pca
+
+
+def _cv_r2(model_fn, X, Y, n_folds=5, seed=42):
+    """Held-out 5-fold CV R², not train-set R²."""
+    kf = KFold(n_splits=n_folds, shuffle=True, random_state=seed)
+    scores = []
+    for tr, te in kf.split(Y):
+        m = model_fn()
+        m.fit(X[tr], Y[tr])
+        scores.append(m.score(X[te], Y[te]))
+    return float(np.mean(scores))
 
 
 def cross_market_transfer(cities_data):
+    """
+    Tests whether text-only price models are portable across cities.
+
+    AUDIT CHANGES vs prior version:
+      1. Self R² is now 5-fold CV, not train-set R² (the old SF self R²=1.00
+         was just GBR overfitting ~1000 samples).
+      2. PCA basis is shared across cities (fit on union), so per-city
+         component ordering does not introduce alignment artifacts.
+      3. Reports three transfer metrics:
+           - raw R² (with city-level price gap intact)
+           - mean-centered R² (price level removed; tests *within-city ranking*)
+           - Spearman ρ (scale-free rank correlation)
+         These distinguish "different price levels" from "text doesn't transfer."
+      4. Adds a "predict test mean" baseline so R² < 0 is interpretable.
+    """
     print("\n" + "="*60)
-    print("2. CROSS-MARKET TRANSFER TEST")
+    print("2. CROSS-MARKET TRANSFER TEST  (audited)")
     print("="*60)
 
     city_names = list(cities_data.keys())
+    if len(city_names) < 2:
+        print("  Need >= 2 cities for transfer test, skipping")
+        return []
+
+    n_pca = min(20, min(cities_data[c][0].shape[1] for c in city_names),
+                min(len(cities_data[c][2]) for c in city_names) - 2)
+    shared_pca = _shared_pca_basis(cities_data, n_pca)
+    print(f"  Shared PCA basis: {n_pca} components fit on union of "
+          f"{sum(len(cities_data[c][2]) for c in city_names)} embeddings")
+
+    def gbr():
+        return GradientBoostingRegressor(
+            n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42,
+        )
+
     results = []
-
     for train_city in city_names:
-        T_tr, L_tr, Y_tr, _ = cities_data[train_city]
+        T_tr, _, Y_tr, _ = cities_data[train_city]
+        T_tr_pca = shared_pca.transform(T_tr)
+        Y_tr_centered = Y_tr - Y_tr.mean()
 
-        n_pca = min(20, T_tr.shape[1], len(T_tr) - 2)
-        pca = PCA(n_components=n_pca, random_state=42)
-        T_tr_pca = pca.fit_transform(T_tr)
+        r2_self_cv = _cv_r2(gbr, T_tr_pca, Y_tr)
+        print(f"\n  Train: {train_city} (n={len(Y_tr)})  "
+              f"self CV R²={r2_self_cv:.4f}  "
+              f"mean log-price={Y_tr.mean():.3f}")
 
-        model = GradientBoostingRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
-        model.fit(T_tr_pca, Y_tr)
+        model_raw = gbr()
+        model_raw.fit(T_tr_pca, Y_tr)
 
-        r2_self = model.score(T_tr_pca, Y_tr)
-        print(f"\n  Train: {train_city} (n={len(Y_tr)}, self R2={r2_self:.4f})")
+        model_centered = gbr()
+        model_centered.fit(T_tr_pca, Y_tr_centered)
 
         for test_city in city_names:
             if test_city == train_city:
                 continue
-            T_te, L_te, Y_te, _ = cities_data[test_city]
-            T_te_pca = pca.transform(T_te)
-            r2_transfer = model.score(T_te_pca, Y_te)
-            print(f"    -> {test_city}: R2={r2_transfer:.4f}")
-            results.append((train_city, test_city, r2_self, r2_transfer))
+            T_te, _, Y_te, _ = cities_data[test_city]
+            T_te_pca = shared_pca.transform(T_te)
+            Y_te_centered = Y_te - Y_te.mean()
 
-    print("\n  Transfer summary:")
-    for train_c, test_c, r2_s, r2_t in results:
-        drop = r2_s - r2_t
-        print(f"    {train_c} -> {test_c}: self={r2_s:.4f}, transfer={r2_t:.4f}, drop={drop:.4f}")
+            preds_raw = model_raw.predict(T_te_pca)
+            r2_raw = r2_score(Y_te, preds_raw)
 
-    mean_transfer = np.mean([r[3] for r in results])
-    mean_self = np.mean([r[2] for r in results])
-    print(f"\n  Mean self R2: {mean_self:.4f}")
-    print(f"  Mean transfer R2: {mean_transfer:.4f}")
+            preds_centered = model_centered.predict(T_te_pca)
+            r2_centered = r2_score(Y_te_centered, preds_centered)
 
-    if mean_transfer < 0.1:
-        print("  -> Text models FAIL to transfer: consistent with location encoding")
-    elif mean_transfer < mean_self * 0.5:
-        print("  -> Substantial transfer degradation: mostly location-specific signal")
+            rank_rho, _ = spearmanr(Y_te, preds_raw)
+            if np.isnan(rank_rho):
+                rank_rho = 0.0
+
+            r2_baseline = r2_score(Y_te, np.full_like(Y_te, Y_te.mean()))
+            r2_train_mean_pred = r2_score(Y_te, np.full_like(Y_te, Y_tr.mean()))
+
+            print(f"    -> {test_city} (n={len(Y_te)}, mean log-price={Y_te.mean():.3f}):")
+            print(f"         raw R²:           {r2_raw:>8.4f}")
+            print(f"         centered R²:      {r2_centered:>8.4f}  (price-level removed)")
+            print(f"         Spearman ρ:       {rank_rho:>8.4f}  (scale-free)")
+            print(f"         R² of test-mean:  {r2_baseline:>8.4f}  (definitionally 0)")
+            print(f"         R² of train-mean: {r2_train_mean_pred:>8.4f}  (price-level baseline)")
+
+            verdict = "fails"
+            if rank_rho > 0.3 and r2_centered > 0.1:
+                verdict = "partial transfer"
+            elif rank_rho > 0.5:
+                verdict = "rank transfer only"
+
+            results.append({
+                "train": train_city, "test": test_city,
+                "self_cv_r2": r2_self_cv,
+                "transfer_raw_r2": r2_raw,
+                "transfer_centered_r2": r2_centered,
+                "transfer_rank_rho": rank_rho,
+                "verdict": verdict,
+            })
+
+    print("\n  Transfer audit summary:")
+    print(f"  {'train→test':<20} {'self CV R²':>10} {'raw R²':>10} {'centered R²':>12} {'rank ρ':>8}  verdict")
+    for r in results:
+        pair = f"{r['train']}→{r['test']}"
+        print(f"  {pair:<20} {r['self_cv_r2']:>10.4f} {r['transfer_raw_r2']:>10.4f} "
+              f"{r['transfer_centered_r2']:>12.4f} {r['transfer_rank_rho']:>8.4f}  {r['verdict']}")
+
+    mean_centered = np.mean([r["transfer_centered_r2"] for r in results])
+    mean_rank = np.mean([r["transfer_rank_rho"] for r in results])
+    print(f"\n  Mean centered R²:  {mean_centered:.4f}")
+    print(f"  Mean Spearman ρ:   {mean_rank:.4f}")
+
+    if mean_centered < 0 and mean_rank < 0.1:
+        print("  → Text models fail even after removing price-level differences:")
+        print("    text encodes city-specific patterns, not portable property semantics")
+    elif mean_rank > 0.3:
+        print("  → Within-city ranking partially transfers: residual semantic signal")
     else:
-        print("  -> Transfer partially succeeds: some location-independent signal")
+        print("  → Text transfer is weak: dominantly location-specific encoding")
 
     return results
 
@@ -352,23 +524,32 @@ def competing_scm_test(cities_data):
         print("  Need >= 2 cities for cross-market test, skipping")
         return {"verdict": "insufficient_cities"}
 
+    n_pca_shared = min(20, min(cities_data[c][0].shape[1] for c in city_names),
+                       min(len(cities_data[c][2]) for c in city_names) - 2)
+    shared_pca = _shared_pca_basis(cities_data, n_pca_shared)
+
+    def gbr():
+        return GradientBoostingRegressor(
+            n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42,
+        )
+
     transfer_r2s = []
     self_r2s = []
     for train_city in city_names:
         T_tr, L_tr, Y_tr, _ = cities_data[train_city]
-        n_pca = min(20, T_tr.shape[1], len(T_tr) - 2)
-        pca = PCA(n_components=n_pca, random_state=42)
-        T_tr_pca = pca.fit_transform(T_tr)
-        model = GradientBoostingRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
-        model.fit(T_tr_pca, Y_tr)
-        self_r2s.append(model.score(T_tr_pca, Y_tr))
+        T_tr_pca = shared_pca.transform(T_tr)
+        self_r2s.append(_cv_r2(gbr, T_tr_pca, Y_tr))
+
+        model = gbr()
+        model.fit(T_tr_pca, Y_tr - Y_tr.mean())
 
         for test_city in city_names:
             if test_city == train_city:
                 continue
             T_te, _, Y_te, _ = cities_data[test_city]
-            T_te_pca = pca.transform(T_te)
-            transfer_r2s.append(model.score(T_te_pca, Y_te))
+            T_te_pca = shared_pca.transform(T_te)
+            preds = model.predict(T_te_pca)
+            transfer_r2s.append(r2_score(Y_te - Y_te.mean(), preds))
 
     mean_self = np.mean(self_r2s)
     mean_transfer = np.mean(transfer_r2s)
@@ -578,7 +759,8 @@ def main():
     print(f"EXTENDED ANALYSIS: {primary.upper()}")
     print(f"{'#'*60}")
 
-    test_conditional_independence(T, L, Y)
+    rich_conf = df.attrs.get("rich_confounders", None) if hasattr(df, "attrs") else None
+    test_conditional_independence(T, L, Y, rich_confounders=rich_conf)
     partial_r2_decomposition(T, L, Y)
     cinelli_hazlett_sensitivity(T, L, Y)
     cate_by_property_type(T, L, Y, df)

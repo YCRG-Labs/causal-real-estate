@@ -67,7 +67,7 @@ def run_model_sensitivity(city, models=None):
         if feat is not None:
             T, confounders, Y, meta = feat
             delta_r2 = backdoor_adjustment(T, confounders, Y, n_pca=min(50, dim))
-            dr_effect, dr_ci = doubly_robust_estimation(T, confounders, Y, n_pca=min(50, dim))
+            dr_effect, dr_ci, _ = doubly_robust_estimation(T, confounders, Y, n_pca=min(50, dim))
         else:
             delta_r2 = dr_effect = None
             dr_ci = (None, None)
