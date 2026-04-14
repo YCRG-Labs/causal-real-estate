@@ -9,8 +9,9 @@ from config import RAW_DIR, CITIES
 CRIME_DIR = RAW_DIR / "crime"
 PAGE_SIZE = 10000
 REQUEST_TIMEOUT = 300
-MAX_RETRIES = 6
+MAX_RETRIES = 30
 BACKOFF_BASE = 5
+BACKOFF_CAP = 300
 
 BOSTON_RESOURCE_IDS = [
     "b973d8cb-eeb2-4e7e-99da-c92938efc9c0",
@@ -85,8 +86,9 @@ def download_boston():
 
 
 def _fetch_soda_page(endpoint, offset):
-    """GET one page from a SODA endpoint with retry + exponential backoff on
-    read timeouts. Returns parsed rows (list of lists) and the header."""
+    """GET one page from a SODA endpoint with retry + exponential backoff,
+    capped at BACKOFF_CAP seconds per wait. Survives transient DNS / network
+    outages by accumulating up to MAX_RETRIES attempts per page."""
     last_err = None
     for attempt in range(MAX_RETRIES):
         try:
@@ -105,7 +107,7 @@ def _fetch_soda_page(endpoint, offset):
                 requests.exceptions.ConnectionError,
                 requests.exceptions.ChunkedEncodingError) as e:
             last_err = e
-            wait = BACKOFF_BASE * (2 ** attempt)
+            wait = min(BACKOFF_BASE * (2 ** attempt), BACKOFF_CAP)
             print(f"\n  ⚠ retry {attempt + 1}/{MAX_RETRIES} at offset {offset} "
                   f"after {type(e).__name__}; sleeping {wait}s", flush=True)
             time.sleep(wait)
