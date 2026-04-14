@@ -5,6 +5,19 @@ import time
 
 CITIES = ["boston", "nyc", "sf"]
 
+CITY_SPECIFIC_DOWNLOADS = {
+    "nyc": ["download_nyc.py"],
+    "boston": ["download_boston_assessment.py"],
+    "sf": ["download_sf.py"],
+}
+
+MULTI_CITY_DOWNLOADS = [
+    "download_census.py",
+    "download_crime.py",
+    "download_amenities.py",
+    "scrape_descriptions.py",
+]
+
 PER_CITY_DATA_PREP = [
     "load_parcels.py",
     "clean_parcels.py",
@@ -67,6 +80,10 @@ def main():
         help=f"Cities to process (default: {' '.join(CITIES)})",
     )
     parser.add_argument(
+        "--download", action="store_true",
+        help="Download raw data first (NYC PLUTO, Boston assessment, SF parcels, census, crime, amenities, descriptions)",
+    )
+    parser.add_argument(
         "--skip-data-prep", action="store_true",
         help="Skip parcel loading/cleaning/geocoding/census/crime/amenity/micro-geo stages",
     )
@@ -79,7 +96,7 @@ def main():
         help="Skip causal inference + threshold sensitivity + extended analysis",
     )
     parser.add_argument(
-        "--only", choices=["data", "embeddings", "analysis"],
+        "--only", choices=["download", "data", "embeddings", "analysis"],
         help="Run only one stage and exit",
     )
     args = parser.parse_args()
@@ -93,20 +110,28 @@ def main():
 
     t_start = time.time()
 
+    do_dl = args.download or args.only == "download"
     do_data = not args.skip_data_prep and args.only in (None, "data")
     do_emb = not args.skip_embeddings and args.only in (None, "embeddings")
     do_ana = not args.skip_analysis and args.only in (None, "analysis")
 
+    if do_dl:
+        print(f"\n■ Stage 0/4: Download raw data")
+        for city in cities:
+            for script in CITY_SPECIFIC_DOWNLOADS.get(city, []):
+                run(script, [], label=f"{script} [{city}]")
+        run_multi_city(MULTI_CITY_DOWNLOADS, cities)
+
     if do_data:
-        print(f"\n■ Stage 1/3: Data preparation")
+        print(f"\n■ Stage 1/4: Data preparation")
         run_per_city(PER_CITY_DATA_PREP, cities)
 
     if do_emb:
-        print(f"\n■ Stage 2/3: Embeddings")
+        print(f"\n■ Stage 2/4: Embeddings")
         run_per_city(PER_CITY_EMBEDDINGS, cities)
 
     if do_ana:
-        print(f"\n■ Stage 3/3: Causal analysis")
+        print(f"\n■ Stage 3/4: Causal analysis")
         run_per_city(PER_CITY_ANALYSIS, cities)
         run_multi_city(MULTI_CITY_ANALYSIS, cities)
 
