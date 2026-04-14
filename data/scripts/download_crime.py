@@ -1,12 +1,16 @@
 import sys
 import csv
+import time
 import requests
 import pandas as pd
 from pathlib import Path
 from config import RAW_DIR, CITIES
 
 CRIME_DIR = RAW_DIR / "crime"
-PAGE_SIZE = 50000
+PAGE_SIZE = 10000
+REQUEST_TIMEOUT = 300
+MAX_RETRIES = 6
+BACKOFF_BASE = 5
 
 BOSTON_RESOURCE_IDS = [
     "b973d8cb-eeb2-4e7e-99da-c92938efc9c0",
@@ -80,25 +84,63 @@ def download_boston():
     print(f"  Saved {len(df)} incidents → {out}")
 
 
-def download_soda_crime(endpoint, dest, city, id_col, desc_col, date_col, lat_col, lon_col):
-    print(f"{city}:")
-    offset = 0
-    total = 0
-    header_written = False
-
-    with open(dest, "w", newline="") as f:
-        writer = None
-        while True:
+def _fetch_soda_page(endpoint, offset):
+    """GET one page from a SODA endpoint with retry + exponential backoff on
+    read timeouts. Returns parsed rows (list of lists) and the header."""
+    last_err = None
+    for attempt in range(MAX_RETRIES):
+        try:
             resp = requests.get(
                 endpoint,
                 params={"$limit": PAGE_SIZE, "$offset": offset, "$order": ":id"},
-                timeout=120,
+                timeout=REQUEST_TIMEOUT,
             )
             resp.raise_for_status()
             lines = resp.text.strip().split("\n")
             reader = csv.reader(lines)
             header = next(reader)
             rows = list(reader)
+            return header, rows
+        except (requests.exceptions.ReadTimeout,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.ChunkedEncodingError) as e:
+            last_err = e
+            wait = BACKOFF_BASE * (2 ** attempt)
+            print(f"\n  ⚠ retry {attempt + 1}/{MAX_RETRIES} at offset {offset} "
+                  f"after {type(e).__name__}; sleeping {wait}s", flush=True)
+            time.sleep(wait)
+    raise RuntimeError(f"SODA fetch failed at offset {offset} after {MAX_RETRIES} retries: {last_err}")
+
+
+def download_soda_crime(endpoint, dest, city, id_col, desc_col, date_col, lat_col, lon_col):
+    """Download a SODA crime endpoint to CSV with resume support.
+
+    The sidecar file <dest>.offset records the next offset to fetch. If the
+    sidecar exists we open <dest> in append mode and continue from where the
+    previous run left off. The offset is updated after each successful page
+    write so a mid-page crash re-fetches only the last incomplete page.
+    """
+    print(f"{city}:")
+    offset_file = Path(str(dest) + ".offset")
+
+    if offset_file.exists() and Path(dest).exists():
+        start_offset = int(offset_file.read_text().strip() or 0)
+        mode = "a"
+        header_written = True
+        if start_offset > 0:
+            print(f"  resuming from offset {start_offset:,} "
+                  f"({Path(dest).stat().st_size // 1_000_000} MB already on disk)")
+    else:
+        start_offset = 0
+        mode = "w"
+        header_written = False
+
+    offset = start_offset
+    total_new = 0
+
+    with open(dest, mode, newline="") as f:
+        while True:
+            header, rows = _fetch_soda_page(endpoint, offset)
             if not rows:
                 break
 
@@ -123,15 +165,23 @@ def download_soda_crime(endpoint, dest, city, id_col, desc_col, date_col, lat_co
                 header_written = True
             else:
                 out_df.to_csv(f, index=False, header=False)
+            f.flush()
 
-            total += len(out_df)
-            print(f"\r  {total:,} rows", end="", flush=True)
+            total_new += len(out_df)
+            print(f"\r  offset {offset:,}  +{total_new:,} new rows this run",
+                  end="", flush=True)
 
             if len(rows) < PAGE_SIZE:
+                offset += len(rows)
+                offset_file.write_text(str(offset))
                 break
-            offset += PAGE_SIZE
 
-    print(f"\n  Saved {total:,} incidents → {dest}")
+            offset += PAGE_SIZE
+            offset_file.write_text(str(offset))
+
+    print(f"\n  Saved to {dest}  (final offset {offset:,})")
+    if offset_file.exists():
+        offset_file.unlink()
 
 
 def download_nyc():
