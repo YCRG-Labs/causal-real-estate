@@ -62,12 +62,20 @@ def attach_crime(city):
     sale_col = find_sale_date_col(parcels)
     use_temporal = sale_col is not None
 
+    crime_min = crime_proj["date"].min()
+    crime_max = crime_proj["date"].max()
+    crime_year_range = f"{crime_min.year}-{crime_max.year}" if pd.notna(crime_min) else "unknown"
+
+    parcels["crime_data_year_range"] = crime_year_range
+    parcels["crime_temporal_match"] = False
+
     if use_temporal:
         parcels["_sale_dt"] = pd.to_datetime(parcels[sale_col], errors="coerce")
         has_date = parcels["_sale_dt"].notna()
         if has_date.sum() < len(parcels) * 0.1:
             use_temporal = False
             print(f"  <10% parcels have sale dates, using all crimes")
+            print(f"  ⚠ crime_temporal_match=False for all {city} parcels (no sale-date overlap)")
 
     if use_temporal:
         median_sale = parcels["_sale_dt"].dropna().median()
@@ -77,9 +85,18 @@ def attach_crime(city):
         ]
         if len(filtered) > 1000:
             crime_proj = filtered
+            parcels.loc[parcels["_sale_dt"].notna(), "crime_temporal_match"] = (
+                (parcels.loc[parcels["_sale_dt"].notna(), "_sale_dt"] >= window_start)
+                & (parcels.loc[parcels["_sale_dt"].notna(), "_sale_dt"] <= median_sale)
+            )
             print(f"  Filtered crimes to {window_start.date()} - {median_sale.date()}: {len(crime_proj)} incidents")
+            n_match = parcels["crime_temporal_match"].sum()
+            print(f"  {n_match}/{len(parcels)} parcels have sales within the crime window")
         else:
-            print(f"  Temporal window too sparse ({len(filtered)} incidents), using all {len(crime_proj)} incidents")
+            print(f"  ⚠ Temporal window too sparse ({len(filtered)} incidents in "
+                  f"{window_start.date()}-{median_sale.date()}), using all {len(crime_proj)} incidents")
+            print(f"  ⚠ crime_temporal_match=False for all parcels — crime data is "
+                  f"{crime_year_range} but sales are not in this window")
         parcels = parcels.drop(columns=["_sale_dt"])
 
     if True:
