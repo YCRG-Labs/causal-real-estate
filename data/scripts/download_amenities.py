@@ -14,7 +14,6 @@ AMENITY_DIR = RAW_DIR / "amenities"
 OVERPASS_ENDPOINTS = [
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass-api.de/api/interpreter",
-    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ]
 
 CITY_BBOXES = {
@@ -80,7 +79,7 @@ def download_city(city):
                         timeout=(30, 360),
                         headers={"Connection": "close"},
                     )
-                    if resp.status_code in (429, 504):
+                    if resp.status_code != 200:
                         mirror = endpoint.split("/")[2]
                         wait = min(30 + 15 * attempt, 120)
                         print(f"\n    {resp.status_code} from {mirror}, "
@@ -88,7 +87,6 @@ def download_city(city):
                               end="", flush=True)
                         time.sleep(wait)
                         continue
-                    resp.raise_for_status()
                     break
                 except (requests.exceptions.ConnectionError,
                         requests.exceptions.ReadTimeout,
