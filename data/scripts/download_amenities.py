@@ -11,7 +11,11 @@ from config import RAW_DIR, CITIES, OSM_AMENITY_TAGS
 socket.setdefaulttimeout(420)
 
 AMENITY_DIR = RAW_DIR / "amenities"
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OVERPASS_ENDPOINTS = [
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
 
 CITY_BBOXES = {
     "boston": (42.23, -71.19, 42.40, -70.92),
@@ -65,18 +69,23 @@ def download_city(city):
             query = build_overpass_query(bbox, tag_key, tag_values)
             print(f"  {category}/{tag_key}...", end=" ", flush=True)
 
-            for attempt in range(15):
+            resp = None
+            for attempt in range(len(OVERPASS_ENDPOINTS) * 3):
+                endpoint = OVERPASS_ENDPOINTS[attempt % len(OVERPASS_ENDPOINTS)]
                 try:
                     sess = requests.Session()
                     resp = sess.post(
-                        OVERPASS_URL,
+                        endpoint,
                         data={"data": query},
                         timeout=(30, 360),
                         headers={"Connection": "close"},
                     )
                     if resp.status_code in (429, 504):
-                        wait = min(30 * (attempt + 1), 300)
-                        print(f"{resp.status_code}, retrying in {wait}s...", end=" ", flush=True)
+                        mirror = endpoint.split("/")[2]
+                        wait = min(30 + 15 * attempt, 120)
+                        print(f"\n    {resp.status_code} from {mirror}, "
+                              f"trying next mirror in {wait}s...",
+                              end="", flush=True)
                         time.sleep(wait)
                         continue
                     resp.raise_for_status()
@@ -85,14 +94,19 @@ def download_city(city):
                         requests.exceptions.ReadTimeout,
                         requests.exceptions.ConnectTimeout,
                         socket.timeout) as e:
-                    wait = min(5 * (2 ** attempt), 300)
-                    print(f"\n    ⚠ retry {attempt+1}/15 ({type(e).__name__}); sleeping {wait}s",
+                    mirror = endpoint.split("/")[2]
+                    wait = min(10 * (2 ** (attempt // len(OVERPASS_ENDPOINTS))), 300)
+                    print(f"\n    ⚠ {type(e).__name__} from {mirror}; "
+                          f"sleeping {wait}s",
                           end="", flush=True)
                     time.sleep(wait)
                 finally:
                     sess.close()
             else:
-                print(f" FAILED after 15 attempts, skipping")
+                print(f" FAILED after {len(OVERPASS_ENDPOINTS) * 3} attempts across all mirrors, skipping")
+                continue
+            if resp is None or resp.status_code != 200:
+                print(f" no successful response, skipping")
                 continue
             data = resp.json()
 
