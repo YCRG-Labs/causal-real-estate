@@ -67,6 +67,56 @@ def encode_with_model(texts, model_name, dim, out_path):
     return emb_df, embeddings
 
 
+def geocode_from_zip(df, city):
+    """
+    If descriptions lack lat/lon, assign coordinates from zip-code centroids
+    using the pgeocode (GeoNames) offline lookup. This enables the spatial
+    join to parcels that pulls in the full 34-feature confounder set (census,
+    crime, amenity, micro-geo). Accuracy is at the zip-centroid level
+    (~0.5-1 km), which is sufficient for block-group-level spatial joins.
+    """
+    lat = pd.to_numeric(df.get("latitude", pd.Series(dtype=float)), errors="coerce")
+    lon = pd.to_numeric(df.get("longitude", pd.Series(dtype=float)), errors="coerce")
+    n_missing = lat.isna().sum()
+
+    if n_missing == 0:
+        print(f"  All {len(df)} descriptions already have coordinates")
+        return df
+
+    if "zip" not in df.columns:
+        print(f"  {n_missing}/{len(df)} descriptions lack coordinates and no zip column")
+        return df
+
+    print(f"  {n_missing}/{len(df)} descriptions lack coordinates — geocoding via pgeocode...")
+
+    import pgeocode
+    nomi = pgeocode.Nominatim("us")
+
+    zips = df["zip"].astype(float).astype(int).astype(str).str.zfill(5)
+    unique_zips = zips.unique()
+    zip_lookup = {}
+    for z in unique_zips:
+        result = nomi.query_postal_code(z)
+        if pd.notna(result.latitude) and pd.notna(result.longitude):
+            zip_lookup[z] = (result.latitude, result.longitude)
+
+    matched = 0
+    for idx in df.index:
+        if pd.notna(lat.loc[idx]) and pd.notna(lon.loc[idx]):
+            continue
+        z = zips.loc[idx]
+        if z in zip_lookup:
+            df.loc[idx, "latitude"] = zip_lookup[z][0]
+            df.loc[idx, "longitude"] = zip_lookup[z][1]
+            matched += 1
+
+    still_missing = pd.to_numeric(df["latitude"], errors="coerce").isna().sum()
+    print(f"  Geocoded {matched}/{n_missing} via zip-centroid "
+          f"({len(zip_lookup)}/{len(unique_zips)} zips resolved, "
+          f"{still_missing} still missing)")
+    return df
+
+
 def generate_embeddings(city):
     desc_path = DESC_DIR / f"{city}_descriptions.csv"
     if not desc_path.exists():
@@ -75,6 +125,8 @@ def generate_embeddings(city):
 
     df = pd.read_csv(desc_path)
     print(f"{city}: {len(df)} descriptions loaded")
+
+    df = geocode_from_zip(df, city)
 
     df["clean_description"] = df["description"].apply(clean_description)
     df = df[df["clean_description"].str.len() > 20]
