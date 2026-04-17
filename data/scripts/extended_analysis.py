@@ -759,8 +759,33 @@ def main():
     print(f"EXTENDED ANALYSIS: {primary.upper()}")
     print(f"{'#'*60}")
 
-    rich_conf = df.attrs.get("rich_confounders", None) if hasattr(df, "attrs") else None
-    test_conditional_independence(T, L, Y, rich_confounders=rich_conf)
+    # Load rich confounders directly from causal_inference pipeline,
+    # bypassing the fragile df.attrs mechanism which silently drops
+    # confounders when row counts diverge between load_city and
+    # get_features_and_target filtering.
+    rich_conf = None
+    try:
+        from causal_inference import load_analysis_data, get_features_and_target
+        _data = load_analysis_data(primary)
+        if _data is not None:
+            _emb_df, _parcels = _data
+            _feat = get_features_and_target(_emb_df, _parcels)
+            if _feat is not None:
+                _T_ci, _rich_conf, _Y_ci, _meta = _feat
+                # Use the CI pipeline's own T and Y (which are row-aligned
+                # with the confounder matrix) for the CI test.
+                T_for_ci, Y_for_ci = _T_ci, _Y_ci
+                rich_conf = _rich_conf
+                print(f"  Rich confounders loaded: {rich_conf.shape[1]} features, "
+                      f"n={len(Y_for_ci)}")
+    except Exception as e:
+        print(f"  Note: rich confounders unavailable ({e})")
+
+    if rich_conf is not None:
+        test_conditional_independence(T_for_ci, L[:len(T_for_ci)], Y_for_ci,
+                                     rich_confounders=rich_conf)
+    else:
+        test_conditional_independence(T, L, Y)
     partial_r2_decomposition(T, L, Y)
     cinelli_hazlett_sensitivity(T, L, Y)
     cate_by_property_type(T, L, Y, df)
