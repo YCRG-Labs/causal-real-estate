@@ -1,0 +1,52 @@
+{
+  "paper": "Shen & Ross 2021 (JUE)",
+  "city": "sf",
+  "n": 995,
+  "n_confounders": 30,
+  "uniqueness_descriptive": {
+    "mean": 0.7587883268149906,
+    "sd": 0.1605848988925417,
+    "min": 0.19556499054927423,
+    "max": 1.0
+  },
+  "ols_uniqueness": {
+    "coef": 0.040329071784820744,
+    "se": 0.02012324269033856,
+    "t": 2.0041040306184486,
+    "p": 0.04505891775440729,
+    "ci_low": 0.000888240859598266,
+    "ci_high": 0.07976990271004322,
+    "n": 995,
+    "r2": 0.16779660145672692,
+    "adj_r2": 0.14189815544396955,
+    "coef_per_sd": 0.040329071784820744,
+    "pct_per_sd": 4.115333201147764
+  },
+  "dml_uniqueness": {
+    "label": "DML on TF-IDF uniqueness",
+    "n": 995,
+    "theta": 0.07171510013517306,
+    "se": 0.022396717175804444,
+    "ci_low": 0.027817534470596345,
+    "ci_high": 0.11561266579974977,
+    "mde": 0.06271080809225243,
+    "contains_zero": false
+  },
+  "method_notes": {
+    "tfidf_max_features": 5000,
+    "tfidf_ngram_range": [
+      1,
+      2
+    ],
+    "tfidf_min_df": 2,
+    "k_neighbors": 5,
+    "neighbor_metric": "euclidean lat/lon",
+    "ols_cov": "HC3",
+    "treatment_standardization": "z-score (per \u03c3)",
+    "dml_pipeline": "causal_inference.dml_continuous_treatment"
+  },
+  "meta": {
+    "has_rich_confounders": true,
+    "crime_dropped": true
+  }
+}
