@@ -1,6 +1,6 @@
 .PHONY: verify clean
 
-SCRIPTS := 01_dag_dseparation.py 02_dowhy_identification.py 03_variational_mi_inequalities.py 04_algebraic_identity.py 05_consistency_rate.py 06_xor_construction.py
+SCRIPTS := 01_dag_dseparation.py 02_dowhy_identification.py 03_variational_mi_inequalities.py 04_algebraic_identity.py 05_consistency_rate.py 06_xor_construction.py 07_saddle_verification.py
 
 PYTHON ?= python3
 

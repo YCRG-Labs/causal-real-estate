@@ -1,0 +1,72 @@
+{
+  "verdict": "PASS",
+  "tightened_proposition_2c_statement": "There exist a data distribution P over (X, C), a downstream label Y with I(X;Y) > 0, classifier classes \u03a6 \u228a \u03a6', and joint-game weight \u03b1 > 0 such that there exists a saddle (\u03c6*, g*, h*) of L = \u03b1 \u00b7 L_task(g(\u03c6(X)), Y) \u2212 GRL(L_disc(h(\u03c6(X)), C)) satisfying V_\u03a6(Z_{\u03c6*}; C) = 0 and V_\u03a6'(Z_{\u03c6*}; C) \u2265 H(C) \u2212 \u03b4 for any \u03b4 > 0.",
+  "part_A_counterexample_to_every_saddle": {
+    "claim": "\u03c6_collapse(X) = 0 is a saddle of the bare GRL game with V_\u03a6' = 0, refuting 'every saddle' in the original statement.",
+    "encoder": "\u03c6(X) = 0",
+    "V_phi_at_collapse_nats": 0.00028806734354513974,
+    "V_phi_prime_at_collapse_nats": 0.00028806734354513974,
+    "saddle_of_bare_grl_game": true,
+    "violates_V_phi_prime_lower_bound": true,
+    "counterexample_holds": true
+  },
+  "part_B_explicit_construction_under_joint_game": {
+    "claim": "\u03c6_id is a saddle of the joint game with V_\u03a6 = 0, V_\u03a6' \u2248 H(C), and L_task \u2248 0.",
+    "encoder": "\u03c6(X) = X (identity)",
+    "V_phi_at_identity_nats": 0.000547347548318089,
+    "V_phi_prime_at_identity_nats": 0.693138060904685,
+    "H_C_nats": 0.6931471805599453,
+    "task_loss_at_identity_nats": 0.004428643733263016,
+    "V_phi_near_zero": true,
+    "V_phi_prime_near_H_C": true,
+    "task_decodable_from_phi_id": true,
+    "all_saddle_conditions_hold": true
+  },
+  "part_C_empirical_convergence_under_joint_game": {
+    "claim": "Joint training with \u03b1 > 0 converges to encoders with V_\u03a6' near H(C) and low task loss. Existence is empirically robust.",
+    "alpha_sweep": [
+      {
+        "alpha": 0.0,
+        "n_runs": 15,
+        "mean_V_phi_nats": 0.000601667247923395,
+        "mean_V_phi_prime_nats": 0.6931403549692732,
+        "mean_gap_nats": 0.6925386877213497,
+        "mean_task_loss_nats": 3.6521208703517916,
+        "fraction_with_gap_above_0.5_H_C": 1.0,
+        "fraction_with_V_phi_prime_above_0.9_H_C": 1.0
+      },
+      {
+        "alpha": 0.5,
+        "n_runs": 15,
+        "mean_V_phi_nats": 0.00031196495943404124,
+        "mean_V_phi_prime_nats": 0.6931387828990305,
+        "mean_gap_nats": 0.6928268179395966,
+        "mean_task_loss_nats": 3.057220483242418e-05,
+        "fraction_with_gap_above_0.5_H_C": 1.0,
+        "fraction_with_V_phi_prime_above_0.9_H_C": 1.0
+      },
+      {
+        "alpha": 2.0,
+        "n_runs": 15,
+        "mean_V_phi_nats": 0.00032713620137391576,
+        "mean_V_phi_prime_nats": 0.6931380881221476,
+        "mean_gap_nats": 0.6928109519207737,
+        "mean_task_loss_nats": 1.8646985851470768e-05,
+        "fraction_with_gap_above_0.5_H_C": 1.0,
+        "fraction_with_V_phi_prime_above_0.9_H_C": 1.0
+      },
+      {
+        "alpha": 8.0,
+        "n_runs": 15,
+        "mean_V_phi_nats": 0.00040146319340882787,
+        "mean_V_phi_prime_nats": 0.6930240266041001,
+        "mean_gap_nats": 0.6926225634106913,
+        "mean_task_loss_nats": 1.715965336188674e-05,
+        "fraction_with_gap_above_0.5_H_C": 1.0,
+        "fraction_with_V_phi_prime_above_0.9_H_C": 1.0
+      }
+    ],
+    "high_gap_for_all_positive_alpha": true,
+    "task_decodable_for_all_positive_alpha": true
+  }
+}
