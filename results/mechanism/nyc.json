@@ -1,0 +1,534 @@
+{
+  "city": "nyc",
+  "n_descriptions": 990,
+  "n_zips": 127,
+  "n_stylometric_features": 222,
+  "stylometric_classifier": {
+    "accuracy": 0.9893350239504086,
+    "accuracy_sd": 0.010847906669860564,
+    "random_baseline_uniform": 0.013157894736842105,
+    "random_baseline_majority": 0.017208208033130026,
+    "ratio_uniform": 75.18946182023106,
+    "n_classes": 76,
+    "n_obs": 842
+  },
+  "full_embedding_classifier": {
+    "accuracy": 0.9905184559030713,
+    "accuracy_sd": 0.008859803124117408,
+    "random_baseline_uniform": 0.013157894736842105,
+    "random_baseline_majority": 0.017208208033130026,
+    "ratio_uniform": 75.27940264863342,
+    "n_classes": 76,
+    "n_obs": 842
+  },
+  "top_words_by_category": {
+    "generic_other": 84,
+    "amenity": 5,
+    "place_name": 4,
+    "aesthetic": 4,
+    "architectural": 2,
+    "formality": 1
+  },
+  "top_words_table": [
+    {
+      "word": "park",
+      "mi": 0.40233022037815225,
+      "category": "amenity"
+    },
+    {
+      "word": "brooklyn",
+      "mi": 0.36160886687524924,
+      "category": "place_name"
+    },
+    {
+      "word": "parking",
+      "mi": 0.34903832915113175,
+      "category": "generic_other"
+    },
+    {
+      "word": "from",
+      "mi": 0.342365231206009,
+      "category": "generic_other"
+    },
+    {
+      "word": "service",
+      "mi": 0.3325513078281986,
+      "category": "generic_other"
+    },
+    {
+      "word": "basement",
+      "mi": 0.33227849706190343,
+      "category": "generic_other"
+    },
+    {
+      "word": "building",
+      "mi": 0.3269840567270266,
+      "category": "generic_other"
+    },
+    {
+      "word": "property",
+      "mi": 0.32523834105920957,
+      "category": "generic_other"
+    },
+    {
+      "word": "storage",
+      "mi": 0.32414406075180957,
+      "category": "generic_other"
+    },
+    {
+      "word": "family",
+      "mi": 0.3197529998852977,
+      "category": "generic_other"
+    },
+    {
+      "word": "central",
+      "mi": 0.3185476545315853,
+      "category": "generic_other"
+    },
+    {
+      "word": "views",
+      "mi": 0.3176113414889886,
+      "category": "generic_other"
+    },
+    {
+      "word": "full",
+      "mi": 0.3161718758816666,
+      "category": "generic_other"
+    },
+    {
+      "word": "open",
+      "mi": 0.31559243699263817,
+      "category": "generic_other"
+    },
+    {
+      "word": "washer",
+      "mi": 0.3140801462394477,
+      "category": "generic_other"
+    },
+    {
+      "word": "transportation",
+      "mi": 0.31257959963941745,
+      "category": "generic_other"
+    },
+    {
+      "word": "amenities",
+      "mi": 0.31250516728320055,
+      "category": "generic_other"
+    },
+    {
+      "word": "unit",
+      "mi": 0.31173870801404613,
+      "category": "generic_other"
+    },
+    {
+      "word": "bedroom",
+      "mi": 0.308587206470627,
+      "category": "generic_other"
+    },
+    {
+      "word": "opportunity",
+      "mi": 0.30818631924977447,
+      "category": "generic_other"
+    },
+    {
+      "word": "finished",
+      "mi": 0.3039980510831601,
+      "category": "generic_other"
+    },
+    {
+      "word": "east",
+      "mi": 0.3037287756657335,
+      "category": "place_name"
+    },
+    {
+      "word": "residence",
+      "mi": 0.3004708748957812,
+      "category": "generic_other"
+    },
+    {
+      "word": "bedrooms",
+      "mi": 0.2990412483926305,
+      "category": "generic_other"
+    },
+    {
+      "word": "designed",
+      "mi": 0.2986652829756463,
+      "category": "generic_other"
+    },
+    {
+      "word": "ideal",
+      "mi": 0.2980273208243698,
+      "category": "generic_other"
+    },
+    {
+      "word": "city",
+      "mi": 0.2954647578344503,
+      "category": "generic_other"
+    },
+    {
+      "word": "suite",
+      "mi": 0.29452417649594875,
+      "category": "generic_other"
+    },
+    {
+      "word": "center",
+      "mi": 0.294100285850457,
+      "category": "generic_other"
+    },
+    {
+      "word": "light",
+      "mi": 0.2930103327732893,
+      "category": "generic_other"
+    },
+    {
+      "word": "are",
+      "mi": 0.2914715110905959,
+      "category": "generic_other"
+    },
+    {
+      "word": "both",
+      "mi": 0.2904411787187558,
+      "category": "generic_other"
+    },
+    {
+      "word": "windows",
+      "mi": 0.2894763278415612,
+      "category": "generic_other"
+    },
+    {
+      "word": "dryer",
+      "mi": 0.28923074038654506,
+      "category": "generic_other"
+    },
+    {
+      "word": "brick",
+      "mi": 0.2869901093097781,
+      "category": "architectural"
+    },
+    {
+      "word": "white",
+      "mi": 0.28196001746181887,
+      "category": "generic_other"
+    },
+    {
+      "word": "modern",
+      "mi": 0.281128444988872,
+      "category": "architectural"
+    },
+    {
+      "word": "offering",
+      "mi": 0.2801445430764203,
+      "category": "formality"
+    },
+    {
+      "word": "ceilings",
+      "mi": 0.2778578355244759,
+      "category": "generic_other"
+    },
+    {
+      "word": "thoughtfully",
+      "mi": 0.27763601889120837,
+      "category": "generic_other"
+    },
+    {
+      "word": "cabinetry",
+      "mi": 0.27695468077268404,
+      "category": "generic_other"
+    },
+    {
+      "word": "level",
+      "mi": 0.2763758153633836,
+      "category": "generic_other"
+    },
+    {
+      "word": "dining",
+      "mi": 0.27635216927753914,
+      "category": "amenity"
+    },
+    {
+      "word": "offers",
+      "mi": 0.2762638452814462,
+      "category": "generic_other"
+    },
+    {
+      "word": "comfort",
+      "mi": 0.27579444907156214,
+      "category": "generic_other"
+    },
+    {
+      "word": "space",
+      "mi": 0.2756053296847481,
+      "category": "generic_other"
+    },
+    {
+      "word": "street",
+      "mi": 0.2745298498922143,
+      "category": "generic_other"
+    },
+    {
+      "word": "custom",
+      "mi": 0.2734932101899631,
+      "category": "generic_other"
+    },
+    {
+      "word": "fully",
+      "mi": 0.2724609487730404,
+      "category": "generic_other"
+    },
+    {
+      "word": "near",
+      "mi": 0.2722629496616573,
+      "category": "amenity"
+    },
+    {
+      "word": "well",
+      "mi": 0.27203704222025293,
+      "category": "generic_other"
+    },
+    {
+      "word": "you",
+      "mi": 0.2704139040344531,
+      "category": "generic_other"
+    },
+    {
+      "word": "kitchen",
+      "mi": 0.2703401117204027,
+      "category": "generic_other"
+    },
+    {
+      "word": "doorman",
+      "mi": 0.26999475885420793,
+      "category": "generic_other"
+    },
+    {
+      "word": "primary",
+      "mi": 0.26959382498805057,
+      "category": "generic_other"
+    },
+    {
+      "word": "new",
+      "mi": 0.2685612254543208,
+      "category": "generic_other"
+    },
+    {
+      "word": "oversized",
+      "mi": 0.2676405734919539,
+      "category": "generic_other"
+    },
+    {
+      "word": "renovated",
+      "mi": 0.26691715089821544,
+      "category": "aesthetic"
+    },
+    {
+      "word": "access",
+      "mi": 0.2668509768503762,
+      "category": "generic_other"
+    },
+    {
+      "word": "high",
+      "mi": 0.2663163835863126,
+      "category": "generic_other"
+    },
+    {
+      "word": "featuring",
+      "mi": 0.26591693269165395,
+      "category": "generic_other"
+    },
+    {
+      "word": "floors",
+      "mi": 0.2657271470643694,
+      "category": "generic_other"
+    },
+    {
+      "word": "rare",
+      "mi": 0.2655319697520493,
+      "category": "aesthetic"
+    },
+    {
+      "word": "outdoor",
+      "mi": 0.26531650806728013,
+      "category": "generic_other"
+    },
+    {
+      "word": "into",
+      "mi": 0.2652334433225303,
+      "category": "generic_other"
+    },
+    {
+      "word": "subway",
+      "mi": 0.2646516162950021,
+      "category": "amenity"
+    },
+    {
+      "word": "your",
+      "mi": 0.2645977789290875,
+      "category": "generic_other"
+    },
+    {
+      "word": "that",
+      "mi": 0.2645094305900532,
+      "category": "generic_other"
+    },
+    {
+      "word": "layout",
+      "mi": 0.2644264380581103,
+      "category": "generic_other"
+    },
+    {
+      "word": "closet",
+      "mi": 0.26437013476137444,
+      "category": "generic_other"
+    },
+    {
+      "word": "provides",
+      "mi": 0.2642930183199663,
+      "category": "generic_other"
+    },
+    {
+      "word": "heart",
+      "mi": 0.2639921575401712,
+      "category": "generic_other"
+    },
+    {
+      "word": "maintained",
+      "mi": 0.26314389319268744,
+      "category": "generic_other"
+    },
+    {
+      "word": "including",
+      "mi": 0.2629952605127562,
+      "category": "generic_other"
+    },
+    {
+      "word": "island",
+      "mi": 0.26292350194930997,
+      "category": "generic_other"
+    },
+    {
+      "word": "enjoy",
+      "mi": 0.26091072290322176,
+      "category": "generic_other"
+    },
+    {
+      "word": "garage",
+      "mi": 0.26042485071757554,
+      "category": "generic_other"
+    },
+    {
+      "word": "private",
+      "mi": 0.2599012134272165,
+      "category": "aesthetic"
+    },
+    {
+      "word": "its",
+      "mi": 0.25955086834231145,
+      "category": "generic_other"
+    },
+    {
+      "word": "convenience",
+      "mi": 0.25953455708119205,
+      "category": "generic_other"
+    },
+    {
+      "word": "just",
+      "mi": 0.25952601567664907,
+      "category": "generic_other"
+    },
+    {
+      "word": "west",
+      "mi": 0.2595000534398146,
+      "category": "place_name"
+    },
+    {
+      "word": "shopping",
+      "mi": 0.2591582317679204,
+      "category": "amenity"
+    },
+    {
+      "word": "exceptional",
+      "mi": 0.25819718788332296,
+      "category": "generic_other"
+    },
+    {
+      "word": "appliances",
+      "mi": 0.25763837629758524,
+      "category": "generic_other"
+    },
+    {
+      "word": "steel",
+      "mi": 0.2575639622766801,
+      "category": "generic_other"
+    },
+    {
+      "word": "manhattan",
+      "mi": 0.25714824988081597,
+      "category": "place_name"
+    },
+    {
+      "word": "throughout",
+      "mi": 0.2564174337991088,
+      "category": "generic_other"
+    },
+    {
+      "word": "laundry",
+      "mi": 0.2561191361741039,
+      "category": "generic_other"
+    },
+    {
+      "word": "driveway",
+      "mi": 0.25607476465135515,
+      "category": "generic_other"
+    },
+    {
+      "word": "three",
+      "mi": 0.25581832439300134,
+      "category": "generic_other"
+    },
+    {
+      "word": "complete",
+      "mi": 0.25580719256044515,
+      "category": "generic_other"
+    },
+    {
+      "word": "room",
+      "mi": 0.2547803134610213,
+      "category": "generic_other"
+    },
+    {
+      "word": "wall",
+      "mi": 0.25421555916997673,
+      "category": "generic_other"
+    },
+    {
+      "word": "two",
+      "mi": 0.25413833575269223,
+      "category": "generic_other"
+    },
+    {
+      "word": "updated",
+      "mi": 0.25317007515153594,
+      "category": "aesthetic"
+    },
+    {
+      "word": "bathrooms",
+      "mi": 0.2524750750868915,
+      "category": "generic_other"
+    },
+    {
+      "word": "countertops",
+      "mi": 0.2520891837118326,
+      "category": "generic_other"
+    },
+    {
+      "word": "additional",
+      "mi": 0.2520164216123317,
+      "category": "generic_other"
+    },
+    {
+      "word": "natural",
+      "mi": 0.25175731858664274,
+      "category": "generic_other"
+    }
+  ]
+}

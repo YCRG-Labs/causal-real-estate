@@ -1,0 +1,532 @@
+{
+  "city": "boston",
+  "n_descriptions": 997,
+  "n_zips": 33,
+  "n_stylometric_features": 222,
+  "stylometric_classifier": {
+    "accuracy": 0.9504178844280368,
+    "accuracy_sd": 0.014781203783596769,
+    "random_baseline_uniform": 0.03333333333333333,
+    "random_baseline_majority": 0.05212960382894328,
+    "ratio_uniform": 28.512536532841104,
+    "n_classes": 30,
+    "n_obs": 988
+  },
+  "full_embedding_classifier": {
+    "accuracy": 0.9787776239552889,
+    "accuracy_sd": 0.016713343332321093,
+    "random_baseline_uniform": 0.03333333333333333,
+    "random_baseline_majority": 0.05212960382894328,
+    "ratio_uniform": 29.363328718658668,
+    "n_classes": 30,
+    "n_obs": 988
+  },
+  "top_words_by_category": {
+    "generic_other": 83,
+    "place_name": 8,
+    "amenity": 6,
+    "aesthetic": 3
+  },
+  "top_words_table": [
+    {
+      "word": "bay",
+      "mi": 0.2619206011537405,
+      "category": "place_name"
+    },
+    {
+      "word": "south",
+      "mi": 0.2580207244990976,
+      "category": "place_name"
+    },
+    {
+      "word": "hill",
+      "mi": 0.19810456767751117,
+      "category": "generic_other"
+    },
+    {
+      "word": "back",
+      "mi": 0.18833744342649555,
+      "category": "generic_other"
+    },
+    {
+      "word": "dorchester",
+      "mi": 0.17109117880458893,
+      "category": "generic_other"
+    },
+    {
+      "word": "jamaica",
+      "mi": 0.16795068991028883,
+      "category": "place_name"
+    },
+    {
+      "word": "beacon",
+      "mi": 0.16301811392325227,
+      "category": "generic_other"
+    },
+    {
+      "word": "fenway",
+      "mi": 0.14683173897911628,
+      "category": "generic_other"
+    },
+    {
+      "word": "boston",
+      "mi": 0.14134447056946323,
+      "category": "generic_other"
+    },
+    {
+      "word": "seaport",
+      "mi": 0.13990598140249785,
+      "category": "generic_other"
+    },
+    {
+      "word": "commuter",
+      "mi": 0.1361670872961516,
+      "category": "generic_other"
+    },
+    {
+      "word": "brighton",
+      "mi": 0.1358327868546151,
+      "category": "place_name"
+    },
+    {
+      "word": "charles",
+      "mi": 0.1330558596505429,
+      "category": "generic_other"
+    },
+    {
+      "word": "newbury",
+      "mi": 0.13253137255884306,
+      "category": "generic_other"
+    },
+    {
+      "word": "east",
+      "mi": 0.13250522822315222,
+      "category": "place_name"
+    },
+    {
+      "word": "rail",
+      "mi": 0.13111721802997378,
+      "category": "generic_other"
+    },
+    {
+      "word": "longwood",
+      "mi": 0.1286824480398029,
+      "category": "generic_other"
+    },
+    {
+      "word": "roxbury",
+      "mi": 0.12631654395746905,
+      "category": "generic_other"
+    },
+    {
+      "word": "medical",
+      "mi": 0.12563820972140483,
+      "category": "generic_other"
+    },
+    {
+      "word": "roslindale",
+      "mi": 0.12436211027817773,
+      "category": "generic_other"
+    },
+    {
+      "word": "views",
+      "mi": 0.12218812018272479,
+      "category": "generic_other"
+    },
+    {
+      "word": "park",
+      "mi": 0.12036434862768568,
+      "category": "amenity"
+    },
+    {
+      "word": "end",
+      "mi": 0.11907808341512145,
+      "category": "generic_other"
+    },
+    {
+      "word": "primary",
+      "mi": 0.11902018447936726,
+      "category": "generic_other"
+    },
+    {
+      "word": "river",
+      "mi": 0.11852896726570455,
+      "category": "generic_other"
+    },
+    {
+      "word": "pond",
+      "mi": 0.11733345699708127,
+      "category": "generic_other"
+    },
+    {
+      "word": "basement",
+      "mi": 0.11144453823959763,
+      "category": "generic_other"
+    },
+    {
+      "word": "charlestown",
+      "mi": 0.11115925249495767,
+      "category": "generic_other"
+    },
+    {
+      "word": "pool",
+      "mi": 0.1092667034629459,
+      "category": "generic_other"
+    },
+    {
+      "word": "plain",
+      "mi": 0.10704446632771275,
+      "category": "generic_other"
+    },
+    {
+      "word": "west",
+      "mi": 0.10609624823957241,
+      "category": "place_name"
+    },
+    {
+      "word": "easy",
+      "mi": 0.10452029980322089,
+      "category": "generic_other"
+    },
+    {
+      "word": "private",
+      "mi": 0.10350450928716155,
+      "category": "aesthetic"
+    },
+    {
+      "word": "broadway",
+      "mi": 0.09956978540895939,
+      "category": "generic_other"
+    },
+    {
+      "word": "marble",
+      "mi": 0.09928745977161448,
+      "category": "generic_other"
+    },
+    {
+      "word": "village",
+      "mi": 0.09908904151396733,
+      "category": "generic_other"
+    },
+    {
+      "word": "airport",
+      "mi": 0.09740626301841533,
+      "category": "generic_other"
+    },
+    {
+      "word": "maverick",
+      "mi": 0.09707351793109018,
+      "category": "generic_other"
+    },
+    {
+      "word": "district",
+      "mi": 0.09490997004266022,
+      "category": "generic_other"
+    },
+    {
+      "word": "green",
+      "mi": 0.09332797122874638,
+      "category": "generic_other"
+    },
+    {
+      "word": "transit",
+      "mi": 0.09289982261475627,
+      "category": "amenity"
+    },
+    {
+      "word": "cabinetry",
+      "mi": 0.09146670182046684,
+      "category": "generic_other"
+    },
+    {
+      "word": "suite",
+      "mi": 0.09139432202672677,
+      "category": "generic_other"
+    },
+    {
+      "word": "direct",
+      "mi": 0.09099813120385333,
+      "category": "generic_other"
+    },
+    {
+      "word": "yard",
+      "mi": 0.09094224670811646,
+      "category": "amenity"
+    },
+    {
+      "word": "four",
+      "mi": 0.0902811351989147,
+      "category": "generic_other"
+    },
+    {
+      "word": "lower",
+      "mi": 0.09004770476110677,
+      "category": "place_name"
+    },
+    {
+      "word": "room",
+      "mi": 0.08929471548601887,
+      "category": "generic_other"
+    },
+    {
+      "word": "garden",
+      "mi": 0.08893018271002673,
+      "category": "amenity"
+    },
+    {
+      "word": "hyde",
+      "mi": 0.08876112234138492,
+      "category": "generic_other"
+    },
+    {
+      "word": "three",
+      "mi": 0.0885888126905732,
+      "category": "generic_other"
+    },
+    {
+      "word": "residence",
+      "mi": 0.08808788000706222,
+      "category": "generic_other"
+    },
+    {
+      "word": "studio",
+      "mi": 0.08753565902595736,
+      "category": "generic_other"
+    },
+    {
+      "word": "blue",
+      "mi": 0.08736584634773135,
+      "category": "generic_other"
+    },
+    {
+      "word": "island",
+      "mi": 0.08711538246471441,
+      "category": "generic_other"
+    },
+    {
+      "word": "beautifully",
+      "mi": 0.08686503402070982,
+      "category": "generic_other"
+    },
+    {
+      "word": "deck",
+      "mi": 0.08682844146823601,
+      "category": "generic_other"
+    },
+    {
+      "word": "harbor",
+      "mi": 0.08659917260454397,
+      "category": "generic_other"
+    },
+    {
+      "word": "city",
+      "mi": 0.0864901672852583,
+      "category": "generic_other"
+    },
+    {
+      "word": "expansive",
+      "mi": 0.08629899658810376,
+      "category": "generic_other"
+    },
+    {
+      "word": "concierge",
+      "mi": 0.08605166266728252,
+      "category": "generic_other"
+    },
+    {
+      "word": "chef",
+      "mi": 0.08547946707317888,
+      "category": "generic_other"
+    },
+    {
+      "word": "rental",
+      "mi": 0.08545548751538329,
+      "category": "generic_other"
+    },
+    {
+      "word": "off",
+      "mi": 0.08534982560170548,
+      "category": "generic_other"
+    },
+    {
+      "word": "building",
+      "mi": 0.08516409501545966,
+      "category": "generic_other"
+    },
+    {
+      "word": "gas",
+      "mi": 0.08487536750495234,
+      "category": "generic_other"
+    },
+    {
+      "word": "waterfront",
+      "mi": 0.08483477951852572,
+      "category": "generic_other"
+    },
+    {
+      "word": "bedrooms",
+      "mi": 0.08412933724631105,
+      "category": "generic_other"
+    },
+    {
+      "word": "harvard",
+      "mi": 0.08395918397593641,
+      "category": "generic_other"
+    },
+    {
+      "word": "everyday",
+      "mi": 0.08387872702950064,
+      "category": "generic_other"
+    },
+    {
+      "word": "savin",
+      "mi": 0.08379302022759615,
+      "category": "generic_other"
+    },
+    {
+      "word": "historic",
+      "mi": 0.08367083069922054,
+      "category": "generic_other"
+    },
+    {
+      "word": "property",
+      "mi": 0.08318024006265044,
+      "category": "generic_other"
+    },
+    {
+      "word": "tree",
+      "mi": 0.0830175472814471,
+      "category": "generic_other"
+    },
+    {
+      "word": "common",
+      "mi": 0.08300259537402618,
+      "category": "generic_other"
+    },
+    {
+      "word": "custom",
+      "mi": 0.08290960480116571,
+      "category": "generic_other"
+    },
+    {
+      "word": "full",
+      "mi": 0.08287117127887327,
+      "category": "generic_other"
+    },
+    {
+      "word": "red",
+      "mi": 0.08274830949176912,
+      "category": "generic_other"
+    },
+    {
+      "word": "vibrant",
+      "mi": 0.0826493893504864,
+      "category": "generic_other"
+    },
+    {
+      "word": "floor",
+      "mi": 0.08251327884249549,
+      "category": "generic_other"
+    },
+    {
+      "word": "driveway",
+      "mi": 0.08155210867440485,
+      "category": "generic_other"
+    },
+    {
+      "word": "near",
+      "mi": 0.0815515203399571,
+      "category": "amenity"
+    },
+    {
+      "word": "includes",
+      "mi": 0.08142576457909584,
+      "category": "generic_other"
+    },
+    {
+      "word": "bathroom",
+      "mi": 0.08116997646049434,
+      "category": "generic_other"
+    },
+    {
+      "word": "flexibility",
+      "mi": 0.08068182253281278,
+      "category": "generic_other"
+    },
+    {
+      "word": "luxurious",
+      "mi": 0.08018737652975083,
+      "category": "aesthetic"
+    },
+    {
+      "word": "renovated",
+      "mi": 0.08013705768062673,
+      "category": "aesthetic"
+    },
+    {
+      "word": "lounge",
+      "mi": 0.07944120478259192,
+      "category": "generic_other"
+    },
+    {
+      "word": "included",
+      "mi": 0.07888734635609,
+      "category": "generic_other"
+    },
+    {
+      "word": "arboretum",
+      "mi": 0.07871114649648259,
+      "category": "generic_other"
+    },
+    {
+      "word": "fireplace",
+      "mi": 0.0783570604173544,
+      "category": "generic_other"
+    },
+    {
+      "word": "balcony",
+      "mi": 0.0779235802348279,
+      "category": "generic_other"
+    },
+    {
+      "word": "valet",
+      "mi": 0.07789172761021433,
+      "category": "generic_other"
+    },
+    {
+      "word": "offers",
+      "mi": 0.07779643570553134,
+      "category": "generic_other"
+    },
+    {
+      "word": "amenities",
+      "mi": 0.07753172339987571,
+      "category": "generic_other"
+    },
+    {
+      "word": "fort",
+      "mi": 0.07750064600810432,
+      "category": "generic_other"
+    },
+    {
+      "word": "foot",
+      "mi": 0.07743659322541083,
+      "category": "generic_other"
+    },
+    {
+      "word": "downtown",
+      "mi": 0.07697619560483292,
+      "category": "place_name"
+    },
+    {
+      "word": "steps",
+      "mi": 0.07670718942774686,
+      "category": "amenity"
+    },
+    {
+      "word": "strong",
+      "mi": 0.07667383947209307,
+      "category": "generic_other"
+    }
+  ]
+}

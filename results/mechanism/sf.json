@@ -1,0 +1,533 @@
+{
+  "city": "sf",
+  "n_descriptions": 995,
+  "n_zips": 24,
+  "n_stylometric_features": 222,
+  "stylometric_classifier": {
+    "accuracy": 0.9306532663316582,
+    "accuracy_sd": 0.020937353423115215,
+    "random_baseline_uniform": 0.041666666666666664,
+    "random_baseline_majority": 0.058207621019671224,
+    "ratio_uniform": 22.3356783919598,
+    "n_classes": 24,
+    "n_obs": 995
+  },
+  "full_embedding_classifier": {
+    "accuracy": 0.9738693467336684,
+    "accuracy_sd": 0.01943626091036553,
+    "random_baseline_uniform": 0.041666666666666664,
+    "random_baseline_majority": 0.058207621019671224,
+    "ratio_uniform": 23.372864321608045,
+    "n_classes": 24,
+    "n_obs": 995
+  },
+  "top_words_by_category": {
+    "generic_other": 77,
+    "place_name": 16,
+    "amenity": 5,
+    "architectural": 1,
+    "aesthetic": 1
+  },
+  "top_words_table": [
+    {
+      "word": "gate",
+      "mi": 0.18805019786061603,
+      "category": "generic_other"
+    },
+    {
+      "word": "golden",
+      "mi": 0.1787325298297509,
+      "category": "generic_other"
+    },
+    {
+      "word": "mission",
+      "mi": 0.1692892587008491,
+      "category": "place_name"
+    },
+    {
+      "word": "ocean",
+      "mi": 0.1669757208620762,
+      "category": "generic_other"
+    },
+    {
+      "word": "valley",
+      "mi": 0.16570114096646876,
+      "category": "generic_other"
+    },
+    {
+      "word": "building",
+      "mi": 0.15299012385783275,
+      "category": "generic_other"
+    },
+    {
+      "word": "hill",
+      "mi": 0.14776264087645277,
+      "category": "generic_other"
+    },
+    {
+      "word": "nob",
+      "mi": 0.1464833480405488,
+      "category": "place_name"
+    },
+    {
+      "word": "backyard",
+      "mi": 0.14232324504029742,
+      "category": "generic_other"
+    },
+    {
+      "word": "noe",
+      "mi": 0.14069573619039707,
+      "category": "place_name"
+    },
+    {
+      "word": "polk",
+      "mi": 0.1348010396966719,
+      "category": "generic_other"
+    },
+    {
+      "word": "caltrain",
+      "mi": 0.13281911602121052,
+      "category": "generic_other"
+    },
+    {
+      "word": "pacific",
+      "mi": 0.13187458965299861,
+      "category": "place_name"
+    },
+    {
+      "word": "beach",
+      "mi": 0.1315067043058727,
+      "category": "generic_other"
+    },
+    {
+      "word": "fillmore",
+      "mi": 0.12859425524390206,
+      "category": "generic_other"
+    },
+    {
+      "word": "level",
+      "mi": 0.12622781955550932,
+      "category": "generic_other"
+    },
+    {
+      "word": "heights",
+      "mi": 0.12332225206289395,
+      "category": "generic_other"
+    },
+    {
+      "word": "lower",
+      "mi": 0.12099427123516583,
+      "category": "place_name"
+    },
+    {
+      "word": "bedrooms",
+      "mi": 0.11454351897613149,
+      "category": "generic_other"
+    },
+    {
+      "word": "bridge",
+      "mi": 0.11445026328200564,
+      "category": "generic_other"
+    },
+    {
+      "word": "coastal",
+      "mi": 0.1130307144262874,
+      "category": "generic_other"
+    },
+    {
+      "word": "bart",
+      "mi": 0.10909769313550408,
+      "category": "amenity"
+    },
+    {
+      "word": "fitness",
+      "mi": 0.10254215125895907,
+      "category": "generic_other"
+    },
+    {
+      "word": "richmond",
+      "mi": 0.10234086613855937,
+      "category": "place_name"
+    },
+    {
+      "word": "village",
+      "mi": 0.10218457776537268,
+      "category": "generic_other"
+    },
+    {
+      "word": "district",
+      "mi": 0.10106490173770132,
+      "category": "generic_other"
+    },
+    {
+      "word": "pool",
+      "mi": 0.09980042192532847,
+      "category": "generic_other"
+    },
+    {
+      "word": "union",
+      "mi": 0.09866617220143392,
+      "category": "generic_other"
+    },
+    {
+      "word": "main",
+      "mi": 0.09611759525732437,
+      "category": "generic_other"
+    },
+    {
+      "word": "financial",
+      "mi": 0.09409456859429285,
+      "category": "generic_other"
+    },
+    {
+      "word": "street",
+      "mi": 0.09257273625083888,
+      "category": "generic_other"
+    },
+    {
+      "word": "valencia",
+      "mi": 0.09226109775249437,
+      "category": "generic_other"
+    },
+    {
+      "word": "family",
+      "mi": 0.09189620777852917,
+      "category": "generic_other"
+    },
+    {
+      "word": "castro",
+      "mi": 0.09179596334897341,
+      "category": "place_name"
+    },
+    {
+      "word": "ceilings",
+      "mi": 0.09117421764314175,
+      "category": "generic_other"
+    },
+    {
+      "word": "rooftop",
+      "mi": 0.09090706133570808,
+      "category": "generic_other"
+    },
+    {
+      "word": "presidio",
+      "mi": 0.09072398639127216,
+      "category": "place_name"
+    },
+    {
+      "word": "amenities",
+      "mi": 0.09014204609562666,
+      "category": "generic_other"
+    },
+    {
+      "word": "parking",
+      "mi": 0.08982700320662526,
+      "category": "generic_other"
+    },
+    {
+      "word": "marina",
+      "mi": 0.08963560696633457,
+      "category": "place_name"
+    },
+    {
+      "word": "victorian",
+      "mi": 0.0890279356639593,
+      "category": "architectural"
+    },
+    {
+      "word": "formal",
+      "mi": 0.08810167386461173,
+      "category": "generic_other"
+    },
+    {
+      "word": "unit",
+      "mi": 0.08678548794746621,
+      "category": "generic_other"
+    },
+    {
+      "word": "dolores",
+      "mi": 0.08653337062783352,
+      "category": "generic_other"
+    },
+    {
+      "word": "garage",
+      "mi": 0.08619806861417623,
+      "category": "generic_other"
+    },
+    {
+      "word": "park",
+      "mi": 0.08603649624266389,
+      "category": "amenity"
+    },
+    {
+      "word": "sacramento",
+      "mi": 0.0857406342517616,
+      "category": "generic_other"
+    },
+    {
+      "word": "sunset",
+      "mi": 0.08533721166069923,
+      "category": "place_name"
+    },
+    {
+      "word": "hour",
+      "mi": 0.0844525723103871,
+      "category": "generic_other"
+    },
+    {
+      "word": "center",
+      "mi": 0.08404045047088485,
+      "category": "generic_other"
+    },
+    {
+      "word": "lake",
+      "mi": 0.08377545024102502,
+      "category": "generic_other"
+    },
+    {
+      "word": "ferry",
+      "mi": 0.08320122890291842,
+      "category": "generic_other"
+    },
+    {
+      "word": "glen",
+      "mi": 0.08300269323485467,
+      "category": "place_name"
+    },
+    {
+      "word": "bike",
+      "mi": 0.08135221988107949,
+      "category": "generic_other"
+    },
+    {
+      "word": "terrace",
+      "mi": 0.08076243072391508,
+      "category": "generic_other"
+    },
+    {
+      "word": "bay",
+      "mi": 0.08012454551038958,
+      "category": "place_name"
+    },
+    {
+      "word": "oracle",
+      "mi": 0.0798586241558994,
+      "category": "generic_other"
+    },
+    {
+      "word": "potrero",
+      "mi": 0.0794107056582463,
+      "category": "place_name"
+    },
+    {
+      "word": "residents",
+      "mi": 0.07917189153988663,
+      "category": "generic_other"
+    },
+    {
+      "word": "north",
+      "mi": 0.0788102555338915,
+      "category": "place_name"
+    },
+    {
+      "word": "embarcadero",
+      "mi": 0.07871604159668734,
+      "category": "generic_other"
+    },
+    {
+      "word": "chestnut",
+      "mi": 0.07690417889254447,
+      "category": "generic_other"
+    },
+    {
+      "word": "chase",
+      "mi": 0.07688891968634137,
+      "category": "generic_other"
+    },
+    {
+      "word": "extended",
+      "mi": 0.07681990130629247,
+      "category": "generic_other"
+    },
+    {
+      "word": "portola",
+      "mi": 0.07605102161238543,
+      "category": "generic_other"
+    },
+    {
+      "word": "fireplace",
+      "mi": 0.07497863992272517,
+      "category": "generic_other"
+    },
+    {
+      "word": "concierge",
+      "mi": 0.07469170763732878,
+      "category": "generic_other"
+    },
+    {
+      "word": "south",
+      "mi": 0.07445295793205642,
+      "category": "place_name"
+    },
+    {
+      "word": "balboa",
+      "mi": 0.07327094033387269,
+      "category": "generic_other"
+    },
+    {
+      "word": "room",
+      "mi": 0.07307733711785783,
+      "category": "generic_other"
+    },
+    {
+      "word": "period",
+      "mi": 0.07305941445972876,
+      "category": "generic_other"
+    },
+    {
+      "word": "lounge",
+      "mi": 0.07276944782148352,
+      "category": "generic_other"
+    },
+    {
+      "word": "russian",
+      "mi": 0.0727580540005662,
+      "category": "generic_other"
+    },
+    {
+      "word": "city",
+      "mi": 0.07260463577440733,
+      "category": "generic_other"
+    },
+    {
+      "word": "clement",
+      "mi": 0.07237275960238698,
+      "category": "generic_other"
+    },
+    {
+      "word": "downtown",
+      "mi": 0.07202672143728475,
+      "category": "place_name"
+    },
+    {
+      "word": "avenue",
+      "mi": 0.07118423907748428,
+      "category": "generic_other"
+    },
+    {
+      "word": "security",
+      "mi": 0.07104732867263407,
+      "category": "generic_other"
+    },
+    {
+      "word": "iconic",
+      "mi": 0.07058098212535008,
+      "category": "aesthetic"
+    },
+    {
+      "word": "primary",
+      "mi": 0.07028334694782995,
+      "category": "generic_other"
+    },
+    {
+      "word": "laurel",
+      "mi": 0.07009827727204818,
+      "category": "generic_other"
+    },
+    {
+      "word": "soma",
+      "mi": 0.0698292322457292,
+      "category": "generic_other"
+    },
+    {
+      "word": "garden",
+      "mi": 0.06971000908609121,
+      "category": "amenity"
+    },
+    {
+      "word": "rear",
+      "mi": 0.06947148828829704,
+      "category": "generic_other"
+    },
+    {
+      "word": "tower",
+      "mi": 0.06915312968410962,
+      "category": "generic_other"
+    },
+    {
+      "word": "hollow",
+      "mi": 0.06820529227970647,
+      "category": "generic_other"
+    },
+    {
+      "word": "cow",
+      "mi": 0.06820529227970647,
+      "category": "generic_other"
+    },
+    {
+      "word": "from",
+      "mi": 0.06819027243505024,
+      "category": "generic_other"
+    },
+    {
+      "word": "tech",
+      "mi": 0.0679065943858624,
+      "category": "generic_other"
+    },
+    {
+      "word": "easy",
+      "mi": 0.06787627400630405,
+      "category": "generic_other"
+    },
+    {
+      "word": "major",
+      "mi": 0.06775621302132752,
+      "category": "generic_other"
+    },
+    {
+      "word": "parkside",
+      "mi": 0.06765986725139753,
+      "category": "generic_other"
+    },
+    {
+      "word": "refined",
+      "mi": 0.06743410394718606,
+      "category": "generic_other"
+    },
+    {
+      "word": "blocks",
+      "mi": 0.0674070778769356,
+      "category": "amenity"
+    },
+    {
+      "word": "shared",
+      "mi": 0.06735668139790882,
+      "category": "generic_other"
+    },
+    {
+      "word": "guests",
+      "mi": 0.06732363428772609,
+      "category": "generic_other"
+    },
+    {
+      "word": "best",
+      "mi": 0.06682771120073375,
+      "category": "generic_other"
+    },
+    {
+      "word": "classic",
+      "mi": 0.06665820144539761,
+      "category": "generic_other"
+    },
+    {
+      "word": "salesforce",
+      "mi": 0.06637879212456596,
+      "category": "generic_other"
+    },
+    {
+      "word": "dining",
+      "mi": 0.06635037294961967,
+      "category": "amenity"
+    }
+  ]
+}
