@@ -25,6 +25,7 @@ What we provide instead, for each obligation:
 | Proposition 2(b1) (algebraic identity) | Algebraic | `04_algebraic_identity.py` | SymPy: V̂_Φ = H(C) − inf_ψ L̂_Φ(ψ) |
 | Proposition 2(b2) (consistency of post-hoc V̂) | Asymptotic | `05_consistency_rate.py` | Monte Carlo n-sweep + log-log slope |
 | Proposition 2(c) (XOR saddle gap) | Constructive existence | `06_xor_construction.py` | Wraps `data/scripts/theory/frozen_probe_gap.py`; assert V̂_Φ ≈ 0, V̂_Φ' ≈ log 2 |
+| Proposition 2(c) tightening (joint-game saddle existence + collapsed-encoder counterexample) | Explicit construction + α-sweep | `07_saddle_verification.py` | Constructs φ_id and φ_collapse; verifies counterexample to "every saddle" + existence under joint game |
 
 ## Running
 
