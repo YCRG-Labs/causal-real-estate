@@ -20,12 +20,12 @@
       "X"
     ],
     "adjustment_set_matches_paper": true,
-    "estimand_text_excerpt": "Estimand type: EstimandType.NONPARAMETRIC_ATE\n\n### Estimand : 1\nEstimand name: backdoor\nEstimand expression:\n d              \n\u2500\u2500\u2500\u2500(E[Y|C,X,L])\nd[T]            \nEstimand assumption 1, Unconfoundedness: If U\u2192{T} and U\u2192Y then P(Y|T,C,X,L,U) = P(Y|T,C,X,L)\n\n### Estimand : 2\nEstimand name: iv\nNo such variable(s) found!\n\n### Estimand : 3\nEstimand name: frontdoor\nNo such variable(s) found!\n\n### Estimand : 4\nEstimand name: general_adjustment\nEstimand expression:\n d              \n\u2500\u2500\u2500\u2500(E[Y|C,X,L])\nd[T]            \nEstimand assumption 1, Unconfoundedness: If U\u2192{T} and U\u2192Y then P(Y|T,C,X,L,U) = P(Y|T,C,X,",
+    "estimand_text_excerpt": "Estimand type: EstimandType.NONPARAMETRIC_ATE\n\n### Estimand : 1\nEstimand name: backdoor\nEstimand expression:\n d              \n\u2500\u2500\u2500\u2500(E[Y|C,L,X])\nd[T]            \nEstimand assumption 1, Unconfoundedness: If U\u2192{T} and U\u2192Y then P(Y|T,C,L,X,U) = P(Y|T,C,L,X)\n\n### Estimand : 2\nEstimand name: iv\nNo such variable(s) found!\n\n### Estimand : 3\nEstimand name: frontdoor\nNo such variable(s) found!\n\n### Estimand : 4\nEstimand name: general_adjustment\nEstimand expression:\n d              \n\u2500\u2500\u2500\u2500(E[Y|C,L,X])\nd[T]            \nEstimand assumption 1, Unconfoundedness: If U\u2192{T} and U\u2192Y then P(Y|T,C,L,X,U) = P(Y|T,C,L,",
     "holds": true
   },
   "sanity_estimate_under_hypothetical_scm": {
     "note": "DGP has zero causal effect of T on Y; estimate via backdoor adjustment on hypothetical T->Y SCM should be near zero.",
-    "point_estimate": 0.06105028675617215,
+    "point_estimate": 0.06105028675617177,
     "near_zero": true
   }
 }
