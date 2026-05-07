@@ -1,0 +1,9 @@
+pgmpy==1.0.0
+dowhy==0.14
+sympy==1.14.0
+numpy>=1.26
+scipy>=1.11
+scikit-learn>=1.4
+torch>=2.0
+networkx>=3.2
+matplotlib>=3.7

@@ -1,0 +1,21 @@
+{
+  "verdict": "PASS",
+  "symbolic_identity": {
+    "claim": "V\u0302_\u03a6(Z; C) = H(C) - inf_\u03c8 L\u0302_\u03a6(\u03c8)",
+    "L_hat_expression": "-log(q2)/2 - log(1 - q1)/2",
+    "V_hat_definition": "H_C + log(q2)/2 + log(1 - q1)/2",
+    "V_hat_rewriting": "H_C + log(q2)/2 + log(1 - q1)/2",
+    "definitional_difference_simplifies_to_zero": true,
+    "inf_L_hat_at_perfect_classifier": "0",
+    "inf_is_zero_under_perfect_classifier": true
+  },
+  "numerical_identity": {
+    "claim": "V\u0302_\u03a6 computed two ways agrees",
+    "H_C_nats": 0.6930751785400071,
+    "L_star_nats": 0.0603245347738266,
+    "V_via_H_minus_Lstar": 0.6327506437661805,
+    "V_via_direct_BA_at_argmax": 0.6327506363155999,
+    "absolute_difference": 7.450580596923828e-09,
+    "agree_to_tolerance": true
+  }
+}

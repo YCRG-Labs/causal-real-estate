@@ -1,0 +1,113 @@
+{
+  "verdict": "PASS",
+  "scm_dag": {
+    "nodes": [
+      "C",
+      "L",
+      "T",
+      "X",
+      "Y"
+    ],
+    "edges": [
+      [
+        "C",
+        "T"
+      ],
+      [
+        "C",
+        "Y"
+      ],
+      [
+        "L",
+        "C"
+      ],
+      [
+        "L",
+        "T"
+      ],
+      [
+        "L",
+        "X"
+      ],
+      [
+        "L",
+        "Y"
+      ],
+      [
+        "X",
+        "T"
+      ],
+      [
+        "X",
+        "Y"
+      ]
+    ],
+    "parents_of_Y": [
+      "C",
+      "L",
+      "X"
+    ],
+    "parents_of_T": [
+      "C",
+      "L",
+      "X"
+    ]
+  },
+  "lemma_1_dseparation": {
+    "claim": "{L, X, C} d-separates T from Y",
+    "holds": true,
+    "n_paths_T_to_Y": 9,
+    "all_paths_blocked": true,
+    "minimality_check": {
+      "subsets_tested": [
+        {
+          "observed": [
+            "C",
+            "X"
+          ],
+          "d_separated": false
+        },
+        {
+          "observed": [
+            "C",
+            "L"
+          ],
+          "d_separated": false
+        },
+        {
+          "observed": [
+            "L",
+            "X"
+          ],
+          "d_separated": false
+        },
+        {
+          "observed": [
+            "C",
+            "L",
+            "X"
+          ],
+          "d_separated": true
+        }
+      ],
+      "all_strict_subsets_d_connected": true
+    }
+  },
+  "theorem_1_backdoor_adjustment": {
+    "claim": "{L, X, C} satisfies the backdoor criterion",
+    "no_descendants_of_T_in_adjustment": true,
+    "all_backdoor_paths_blocked": true,
+    "n_backdoor_paths": 9,
+    "holds": true
+  },
+  "proposition_1_zero_causal_effect": {
+    "claim": "T not a parent of Y AND no directed T -> Y path",
+    "no_direct_edge_T_to_Y": true,
+    "no_directed_path_T_to_Y": true,
+    "holds": true
+  },
+  "corollary_1_zero_under_true_scm": {
+    "claim": "T not in Pa(Y), so do(T) is inert on Y",
+    "holds": true
+  }
+}

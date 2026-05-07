@@ -1,0 +1,31 @@
+{
+  "verdict": "PASS",
+  "proposition_1_under_true_scm": {
+    "claim": "Under SCM with no T->Y edge, DoWhy must declare zero causal effect.",
+    "dowhy_declares_zero": true,
+    "estimand_text": "No directed path from ['T'] to ['Y'] in the causal graph.\nCausal effect is zero.",
+    "holds": true
+  },
+  "theorem_1_2_under_hypothetical_scm": {
+    "claim": "If T->Y were added, the backdoor adjustment set would be {L,X,C}.",
+    "dowhy_returned_backdoor_estimand": true,
+    "dowhy_backdoor_variables": [
+      "C",
+      "L",
+      "X"
+    ],
+    "expected_adjustment_set": [
+      "C",
+      "L",
+      "X"
+    ],
+    "adjustment_set_matches_paper": true,
+    "estimand_text_excerpt": "Estimand type: EstimandType.NONPARAMETRIC_ATE\n\n### Estimand : 1\nEstimand name: backdoor\nEstimand expression:\n d              \n\u2500\u2500\u2500\u2500(E[Y|C,X,L])\nd[T]            \nEstimand assumption 1, Unconfoundedness: If U\u2192{T} and U\u2192Y then P(Y|T,C,X,L,U) = P(Y|T,C,X,L)\n\n### Estimand : 2\nEstimand name: iv\nNo such variable(s) found!\n\n### Estimand : 3\nEstimand name: frontdoor\nNo such variable(s) found!\n\n### Estimand : 4\nEstimand name: general_adjustment\nEstimand expression:\n d              \n\u2500\u2500\u2500\u2500(E[Y|C,X,L])\nd[T]            \nEstimand assumption 1, Unconfoundedness: If U\u2192{T} and U\u2192Y then P(Y|T,C,X,L,U) = P(Y|T,C,X,",
+    "holds": true
+  },
+  "sanity_estimate_under_hypothetical_scm": {
+    "note": "DGP has zero causal effect of T on Y; estimate via backdoor adjustment on hypothetical T->Y SCM should be near zero.",
+    "point_estimate": 0.06105028675617215,
+    "near_zero": true
+  }
+}
