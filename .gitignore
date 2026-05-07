@@ -2,10 +2,21 @@ data/cleaned/
 data/processed/
 data/raw/nyc/
 data/raw/sf/
+data/raw/boston/
 data/raw/census/
 data/raw/crime/
 data/raw/amenities/
 data/raw/descriptions/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.toc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
