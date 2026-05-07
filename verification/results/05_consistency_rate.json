@@ -1,0 +1,54 @@
+{
+  "verdict": "PASS",
+  "claim": "V\u0302_\u03a6'^post \u2192 V_\u03a6' at rate O(m^{-1/2}); slope of log|err| vs log m should be \u2248 -0.5.",
+  "true_V_phi_prime_nats": 0.11172504207123024,
+  "H_C_nats": 0.6931470923599428,
+  "monte_carlo_table": [
+    {
+      "m": 100,
+      "n_repeats": 30,
+      "mean_abs_error": 0.036622405809622595,
+      "median_abs_error": 0.03739060469053079,
+      "p95_abs_error": 0.07977464790554764
+    },
+    {
+      "m": 300,
+      "n_repeats": 30,
+      "mean_abs_error": 0.023629592233581218,
+      "median_abs_error": 0.01980748167621016,
+      "p95_abs_error": 0.05548648761945176
+    },
+    {
+      "m": 1000,
+      "n_repeats": 30,
+      "mean_abs_error": 0.012588787748822676,
+      "median_abs_error": 0.009736469894458644,
+      "p95_abs_error": 0.02939848846777677
+    },
+    {
+      "m": 3000,
+      "n_repeats": 30,
+      "mean_abs_error": 0.007189289002798031,
+      "median_abs_error": 0.006520479386945943,
+      "p95_abs_error": 0.014432867563022407
+    },
+    {
+      "m": 10000,
+      "n_repeats": 30,
+      "mean_abs_error": 0.003991112472855599,
+      "median_abs_error": 0.003585849473759062,
+      "p95_abs_error": 0.00750949460625158
+    },
+    {
+      "m": 30000,
+      "n_repeats": 30,
+      "mean_abs_error": 0.0014723651605987023,
+      "median_abs_error": 0.0011963265847564353,
+      "p95_abs_error": 0.003870037874642122
+    }
+  ],
+  "log_log_slope": -0.5470146870894967,
+  "log_log_intercept": -0.6553833290974665,
+  "monotone_decrease_in_m": true,
+  "slope_in_band_-0.7_to_-0.3": true
+}

@@ -1,0 +1,51 @@
+{
+  "verdict": "PASS",
+  "H_C_nats": 0.6931472,
+  "experiment_1_static_xor": {
+    "claim": "V_lin \u2248 0 \u226a V_MLP \u2248 H(C); gap \u2265 0.6 nats.",
+    "v_phi_linear_nats": 0.00025816639587055156,
+    "v_phi_mlp_nats": 0.6912287185161183,
+    "gap_nats": 0.6909705521202478,
+    "passes": true
+  },
+  "experiment_2_dynamic_grl": {
+    "claim": "Live discriminator at chance; frozen MLP probe above frozen linear probe.",
+    "live_discriminator_accuracy": 0.4630999982357025,
+    "frozen_linear_probe_accuracy": 0.56425,
+    "frozen_mlp_probe_accuracy": 0.6095,
+    "diagnostic_gap_accuracy_pp": 4.525000000000001,
+    "passes": true
+  },
+  "experiment_3_capacity_ladder": {
+    "claim": "V_\u03a6 monotone non-decreasing in capacity; top rung \u2265 0.95 * H(C).",
+    "v_phi_by_rung": [
+      {
+        "name": "linear",
+        "v_phi_nats": 0.00023167879910516534
+      },
+      {
+        "name": "mlp_4",
+        "v_phi_nats": 0.4564250136979307
+      },
+      {
+        "name": "mlp_8",
+        "v_phi_nats": 0.6861444256524175
+      },
+      {
+        "name": "mlp_16",
+        "v_phi_nats": 0.68833361295675
+      },
+      {
+        "name": "mlp_16_16",
+        "v_phi_nats": 0.691244817150805
+      },
+      {
+        "name": "mlp_32_32_32",
+        "v_phi_nats": 0.6925241148810294
+      }
+    ],
+    "monotone_in_capacity": true,
+    "top_rung_nats": 0.6925241148810294,
+    "passes": true
+  }
+}

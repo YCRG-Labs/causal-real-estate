@@ -1,0 +1,28 @@
+{
+  "verdict": "PASS",
+  "symbolic_kl_nonnegativity": {
+    "claim": "KL(p||q) \u2265 0 for 2-element distributions, equality iff p=q",
+    "kl_expression": "p*log(p/q) + (1 - p)*log((1 - p)/(1 - q))",
+    "first_derivative_d/dq": "(p - q)/(q*(q - 1))",
+    "stationary_point": "p",
+    "stationary_at_q_equals_p": true,
+    "second_derivative_d2/dq2": "-p/(q - 1)**2 + p/q**2 + (q - 1)**(-2)",
+    "kl_at_q_equal_p": "0",
+    "kl_zero_when_p_equals_q": true
+  },
+  "numerical_inequality_chain": {
+    "claim": "0 \u2264 V_const \u2264 V_lin \u2264 V_MLP(2) \u2264 V_MLP(8) \u2264 V_MLP(32,32) \u2264 I = log 2",
+    "I_true_nats": 0.6931471805599453,
+    "V_estimates_nats": {
+      "constant": 0.00028806734354513974,
+      "linear": 0.0005474071529628644,
+      "MLP(2)": 0.6930084704670757,
+      "MLP(8)": 0.6929877013333775,
+      "MLP(32,32)": 0.693147180544981
+    },
+    "monotone_chain": true,
+    "upper_bound_holds": true,
+    "non_negativity_holds": true
+  },
+  "citation_for_part_a_proper": "Xu, Zhao, Song, Stewart, Ermon (2020), 'A Theory of Usable Information Under Computational Constraints', ICLR \u2014 Proposition 1. We restate the inequality and verify the analytic content (KL \u2265 0) symbolically, plus the chain of inequalities numerically on the XOR DGP."
+}
