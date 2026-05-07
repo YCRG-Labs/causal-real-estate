@@ -1,0 +1,37 @@
+Causal Real Estate dataset — License
+
+Data files (data/**/*.parquet, splits/**) are licensed under the
+Creative Commons Attribution 4.0 International License (CC BY 4.0).
+You may copy, redistribute, and build upon the data, including for
+commercial purposes, provided you give appropriate credit and indicate
+if changes were made.
+
+Full text: https://creativecommons.org/licenses/by/4.0/legalcode
+
+Code (scripts/**) is licensed under the MIT License:
+
+    Copyright (c) 2026 Brandon Yee and Jacob Crainic
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Underlying source datasets retain their original licenses; see DATASHEET.md
+§ Distribution for attribution and source-dataset terms. Raw Redfin listing
+descriptions are NOT covered by this license and are NOT redistributed; see
+README.md for details.
