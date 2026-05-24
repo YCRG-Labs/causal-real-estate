@@ -189,7 +189,7 @@ def get_features_and_target(emb_df, parcels, drop_mismatched_crime=False):
     confounders = confounders[:, good_cols]
     np.nan_to_num(confounders, copy=False, nan=0.0)
 
-    valid &= ~np.all(confounders == 0, axis=1) | True
+    valid &= ~np.all(confounders == 0, axis=1)
 
     T = T[valid]
     confounders = confounders[valid]
@@ -259,16 +259,18 @@ def backdoor_adjustment(T, confounders, Y, n_pca=50):
     return delta_r2
 
 
-def doubly_robust_estimation(T, confounders, Y, n_pca=50):
+def doubly_robust_estimation(T, confounders, Y, n_pca=50, k_folds=5):
     """
-    Doubly-robust ATE for a binarized text treatment.
+    Doubly-robust ATE for a binarized text treatment, with K-fold cross-fitting
+    so the influence-function SE is Neyman-orthogonal under GBM nuisances
+    (Chernozhukov et al. 2018; Bang-Robins 2005 + cross-fitting).
 
-    Reports BOTH bootstrap CI (which is wide and well-known to be conservative
-    in moderate samples) AND influence-function (IF) SE plus minimum detectable
-    effect at 80% power. The MDE makes "CI contains zero" interpretable by
-    saying what effect sizes the test could and could not have detected.
+    Reports BOTH bootstrap CI AND influence-function (IF) SE plus minimum
+    detectable effect at 80% power. The MDE makes "CI contains zero"
+    interpretable by saying what effect sizes the test could and could not have
+    detected.
     """
-    print("\n  [2] Doubly-Robust Estimation (binarized treatment)")
+    print("\n  [2] Doubly-Robust Estimation (binarized treatment, 5-fold cross-fitting)")
     n_pca = min(n_pca, T.shape[1], T.shape[0])
     pca = PCA(n_components=n_pca, random_state=42)
     T_pca = pca.fit_transform(T)
@@ -280,21 +282,29 @@ def doubly_robust_estimation(T, confounders, Y, n_pca=50):
     T_median = np.median(T_norm)
     treatment = (T_norm > T_median).astype(float)
 
-    outcome_model = GradientBoostingRegressor(
-        n_estimators=200, max_depth=5, learning_rate=0.05, random_state=42,
-    )
-    outcome_model.fit(
-        np.hstack([treatment.reshape(-1, 1), conf_s]),
-        Y,
-    )
+    # K-fold cross-fitting: train nuisances on (k-1) folds, predict on fold k.
+    # OOF predictions ensure the IF SE on psi is Neyman-orthogonal with GBM
+    # nuisances. Without cross-fitting the IF SE is anti-conservative.
+    n = len(Y)
+    mu1 = np.zeros(n)
+    mu0 = np.zeros(n)
+    e = np.zeros(n)
+    kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+    X_full = np.hstack([treatment.reshape(-1, 1), conf_s])
+    for tr_idx, te_idx in kf.split(np.arange(n)):
+        out_m = GradientBoostingRegressor(
+            n_estimators=200, max_depth=5, learning_rate=0.05, random_state=42,
+        )
+        out_m.fit(X_full[tr_idx], Y[tr_idx])
+        prop_m = LogisticRegression(max_iter=1000, random_state=42)
+        prop_m.fit(conf_s[tr_idx], treatment[tr_idx])
 
-    propensity_model = LogisticRegression(max_iter=1000, random_state=42)
-    propensity_model.fit(conf_s, treatment)
-    e = propensity_model.predict_proba(conf_s)[:, 1]
+        conf_te = conf_s[te_idx]
+        mu1[te_idx] = out_m.predict(np.hstack([np.ones((len(te_idx), 1)), conf_te]))
+        mu0[te_idx] = out_m.predict(np.hstack([np.zeros((len(te_idx), 1)), conf_te]))
+        e[te_idx] = prop_m.predict_proba(conf_te)[:, 1]
+
     e = np.clip(e, 0.05, 0.95)
-
-    mu1 = outcome_model.predict(np.hstack([np.ones((len(Y), 1)), conf_s]))
-    mu0 = outcome_model.predict(np.hstack([np.zeros((len(Y), 1)), conf_s]))
 
     psi = (
         mu1 - mu0

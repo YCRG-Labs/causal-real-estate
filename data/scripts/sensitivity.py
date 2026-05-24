@@ -135,6 +135,9 @@ def evalue_ci(theta: float, se: float, sd_Y: float, alpha: float = 0.05) -> floa
     bound_hi = theta + z * se
     if bound_lo <= 0 <= bound_hi:
         return 1.0
+    # VanderWeele-Ding 2017: E-value of a CI uses the bound *nearer* the null.
+    # CI excludes 0 (we returned 1.0 otherwise), so both bounds share theta's sign.
+    # Nearer-null = smaller |bound|: bound_lo when theta>0, bound_hi when theta<0.
     bound = bound_lo if theta > 0 else bound_hi
     rr = float(np.exp(0.91 * abs(bound) / sd_Y))
     if rr < 1:

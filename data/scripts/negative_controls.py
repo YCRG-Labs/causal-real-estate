@@ -153,7 +153,9 @@ def schuemie_calibration(
     sigma_emp = float(thetas.std(ddof=1))
     nominal_se_med = float(np.median(ses))
     sigma_inflation = sigma_emp / nominal_se_med if nominal_se_med > 0 else float("nan")
-    z_cal = (focal.theta - mu) / max(sigma_emp, focal.se)
+    # Schuemie 2014 eq. 4 / OHDSI EmpiricalCalibration:
+    # z = (theta_focal - mu_null) / sqrt(sigma_null^2 + se_focal^2)
+    z_cal = (focal.theta - mu) / np.sqrt(sigma_emp ** 2 + focal.se ** 2)
     p_cal = float(2 * (1 - stats.norm.cdf(abs(z_cal))))
     z_nom = focal.theta / focal.se if focal.se > 0 else float("nan")
     p_nom = float(2 * (1 - stats.norm.cdf(abs(z_nom))))

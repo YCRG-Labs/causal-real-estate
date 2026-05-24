@@ -101,16 +101,21 @@ def dml_theta_and_psi(Y_resid: np.ndarray, T_resid: np.ndarray) -> tuple[float, 
     return theta, psi
 
 
-def stratum_ate(psi: np.ndarray, mask: np.ndarray) -> tuple[float, float]:
+def stratum_ate(psi: np.ndarray, mask: np.ndarray, theta: float) -> tuple[float, float]:
+    """GATES-style per-stratum CATE estimator (Chernozhukov-Demirer-Duflo-
+    Fernandez-Val 2018). The IF score psi has E[psi] = 0 by the FOC of theta;
+    the per-stratum CATE level is theta + E[psi | i in stratum]. The variance
+    is Var(psi | i in stratum) / n_q (same as before — shift is constant).
+    """
     n_q = int(mask.sum())
     if n_q < 5:
         return float("nan"), float("nan")
     s = psi[mask]
-    return float(s.mean()), float(s.std(ddof=1) / np.sqrt(n_q))
+    return float(theta + s.mean()), float(s.std(ddof=1) / np.sqrt(n_q))
 
 
 def quartile_cells(
-    psi: np.ndarray, stratifier: np.ndarray, label: str
+    psi: np.ndarray, stratifier: np.ndarray, label: str, theta: float,
 ) -> list[CellResult]:
     valid = ~np.isnan(stratifier)
     if valid.sum() < 100:
@@ -122,7 +127,7 @@ def quartile_cells(
     cells: list[CellResult] = []
     for q in sorted(set(full_q[full_q >= 0])):
         mask = full_q == q
-        ate, se = stratum_ate(psi, mask)
+        ate, se = stratum_ate(psi, mask, theta)
         if not np.isfinite(ate):
             continue
         ci_lo = ate - 1.96 * se
@@ -140,11 +145,15 @@ def quartile_cells(
     return cells
 
 
-def blp_heterogeneity_test(psi: np.ndarray, stratifier: np.ndarray) -> dict:
-    """Joint Wald test of equal stratum means.
+def blp_heterogeneity_test(
+    psi: np.ndarray, stratifier: np.ndarray, theta: float,
+) -> dict:
+    """Joint Wald test of equal stratum CATE levels (CDDF 2018 BLP/GATES).
 
-    H0: μ_q = μ̄ for all q (no heterogeneity across quartiles).
-    Statistic: Σ (μ̂_q − μ̂_grand)² / Var(μ̂_q), distributed χ²_(K-1).
+    H0: theta_q = theta for all q (no heterogeneity across quartiles).
+    Statistic: Σ (theta_q − theta)² / Var(theta_q), distributed χ²_(K-1).
+    Because theta_q = theta + E[psi | q] and Var(theta_q) = Var(psi | q) / n_q,
+    the statistic reduces to Σ (E[psi | q])² / Var(theta_q) (theta cancels).
     """
     valid = ~np.isnan(stratifier)
     psi_v = psi[valid]
@@ -152,19 +161,23 @@ def blp_heterogeneity_test(psi: np.ndarray, stratifier: np.ndarray) -> dict:
     cells = sorted(np.unique(quartiles))
     if len(cells) < 2:
         return {"error": "fewer than 2 quartiles"}
-    means = {int(c): float(psi_v[quartiles == c].mean()) for c in cells}
+    cell_thetas = {
+        int(c): float(theta + psi_v[quartiles == c].mean()) for c in cells
+    }
     vars_ = {
         int(c): float(psi_v[quartiles == c].var(ddof=1) / max((quartiles == c).sum(), 1))
         for c in cells
     }
-    grand = float(psi_v.mean())
-    wald = sum((means[c] - grand) ** 2 / vars_[c] for c in cells if vars_[c] > 0)
+    wald = sum(
+        (cell_thetas[c] - theta) ** 2 / vars_[c]
+        for c in cells if vars_[c] > 0
+    )
     df = len(cells) - 1
     return {
         "stat_wald": float(wald),
         "df": int(df),
         "p_value": float(1 - chi2.cdf(wald, df=df)),
-        "cell_means": means,
+        "cell_thetas": cell_thetas,
     }
 
 
@@ -218,12 +231,12 @@ def run_cate(city: str, n_seeds: int = 50) -> dict:
 
     # Stratifier 1: predicted-price quartile (pre-treatment proxy)
     print("\n  CATE by predicted-price quartile (OOF μ̂(W)):")
-    cells_pp = quartile_cells(psi, Y_oof_pred, "predicted_price_q")
+    cells_pp = quartile_cells(psi, Y_oof_pred, "predicted_price_q", theta)
     for c in cells_pp:
         flag = "contains 0" if c.contains_zero else "EXCLUDES 0"
         print(f"    Q{c.quartile+1}: n={c.n:>4}  θ={c.theta:+.4f}  "
               f"se={c.se:.4f}  CI=[{c.ci_low:+.4f}, {c.ci_high:+.4f}]  {flag}")
-    blp_pp = blp_heterogeneity_test(psi, Y_oof_pred)
+    blp_pp = blp_heterogeneity_test(psi, Y_oof_pred, theta)
     if "p_value" in blp_pp:
         print(f"    BLP heterogeneity Wald = {blp_pp['stat_wald']:.2f} "
               f"(df={blp_pp['df']}), p = {blp_pp['p_value']:.3f}")
@@ -239,12 +252,12 @@ def run_cate(city: str, n_seeds: int = 50) -> dict:
         desc_len = np.linalg.norm(T, axis=1).astype(float)
 
     print("\n  CATE by description-length quartile (pre-treatment proxy):")
-    cells_dl = quartile_cells(psi, desc_len, "desc_length_q")
+    cells_dl = quartile_cells(psi, desc_len, "desc_length_q", theta)
     for c in cells_dl:
         flag = "contains 0" if c.contains_zero else "EXCLUDES 0"
         print(f"    Q{c.quartile+1}: n={c.n:>4}  θ={c.theta:+.4f}  "
               f"se={c.se:.4f}  CI=[{c.ci_low:+.4f}, {c.ci_high:+.4f}]  {flag}")
-    blp_dl = blp_heterogeneity_test(psi, desc_len)
+    blp_dl = blp_heterogeneity_test(psi, desc_len, theta)
     if "p_value" in blp_dl:
         print(f"    BLP heterogeneity Wald = {blp_dl['stat_wald']:.2f} "
               f"(df={blp_dl['df']}), p = {blp_dl['p_value']:.3f}")

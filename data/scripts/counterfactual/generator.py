@@ -211,7 +211,7 @@ class AnthropicGenerator:
                     raw=raw,
                     used_mock=False,
                 )
-            except Exception as e:  # noqa: BLE001 — retry-anything for transient API errors
+            except (anthropic.APIError, ValueError) as e:
                 last_err = e
                 delay = self.base_delay_s * (2 ** attempt) + random.uniform(0, 0.5)
                 time.sleep(delay)
@@ -264,7 +264,9 @@ class AnthropicGenerator:
                     raw=raw,
                     used_mock=False,
                 )
-            except Exception as e:  # noqa: BLE001
+            except (anthropic.APIError, ValueError) as e:
+                # Retry transient API errors + JSON parse failures only;
+                # programmer errors (TypeError, AttributeError, ...) fail fast.
                 last_err = e
                 delay = self.base_delay_s * (2 ** attempt) + random.uniform(0, 0.5)
                 time.sleep(delay)
