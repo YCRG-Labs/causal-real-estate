@@ -1,4 +1,6 @@
+import os
 import sys
+import time
 import requests
 import zipfile
 import pandas as pd
@@ -13,19 +15,50 @@ CENSUS_DIR = RAW_DIR / "census"
 CENSUS_API_BASE = f"https://api.census.gov/data/{CENSUS_YEAR}/acs/acs5"
 TIGER_BASE = f"https://www2.census.gov/geo/tiger/TIGER{CENSUS_YEAR}/BG"
 
+# Census API: free key from https://api.census.gov/data/key_signup.html
+# Without a key, the API rate-limits aggressively and may return HTML error
+# pages instead of JSON. Set CENSUS_API_KEY env var to authenticate.
+CENSUS_API_KEY = os.environ.get("CENSUS_API_KEY", "").strip()
+
+
+def _get_with_retry(url: str, attempts: int = 5, base_delay: float = 2.0):
+    last_err = None
+    for i in range(attempts):
+        try:
+            resp = requests.get(url, timeout=60)
+            resp.raise_for_status()
+            # Validate JSON before returning (Census sometimes returns HTML
+            # error pages with HTTP 200 when rate-limited).
+            try:
+                return resp.json()
+            except ValueError:
+                last_err = (
+                    f"non-JSON response (first 200 chars): "
+                    f"{resp.text[:200].replace(chr(10), ' ')!r}"
+                )
+        except requests.RequestException as e:
+            last_err = str(e)
+        time.sleep(base_delay * (2 ** i))
+    raise RuntimeError(
+        f"Census API failed after {attempts} attempts. Last error: {last_err}\n"
+        f"URL: {url}\n"
+        f"FIX: get a free key at https://api.census.gov/data/key_signup.html "
+        f"and set CENSUS_API_KEY env var."
+    )
+
 
 def fetch_acs(state_fips, county_fips):
     variables = ",".join(CENSUS_VARIABLES.keys())
+    key_suffix = f"&key={CENSUS_API_KEY}" if CENSUS_API_KEY else ""
     rows = []
     for county in county_fips:
         url = (
             f"{CENSUS_API_BASE}?get={variables}"
             f"&for=block%20group:*"
             f"&in=state:{state_fips}&in=county:{county}&in=tract:*"
+            f"{key_suffix}"
         )
-        resp = requests.get(url, timeout=60)
-        resp.raise_for_status()
-        data = resp.json()
+        data = _get_with_retry(url)
         header = data[0]
         rows.extend(data[1:])
 
