@@ -589,7 +589,9 @@ def _frozen_encoder_probe(encoder, T_tensor, lat, lon, zip_labels, income):
     """
     encoder.eval()
     with torch.no_grad():
-        z = encoder(T_tensor).numpy()
+        # encoder may be on CUDA (per T1.6); move input to match its device.
+        enc_device = next(encoder.parameters()).device
+        z = encoder(T_tensor.to(enc_device)).cpu().numpy()
 
     n = len(z)
     split = int(n * 0.7)
