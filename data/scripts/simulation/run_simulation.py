@@ -27,10 +27,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
+
+# Force single-threaded BLAS/LightGBM inside each joblib worker. Without this
+# each worker tries to use all cores → on a 16-core box, 16 workers × 16
+# threads = 256-way oversubscription, which deadlocks the simulation.
+# Must be set BEFORE numpy/sklearn/lightgbm are imported.
+for var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+            "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+    os.environ.setdefault(var, "1")
 
 import numpy as np
 import pandas as pd
