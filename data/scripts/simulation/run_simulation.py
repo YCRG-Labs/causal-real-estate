@@ -33,13 +33,19 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-# Force single-threaded BLAS/LightGBM inside each joblib worker. Without this
-# each worker tries to use all cores → on a 16-core box, 16 workers × 16
-# threads = 256-way oversubscription, which deadlocks the simulation.
-# Must be set BEFORE numpy/sklearn/lightgbm are imported.
+# Thread budgeting for joblib×LightGBM/BLAS. Pinning OMP=1 (the previous
+# default) eliminated LightGBM's multi-threading and made each fit ~5x slower
+# than sklearn-GBR ever was, defeating the T1.1 LightGBM swap entirely.
+#
+# Strategy: default to ncores/4 inner threads × 4 outer joblib workers so the
+# total = ncores (no oversubscription, LightGBM still multi-threaded per fit).
+# Honors any shell-set value (export OMP_NUM_THREADS=... wins via setdefault).
+# Must be set BEFORE numpy/sklearn/lightgbm imports.
+_NCORES = os.cpu_count() or 4
+_INNER_THREADS = max(1, _NCORES // 4)
 for var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS",
             "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
-    os.environ.setdefault(var, "1")
+    os.environ.setdefault(var, str(_INNER_THREADS))
 
 import numpy as np
 import pandas as pd
@@ -254,18 +260,24 @@ def run(
 
     rng_master = np.random.default_rng(seed)
 
+    # Persistent worker pool across all cells: keeps loky workers warm and
+    # avoids re-pickling the (~1.5 MB) GaussianMixtureGenerator on every cell.
+    # Cap outer workers at 4 so each worker gets _INNER_THREADS (= ncores/4)
+    # of LightGBM/BLAS parallelism — total ≈ ncores, no oversubscription.
+    _outer_workers = min(n_jobs if n_jobs > 0 else 4, 4)
     rows: list[dict] = []
-    for ci, spec in enumerate(cells, start=1):
-        seeds = rng_master.integers(0, 2**31 - 1, size=n_reps).tolist()
-        cell_t0 = time.time()
-        cell_rows = Parallel(n_jobs=n_jobs, backend="loky", verbose=0)(
-            delayed(_draw_one)(spec, gen, int(s), n_W) for s in seeds
-        )
-        rows.extend(cell_rows)
-        dt = time.time() - cell_t0
-        print(f"  [{ci}/{len(cells)}] {_cell_label(spec):<35} "
-              f"R={n_reps}  {dt:6.1f}s "
-              f"({dt / max(n_reps,1)*1000:.0f} ms/rep)", flush=True)
+    with Parallel(n_jobs=_outer_workers, backend="loky", verbose=0) as parallel:
+        for ci, spec in enumerate(cells, start=1):
+            seeds = rng_master.integers(0, 2**31 - 1, size=n_reps).tolist()
+            cell_t0 = time.time()
+            cell_rows = parallel(
+                delayed(_draw_one)(spec, gen, int(s), n_W) for s in seeds
+            )
+            rows.extend(cell_rows)
+            dt = time.time() - cell_t0
+            print(f"  [{ci}/{len(cells)}] {_cell_label(spec):<35} "
+                  f"R={n_reps}  {dt:6.1f}s "
+                  f"({dt / max(n_reps,1)*1000:.0f} ms/rep)", flush=True)
 
     raw = pd.DataFrame(rows)
     raw.to_csv(out_dir / "raw_replicates.csv", index=False)
