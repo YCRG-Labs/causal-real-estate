@@ -48,7 +48,7 @@ from causal_inference import (
 from config import EMBEDDING_DIM, EMBEDDING_MODEL, PROCESSED_DIR, RAW_DIR
 
 from generator import GenerationResult, MockGenerator, make_generator
-from prompts import SUBMARKET_HINTS, style_stripped_prompt, style_swap_prompt
+from prompts import SUBMARKET_HINTS, style_stripped_blocks, style_swap_blocks
 from slot_extractor import extract_slots
 from validator import (
     fit_zip_classifier,
@@ -334,15 +334,16 @@ def run_pipeline(
 
         orig_submarket = _zip_to_target_submarket(zip_int)
         swap_targets = _pick_swap_targets(orig_submarket, k=3)
-        arms: list[tuple[str, Optional[str], str]] = []  # (arm_name, target_sub, prompt)
+        # (arm_name, target_sub, blocks) where blocks = {"system": ..., "user": ...}
+        arms: list[tuple[str, Optional[str], dict]] = []
         for tgt in swap_targets:
             arms.append((
                 f"style_swap:{tgt}", tgt,
-                style_swap_prompt(tgt, original_text, slots),
+                style_swap_blocks(tgt, original_text, slots),
             ))
         arms.append((
             "style_stripped", None,
-            style_stripped_prompt(original_text, slots),
+            style_stripped_blocks(original_text, slots),
         ))
 
         # baseline: use the listing's matched conf row if we can; else mean.
@@ -363,8 +364,13 @@ def run_pipeline(
 
         # batch the 4 rewrites' embeddings together to amortize encoder load
         gen_results: list[tuple[str, Optional[str], GenerationResult]] = []
-        for arm_name, target_sub, prompt in arms:
-            res = generator.generate(prompt, slot_dict=slots, original_text=original_text)
+        for arm_name, target_sub, blocks in arms:
+            res = generator.generate_blocks(
+                system=blocks["system"],
+                user=blocks["user"],
+                slot_dict=slots,
+                original_text=original_text,
+            )
             gen_results.append((arm_name, target_sub, res))
 
         rewrite_texts = [r.rewritten_text for _, _, r in gen_results]
@@ -425,7 +431,21 @@ def run_pipeline(
         "overall_pass":    sum(1 for L in listings_out for r in L.rewrites if r.validation["overall_pass"]) / max(n_total, 1),
     }
 
-    # 9. assemble + write JSON
+    # 9. cache + cost stats from generator (real API only)
+    usage_summary: dict | None = None
+    if not isinstance(generator, MockGenerator):
+        u = generator.usage
+        usage_summary = {
+            "n_calls": u.n_calls,
+            "input_tokens": u.input_tokens,
+            "cache_creation_input_tokens": u.cache_creation_input_tokens,
+            "cache_read_input_tokens": u.cache_read_input_tokens,
+            "output_tokens": u.output_tokens,
+            "cache_hit_rate": u.cache_hit_rate(),
+            "estimated_cost_usd_sonnet35": u.estimated_cost_usd(),
+        }
+
+    # 10. assemble + write JSON
     out: dict = {
         "city": city,
         "n_listings_requested": int(n_listings),
@@ -433,6 +453,7 @@ def run_pipeline(
         "n_rewrites_total": int(n_total),
         "used_mock_generator": bool(isinstance(generator, MockGenerator)),
         "skip_perplexity": bool(skip_perplexity),
+        "api_usage": usage_summary,
         "dml": {
             "theta": art.theta,
             "se": art.se,
@@ -460,6 +481,9 @@ def run_pipeline(
     print(f"  validation pass rates: {pass_rates}")
     print(f"  NDE (style-stripped): {per_arm['style_stripped']}")
     print(f"  TE  (style-swap):     {per_arm['style_swap']}")
+    if not isinstance(generator, MockGenerator):
+        print("\n  API usage (with prompt caching on system block):")
+        print(generator.usage.summary())
     return out
 
 

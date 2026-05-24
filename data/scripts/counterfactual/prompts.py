@@ -10,6 +10,17 @@ recipe from the dossier (Madaan et al. 2021; Dixit et al. CORE 2022; Bhattacharj
   - chain-of-thought verification step inlined in the instructions
 
 Output schema is JSON-only so the generator can parse without regex hacks.
+
+Two API surfaces:
+
+  Legacy (uncached):  style_swap_prompt() / style_stripped_prompt()
+                      Single-string prompts. Backward compatible.
+
+  Cached (preferred): style_swap_blocks() / style_stripped_blocks()
+                      Returns {"system": <constant>, "user": <variable>} so the
+                      generator can mark the system prompt with cache_control:
+                      ephemeral. Anthropic Sonnet 3.5 caches at 1024 token
+                      minimum; the system templates here are sized to clear it.
 """
 from __future__ import annotations
 
@@ -77,30 +88,116 @@ _VERIFY_STEP = (
     "final JSON object."
 )
 
+# Quality and pitfall guidance shared by both system prompts. Pulled out so it
+# is part of the cached prefix and not part of the per-call user content.
+_QUALITY_CRITERIA = (
+    "QUALITY CRITERIA — a successful counterfactual rewrite:\n"
+    "  - Numeric facts: every value in the slot-fact JSON appears unchanged.\n"
+    "  - Style shift: a knowledgeable local could identify the target submarket\n"
+    "    from the rewrite alone, without seeing the slot-fact JSON.\n"
+    "  - Length: within ±20% of the original word count.\n"
+    "  - Register: matches the polish of the original (MLS-formal vs casual).\n"
+    "  - No double-claiming: do not assert prestige cues that were not in the\n"
+    "    original. The rewrite should plausibly substitute for the original,\n"
+    "    not upsell it."
+)
+
+_PITFALLS = (
+    "COMMON FAILURE MODES TO AVOID:\n"
+    "  - Generic openers (\"In the heart of [neighborhood]...\") — these are\n"
+    "    tells of LLM-generated copy and dilute the submarket signal.\n"
+    "  - Inventing transit lines, parks, schools, or businesses that do not\n"
+    "    exist near the target submarket.\n"
+    "  - Substituting a numeric fact (\"3 bedrooms\" → \"spacious bedrooms\")\n"
+    "    to avoid repeating the slot — preserve the number explicitly.\n"
+    "  - Adding new amenities (gym, pool, doorman) not in the original.\n"
+    "  - Reusing landmark names from the original (Dolores Park, Crissy\n"
+    "    Field, etc.) when the rewrite targets a different submarket."
+)
+
+_VERIFY_CHECKLIST = (
+    "VERIFICATION CHECKLIST (run mentally before output):\n"
+    "  1. Read each entry in the slot-fact JSON. For each entry, find the\n"
+    "     identical value in your rewrite. If any is missing, REWRITE before\n"
+    "     emitting.\n"
+    "  2. Scan for any neighborhood name or street from the original. If\n"
+    "     found, replace with a target-submarket equivalent (or remove for\n"
+    "     style_stripped).\n"
+    "  3. Confirm the rewrite would be plausible from a real-estate agent\n"
+    "     working that neighborhood (or a flat MLS feed for style_stripped).\n"
+    "     If it reads as foreign, revise the vocabulary."
+)
+
+_SWAP_EXAMPLE = (
+    "WORKED EXAMPLE (Mission District → Pacific Heights swap):\n"
+    "  Slot-fact JSON: {\"bedrooms\": 2, \"bathrooms\": 1, \"sqft\": 1100, "
+    "\"year_built\": 1908, \"parking\": null}\n"
+    "  Original: \"Charming 2-bedroom Victorian flat steps from Dolores Park "
+    "and 24th Street taquerias. 1100 sqft, 1 bath, original 1908 millwork. "
+    "Walk to BART. Mission's vibrant cafe scene at your door.\"\n"
+    "  Good rewrite: \"Stately 2-bedroom Edwardian flat just off Lyon Street, "
+    "walking distance to Fillmore Street boutiques. 1100 sqft, 1 bath, "
+    "original 1908 millwork. Sweeping Bay views from the parlor floor. "
+    "Refined Pacific Heights address with mature street trees.\"\n"
+    "  Why it works: every slot-fact value preserved verbatim (2, 1, 1100, "
+    "1908); Mission landmarks (Dolores Park, 24th Street, BART) replaced\n"
+    "  with Pacific Heights equivalents (Lyon Street, Fillmore Street, Bay\n"
+    "  views); register elevated to match the destination submarket\n"
+    "  without inventing facts that were not in the original.\n"
+    "  Bad rewrite (REJECT): \"In the heart of prestigious Pacific Heights, "
+    "this stunning 2-bedroom Victorian masterpiece offers Dolores Park "
+    "views, 1100+ sqft, with luxury parking included.\" Why it fails: "
+    "generic opener, retains \"Dolores Park\" from origin submarket, "
+    "embellishes square footage with \"+\", invents parking that the "
+    "slot-fact JSON marks as null, and asserts unsupported prestige."
+)
+
+_STRIPPED_EXAMPLE = (
+    "WORKED EXAMPLE (style_stripped):\n"
+    "  Slot-fact JSON: {\"bedrooms\": 2, \"bathrooms\": 1, \"sqft\": 1100, "
+    "\"year_built\": 1908, \"parking\": null}\n"
+    "  Original: \"Charming 2-bedroom Victorian flat steps from Dolores Park "
+    "and 24th Street taquerias. 1100 sqft, 1 bath, original 1908 millwork. "
+    "Walk to BART. Mission's vibrant cafe scene at your door.\"\n"
+    "  Good rewrite: \"2-bedroom flat. 1100 sqft. 1 bath. Built 1908. "
+    "Original millwork. No parking. Single-level layout above ground floor.\"\n"
+    "  Why it works: every slot-fact value preserved verbatim (2, 1, 1100, "
+    "1908); all neighborhood references (Dolores Park, 24th Street, BART,\n"
+    "  Mission), all aspirational lexicon (\"charming\", \"vibrant\"), and\n"
+    "  all geographic cues removed; tone reduced to MLS-style enumeration\n"
+    "  without inventing new facts.\n"
+    "  Bad rewrite (REJECT): \"Beautifully maintained 2-bedroom residence "
+    "in a desirable urban setting. 1100+ sqft of charming living space. "
+    "1 bath. Built in 1908. Excellent transit access. Move-in ready.\" "
+    "Why it fails: retains aspirational lexicon (\"beautifully\", "
+    "\"charming\", \"desirable\"), implies geography (\"urban\", "
+    "\"transit access\"), embellishes square footage with \"+\", and "
+    "asserts prestige cues (\"move-in ready\") not in the original."
+)
+
 
 def _format_slots(slot_dict: dict[str, Optional[float]]) -> str:
     """JSON-serialize slots with None preserved as null."""
     return json.dumps({k: v for k, v in slot_dict.items()}, indent=2)
 
 
-def style_swap_prompt(
-    target_submarket: str,
-    original_text: str,
-    slot_dict: dict[str, Optional[float]],
-) -> str:
-    """Rewrite as if the listing were located in `target_submarket`, preserving
-    all numeric property facts. Style/lexicon must shift to the submarket
-    norm; numeric content must NOT shift."""
-    hint = SUBMARKET_HINTS.get(
-        target_submarket,
-        f"the {target_submarket} neighborhood of San Francisco",
-    )
+# ---------------------------------------------------------------------------
+# Cacheable system / variable user split (preferred)
+# ---------------------------------------------------------------------------
+
+def style_swap_system() -> str:
+    """Constant instruction template for style_swap. Cacheable.
+
+    Does NOT include the target submarket name, hint, slot dict, or original
+    text — those vary per call and live in the user message.
+    """
     return (
         "You are a real-estate copywriter producing a counterfactual listing "
         "rewrite for an academic causal-inference experiment.\n\n"
-        f"TASK: Rewrite the listing below as if the property were located in "
-        f"{target_submarket}, San Francisco.\n\n"
-        f"TARGET SUBMARKET STYLE NOTES (use this lexicon and vibe):\n  {hint}\n\n"
+        "GENERAL TASK: Rewrite a property listing as if the property were "
+        "located in a different submarket of San Francisco. Preserve every "
+        "numeric property fact verbatim; replace every submarket-evocative "
+        "cue with an equivalent for the target submarket.\n\n"
         "PRESERVE EXACTLY (must appear with identical numeric values in the rewrite):\n"
         "  - bedroom count\n"
         "  - bathroom count\n"
@@ -116,28 +213,54 @@ def style_swap_prompt(
         "  - the target submarket should be unambiguous to a local reader\n\n"
         "DO NOT:\n"
         "  - invent new numeric facts\n"
-        "  - change any fact in the slot-fact JSON below\n"
+        "  - change any fact in the slot-fact JSON the user provides\n"
         "  - retain any landmark or street name from the original\n\n"
-        f"SLOT-FACT JSON (must be preserved verbatim):\n{_format_slots(slot_dict)}\n\n"
-        f"ORIGINAL LISTING:\n\"\"\"\n{original_text}\n\"\"\"\n\n"
+        f"{_QUALITY_CRITERIA}\n\n"
+        f"{_PITFALLS}\n\n"
+        f"{_SWAP_EXAMPLE}\n\n"
+        f"{_VERIFY_CHECKLIST}\n\n"
         f"{_VERIFY_STEP}\n\n"
         f"{_OUTPUT_INSTR}"
     )
 
 
-def style_stripped_prompt(
+def style_swap_user(
+    target_submarket: str,
     original_text: str,
     slot_dict: dict[str, Optional[float]],
 ) -> str:
-    """Rewrite removing every neighborhood-evocative cue while preserving all
-    numeric property facts. This is the Natural-Direct-Effect arm: facts held
-    fixed, style set to neutral baseline."""
+    """Variable per-call content for style_swap. NOT cacheable."""
+    hint = SUBMARKET_HINTS.get(
+        target_submarket,
+        f"the {target_submarket} neighborhood of San Francisco",
+    )
+    return (
+        f"TARGET SUBMARKET: {target_submarket}, San Francisco.\n\n"
+        f"TARGET SUBMARKET STYLE NOTES (use this lexicon and vibe):\n  {hint}\n\n"
+        f"SLOT-FACT JSON (must be preserved verbatim):\n{_format_slots(slot_dict)}\n\n"
+        f"ORIGINAL LISTING:\n\"\"\"\n{original_text}\n\"\"\""
+    )
+
+
+def style_swap_blocks(
+    target_submarket: str,
+    original_text: str,
+    slot_dict: dict[str, Optional[float]],
+) -> dict[str, str]:
+    return {
+        "system": style_swap_system(),
+        "user": style_swap_user(target_submarket, original_text, slot_dict),
+    }
+
+
+def style_stripped_system() -> str:
+    """Constant instruction template for style_stripped. Cacheable."""
     return (
         "You are a real-estate copywriter producing a NEUTRALIZED counterfactual "
         "listing rewrite for an academic causal-inference experiment.\n\n"
-        "TASK: Rewrite the listing below in a flat, neutral, fact-forward tone "
-        "that strips ALL neighborhood-evocative language while preserving every "
-        "numeric property fact.\n\n"
+        "GENERAL TASK: Rewrite a property listing in a flat, neutral, fact-"
+        "forward tone that strips ALL neighborhood-evocative language while "
+        "preserving every numeric property fact.\n\n"
         "PRESERVE EXACTLY (must appear with identical numeric values in the rewrite):\n"
         "  - bedroom count, bathroom count, square footage\n"
         "  - year built, lot size, parking capacity, story count (if present)\n"
@@ -145,18 +268,66 @@ def style_stripped_prompt(
         "STRIP / REMOVE (this is the counterfactual treatment):\n"
         "  - all neighborhood names and submarket references\n"
         "  - all landmark, street, park, and transit-line names\n"
-        "  - all aspirational lifestyle lexicon (\"vibrant\", \"prestigious\", \"sun-drenched\", \"coveted\", etc.)\n"
+        "  - all aspirational lifestyle lexicon (\"vibrant\", \"prestigious\", "
+        "\"sun-drenched\", \"coveted\", etc.)\n"
         "  - all view claims that imply geography (\"ocean views\", \"Bay views\")\n"
         "  - all cultural / demographic cues\n"
-        "  - all price-tier signals (\"luxury\", \"entry-level\", \"investment opportunity\")\n\n"
+        "  - all price-tier signals (\"luxury\", \"entry-level\", "
+        "\"investment opportunity\")\n\n"
         "TONE: dry MLS-style enumeration of physical specifications. Short "
         "sentences. No adjectives that signal neighborhood prestige.\n\n"
         "DO NOT:\n"
         "  - mention San Francisco or any neighborhood\n"
         "  - invent new numeric facts\n"
-        "  - change any fact in the slot-fact JSON below\n\n"
-        f"SLOT-FACT JSON (must be preserved verbatim):\n{_format_slots(slot_dict)}\n\n"
-        f"ORIGINAL LISTING:\n\"\"\"\n{original_text}\n\"\"\"\n\n"
+        "  - change any fact in the slot-fact JSON the user provides\n\n"
+        f"{_QUALITY_CRITERIA}\n\n"
+        f"{_PITFALLS}\n\n"
+        f"{_STRIPPED_EXAMPLE}\n\n"
+        f"{_VERIFY_CHECKLIST}\n\n"
         f"{_VERIFY_STEP}\n\n"
         f"{_OUTPUT_INSTR}"
     )
+
+
+def style_stripped_user(
+    original_text: str,
+    slot_dict: dict[str, Optional[float]],
+) -> str:
+    """Variable per-call content for style_stripped. NOT cacheable."""
+    return (
+        f"SLOT-FACT JSON (must be preserved verbatim):\n{_format_slots(slot_dict)}\n\n"
+        f"ORIGINAL LISTING:\n\"\"\"\n{original_text}\n\"\"\""
+    )
+
+
+def style_stripped_blocks(
+    original_text: str,
+    slot_dict: dict[str, Optional[float]],
+) -> dict[str, str]:
+    return {
+        "system": style_stripped_system(),
+        "user": style_stripped_user(original_text, slot_dict),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Legacy single-string prompts (kept for backward compat; uncached)
+# ---------------------------------------------------------------------------
+
+def style_swap_prompt(
+    target_submarket: str,
+    original_text: str,
+    slot_dict: dict[str, Optional[float]],
+) -> str:
+    """Single-string form, retained for backward compat. Prefer style_swap_blocks."""
+    blocks = style_swap_blocks(target_submarket, original_text, slot_dict)
+    return f"{blocks['system']}\n\n{blocks['user']}"
+
+
+def style_stripped_prompt(
+    original_text: str,
+    slot_dict: dict[str, Optional[float]],
+) -> str:
+    """Single-string form, retained for backward compat. Prefer style_stripped_blocks."""
+    blocks = style_stripped_blocks(original_text, slot_dict)
+    return f"{blocks['system']}\n\n{blocks['user']}"
