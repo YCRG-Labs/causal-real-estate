@@ -32,7 +32,10 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401
+import sys, os as _os
+sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from booster import make_regressor
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 
@@ -90,7 +93,7 @@ class DMLArtifacts:
     pca: PCA
     pc1_mean: float
     pc1_std: float
-    model_y_full: GradientBoostingRegressor
+    model_y_full: object  # GradientBoostingRegressor | lightgbm.LGBMRegressor
     conf_scaler: StandardScaler
     theta: float
     se: float
@@ -121,13 +124,13 @@ def fit_dml_artifacts(
     T_resid = np.zeros(n)
     kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
     for tr, te in kf.split(np.arange(n)):
-        m_y = GradientBoostingRegressor(
+        m_y = make_regressor(
             n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42,
         )
         m_y.fit(conf_s[tr], Y[tr])
         Y_resid[te] = Y[te] - m_y.predict(conf_s[te])
 
-        m_t = GradientBoostingRegressor(
+        m_t = make_regressor(
             n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42,
         )
         m_t.fit(conf_s[tr], pc1_norm[tr])
@@ -141,7 +144,7 @@ def fit_dml_artifacts(
     se = float(np.sqrt(float(np.var(psi, ddof=1)) / n))
 
     # Full-data outcome model so we can predict log-price at any conf vector.
-    model_y_full = GradientBoostingRegressor(
+    model_y_full = make_regressor(
         n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42,
     )
     model_y_full.fit(conf_s, Y)

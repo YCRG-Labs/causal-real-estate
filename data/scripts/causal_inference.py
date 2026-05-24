@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401 — kept for type hints/tests
+from booster import make_regressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler, LabelEncoder
@@ -234,14 +235,14 @@ def backdoor_adjustment(T, confounders, Y, n_pca=50):
 
     r2_full, r2_conf = [], []
     for train_idx, test_idx in kf.split(Y):
-        model_full = GradientBoostingRegressor(
+        model_full = make_regressor(
             n_estimators=200, max_depth=4, learning_rate=0.05,
             subsample=0.8, max_features=max_features, random_state=42,
         )
         model_full.fit(full_features[train_idx], Y[train_idx])
         r2_full.append(model_full.score(full_features[test_idx], Y[test_idx]))
 
-        model_conf = GradientBoostingRegressor(
+        model_conf = make_regressor(
             n_estimators=200, max_depth=4, learning_rate=0.05,
             subsample=0.8, random_state=42,
         )
@@ -292,7 +293,7 @@ def doubly_robust_estimation(T, confounders, Y, n_pca=50, k_folds=5):
     kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
     X_full = np.hstack([treatment.reshape(-1, 1), conf_s])
     for tr_idx, te_idx in kf.split(np.arange(n)):
-        out_m = GradientBoostingRegressor(
+        out_m = make_regressor(
             n_estimators=200, max_depth=5, learning_rate=0.05, random_state=42,
         )
         out_m.fit(X_full[tr_idx], Y[tr_idx])
@@ -391,13 +392,13 @@ def dml_continuous_treatment(T, confounders, Y, n_pca=50, k_folds=5):
     T_resid = np.zeros(n)
 
     for tr, te in kf.split(np.arange(n)):
-        m_y = GradientBoostingRegressor(
+        m_y = make_regressor(
             n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42,
         )
         m_y.fit(conf_s[tr], Y[tr])
         Y_resid[te] = Y[te] - m_y.predict(conf_s[te])
 
-        m_t = GradientBoostingRegressor(
+        m_t = make_regressor(
             n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42,
         )
         m_t.fit(conf_s[tr], pc1[tr])
@@ -467,7 +468,7 @@ def cate_by_price_quantile(T, confounders, Y, n_quantiles=4, n_pca=50):
         treat_q = treatment[mask]
         conf_q = conf_s[mask]
 
-        outcome_q = GradientBoostingRegressor(
+        outcome_q = make_regressor(
             n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42,
         )
         outcome_q.fit(np.hstack([treat_q.reshape(-1, 1), conf_q]), Y_q)
@@ -833,7 +834,7 @@ def randomization_test(T, confounders, Y, n_permutations=100, n_pca=50):
 
     features_orig = np.hstack([T_s, confounders])
 
-    model = GradientBoostingRegressor(
+    model = make_regressor(
         n_estimators=200, max_depth=5, learning_rate=0.05,
         subsample=0.8, random_state=42,
     )
@@ -854,7 +855,7 @@ def randomization_test(T, confounders, Y, n_permutations=100, n_pca=50):
 
         features_perm = np.hstack([T_s, conf_perm])
 
-        model_p = GradientBoostingRegressor(
+        model_p = make_regressor(
             n_estimators=200, max_depth=5, learning_rate=0.05,
             subsample=0.8, random_state=p,
         )

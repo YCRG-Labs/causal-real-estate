@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
+from booster import make_regressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.decomposition import PCA
@@ -124,7 +125,7 @@ def dr_estimate(T_pca, confounders, Y):
     T_norm = np.linalg.norm(T_pca, axis=1)
     treatment = (T_norm > np.median(T_norm)).astype(float)
 
-    outcome = GradientBoostingRegressor(
+    outcome = make_regressor(
         n_estimators=200, max_depth=5, learning_rate=0.05, random_state=42,
     )
     outcome.fit(np.hstack([treatment.reshape(-1, 1), conf_s]), Y)

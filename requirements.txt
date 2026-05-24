@@ -10,3 +10,5 @@ pyarrow
 torch
 scikit-learn
 umap-learn
+lightgbm
+joblib

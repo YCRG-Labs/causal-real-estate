@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.ensemble import GradientBoostingRegressor
+from booster import make_regressor
 from config import PROCESSED_DIR, EMBEDDING_DIM
 
 
@@ -42,7 +43,7 @@ def run_and_plot(city, n_permutations=100):
     idx = np.random.RandomState(42).permutation(n)
     train_idx, test_idx = idx[:train_n], idx[train_n:]
 
-    model = GradientBoostingRegressor(
+    model = make_regressor(
         n_estimators=200, max_depth=4, learning_rate=0.05,
         subsample=0.8, random_state=42,
     )
@@ -55,7 +56,7 @@ def run_and_plot(city, n_permutations=100):
         L_perm = L[perm]
         features_perm = np.hstack([T_s, L_perm])
 
-        model_p = GradientBoostingRegressor(
+        model_p = make_regressor(
             n_estimators=200, max_depth=4, learning_rate=0.05,
             subsample=0.8, random_state=p,
         )

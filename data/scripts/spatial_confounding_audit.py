@@ -24,6 +24,7 @@ from typing import Optional
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.ensemble import GradientBoostingRegressor
+from booster import make_regressor
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.metrics import normalized_mutual_info_score
 from sklearn.model_selection import cross_val_score, KFold
@@ -186,10 +187,10 @@ def audit_embeddings(
     kf = KFold(n_splits=min(5, n), shuffle=True, random_state=42)
     r2_full, r2_conf = [], []
     for tr, te in kf.split(Y):
-        m1 = GradientBoostingRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
+        m1 = make_regressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
         m1.fit(full_feat[tr], Y[tr])
         r2_full.append(m1.score(full_feat[te], Y[te]))
-        m2 = GradientBoostingRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
+        m2 = make_regressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
         m2.fit(conf_s[tr], Y[tr])
         r2_conf.append(m2.score(conf_s[te], Y[te]))
     report.backdoor_delta_r2 = np.mean(r2_full) - np.mean(r2_conf)
@@ -197,7 +198,7 @@ def audit_embeddings(
     T_norm = np.linalg.norm(T_pca, axis=1)
     treatment = (T_norm > np.median(T_norm)).astype(float)
 
-    outcome = GradientBoostingRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
+    outcome = make_regressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
     outcome.fit(np.hstack([treatment.reshape(-1, 1), conf_s]), Y)
 
     propensity = LogisticRegression(max_iter=1000, random_state=42)

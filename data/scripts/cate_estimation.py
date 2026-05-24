@@ -37,7 +37,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import chi2
 from sklearn.decomposition import PCA
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401
+from booster import make_regressor
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 
@@ -61,8 +62,8 @@ class CellResult:
     contains_zero: bool
 
 
-def _gbm(seed: int) -> GradientBoostingRegressor:
-    return GradientBoostingRegressor(
+def _gbm(seed: int):
+    return make_regressor(
         n_estimators=200, max_depth=4, learning_rate=0.05, random_state=seed
     )
 

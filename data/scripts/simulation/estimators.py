@@ -26,7 +26,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 from sklearn.decomposition import PCA
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401
+import sys, os as _os
+sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from booster import make_regressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
@@ -306,7 +309,7 @@ def randomization_estimator(
     tr, te = perm_idx[:train_n], perm_idx[train_n:]
 
     def _fit_score(X_tr, y_tr, X_te, y_te, rng_seed: int) -> float:
-        m = GradientBoostingRegressor(
+        m = make_regressor(
             n_estimators=50, max_depth=3, learning_rate=0.1,
             subsample=0.8, random_state=rng_seed,
         )

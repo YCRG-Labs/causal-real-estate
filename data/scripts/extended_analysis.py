@@ -5,7 +5,8 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401
+from booster import make_regressor
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.metrics import r2_score
 from scipy.stats import spearmanr
@@ -222,7 +223,7 @@ def cross_market_transfer(cities_data):
           f"{sum(len(cities_data[c][2]) for c in city_names)} embeddings")
 
     def gbr():
-        return GradientBoostingRegressor(
+        return make_regressor(
             n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42,
         )
 
@@ -472,7 +473,7 @@ def partial_r2_decomposition(T, L, Y):
     def cv_r2(X, Y):
         scores = []
         for tr, te in kf.split(Y):
-            m = GradientBoostingRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
+            m = make_regressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
             m.fit(X[tr], Y[tr])
             scores.append(m.score(X[te], Y[te]))
         return np.mean(scores)
@@ -529,7 +530,7 @@ def competing_scm_test(cities_data):
     shared_pca = _shared_pca_basis(cities_data, n_pca_shared)
 
     def gbr():
-        return GradientBoostingRegressor(
+        return make_regressor(
             n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42,
         )
 
@@ -591,7 +592,7 @@ def competing_scm_test(cities_data):
             conf = np.zeros((len(Y), 1))
         sc = StandardScaler()
         C = sc.fit_transform(conf)
-        out = GradientBoostingRegressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
+        out = make_regressor(n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42)
         out.fit(np.hstack([D.reshape(-1, 1), C]), Y)
         prop = LogisticRegression(max_iter=1000, random_state=42)
         prop.fit(C, D)
@@ -685,7 +686,7 @@ def cate_by_property_type(T, L, Y, df):
             results.append({"segment": segment_names[q], "n": n_q, "ate": np.nan})
             continue
 
-        outcome = GradientBoostingRegressor(
+        outcome = make_regressor(
             n_estimators=100, max_depth=3, learning_rate=0.05, random_state=42,
         )
         outcome.fit(np.hstack([D_q.reshape(-1, 1), C_q]), Y_q)
