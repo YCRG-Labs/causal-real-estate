@@ -62,19 +62,24 @@ class CellResult:
     contains_zero: bool
 
 
-def _gbm(seed: int):
+def _gbm(seed: int, n_jobs: int = -1):
     return make_regressor(
-        n_estimators=200, max_depth=4, learning_rate=0.05, random_state=seed
+        n_estimators=200, max_depth=4, learning_rate=0.05, random_state=seed,
+        n_jobs=n_jobs,
     )
 
 
 def cross_fit_residuals(
-    pc1: np.ndarray, W: np.ndarray, Y: np.ndarray, seed: int = 42, k_folds: int = 5
+    pc1: np.ndarray, W: np.ndarray, Y: np.ndarray, seed: int = 42, k_folds: int = 5,
+    inner_n_jobs: int = -1,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Cross-fit GBM nuisances; return (Y_resid, T_resid, Y_oof_pred).
 
     Y_oof_pred is the out-of-fold predicted Y from confounders alone — used
     as the pre-treatment proxy for price segment when stratifying.
+
+    Pass inner_n_jobs=1 when calling from within joblib.Parallel to avoid
+    nested over-subscription (e.g. stability_check's 50-seed sweep).
     """
     n = len(Y)
     kf = KFold(n_splits=k_folds, shuffle=True, random_state=seed)
@@ -82,11 +87,11 @@ def cross_fit_residuals(
     T_resid = np.zeros(n)
     Y_oof_pred = np.zeros(n)
     for tr, te in kf.split(np.arange(n)):
-        m_y = _gbm(seed)
+        m_y = _gbm(seed, n_jobs=inner_n_jobs)
         m_y.fit(W[tr], Y[tr])
         Y_oof_pred[te] = m_y.predict(W[te])
         Y_resid[te] = Y[te] - Y_oof_pred[te]
-        m_t = _gbm(seed)
+        m_t = _gbm(seed, n_jobs=inner_n_jobs)
         m_t.fit(W[tr], pc1[tr])
         T_resid[te] = pc1[te] - m_t.predict(W[te])
     return Y_resid, T_resid, Y_oof_pred
@@ -182,15 +187,24 @@ def blp_heterogeneity_test(
     }
 
 
+def _stability_one_seed(s: int, pc1: np.ndarray, W: np.ndarray, Y: np.ndarray) -> float:
+    # inner_n_jobs=1: outer joblib already parallelizes over seeds.
+    Y_r, T_r, _ = cross_fit_residuals(pc1, W, Y, seed=s, inner_n_jobs=1)
+    theta, _ = dml_theta_and_psi(Y_r, T_r)
+    return float(theta)
+
+
 def stability_check(
-    pc1: np.ndarray, W: np.ndarray, Y: np.ndarray, n_seeds: int = 50
+    pc1: np.ndarray, W: np.ndarray, Y: np.ndarray, n_seeds: int = 50,
+    n_jobs: int = -1,
 ) -> dict:
-    thetas = []
-    for s in range(n_seeds):
-        Y_r, T_r, _ = cross_fit_residuals(pc1, W, Y, seed=s)
-        theta, _ = dml_theta_and_psi(Y_r, T_r)
-        thetas.append(theta)
-    arr = np.array(thetas)
+    """Run n_seeds independent DML refits in parallel. Each seed gives its own
+    KFold split; the spread across seeds is the headline stability metric."""
+    from joblib import Parallel, delayed
+    thetas = Parallel(n_jobs=n_jobs)(
+        delayed(_stability_one_seed)(s, pc1, W, Y) for s in range(n_seeds)
+    )
+    arr = np.array(thetas, dtype=float)
     return {
         "n_seeds": int(n_seeds),
         "median_theta": float(np.median(arr)),

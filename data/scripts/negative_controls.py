@@ -219,25 +219,33 @@ def run_negative_controls(city: str, n_nce: int = 30, seed: int = 42) -> dict:
         print(f"    {nco_target}: θ={res.theta:+.4f}  se={res.se:.4f}  "
               f"95%CI=[{res.ci_low:+.4f}, {res.ci_high:+.4f}]  {flag}")
 
-    # ---- NCE panel ----
-    print(f"\n  NCE panel (placebo treatments, {n_nce} draws each):")
-    rng = np.random.default_rng(seed)
-    nce_random: list[DMLResult] = []
-    nce_strata: list[DMLResult] = []
+    # ---- NCE panel (parallelized over k) ----
+    print(f"\n  NCE panel (placebo treatments, {n_nce} draws each, parallel):")
     strata = meta["zip_labels"]
 
-    for k in range(n_nce):
-        T_perm = permute_treatment(T, rng)
-        raw = _silent_dml(T_perm, confounders, Y)
-        res = _to_result(f"NCE-random[{k}]", len(Y), raw)
-        if res is not None:
-            nce_random.append(res)
+    def _one_nce(k: int):
+        # Per-job seeded rng so reproducibility holds without sharing state.
+        rng_k = np.random.default_rng(seed * 100003 + k)
+        T_perm = permute_treatment(T, rng_k)
+        raw_rand = _silent_dml(T_perm, confounders, Y)
+        T_strat = permute_within_strata(T, strata, rng_k)
+        raw_strat = _silent_dml(T_strat, confounders, Y)
+        return k, raw_rand, raw_strat
 
-        T_strat = permute_within_strata(T, strata, rng)
-        raw = _silent_dml(T_strat, confounders, Y)
-        res = _to_result(f"NCE-stratified[{k}]", len(Y), raw)
-        if res is not None:
-            nce_strata.append(res)
+    from joblib import Parallel, delayed
+    perm_results = Parallel(n_jobs=-1)(
+        delayed(_one_nce)(k) for k in range(n_nce)
+    )
+
+    nce_random: list[DMLResult] = []
+    nce_strata: list[DMLResult] = []
+    for k, raw_rand, raw_strat in perm_results:
+        r_rand = _to_result(f"NCE-random[{k}]", len(Y), raw_rand)
+        if r_rand is not None:
+            nce_random.append(r_rand)
+        r_strat = _to_result(f"NCE-stratified[{k}]", len(Y), raw_strat)
+        if r_strat is not None:
+            nce_strata.append(r_strat)
 
     def _summary(label: str, panel: list[DMLResult]):
         thetas = np.array([r.theta for r in panel])

@@ -324,23 +324,15 @@ def doubly_robust_estimation(T, confounders, Y, n_pca=50, k_folds=5):
     z_beta = 0.84
     mde = (z_alpha + z_beta) * if_se
 
-    def dr_statistic(indices):
-        idx = indices[0]
-        t, y, m1, m0, ps = treatment[idx], Y[idx], mu1[idx], mu0[idx], e[idx]
-        return np.mean(
-            m1 - m0 + t * (y - m1) / ps - (1 - t) * (y - m0) / (1 - ps)
-        )
-
+    # Vectorized percentile bootstrap on psi (~100x faster than scipy.stats.bootstrap
+    # which calls the statistic in a Python loop). psi is already the IF score, so
+    # the bootstrap mean of psi[idx] over resamples gives the same distribution.
     rng = np.random.default_rng(42)
-    ci = bootstrap(
-        (np.arange(len(Y)),),
-        dr_statistic,
-        n_resamples=1000,
-        random_state=rng,
-        method="percentile",
-    )
-    boot_low = float(ci.confidence_interval.low)
-    boot_high = float(ci.confidence_interval.high)
+    n = len(Y)
+    boot_idx = rng.integers(0, n, size=(1000, n))
+    boot_means = psi[boot_idx].mean(axis=1)
+    boot_low = float(np.quantile(boot_means, 0.025))
+    boot_high = float(np.quantile(boot_means, 0.975))
 
     print(f"    DR estimate (ATE): {dr_effect:.4f}")
     print(f"    Influence-function SE: {if_se:.4f}")
@@ -485,40 +477,34 @@ def cate_by_price_quantile(T, confounders, Y, n_quantiles=4, n_pca=50):
         mu1_q = outcome_q.predict(np.hstack([np.ones((n_q, 1)), conf_q]))
         mu0_q = outcome_q.predict(np.hstack([np.zeros((n_q, 1)), conf_q]))
 
-        ate_q = np.mean(
+        psi_q = (
             mu1_q - mu0_q
             + treat_q * (Y_q - mu1_q) / e_q
             - (1 - treat_q) * (Y_q - mu0_q) / (1 - e_q)
         )
+        ate_q = float(psi_q.mean())
 
-        def dr_stat_q(indices, t=treat_q, y=Y_q, m1=mu1_q, m0=mu0_q, ps=e_q):
-            idx = indices[0]
-            return np.mean(
-                m1[idx] - m0[idx]
-                + t[idx] * (y[idx] - m1[idx]) / ps[idx]
-                - (1 - t[idx]) * (y[idx] - m0[idx]) / (1 - ps[idx])
-            )
-
+        # Vectorized percentile bootstrap on psi_q (~100x faster than scipy).
         rng = np.random.default_rng(42 + q)
-        ci = bootstrap(
-            (np.arange(n_q),), dr_stat_q,
-            n_resamples=500, random_state=rng, method="percentile",
-        )
+        boot_idx = rng.integers(0, n_q, size=(500, n_q))
+        boot_means = psi_q[boot_idx].mean(axis=1)
+        ci_low_q = float(np.quantile(boot_means, 0.025))
+        ci_high_q = float(np.quantile(boot_means, 0.975))
 
         price_lo = np.exp(quantile_edges[q])
         price_hi = np.exp(quantile_edges[q + 1])
-        contains_zero = ci.confidence_interval.low <= 0 <= ci.confidence_interval.high
+        contains_zero = ci_low_q <= 0 <= ci_high_q
 
         print(f"    Q{q+1} (${price_lo:,.0f}-${price_hi:,.0f}): n={n_q}, ATE={ate_q:.4f} "
-              f"[{ci.confidence_interval.low:.4f}, {ci.confidence_interval.high:.4f}] "
+              f"[{ci_low_q:.4f}, {ci_high_q:.4f}] "
               f"{'(zero in CI)' if contains_zero else '(SIGNIFICANT)'}")
 
         results.append({
             "quantile": q + 1,
             "n": n_q,
             "ate": ate_q,
-            "ci_low": ci.confidence_interval.low,
-            "ci_high": ci.confidence_interval.high,
+            "ci_low": ci_low_q,
+            "ci_high": ci_high_q,
             "price_range": (price_lo, price_hi),
         })
 
@@ -694,21 +680,23 @@ def adversarial_deconfounding(T, Y, meta, n_pca=50, epochs=150, lr=1e-3):
     perm = np.random.RandomState(42).permutation(n)
     tr, te = perm[:split], perm[split:]
 
-    T_train = torch.FloatTensor(T_s[tr])
-    Y_train = torch.FloatTensor(Y_s[tr])
-    zip_train = torch.LongTensor(zip_enc[tr])
-    geo_train = torch.FloatTensor(geo_targets[tr])
-    inc_train = torch.LongTensor(income_quantiles[tr])
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    T_test = torch.FloatTensor(T_s[te])
-    Y_test = torch.FloatTensor(Y_s[te])
-    zip_test = torch.LongTensor(zip_enc[te])
-    geo_test = torch.FloatTensor(geo_targets[te])
-    inc_test = torch.LongTensor(income_quantiles[te])
+    T_train = torch.FloatTensor(T_s[tr]).to(device)
+    Y_train = torch.FloatTensor(Y_s[tr]).to(device)
+    zip_train = torch.LongTensor(zip_enc[tr]).to(device)
+    geo_train = torch.FloatTensor(geo_targets[tr]).to(device)
+    inc_train = torch.LongTensor(income_quantiles[tr]).to(device)
 
-    encoder = Encoder(n_pca, 128, 64)
-    predictor = Predictor(64)
-    discriminator = MultiHeadDiscriminator(64, n_zips, n_income_bins)
+    T_test = torch.FloatTensor(T_s[te]).to(device)
+    Y_test = torch.FloatTensor(Y_s[te]).to(device)
+    zip_test = torch.LongTensor(zip_enc[te]).to(device)
+    geo_test = torch.FloatTensor(geo_targets[te]).to(device)
+    inc_test = torch.LongTensor(income_quantiles[te]).to(device)
+
+    encoder = Encoder(n_pca, 128, 64).to(device)
+    predictor = Predictor(64).to(device)
+    discriminator = MultiHeadDiscriminator(64, n_zips, n_income_bins).to(device)
 
     opt_enc_pred = torch.optim.Adam(
         list(encoder.parameters()) + list(predictor.parameters()),

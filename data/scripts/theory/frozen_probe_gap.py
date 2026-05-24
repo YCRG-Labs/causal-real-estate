@@ -214,13 +214,14 @@ def experiment_2_dynamic_grl(
     np.random.seed(seed)
 
     X, C, Y = make_dgp_continuous(n, d=d_in, seed=seed)
-    Xt = torch.tensor(X)
-    Ct = torch.tensor(C)
-    Yt = torch.tensor(Y).unsqueeze(1)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    Xt = torch.tensor(X).to(device)
+    Ct = torch.tensor(C).to(device)
+    Yt = torch.tensor(Y).unsqueeze(1).to(device)
 
-    enc = Encoder(d_in=d_in, d_out=d_repr)
-    pred = Predictor(d_in=d_repr)
-    disc = LinearDiscriminator(d_in=d_repr)
+    enc = Encoder(d_in=d_in, d_out=d_repr).to(device)
+    pred = Predictor(d_in=d_repr).to(device)
+    disc = LinearDiscriminator(d_in=d_repr).to(device)
 
     optE = torch.optim.Adam(enc.parameters(), lr=lr)
     optP = torch.optim.Adam(pred.parameters(), lr=lr)
@@ -254,7 +255,7 @@ def experiment_2_dynamic_grl(
     # ---- Evaluation: live discriminator vs frozen probe on the same Z ----
     enc.eval()
     with torch.no_grad():
-        Z_final = enc(Xt).numpy()
+        Z_final = enc(Xt).cpu().numpy()
 
     # Live discriminator: just the last D's accuracy (already in history)
     live_acc = float(np.mean(history["disc_acc"][-10:]))

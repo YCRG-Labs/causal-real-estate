@@ -199,13 +199,14 @@ def adversarial_estimator(
 
     W_s = StandardScaler().fit_transform(W)
 
-    W_t = torch.FloatTensor(W_s)
-    Y_t = torch.FloatTensor(Y - Y.mean())
-    pc1_t = torch.FloatTensor(pc1)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    W_t = torch.FloatTensor(W_s).to(device)
+    Y_t = torch.FloatTensor(Y - Y.mean()).to(device)
+    pc1_t = torch.FloatTensor(pc1).to(device)
 
-    encoder = _SmallEncoder(W_s.shape[1], hidden_dim=64, output_dim=32)
-    predictor = _LinearHead(32, 1)
-    discriminator = _LinearHead(32, 1)
+    encoder = _SmallEncoder(W_s.shape[1], hidden_dim=64, output_dim=32).to(device)
+    predictor = _LinearHead(32, 1).to(device)
+    discriminator = _LinearHead(32, 1).to(device)
 
     opt_main = torch.optim.Adam(
         list(encoder.parameters()) + list(predictor.parameters()),
@@ -239,7 +240,7 @@ def adversarial_estimator(
 
     encoder.eval()
     with torch.no_grad():
-        z_repr = encoder(W_t).numpy()
+        z_repr = encoder(W_t).cpu().numpy()
 
     # Residualize Y on z_repr (linear), then regress on pc1 alone.
     # This is the "deconfounded" pipeline: the encoder removed pc1's signal

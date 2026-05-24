@@ -210,12 +210,13 @@ def bootstrap_mean_ci(values: np.ndarray, n_boot: int = 2000, seed: int = 42,
     if len(values) == 0:
         return float("nan"), float("nan"), float("nan")
     rng = np.random.default_rng(seed)
-    boots = np.empty(n_boot)
     n = len(values)
-    for i in range(n_boot):
-        idx = rng.integers(0, n, size=n)
-        boots[i] = values[idx].mean()
-    return float(values.mean()), float(np.quantile(boots, alpha / 2)), float(np.quantile(boots, 1 - alpha / 2))
+    # Vectorized: draw all B*n indices at once, take row-means in one shot.
+    boot_idx = rng.integers(0, n, size=(n_boot, n))
+    boots = values[boot_idx].mean(axis=1)
+    return (float(values.mean()),
+            float(np.quantile(boots, alpha / 2)),
+            float(np.quantile(boots, 1 - alpha / 2)))
 
 
 # ---------- pipeline orchestration -------------------------------------------
