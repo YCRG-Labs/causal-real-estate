@@ -285,3 +285,101 @@ def make_generator(force_mock: bool = False) -> MockGenerator | AnthropicGenerat
             print("  [generator] ANTHROPIC_API_KEY not set — using MockGenerator")
         return MockGenerator()
     return AnthropicGenerator()
+
+
+# -----------------------------------------------------------------------------
+# Async variants: AsyncMockGenerator + AsyncAnthropicGenerator
+# Used by run_counterfactual to fire all 4 arms per listing concurrently via
+# asyncio.gather. Each arm gets its own API request; the 4 requests share the
+# same cached system prompt (prompt caching unaffected by concurrency).
+# Net effect at 100 listings: ~4x speedup on API-bound time (max(4) vs sum(4)).
+# -----------------------------------------------------------------------------
+
+
+class AsyncMockGenerator(MockGenerator):
+    async def generate_blocks(self, system: str, user: str,
+                              slot_dict: Optional[dict] = None,
+                              original_text: Optional[str] = None,
+                              **_: object) -> GenerationResult:
+        return super().generate_blocks(system, user, slot_dict=slot_dict,
+                                       original_text=original_text)
+
+
+class AsyncAnthropicGenerator:
+    """Async Anthropic client. Fires concurrent requests via asyncio.gather."""
+
+    used_mock = False
+
+    def __init__(
+        self,
+        model: str = "claude-3-5-sonnet-latest",
+        max_tokens: int = 2048,
+        temperature: float = 0.4,
+        max_retries: int = 4,
+        base_delay_s: float = 1.5,
+    ):
+        if not _HAS_ANTHROPIC:
+            raise RuntimeError("anthropic package not installed")
+        self.client = anthropic.AsyncAnthropic()
+        self.model = model
+        self.max_tokens = max_tokens
+        self.temperature = temperature
+        self.max_retries = max_retries
+        self.base_delay_s = base_delay_s
+        self.usage = UsageStats()
+
+    def _record_usage(self, response: object) -> None:
+        try:
+            self.usage.add(response.usage)  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    async def generate_blocks(self, system: str, user: str,
+                              slot_dict: Optional[dict] = None,
+                              original_text: Optional[str] = None,
+                              **_: object) -> GenerationResult:
+        import asyncio
+        last_err: Optional[Exception] = None
+        for attempt in range(self.max_retries):
+            try:
+                resp = await self.client.messages.create(
+                    model=self.model,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                    system=[{
+                        "type": "text",
+                        "text": system,
+                        "cache_control": {"type": "ephemeral"},
+                    }],
+                    messages=[{"role": "user", "content": user}],
+                )
+                self._record_usage(resp)
+                raw = "".join(
+                    block.text for block in resp.content
+                    if getattr(block, "type", None) == "text"
+                )
+                payload = _parse_json_payload(raw)
+                return GenerationResult(
+                    rewritten_text=str(payload.get("rewritten_text", "")),
+                    preserved_slots=dict(payload.get("preserved_slots", {})),
+                    raw=raw,
+                    used_mock=False,
+                )
+            except (anthropic.APIError, ValueError) as e:
+                last_err = e
+                delay = self.base_delay_s * (2 ** attempt) + random.uniform(0, 0.5)
+                await asyncio.sleep(delay)
+        raise RuntimeError(
+            f"AsyncAnthropicGenerator failed after {self.max_retries} attempts: {last_err}"
+        )
+
+
+def make_async_generator(force_mock: bool = False):
+    """Return the async generator. Same key/install rules as make_generator."""
+    if force_mock or not _HAS_ANTHROPIC or not os.environ.get("ANTHROPIC_API_KEY"):
+        if not _HAS_ANTHROPIC:
+            print("  [generator] anthropic package unavailable — using AsyncMockGenerator")
+        elif not os.environ.get("ANTHROPIC_API_KEY"):
+            print("  [generator] ANTHROPIC_API_KEY not set — using AsyncMockGenerator")
+        return AsyncMockGenerator()
+    return AsyncAnthropicGenerator()

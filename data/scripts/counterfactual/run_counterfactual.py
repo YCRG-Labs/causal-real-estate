@@ -50,7 +50,7 @@ from causal_inference import (
 )
 from config import EMBEDDING_DIM, EMBEDDING_MODEL, PROCESSED_DIR, RAW_DIR
 
-from generator import GenerationResult, MockGenerator, make_generator
+from generator import GenerationResult, MockGenerator, AsyncMockGenerator, make_async_generator, make_generator  # noqa: F401
 from prompts import SUBMARKET_HINTS, style_stripped_blocks, style_swap_blocks
 from slot_extractor import extract_slots
 from validator import (
@@ -172,14 +172,23 @@ def _get_encoder(model_name: str = EMBEDDING_MODEL):
         return _ENCODER_CACHE["model"]
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
         from sentence_transformers import SentenceTransformer
-        _ENCODER_CACHE["model"] = SentenceTransformer(model_name)
+        import torch
+        m = SentenceTransformer(model_name)
+        if torch.cuda.is_available():
+            m = m.to("cuda")
+        _ENCODER_CACHE["model"] = m
     return _ENCODER_CACHE["model"]
 
 
-def encode_texts(texts: list[str]) -> np.ndarray:
+def encode_texts(texts: list[str], batch_size: int = 128) -> np.ndarray:
+    """Encode texts in one batch. On GPU, batch_size=128 saturates the encoder
+    without OOM on mpnet-768. CPU batches at 64 to avoid memory pressure."""
     enc = _get_encoder()
+    import torch
+    bs = batch_size if torch.cuda.is_available() else min(64, batch_size)
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        return enc.encode(texts, batch_size=32, show_progress_bar=False)
+        return enc.encode(texts, batch_size=bs, show_progress_bar=False,
+                          convert_to_numpy=True)
 
 
 # ---------- predicted log-price for a rewrite --------------------------------
@@ -268,7 +277,7 @@ def _pick_swap_targets(orig_submarket: str, k: int = 3) -> list[str]:
     return pool[:k]
 
 
-def run_pipeline(
+async def run_pipeline(
     city: str,
     n_listings: int,
     out_path: Path,
@@ -277,7 +286,11 @@ def run_pipeline(
     n_pca: int = 50,
     seed: int = 42,
 ) -> dict:
-    """Top-level orchestration. Returns the result dict written to disk."""
+    """Top-level orchestration. Returns the result dict written to disk.
+
+    Async so the 4 arms per listing can fire concurrently via asyncio.gather.
+    """
+    import asyncio
     print(f"\n=== Counterfactual pipeline: {city} (n_listings={n_listings}) ===")
 
     # 1. load SF embeddings + parcels for the production DML refit
@@ -323,7 +336,7 @@ def run_pipeline(
             except Exception:
                 pass
 
-    generator = make_generator(force_mock=force_mock)
+    generator = make_async_generator(force_mock=force_mock)
     print(f"  Generator: {type(generator).__name__}")
 
     # 6. main loop
@@ -366,16 +379,23 @@ def run_pipeline(
             slots=slots,
         )
 
-        # batch the 4 rewrites' embeddings together to amortize encoder load
-        gen_results: list[tuple[str, Optional[str], GenerationResult]] = []
-        for arm_name, target_sub, blocks in arms:
-            res = generator.generate_blocks(
+        # Fire all 4 arms concurrently via asyncio.gather (~4x speedup on
+        # API-bound time vs sequential loop; cache_control on the shared system
+        # prompt still fires correctly across concurrent requests).
+        async_calls = [
+            generator.generate_blocks(
                 system=blocks["system"],
                 user=blocks["user"],
                 slot_dict=slots,
                 original_text=original_text,
             )
-            gen_results.append((arm_name, target_sub, res))
+            for _arm_name, _target_sub, blocks in arms
+        ]
+        arm_results = await asyncio.gather(*async_calls, return_exceptions=False)
+        gen_results: list[tuple[str, Optional[str], GenerationResult]] = [
+            (arm_name, target_sub, res)
+            for (arm_name, target_sub, _), res in zip(arms, arm_results)
+        ]
 
         rewrite_texts = [r.rewritten_text for _, _, r in gen_results]
         rewrite_embs = encode_texts(rewrite_texts)
@@ -504,8 +524,9 @@ def main():
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
+    import asyncio
     reset_caches()
-    run_pipeline(
+    asyncio.run(run_pipeline(
         city=args.city,
         n_listings=args.n_listings,
         out_path=args.out,
@@ -513,7 +534,7 @@ def main():
         skip_perplexity=args.skip_perplexity,
         n_pca=args.n_pca,
         seed=args.seed,
-    )
+    ))
 
 
 if __name__ == "__main__":

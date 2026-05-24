@@ -42,8 +42,13 @@ def main() -> None:
     df["clean_description"] = df["description"].map(clean)
     df = df[df["clean_description"].str.len() > 0].reset_index(drop=True)
 
+    import torch
     model = SentenceTransformer(MODELS[args.model])
-    emb = model.encode(df["clean_description"].tolist(), show_progress_bar=True)
+    if torch.cuda.is_available():
+        model = model.to("cuda")
+    bs = 128 if torch.cuda.is_available() else 32
+    emb = model.encode(df["clean_description"].tolist(), batch_size=bs,
+                       show_progress_bar=True, convert_to_numpy=True)
 
     cols = {f"emb_{i}": emb[:, i] for i in range(emb.shape[1])}
     keep = [c for c in ("zip", "latitude", "longitude", "price") if c in df.columns]

@@ -59,8 +59,13 @@ def clean_description(text):
 
 
 def encode_with_model(texts, model_name, dim, out_path):
+    import torch
     model = SentenceTransformer(model_name)
-    embeddings = model.encode(texts, batch_size=BATCH_SIZE, show_progress_bar=True)
+    if torch.cuda.is_available():
+        model = model.to("cuda")
+    bs = max(BATCH_SIZE, 128) if torch.cuda.is_available() else BATCH_SIZE
+    embeddings = model.encode(texts, batch_size=bs, show_progress_bar=True,
+                              convert_to_numpy=True)
 
     emb_cols = [f"emb_{i}" for i in range(dim)]
     emb_df = pd.DataFrame(embeddings, columns=emb_cols)
