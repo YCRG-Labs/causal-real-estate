@@ -158,15 +158,10 @@ def calibrate_truths(
             return f"{est}|{dgp_name}", float("nan")
 
     cells = [(est, dgp_name, beta) for est in estimators for dgp_name, beta in dgps]
-    if n_jobs == 1 or len(cells) <= 2:
-        # Sequential: skips loky worker spawn (~5s × N workers init overhead)
-        results = [_one_cell(e, d, b) for e, d, b in cells]
-    else:
-        # Cap outer parallelism so torch/cuda imports per worker don't dominate.
-        _calib_workers = min(n_jobs if n_jobs > 0 else 4, 4, len(cells))
-        results = Parallel(n_jobs=_calib_workers)(
-            delayed(_one_cell)(e, d, b) for e, d, b in cells
-        )
+    # ALWAYS sequential: calibrate_truths is small (≤16 cells × ~5s each).
+    # Joblib's loky worker spawn overhead (~30-90s including torch+CUDA init in
+    # each subprocess) dwarfs the work it's supposed to parallelize.
+    results = [_one_cell(e, d, b) for e, d, b in cells]
     truths = dict(results)
     for k, v in truths.items():
         print(f"  truth[{k}] = {v:+.5f}", flush=True)
