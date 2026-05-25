@@ -158,9 +158,15 @@ def calibrate_truths(
             return f"{est}|{dgp_name}", float("nan")
 
     cells = [(est, dgp_name, beta) for est in estimators for dgp_name, beta in dgps]
-    results = Parallel(n_jobs=n_jobs)(
-        delayed(_one_cell)(est, dgp_name, beta) for est, dgp_name, beta in cells
-    )
+    if n_jobs == 1 or len(cells) <= 2:
+        # Sequential: skips loky worker spawn (~5s × N workers init overhead)
+        results = [_one_cell(e, d, b) for e, d, b in cells]
+    else:
+        # Cap outer parallelism so torch/cuda imports per worker don't dominate.
+        _calib_workers = min(n_jobs if n_jobs > 0 else 4, 4, len(cells))
+        results = Parallel(n_jobs=_calib_workers)(
+            delayed(_one_cell)(e, d, b) for e, d, b in cells
+        )
     truths = dict(results)
     for k, v in truths.items():
         print(f"  truth[{k}] = {v:+.5f}", flush=True)
@@ -243,7 +249,7 @@ def run(
         dgps.append((f"scm1_{eta:.2f}", betas[eta]))
 
     print(f"[3a/4] Calibrating per-estimator truths (n_pop={n_truth_pop})...", flush=True)
-    truths = calibrate_truths(gen, estimators, dgps, n_truth_pop=n_truth_pop, n_W=n_W)
+    truths = calibrate_truths(gen, estimators, dgps, n_truth_pop=n_truth_pop, n_W=n_W, n_jobs=n_jobs)
     with open(out_dir / "truths.json", "w") as f:
         json.dump({k: float(v) for k, v in truths.items()}, f, indent=2)
 
