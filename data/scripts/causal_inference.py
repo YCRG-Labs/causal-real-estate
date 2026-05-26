@@ -354,74 +354,135 @@ def doubly_robust_estimation(T, confounders, Y, n_pca=50, k_folds=5):
     }
 
 
-def dml_continuous_treatment(T, confounders, Y, n_pca=50, k_folds=5):
+def _dml_pc1(T, n_pca, k_folds, cross_fit_pca, seed=42):
+    """Return the standardized PC1 treatment vector.
+
+    cross_fit_pca=False (default): PC1 of the full sample (the in-sample,
+    "generated regressor" version — preserved exactly for back-compat).
+
+    cross_fit_pca=True: for each fold, estimate the PC1 direction on the TRAIN
+    rows and project the held-out rows onto it, sign-aligned to the full-sample
+    direction so folds don't flip and standardized by the train projection's
+    mean/sd. This makes the treatment out-of-fold (not estimated from the points
+    it's used on), which is the fix for the generated-regressor bias + variance
+    that makes the in-sample version undercover.
     """
-    Double Machine Learning estimate of the partial effect of the first text
-    principal component on log-price, after partialling out confounders via
-    cross-fitted gradient boosting.
+    n = T.shape[0]
+    if not cross_fit_pca:
+        n_pca_eff = min(n_pca, T.shape[1], n - 1)
+        pca = PCA(n_components=n_pca_eff, random_state=seed)
+        pc1 = pca.fit_transform(T)[:, 0]
+        return (pc1 - pc1.mean()) / (pc1.std() if pc1.std() > 0 else 1.0)
 
-    This is a "continuous treatment" alternative to the binarized DR and
-    avoids the awkward "median PCA norm" treatment definition. The estimand
-    is: per-unit-σ change in PC1 of the text embedding → expected change in
-    log-price, holding confounders fixed.
+    ref = PCA(n_components=1, random_state=seed).fit(T).components_[0]
+    pc1 = np.zeros(n)
+    kf = KFold(n_splits=k_folds, shuffle=True, random_state=seed)
+    for tr, te in kf.split(np.arange(n)):
+        comp = PCA(n_components=1, random_state=seed).fit(T[tr]).components_[0]
+        if np.dot(comp, ref) < 0:
+            comp = -comp
+        proj_tr = T[tr] @ comp
+        mu = float(proj_tr.mean())
+        sd = float(proj_tr.std()) or 1.0
+        pc1[te] = ((T[te] @ comp) - mu) / sd
+    return pc1
 
-    Returns: theta (effect per σ of PC1), SE (Neyman-orthogonal IF SE).
-    """
-    print("\n  [2b] DML Continuous Treatment (PC1 of text)")
-    n_pca = min(n_pca, T.shape[1], T.shape[0] - 1)
-    pca = PCA(n_components=n_pca, random_state=42)
-    T_pca = pca.fit_transform(T)
 
-    pc1 = T_pca[:, 0]
-    pc1 = (pc1 - pc1.mean()) / (pc1.std() if pc1.std() > 0 else 1.0)
-
-    scaler = StandardScaler()
-    conf_s = scaler.fit_transform(confounders)
-
+def _dml_core(T, confounders, Y, n_pca, k_folds, cross_fit_pca, seed=42):
+    """Core DML point estimate + influence-function SE. Returns (theta, se_if)
+    or None if the treatment is fully explained by the confounders."""
     n = len(Y)
-    kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+    pc1 = _dml_pc1(T, n_pca, k_folds, cross_fit_pca, seed=seed)
+    conf_s = StandardScaler().fit_transform(confounders)
+    kf = KFold(n_splits=k_folds, shuffle=True, random_state=seed)
     Y_resid = np.zeros(n)
     T_resid = np.zeros(n)
-
     for tr, te in kf.split(np.arange(n)):
         m_y = make_regressor(
             n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42,
         )
         m_y.fit(conf_s[tr], Y[tr])
         Y_resid[te] = Y[te] - m_y.predict(conf_s[te])
-
         m_t = make_regressor(
             n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42,
         )
         m_t.fit(conf_s[tr], pc1[tr])
         T_resid[te] = pc1[te] - m_t.predict(conf_s[te])
-
     denom = float(np.mean(T_resid ** 2))
     if denom < 1e-12:
-        print("    Treatment fully explained by confounders; effect undefined")
         return None
-
     theta = float(np.mean(T_resid * Y_resid)) / denom
-
     psi = (Y_resid - theta * T_resid) * T_resid / denom
-    var_theta = float(np.var(psi, ddof=1)) / n
-    se = float(np.sqrt(var_theta))
-    ci_low = theta - 1.96 * se
-    ci_high = theta + 1.96 * se
+    se_if = float(np.sqrt(float(np.var(psi, ddof=1)) / n))
+    return theta, se_if
 
-    z_alpha = 1.96
-    z_beta = 0.84
-    mde = (z_alpha + z_beta) * se
 
-    print(f"    DML θ (per σ of PC1):    {theta:.4f}")
-    print(f"    Neyman-orthogonal SE:    {se:.4f}")
-    print(f"    95% CI:                  [{ci_low:.4f}, {ci_high:.4f}]")
-    print(f"    Min detectable effect:   ±{mde:.4f} ({100*(np.exp(mde)-1):.1f}% in price)")
+def dml_continuous_treatment(T, confounders, Y, n_pca=50, k_folds=5,
+                             cross_fit_pca=False, ci_method="if", n_boot=1000,
+                             verbose=True):
+    """
+    Double Machine Learning estimate of the partial effect of the first text
+    principal component on log-price, after partialling out confounders via
+    cross-fitted gradient boosting.
 
-    if ci_low <= 0 <= ci_high:
-        print("    → CI contains zero: no significant continuous effect")
+    Estimand: per-unit-σ change in PC1 of the text embedding → expected change
+    in log-price, holding confounders fixed.
+
+    cross_fit_pca : if True, the PC1 treatment direction is cross-fit (see
+        _dml_pc1). Default False reproduces the original in-sample behavior.
+    ci_method : "if" (default) for the Neyman-orthogonal influence-function SE,
+        or "bootstrap" to resample the WHOLE pipeline (PCA refit included) and
+        take a percentile CI. The bootstrap captures the generated-regressor
+        variability the IF-SE misses; it is B× more expensive, so it is for the
+        one-time headline estimate, not the coverage simulation.
+
+    Returns: dict(theta, se, ci, mde).
+    """
+    if verbose:
+        print("\n  [2b] DML Continuous Treatment (PC1 of text)"
+              f"{' [cross-fit PCA]' if cross_fit_pca else ''}"
+              f"{' [bootstrap CI]' if ci_method == 'bootstrap' else ''}")
+    core = _dml_core(T, confounders, Y, n_pca, k_folds, cross_fit_pca)
+    if core is None:
+        if verbose:
+            print("    Treatment fully explained by confounders; effect undefined")
+        return None
+    theta, se_if = core
+
+    if ci_method == "bootstrap":
+        n = len(Y)
+        T = np.asarray(T)
+        confounders = np.asarray(confounders)
+        Y = np.asarray(Y)
+        rng = np.random.default_rng(20260526)
+        boot = []
+        for _ in range(n_boot):
+            idx = rng.integers(0, n, n)
+            r = _dml_core(T[idx], confounders[idx], Y[idx], n_pca, k_folds,
+                          cross_fit_pca)
+            if r is not None:
+                boot.append(r[0])
+        boot = np.asarray(boot)
+        se = float(boot.std(ddof=1))
+        ci_low = float(np.percentile(boot, 2.5))
+        ci_high = float(np.percentile(boot, 97.5))
     else:
-        print("    → CI excludes zero: significant continuous effect")
+        se = se_if
+        ci_low = theta - 1.96 * se
+        ci_high = theta + 1.96 * se
+
+    mde = (1.96 + 0.84) * se
+
+    if verbose:
+        se_label = "Bootstrap SE" if ci_method == "bootstrap" else "Neyman-orthogonal SE"
+        print(f"    DML θ (per σ of PC1):    {theta:.4f}")
+        print(f"    {se_label}:    {se:.4f}")
+        print(f"    95% CI:                  [{ci_low:.4f}, {ci_high:.4f}]")
+        print(f"    Min detectable effect:   ±{mde:.4f} ({100*(np.exp(mde)-1):.1f}% in price)")
+        if ci_low <= 0 <= ci_high:
+            print("    → CI contains zero: no significant continuous effect")
+        else:
+            print("    → CI excludes zero: significant continuous effect")
 
     return {
         "theta": theta,

@@ -97,28 +97,40 @@ def dr_estimator(T: np.ndarray, W: np.ndarray, Y: np.ndarray) -> EstimateResult:
 # (2) DML continuous-treatment estimator (PC1)
 # ---------------------------------------------------------------------------
 
-def dml_estimator(T: np.ndarray, W: np.ndarray, Y: np.ndarray) -> EstimateResult:
-    """Wrap `causal_inference.dml_continuous_treatment`."""
+def dml_estimator(T: np.ndarray, W: np.ndarray, Y: np.ndarray,
+                  cross_fit_pca: bool = False) -> EstimateResult:
+    """Wrap `causal_inference.dml_continuous_treatment`.
+
+    cross_fit_pca=True uses the out-of-fold PC1 treatment (the fix for the
+    generated-regressor undercoverage); reported as the 'DML_cfpca' estimator.
+    """
+    name = "DML_cfpca" if cross_fit_pca else "DML"
     with _silent():
-        out = dml_continuous_treatment(T, W, Y)
+        out = dml_continuous_treatment(T, W, Y, cross_fit_pca=cross_fit_pca,
+                                       verbose=False)
     if out is None:
         # Treatment fully explained by W -- emit a NaN result so the cell
         # records the failure rather than crashing the loop.
         return EstimateResult(
-            estimator="DML",
+            estimator=name,
             theta=float("nan"), se=float("nan"),
             ci_low=float("nan"), ci_high=float("nan"),
             extras={"failed": True},
         )
     lo, hi = out["ci"]
     return EstimateResult(
-        estimator="DML",
+        estimator=name,
         theta=float(out["theta"]),
         se=float(out["se"]),
         ci_low=float(lo),
         ci_high=float(hi),
         extras={"mde": float(out["mde"])},
     )
+
+
+def dml_cfpca_estimator(T: np.ndarray, W: np.ndarray, Y: np.ndarray) -> EstimateResult:
+    """DML with cross-fit PC1 treatment (the undercoverage fix)."""
+    return dml_estimator(T, W, Y, cross_fit_pca=True)
 
 
 # ---------------------------------------------------------------------------
@@ -349,6 +361,7 @@ def randomization_estimator(
 ESTIMATORS = {
     "DR": dr_estimator,
     "DML": dml_estimator,
+    "DML_cfpca": dml_cfpca_estimator,
     "Adversarial": adversarial_estimator,
     "Randomization": randomization_estimator,
 }
