@@ -33,23 +33,20 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-# Thread budgeting for joblib×LightGBM/BLAS. Pinning OMP=1 (the previous
-# default) eliminated LightGBM's multi-threading and made each fit ~5x slower
-# than sklearn-GBR ever was, defeating the T1.1 LightGBM swap entirely.
-#
-# Strategy: default to ncores/4 inner threads × 4 outer joblib workers so the
-# total = ncores (no oversubscription, LightGBM still multi-threaded per fit).
-# Honors any shell-set value (export OMP_NUM_THREADS=... wins via setdefault).
-# Must be set BEFORE numpy/sklearn/lightgbm imports.
+# Threading model (see git history for the saga). We do NOT pin OMP/BLAS in the
+# main process: that keeps the sequential path (--n_jobs 1) and the truth-
+# calibration phase on LightGBM's fast internal multi-threading. Oversubscription
+# under the parallel grid is prevented at the worker level by
+# parallel_config(inner_max_num_threads=1) (loky sets OMP_NUM_THREADS=1 in each
+# worker subprocess only). That env limit is now actually honored because
+# booster.make_regressor defaults n_jobs=None instead of passing n_jobs=-1, which
+# previously made LightGBM call omp_set_num_threads(all_cores) and override it ->
+# 4 workers x ~100 threads = the 355 sec/rep oversubscription.
 _NCORES = os.cpu_count() or 4
-_INNER_THREADS = max(1, _NCORES // 4)
-for var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS",
-            "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
-    os.environ.setdefault(var, str(_INNER_THREADS))
 
 import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, parallel_config
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from simulation.dgp import (  # noqa: E402
@@ -261,24 +258,28 @@ def run(
 
     rng_master = np.random.default_rng(seed)
 
-    # Persistent worker pool across all cells: keeps loky workers warm and
-    # avoids re-pickling the (~1.5 MB) GaussianMixtureGenerator on every cell.
-    # Cap outer workers at 4 so each worker gets _INNER_THREADS (= ncores/4)
-    # of LightGBM/BLAS parallelism — total ≈ ncores, no oversubscription.
-    _outer_workers = min(n_jobs if n_jobs > 0 else 4, 4)
+    # Outer parallelism over reps, ONE thread per worker. Reps are embarrassingly
+    # parallel; each rep's nuisance fits are tiny (n<=2000), so single-threaded
+    # inner is optimal and avoids oversubscription. Use all cores by default;
+    # --n_jobs caps it. inner_max_num_threads=1 makes loky export OMP_NUM_THREADS=1
+    # to each worker, which booster.make_regressor (n_jobs=None) now honors.
+    # The persistent pool keeps loky workers warm and avoids re-pickling the
+    # ~1.5 MB generator every cell.
+    _outer_workers = n_jobs if (n_jobs and n_jobs > 0) else _NCORES
     rows: list[dict] = []
-    with Parallel(n_jobs=_outer_workers, backend="loky", verbose=0) as parallel:
-        for ci, spec in enumerate(cells, start=1):
-            seeds = rng_master.integers(0, 2**31 - 1, size=n_reps).tolist()
-            cell_t0 = time.time()
-            cell_rows = parallel(
-                delayed(_draw_one)(spec, gen, int(s), n_W) for s in seeds
-            )
-            rows.extend(cell_rows)
-            dt = time.time() - cell_t0
-            print(f"  [{ci}/{len(cells)}] {_cell_label(spec):<35} "
-                  f"R={n_reps}  {dt:6.1f}s "
-                  f"({dt / max(n_reps,1)*1000:.0f} ms/rep)", flush=True)
+    with parallel_config(backend="loky", inner_max_num_threads=1):
+        with Parallel(n_jobs=_outer_workers, verbose=0) as parallel:
+            for ci, spec in enumerate(cells, start=1):
+                seeds = rng_master.integers(0, 2**31 - 1, size=n_reps).tolist()
+                cell_t0 = time.time()
+                cell_rows = parallel(
+                    delayed(_draw_one)(spec, gen, int(s), n_W) for s in seeds
+                )
+                rows.extend(cell_rows)
+                dt = time.time() - cell_t0
+                print(f"  [{ci}/{len(cells)}] {_cell_label(spec):<35} "
+                      f"R={n_reps}  {dt:6.1f}s "
+                      f"({dt / max(n_reps,1)*1000:.0f} ms/rep)", flush=True)
 
     raw = pd.DataFrame(rows)
     raw.to_csv(out_dir / "raw_replicates.csv", index=False)

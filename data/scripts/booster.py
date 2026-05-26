@@ -34,7 +34,7 @@ def make_regressor(
     random_state: int = 42,
     subsample: Optional[float] = None,
     max_features: Optional[float] = None,
-    n_jobs: int = -1,
+    n_jobs: Optional[int] = None,
     force_sklearn: bool = False,
 ):
     """Return a LightGBM regressor if available, else sklearn GBR fallback.
@@ -45,7 +45,15 @@ def make_regressor(
       - max_features (sklearn: per-split feature fraction) is mapped to
         LightGBM's feature_fraction_bynode (per-split). Approximate semantic
         match; results may drift slightly versus sklearn baseline.
-      - n_jobs=-1 by default (all cores). Pass n_jobs=1 inside joblib.Parallel.
+      - n_jobs DEFAULTS TO None, i.e. num_threads=0, i.e. honor OMP_NUM_THREADS.
+        This is deliberate: passing an explicit n_jobs=-1 makes LightGBM call
+        omp_set_num_threads(all_cores), which OVERRIDES any OMP_NUM_THREADS the
+        caller (or joblib/loky) set, causing catastrophic oversubscription when
+        the fit runs inside an outer joblib.Parallel worker pool. Leaving it None
+        lets loky's inner_max_num_threads / OMP_NUM_THREADS govern the thread
+        count. For a one-off standalone fit (OMP unset) this still uses all cores,
+        identical to the old n_jobs=-1 behavior. Pass an explicit int only when
+        you specifically want to pin it.
     """
     if force_sklearn or not _HAS_LIGHTGBM:
         sk_params = {
@@ -73,9 +81,18 @@ def make_regressor(
         "num_leaves": num_leaves,
         "learning_rate": learning_rate,
         "random_state": random_state,
-        "n_jobs": n_jobs,
         "verbose": -1,
+        # force_row_wise: the data here is always tall-thin (rows >> features,
+        # features are PCA'd/confounder columns <= ~50). Pinning row-wise removes
+        # the per-fit "try both then pick faster" auto-test overhead LightGBM runs
+        # otherwise; same fitted model, just skips the probe. Matters because the
+        # simulation fits tens of thousands of these.
+        "force_row_wise": True,
     }
+    # Only pin n_jobs when the caller explicitly asks. Default None => LightGBM
+    # num_threads=0 => honor OMP_NUM_THREADS (see make_regressor docstring).
+    if n_jobs is not None:
+        lgb_params["n_jobs"] = n_jobs
     if subsample is not None and subsample < 1.0:
         lgb_params["subsample"] = subsample
         lgb_params["subsample_freq"] = 1
