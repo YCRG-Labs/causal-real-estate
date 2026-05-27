@@ -54,10 +54,13 @@ def main() -> int:
     if tp.exists():
         truths = json.loads(tp.read_text())
     if args.scm0_truth is not None:
+        # DML-specific: the +0.0073 estimand was measured for DML's PC1 partial
+        # effect. DR's binarized-treatment scm0 estimand is a different quantity
+        # (already calibrated at ~0), so leave it untouched.
         for k in list(truths.keys()):
-            if k.endswith("|scm0"):
+            if k.endswith("|scm0") and k.startswith("DML"):
                 truths[k] = args.scm0_truth
-        print(f"[scm0 truth overridden to {args.scm0_truth:+.4f}]\n")
+        print(f"[scm0 truth overridden to {args.scm0_truth:+.4f} for DML cells only]\n")
 
     raw = raw.dropna(subset=["theta", "se", "ci_low", "ci_high"])
     z = 1.959963985
