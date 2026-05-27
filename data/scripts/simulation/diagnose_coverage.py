@@ -42,6 +42,10 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", default=str(DEFAULT_DIR / "raw_replicates.csv"))
     ap.add_argument("--truths", default=str(DEFAULT_DIR / "truths.json"))
+    ap.add_argument("--scm0-truth", type=float, default=None,
+                    help="Override the enforced-0 scm0 truth (e.g. 0.0073 from "
+                         "check_scm0_truth.py) to recompute null-cell coverage "
+                         "against the DGP's actual estimand.")
     args = ap.parse_args()
 
     raw = pd.read_csv(args.raw)
@@ -49,6 +53,11 @@ def main() -> int:
     tp = Path(args.truths)
     if tp.exists():
         truths = json.loads(tp.read_text())
+    if args.scm0_truth is not None:
+        for k in list(truths.keys()):
+            if k.endswith("|scm0"):
+                truths[k] = args.scm0_truth
+        print(f"[scm0 truth overridden to {args.scm0_truth:+.4f}]\n")
 
     raw = raw.dropna(subset=["theta", "se", "ci_low", "ci_high"])
     z = 1.959963985
