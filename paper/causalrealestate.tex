@@ -591,21 +591,23 @@ We construct a $222$-dimensional hand-crafted stylometric feature vector per des
 
 \begin{table}[!htbp]
 \centering
-\caption{Stylometric vs full-embedding zip-code classification accuracy. The stylometric vector contains no content words: only readability, POS distributions, formality, function-word frequencies, and surface counts. The full-embedding classifier uses 768-dim Sentence-BERT representations.}
+\caption{Stylometric vs full-embedding zip-code classification accuracy. The stylometric vector contains no content words: only readability, POS distributions, formality, function-word frequencies, and surface counts. The full-embedding classifier uses 768-dim Sentence-BERT representations. Ratios are classification accuracy relative to the $1/K$ random baseline.}
 \label{tab:stylometric}
-\begin{tabular}{lrrrrr}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrrr}
 \toprule
-\textbf{City} & $N$ & $K$ zips & \textbf{Stylometric acc.} & \textbf{Full embedding acc.} & \textbf{Stylometric / random} \\
+\textbf{City} & $N$ & $K$ zips & \textbf{Stylometric acc.} & \textbf{Full embedding acc.} & \textbf{Stylometric / random} & \textbf{Full / random} \\
 \midrule
-Boston & 988 & 30 & 0.950 & 0.979 & $28.5\times$ \\
-NYC & 842 & 76 & 0.989 & 0.991 & $75.2\times$ \\
-SF & 995 & 24 & 0.931 & 0.974 & $22.3\times$ \\
+Boston & 988 & 30 & 0.950 & 0.979 & $28.5\times$ & $29.4\times$ \\
+NYC & 842 & 76 & 0.989 & 0.991 & $75.2\times$ & $75.3\times$ \\
+SF & 995 & 24 & 0.931 & 0.974 & $22.3\times$ & $23.4\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 \FloatBarrier
 
-The result is striking. A $222$-dimensional purely stylometric vector recovers zip code at $22$--$75\times$ above random across the three cities, with accuracy within $0.2$--$4.3$ percentage points of the full $768$-dim transformer (Table~\ref{tab:stylometric}). In NYC, the gap is essentially zero: $98.9\%$ stylometric vs $99.1\%$ full embedding. The geographic encoding in property-description embeddings is therefore not primarily about \emph{what} the agent says but about \emph{how} they say it---register, formality, sentence structure, and function-word cadence. This is the sociolinguistic mechanism described by~\citet{hovy2021importance,eisenstein2014diffusion} and previously documented for demographic prediction; we confirm it operates at zip-code granularity in the real-estate domain.
+The result is striking. A $222$-dimensional purely stylometric vector recovers zip code at $22$--$75\times$ above random across the three cities, with accuracy within $0.2$--$4.3$ percentage points of the full $768$-dim transformer, which itself recovers zip at $23$--$75\times$ random (Table~\ref{tab:stylometric}). In NYC, the gap is essentially zero: $98.9\%$ stylometric vs $99.1\%$ full embedding. The geographic encoding in property-description embeddings is therefore not primarily about \emph{what} the agent says but about \emph{how} they say it---register, formality, sentence structure, and function-word cadence. This is the sociolinguistic mechanism described by~\citet{hovy2021importance,eisenstein2014diffusion} and previously documented for demographic prediction; we confirm it operates at zip-code granularity in the real-estate domain.
 
 The implication for the causal analysis is that the spatial confounding pathway $\ell \rightarrow t$ in our SCM is mediated through socio-stylistic register at least as much as through topical content. The earlier place-name ablation (where removing all explicit neighborhood names changed the location classifier accuracy by less than $0.2\%$) leaves location encoding nearly intact for the same reason: the encoding lives in the function-word and stylistic distribution, which is invariant to lexical ablation of named entities.
 
@@ -738,7 +740,7 @@ Micro-geo & parcel distances (6 vars) & 61 & $-0.075$ \\
 \end{table}
 \FloatBarrier
 
-\textit{Randomization tests.} Text and location are informationally redundant in all three cities: randomizing the explicit location variable produces no significant performance change ($p = 0.09$ for Boston, $p = 0.00$ for New York with geocoded coordinates, $p = 0.98$ for San Francisco). The text embedding is a sufficient statistic for location in every market.
+\textit{Randomization tests.} Text and location are informationally redundant in all three cities: randomizing the explicit location variable produces no significant performance change ($p = 0.14$ for Boston, $p = 0.46$ for New York, $p = 0.98$ for San Francisco). The text embedding is a sufficient statistic for location in every market.
 
 \textit{Frozen-encoder probe.} As detailed below, the frozen probe recovers zip code at 19--116$\times$ random in all three cities, confirming that text embeddings encode geography at extraordinary resolution regardless of market.
 
