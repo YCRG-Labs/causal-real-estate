@@ -1,33 +1,47 @@
 """
-Re-geocode Boston/NYC descriptions to PROPERTY-LEVEL lat/lon by address-matching
-against parcel records. Replaces the prior pipeline which fell back to
-zip-centroid for ~94% of NYC and ~95% of Boston descriptions, recreating the
-within-zip confounding artifact that destabilized the NYC DML.
+Re-geocode Boston/NYC descriptions to property-level lat/lon.
 
-Key improvements over the prior `geocode_descriptions.py`:
-  - Strips ordinal suffixes (90TH -> 90, 3RD -> 3) to match PLUTO's bare-number
-    Manhattan street format.
-  - Adds TPKE/BWY/EXPY/HWY/CRES etc. to the suffix dictionary.
-  - For unmatched, tries Queens hyphenated address insertion (16420 -> 164-20).
-  - For still-unmatched, tries a per-zip street-name prefix fallback.
-  - Reports a clean breakdown of match types and refuses to zip-centroid
-    silently. Unmatched rows keep NaN lat/lon so downstream code can choose
-    to drop them rather than analyze a centroid artifact.
+Replaces the zip-centroid fallback that left ~94% of NYC and ~95% of Boston
+description coordinates identical within zip and destabilized the per-city DML.
+
+Strategy:
+  1. Vectorized address normalization (uppercase, strip unit/suffix, expand
+     directions and street types, strip ordinal endings like 90TH -> 90).
+  2. NYC: cached PLUTO lookup with (norm, postcode) and (norm) keys, queens-
+     hyphen variants for unhyphenated 4-6 digit leading numbers, async NYC
+     GeoSearch API for residual unmatched.
+  3. Boston: assessment ST_NUM+ST_NAME -> parcel PID -> lat/lon join, Census
+     batch geocoder for residual unmatched.
+  4. Writes the new lat/lon back into data/processed/{city}_embeddings.parquet
+     after backing up the prior file once. Adds BBL_matched, geocode_method,
+     match_label columns. Unmatched rows keep NaN lat/lon so the DML can drop
+     or impute them rather than silently using a centroid artifact.
 
 Usage:
+    python regeocode_descriptions.py            # both cities
     python regeocode_descriptions.py nyc
     python regeocode_descriptions.py boston
-    python regeocode_descriptions.py            # both
+    python regeocode_descriptions.py --no-api   # skip API fallbacks (offline)
 """
 import re
 import sys
+import asyncio
+import shutil
 from pathlib import Path
 import numpy as np
 import pandas as pd
 
+try:
+    import httpx
+    HAVE_HTTPX = True
+except ImportError:
+    HAVE_HTTPX = False
+
 REPO = Path(__file__).resolve().parents[2]
 RAW = REPO / "data" / "raw"
 PROC = REPO / "data" / "processed"
+CACHE = PROC / "_cache"
+CACHE.mkdir(parents=True, exist_ok=True)
 
 SUFFIXES = {
     "ST": "STREET", "STR": "STREET", "AVE": "AVENUE", "AV": "AVENUE",
@@ -36,30 +50,32 @@ SUFFIXES = {
     "PKWY": "PARKWAY", "HWY": "HIGHWAY", "SQ": "SQUARE", "WY": "WAY",
     "CRES": "CRESCENT", "TPKE": "TURNPIKE", "BWY": "BROADWAY",
     "EXPY": "EXPRESSWAY", "PLZ": "PLAZA", "XING": "CROSSING",
+    "RDG": "RIDGE",
 }
 DIRS = {"N": "NORTH", "S": "SOUTH", "E": "EAST", "W": "WEST"}
 
 
-def normalize(addr):
-    if not isinstance(addr, str) or not addr.strip():
-        return ""
-    a = addr.upper().strip()
-    # Strip unit / apt / suite / floor designators
-    a = re.sub(r"\s*[#,]\s*(UNIT|APT|STE|SUITE|FL|FLOOR|RM|ROOM|PH)?\s*\S*$", "", a)
-    a = re.sub(r"\s+(UNIT|APT|STE|SUITE|FL|FLOOR|RM|ROOM|PH)\s+\S*$", "", a)
-    # Strip ordinal suffix from numbers (the key fix)
-    a = re.sub(r"(\d+)(ST|ND|RD|TH)\b", r"\1", a)
-    # Expand directions and street-type abbreviations
-    for short, full in DIRS.items():
-        a = re.sub(rf"\b{short}\b", full, a)
-    for short, full in SUFFIXES.items():
-        a = re.sub(rf"\b{short}\b", full, a)
-    return re.sub(r"\s+", " ", a).strip().rstrip(".")
+def normalize_vec(s):
+    """Vectorized address normalization. Operates on a pandas Series."""
+    s = s.fillna("").astype(str).str.upper().str.strip()
+    # strip unit / apt / suite designators
+    s = s.str.replace(r"\s*[#,]\s*(UNIT|APT|STE|SUITE|FL|FLOOR|RM|ROOM|PH)?\s*\S*$",
+                      "", regex=True)
+    s = s.str.replace(r"\s+(UNIT|APT|STE|SUITE|FL|FLOOR|RM|ROOM|PH)\s+\S*$",
+                      "", regex=True)
+    # strip ordinal endings on numbers: 90TH -> 90, 3RD -> 3
+    s = s.str.replace(r"(\d+)(ST|ND|RD|TH)\b", r"\1", regex=True)
+    # expand directions, then street-type abbreviations
+    for k, v in DIRS.items():
+        s = s.str.replace(rf"\b{k}\b", v, regex=True)
+    for k, v in SUFFIXES.items():
+        s = s.str.replace(rf"\b{k}\b", v, regex=True)
+    s = s.str.replace(r"\s+", " ", regex=True).str.strip().str.rstrip(".")
+    return s
 
 
-def queens_hyphen_variants(norm):
-    """For an unhyphenated leading number like '16420', try '164-20', '1642-0'.
-    Queens addresses are stored hyphenated in PLUTO (164-20 HIGHLAND AVENUE)."""
+def queens_variants(norm):
+    """For a leading 4-6 digit number, return hyphen-split variants."""
     m = re.match(r"^(\d{4,6})\s+(.+)$", norm)
     if not m:
         return []
@@ -72,80 +88,253 @@ def queens_hyphen_variants(norm):
     return out
 
 
-def build_nyc_lookup():
-    """Build address -> (lat, lon, BBL) lookup from PLUTO."""
-    p = RAW / "nyc" / "pluto.csv"
-    df = pd.read_csv(p, low_memory=False,
-                     usecols=["BBL", "address", "latitude", "longitude"])
+def build_nyc_lookup_cached():
+    """Load PLUTO -> dataframe of (norm, postcode, latitude, longitude, BBL).
+    Caches the normalized table as parquet for fast subsequent runs."""
+    cache = CACHE / "pluto_lookup.parquet"
+    if cache.exists():
+        df = pd.read_parquet(cache)
+        print(f"  PLUTO lookup (cache hit): {len(df):,} entries")
+        return df
+    print("  Building PLUTO lookup from raw CSV (one-time, ~30s)...")
+    df = pd.read_csv(RAW / "nyc" / "pluto.csv", low_memory=False,
+                     usecols=["BBL", "address", "latitude", "longitude",
+                              "postcode"])
     df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
     df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
+    df["postcode"] = pd.to_numeric(df["postcode"], errors="coerce").astype("Int64")
     df = df.dropna(subset=["latitude", "longitude", "address"])
-    df = df[(df["latitude"] != 0) & (df["longitude"] != 0)]
-    df["norm"] = df["address"].apply(normalize)
-    df = df[df["norm"].str.len() > 3]
-    print(f"  PLUTO: {len(df):,} rows with valid lat/lon and parsed address "
-          f"({df['norm'].nunique():,} unique normalized)")
-    return df.drop_duplicates("norm").set_index("norm")[
-        ["latitude", "longitude", "BBL"]].to_dict("index")
+    df = df[(df.latitude != 0) & (df.longitude != 0)]
+    df["norm"] = normalize_vec(df["address"])
+    df = df[df.norm.str.len() > 3]
+    df = df.drop_duplicates(["norm", "postcode"]).reset_index(drop=True)
+    df.to_parquet(cache, index=False)
+    print(f"  cached {len(df):,} entries -> {cache}")
+    return df
 
 
-def build_boston_lookup():
-    p = RAW / "boston" / "boston_assessment.csv"
-    if not p.exists():
-        print("  Boston assessment file not found")
-        return {}
-    # Try to find the parcel geometry file with lat/lon
-    parcels = None
-    for cand in [PROC / "boston_embeddings.parquet"]:  # has the spatial join already in release
-        pass
-    # Use the cleaned/centroid file (geocode_and_centroids.py produces this)
-    geom_paths = [
-        PROC / "boston_parcels.gpkg",
-        REPO / "data" / "cleaned" / "boston_parcels_cleaned.gpkg",
-        REPO / "release" / "data" / "boston" / "parcels.parquet",
-    ]
-    parcels = None
-    for gp in geom_paths:
-        if gp.exists():
-            if gp.suffix == ".parquet":
-                parcels = pd.read_parquet(gp)
-            else:
-                try:
-                    import geopandas as gpd
-                    parcels = gpd.read_file(gp)
-                except Exception:
-                    continue
-            if parcels is not None and len(parcels) > 0:
-                print(f"  Boston parcels loaded from {gp.name}: {len(parcels):,} rows")
-                break
-    if parcels is None:
-        print("  Boston parcels with lat/lon not found in expected paths")
-        return {}
+async def _geosearch_one(client, sem, addr):
+    async with sem:
+        try:
+            r = await client.get(
+                "https://geosearch.planninglabs.nyc/v2/search",
+                params={"text": addr, "size": 1}, timeout=15.0,
+            )
+            if r.status_code == 200:
+                j = r.json()
+                feats = j.get("features", [])
+                if feats:
+                    lon, lat = feats[0]["geometry"]["coordinates"]
+                    label = feats[0]["properties"].get("label", "")
+                    return (lat, lon, label)
+        except Exception:
+            pass
+        return (None, None, None)
 
-    # Boston assessment has PID/ST_NUM/ST_NAME (no lat/lon); parcels file has
-    # PID-equivalent + lat/lon. We join through the parcel id.
-    assess = pd.read_csv(p, low_memory=False,
-                         usecols=["PID", "ST_NUM", "ST_NAME"])
+
+async def _geosearch_batch(addresses, concurrency=8):
+    async with httpx.AsyncClient() as client:
+        sem = asyncio.Semaphore(concurrency)
+        return await asyncio.gather(
+            *[_geosearch_one(client, sem, a) for a in addresses]
+        )
+
+
+def geosearch_fallback(desc, mask_unmatched, use_api=True):
+    """Hit NYC GeoSearch for the unmatched rows. Returns lat/lon/label arrays
+    aligned to desc.index, with NaN where no match."""
+    n = len(desc)
+    lat = np.full(n, np.nan)
+    lon = np.full(n, np.nan)
+    lab = np.array([None] * n, dtype=object)
+    if not (use_api and HAVE_HTTPX and mask_unmatched.any()):
+        return lat, lon, lab
+    rows = desc[mask_unmatched].copy()
+    rows["q"] = rows.apply(
+        lambda r: f"{r['address']}, {int(r['zip'])}" if pd.notna(r.get("zip")) else r["address"],
+        axis=1,
+    )
+    queries = rows["q"].fillna(rows["address"]).tolist()
+    print(f"  GeoSearch API on {len(queries)} unmatched (concurrency=8)...")
+    results = asyncio.run(_geosearch_batch(queries, concurrency=8))
+    for idx, (la, lo, lb) in zip(rows.index, results):
+        lat[idx], lon[idx], lab[idx] = la, lo, lb
+    hits = sum(1 for la, _, _ in results if la is not None)
+    print(f"  GeoSearch hits: {hits}/{len(queries)}")
+    return lat, lon, lab
+
+
+def regeocode_nyc(use_api=True):
+    print(f"\n{'=' * 64}\nREGEOCODE: NYC\n{'=' * 64}")
+    desc = pd.read_csv(RAW / "descriptions" / "nyc_descriptions.csv")
+    n = len(desc)
+    # drop the all-NaN raw lat/lon to avoid merge column collisions
+    desc = desc.drop(columns=[c for c in ("latitude", "longitude") if c in desc.columns])
+    desc["norm"] = normalize_vec(desc["address"])
+    desc["zip"] = pd.to_numeric(desc["zip"], errors="coerce").astype("Int64")
+    print(f"  Loaded {n} descriptions")
+
+    plt = build_nyc_lookup_cached()
+    plt_zip = plt[plt.postcode.notna()]
+    plt_any = plt.drop_duplicates("norm")[["norm", "latitude", "longitude", "BBL"]]
+
+    # Stage 1: exact (norm, postcode) match -- the most reliable
+    s1 = desc.merge(plt_zip, left_on=["norm", "zip"],
+                    right_on=["norm", "postcode"], how="left",
+                    suffixes=("", "_p"))
+    lat = s1["latitude"].values.copy()
+    lon = s1["longitude"].values.copy()
+    bbl = s1["BBL"].astype(object).where(s1["latitude"].notna(), None).values
+    method = np.where(s1["latitude"].notna(), "exact_zip",
+                      np.where(desc["norm"].str.len() > 3, "", "empty"))
+    s1_hits = (method == "exact_zip").sum()
+
+    # Stage 2: exact norm only (in case description zip differs from PLUTO zip)
+    rest = pd.Series(method == "").values
+    if rest.any():
+        s2 = desc[rest].merge(plt_any, on="norm", how="left")
+        new_lat = s2["latitude"].values
+        new_lon = s2["longitude"].values
+        new_bbl = s2["BBL"].values
+        idx_rest = np.where(rest)[0]
+        for i_local, i_global in enumerate(idx_rest):
+            if pd.notna(new_lat[i_local]):
+                lat[i_global] = new_lat[i_local]
+                lon[i_global] = new_lon[i_local]
+                bbl[i_global] = new_bbl[i_local]
+                method[i_global] = "exact"
+    s2_hits = ((method == "exact")).sum()
+
+    # Stage 3: queens-hyphen variants
+    rest = pd.Series(method == "").values
+    s3_hits = 0
+    if rest.any():
+        for i in np.where(rest)[0]:
+            for v in queens_variants(desc["norm"].iat[i]):
+                hit = plt_any[plt_any.norm == v]
+                if not hit.empty:
+                    lat[i] = hit["latitude"].iat[0]
+                    lon[i] = hit["longitude"].iat[0]
+                    bbl[i] = hit["BBL"].iat[0]
+                    method[i] = "queens_hyphen"
+                    s3_hits += 1
+                    break
+
+    # Stage 4: NYC GeoSearch API fallback
+    rest = pd.Series(method == "").values
+    api_lat, api_lon, api_lab = geosearch_fallback(desc, rest, use_api=use_api)
+    api_hits = 0
+    label = np.array([None] * n, dtype=object)
+    for i in np.where(rest)[0]:
+        if pd.notna(api_lat[i]):
+            lat[i] = api_lat[i]
+            lon[i] = api_lon[i]
+            label[i] = api_lab[i]
+            method[i] = "geosearch_api"
+            api_hits += 1
+
+    unmatched = (method == "").sum() + (method == "empty").sum()
+    matched_total = n - unmatched
+
+    print(f"\n  RESULTS:")
+    print(f"    exact (norm + zip)   : {s1_hits:>4}  ({s1_hits/n:>5.1%})")
+    print(f"    exact (norm only)    : {s2_hits:>4}  ({s2_hits/n:>5.1%})")
+    print(f"    queens hyphen variant: {s3_hits:>4}  ({s3_hits/n:>5.1%})")
+    print(f"    GeoSearch API        : {api_hits:>4}  ({api_hits/n:>5.1%})")
+    print(f"    {'-' * 38}")
+    print(f"    PROPERTY-LEVEL TOTAL : {matched_total:>4}  ({matched_total/n:>5.1%})")
+    print(f"    unmatched            : {unmatched:>4}  ({unmatched/n:>5.1%})")
+
+    # Persist
+    out = desc.copy()
+    out["latitude"] = lat
+    out["longitude"] = lon
+    out["BBL_matched"] = bbl
+    out["geocode_method"] = method
+    out["match_label"] = label
+    out_csv = PROC / "nyc_descriptions_geocoded.csv"
+    out.drop(columns=["norm"]).to_csv(out_csv, index=False)
+    print(f"\n  Saved -> {out_csv.name}")
+
+    # Update the embeddings parquet (row-aligned with the raw CSV)
+    emb_path = PROC / "nyc_embeddings.parquet"
+    if emb_path.exists():
+        emb = pd.read_parquet(emb_path)
+        if "address" in emb.columns and len(emb) == n:
+            backup = emb_path.with_suffix(".parquet.zipcentroid_backup")
+            if not backup.exists():
+                shutil.copy(emb_path, backup)
+                print(f"  Backed up prior parquet -> {backup.name}")
+            emb["latitude"] = lat
+            emb["longitude"] = lon
+            emb["BBL_matched"] = bbl
+            emb["geocode_method"] = method
+            emb["match_label"] = label
+            emb.to_parquet(emb_path, index=False)
+            print(f"  Updated -> {emb_path.name}")
+    return out
+
+
+def build_boston_lookup_cached():
+    cache = CACHE / "boston_lookup.parquet"
+    if cache.exists():
+        df = pd.read_parquet(cache)
+        print(f"  Boston lookup (cache hit): {len(df):,} entries")
+        return df
+
+    assess_path = RAW / "boston" / "boston_assessment.csv"
+    if not assess_path.exists():
+        print("  Boston assessment file missing")
+        return None
+    print("  Building Boston lookup from assessment + parcels (~10s)...")
+    assess = pd.read_csv(assess_path, low_memory=False,
+                         usecols=["PID", "ST_NUM", "ST_NAME", "ZIP_CODE"]
+                         if "ZIP_CODE" in pd.read_csv(assess_path, nrows=1).columns
+                         else ["PID", "ST_NUM", "ST_NAME"])
     assess["PID"] = assess["PID"].astype(str).str.strip().str.zfill(10)
     assess["ST_NUM"] = pd.to_numeric(assess["ST_NUM"], errors="coerce")
     assess = assess.dropna(subset=["ST_NUM"])
     assess["raw"] = (assess["ST_NUM"].astype(int).astype(str) + " "
                      + assess["ST_NAME"].astype(str).str.strip())
-    assess["norm"] = assess["raw"].apply(normalize)
+    assess["norm"] = normalize_vec(assess["raw"])
+    if "ZIP_CODE" in assess.columns:
+        assess["postcode"] = pd.to_numeric(assess["ZIP_CODE"], errors="coerce").astype("Int64")
+    else:
+        assess["postcode"] = pd.NA
 
-    # Figure out the parcel-id column on the parcels frame
+    # Find a parcels file with lat/lon
+    parcels = None
+    for cand in [
+        REPO / "release" / "data" / "boston" / "parcels.parquet",
+        PROC / "boston_parcels.gpkg",
+        REPO / "data" / "cleaned" / "boston_parcels_cleaned.gpkg",
+    ]:
+        if cand.exists():
+            if cand.suffix == ".parquet":
+                parcels = pd.read_parquet(cand)
+            else:
+                try:
+                    import geopandas as gpd
+                    parcels = gpd.read_file(cand)
+                except Exception:
+                    continue
+            if parcels is not None and len(parcels) > 0:
+                print(f"  Boston parcels loaded from {cand.name}: {len(parcels):,}")
+                break
+    if parcels is None:
+        print("  No Boston parcels file found")
+        return None
+
     pid_cols = [c for c in parcels.columns
                 if c.upper() in ("MAP_PAR_ID", "PARCEL_ID", "PID", "PARID")]
     if not pid_cols:
-        print(f"  Boston parcels has no PID-like column. Columns: {list(parcels.columns)[:20]}")
-        return {}
+        print(f"  Boston parcels has no PID-like column: {list(parcels.columns)[:20]}")
+        return None
     pid_col = pid_cols[0]
     parcels[pid_col] = parcels[pid_col].astype(str).str.strip().str.zfill(10)
-
     lat_col = next((c for c in parcels.columns if c.lower() == "latitude"), None)
     lon_col = next((c for c in parcels.columns if c.lower() == "longitude"), None)
     if lat_col is None and "geometry" in parcels.columns:
-        # geometry path: compute centroid
         import geopandas as gpd
         if not isinstance(parcels, gpd.GeoDataFrame):
             parcels = gpd.GeoDataFrame(parcels, geometry="geometry", crs="EPSG:4326")
@@ -154,128 +343,191 @@ def build_boston_lookup():
         parcels["longitude"] = cent.x
         lat_col, lon_col = "latitude", "longitude"
     if lat_col is None or lon_col is None:
-        print("  Boston parcels file has no usable lat/lon")
-        return {}
+        print("  Boston parcels lacks usable lat/lon")
+        return None
 
     merged = assess.merge(parcels[[pid_col, lat_col, lon_col]],
                           left_on="PID", right_on=pid_col, how="inner")
     merged = merged.dropna(subset=[lat_col, lon_col])
     merged = merged[merged["norm"].str.len() > 3]
-    print(f"  Boston assessment+parcels: {len(merged):,} addresses with lat/lon "
-          f"({merged['norm'].nunique():,} unique)")
-    return merged.drop_duplicates("norm").set_index("norm").apply(
-        lambda r: {"latitude": r[lat_col], "longitude": r[lon_col], "BBL": r["PID"]},
-        axis=1).to_dict()
+    merged = merged.rename(columns={lat_col: "latitude", lon_col: "longitude",
+                                    "PID": "BBL"})
+    merged = merged.drop_duplicates(["norm", "postcode"])[
+        ["norm", "postcode", "latitude", "longitude", "BBL"]].reset_index(drop=True)
+    merged.to_parquet(cache, index=False)
+    print(f"  cached {len(merged):,} entries -> {cache}")
+    return merged
 
 
-def match_one(norm, zip_code, lookup, zip_index):
-    """Try exact -> Queens-hyphen variant -> in-zip street-name prefix fallback."""
-    if norm in lookup:
-        return lookup[norm], "exact"
-    for v in queens_hyphen_variants(norm):
-        if v in lookup:
-            return lookup[v], "queens_hyphen"
-    # In-zip prefix fallback: same first two tokens (street number + first word)
-    parts = norm.split()
-    if len(parts) >= 2 and zip_code in zip_index:
-        prefix2 = parts[0] + " " + parts[1]
-        cands = [k for k in zip_index[zip_code] if k.startswith(prefix2)]
-        if len(cands) == 1:
-            return lookup[cands[0]], "in_zip_prefix"
-    return None, "unmatched"
+async def _census_one(client, sem, addr, city, state, zip_code):
+    async with sem:
+        params = {
+            "address": f"{addr}, {city}, {state}, {zip_code}" if zip_code else f"{addr}, {city}, {state}",
+            "benchmark": "Public_AR_Current",
+            "format": "json",
+        }
+        try:
+            r = await client.get(
+                "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress",
+                params=params, timeout=20.0,
+            )
+            if r.status_code == 200:
+                j = r.json()
+                m = j.get("result", {}).get("addressMatches", [])
+                if m:
+                    return (m[0]["coordinates"]["y"],
+                            m[0]["coordinates"]["x"],
+                            m[0]["matchedAddress"])
+        except Exception:
+            pass
+        return (None, None, None)
 
 
-def build_zip_index(lookup, descriptions_zips):
-    """For a given set of zip codes seen in the descriptions, group lookup keys
-    by which PLUTO entries are plausibly in those zips. We don't have zip in
-    PLUTO here, so we approximate by NOT constraining and only using the prefix
-    fallback when a single candidate matches. The zip_index here is a no-op
-    placeholder kept for future zip-aware matching."""
-    # No-op for now; main matcher won't restrict by zip.
-    return {z: list(lookup.keys()) for z in descriptions_zips}
+async def _census_batch_async(rows, city, state, concurrency=8):
+    async with httpx.AsyncClient() as client:
+        sem = asyncio.Semaphore(concurrency)
+        tasks = [
+            _census_one(client, sem, r["address"], city, state,
+                        f"{int(r['zip']):05d}" if pd.notna(r.get("zip")) else "")
+            for _, r in rows.iterrows()
+        ]
+        return await asyncio.gather(*tasks)
 
 
-def regeocode_city(city):
-    print(f"\n{'='*64}\nREGEOCODE: {city.upper()}\n{'='*64}")
-    raw_path = RAW / "descriptions" / f"{city}_descriptions.csv"
-    df = pd.read_csv(raw_path)
-    df["norm"] = df["address"].apply(normalize)
-    n = len(df)
-    print(f"  Loaded {n} raw descriptions from {raw_path.name}")
+def census_geocoder_batch(rows, city="Boston", state="MA"):
+    """Census ONELINE geocoder over the rows DataFrame. Concurrent."""
+    if not HAVE_HTTPX:
+        return None
+    n = len(rows)
+    lat = np.full(n, np.nan)
+    lon = np.full(n, np.nan)
+    lab = np.array([None] * n, dtype=object)
+    print(f"  Census geocoder on {n} addresses (concurrency=8)...")
+    results = asyncio.run(_census_batch_async(rows, city, state, concurrency=8))
+    for i, (la, lo, lb) in enumerate(results):
+        if la is not None:
+            lat[i] = la
+            lon[i] = lo
+            lab[i] = lb
+    hits = (~np.isnan(lat)).sum()
+    print(f"  Census hits: {hits}/{n}")
+    return lat, lon, lab
 
-    if city == "nyc":
-        lookup = build_nyc_lookup()
-    elif city == "boston":
-        lookup = build_boston_lookup()
-    else:
-        print(f"  No regeocode strategy for {city}")
-        return
 
-    if not lookup:
-        print("  Empty lookup, aborting")
-        return
+def regeocode_boston(use_api=True):
+    print(f"\n{'=' * 64}\nREGEOCODE: BOSTON\n{'=' * 64}")
+    desc = pd.read_csv(RAW / "descriptions" / "boston_descriptions.csv")
+    n = len(desc)
+    desc = desc.drop(columns=[c for c in ("latitude", "longitude") if c in desc.columns])
+    desc["norm"] = normalize_vec(desc["address"])
+    desc["zip"] = pd.to_numeric(desc["zip"], errors="coerce").astype("Int64")
+    print(f"  Loaded {n} descriptions")
 
-    # Match
-    lats, lons, bbls, methods = [], [], [], []
-    counts = {"exact": 0, "queens_hyphen": 0, "in_zip_prefix": 0, "unmatched": 0, "empty": 0}
-    lookup_keys_set = set(lookup.keys())
-    for _, r in df.iterrows():
-        norm = r["norm"]
-        if not norm:
-            lats.append(np.nan); lons.append(np.nan); bbls.append(None)
-            methods.append("empty"); counts["empty"] += 1
-            continue
-        rec, m = match_one(norm, r.get("zip"), lookup,
-                           {r.get("zip"): list(lookup_keys_set)})
-        if rec is None:
-            lats.append(np.nan); lons.append(np.nan); bbls.append(None)
-        else:
-            lats.append(rec["latitude"]); lons.append(rec["longitude"]); bbls.append(rec.get("BBL"))
-        methods.append(m); counts[m] += 1
+    plt = build_boston_lookup_cached()
+    if plt is None:
+        return None
+    plt_any = plt.drop_duplicates("norm")[["norm", "latitude", "longitude", "BBL"]]
 
-    df["latitude"] = lats
-    df["longitude"] = lons
-    df["BBL_matched"] = bbls
-    df["geocode_method"] = methods
+    lat = np.full(n, np.nan)
+    lon = np.full(n, np.nan)
+    bbl = np.array([None] * n, dtype=object)
+    method = np.array([""] * n, dtype=object)
 
+    # Stage 1: exact (norm, zip)
+    if plt["postcode"].notna().any():
+        s1 = desc.merge(plt[plt.postcode.notna()],
+                        left_on=["norm", "zip"], right_on=["norm", "postcode"],
+                        how="left", suffixes=("", "_p"))
+        for i in range(n):
+            if pd.notna(s1["latitude"].iat[i]):
+                lat[i] = s1["latitude"].iat[i]
+                lon[i] = s1["longitude"].iat[i]
+                bbl[i] = s1["BBL"].iat[i]
+                method[i] = "exact_zip"
+    s1_hits = (method == "exact_zip").sum()
+
+    # Stage 2: exact norm only
+    rest = method == ""
+    if rest.any():
+        s2 = desc[rest].merge(plt_any, on="norm", how="left")
+        idx_rest = np.where(rest)[0]
+        for i_local, i_global in enumerate(idx_rest):
+            if pd.notna(s2["latitude"].iat[i_local]):
+                lat[i_global] = s2["latitude"].iat[i_local]
+                lon[i_global] = s2["longitude"].iat[i_local]
+                bbl[i_global] = s2["BBL"].iat[i_local]
+                method[i_global] = "exact"
+    s2_hits = (method == "exact").sum()
+
+    # Stage 3: Census batch geocoder fallback
+    rest = method == ""
+    census_hits = 0
+    label = np.array([None] * n, dtype=object)
+    if rest.any() and use_api:
+        rows = desc[rest][["address", "zip"]].copy()
+        rows["city"] = "Boston"
+        rows["state"] = "MA"
+        result = census_geocoder_batch(rows)
+        if result is not None:
+            c_lat, c_lon, c_lab = result
+            idx_rest = np.where(rest)[0]
+            for i_local, i_global in enumerate(idx_rest):
+                if not np.isnan(c_lat[i_local]):
+                    lat[i_global] = c_lat[i_local]
+                    lon[i_global] = c_lon[i_local]
+                    label[i_global] = c_lab[i_local]
+                    method[i_global] = "census_api"
+                    census_hits += 1
+
+    unmatched = (method == "").sum()
+    matched_total = n - unmatched
     print(f"\n  RESULTS:")
-    for k in ["exact", "queens_hyphen", "in_zip_prefix", "unmatched", "empty"]:
-        print(f"    {k:18s}: {counts[k]:>4}  ({counts[k]/n:>5.1%})")
-    total_matched = counts["exact"] + counts["queens_hyphen"] + counts["in_zip_prefix"]
-    print(f"    {'-'*32}")
-    print(f"    {'PROPERTY-LEVEL':18s}: {total_matched:>4}  ({total_matched/n:>5.1%})")
+    print(f"    exact (norm + zip)   : {s1_hits:>4}  ({s1_hits/n:>5.1%})")
+    print(f"    exact (norm only)    : {s2_hits:>4}  ({s2_hits/n:>5.1%})")
+    print(f"    Census batch API     : {census_hits:>4}  ({census_hits/n:>5.1%})")
+    print(f"    {'-' * 38}")
+    print(f"    PROPERTY-LEVEL TOTAL : {matched_total:>4}  ({matched_total/n:>5.1%})")
+    print(f"    unmatched            : {unmatched:>4}  ({unmatched/n:>5.1%})")
 
-    # Save
-    out_csv = PROC / f"{city}_descriptions_geocoded.csv"
-    df.drop(columns=["norm"]).to_csv(out_csv, index=False)
-    print(f"\n  Saved -> {out_csv}")
+    out = desc.copy()
+    out["latitude"] = lat
+    out["longitude"] = lon
+    out["BBL_matched"] = bbl
+    out["geocode_method"] = method
+    out["match_label"] = label
+    out_csv = PROC / "boston_descriptions_geocoded.csv"
+    out.drop(columns=["norm"]).to_csv(out_csv, index=False)
+    print(f"\n  Saved -> {out_csv.name}")
 
-    # Update the embeddings parquet (overwrite lat/lon, mark method)
-    emb_path = PROC / f"{city}_embeddings.parquet"
+    emb_path = PROC / "boston_embeddings.parquet"
     if emb_path.exists():
         emb = pd.read_parquet(emb_path)
-        if "address" in emb.columns and len(emb) == len(df):
-            # row-aligned update
-            emb["latitude"] = df["latitude"].values
-            emb["longitude"] = df["longitude"].values
-            emb["BBL_matched"] = df["BBL_matched"].values
-            emb["geocode_method"] = df["geocode_method"].values
+        if "address" in emb.columns and len(emb) == n:
             backup = emb_path.with_suffix(".parquet.zipcentroid_backup")
             if not backup.exists():
-                # one-time backup of the prior (zip-centroid) state
-                import shutil
                 shutil.copy(emb_path, backup)
-                print(f"  Backed up prior embeddings parquet -> {backup.name}")
+                print(f"  Backed up prior parquet -> {backup.name}")
+            emb["latitude"] = lat
+            emb["longitude"] = lon
+            emb["BBL_matched"] = bbl
+            emb["geocode_method"] = method
+            emb["match_label"] = label
             emb.to_parquet(emb_path, index=False)
             print(f"  Updated -> {emb_path.name}")
-        else:
-            print(f"  WARNING: embeddings parquet not row-aligned with raw descriptions, skipping update")
+    return out
 
 
 def main():
-    cities = sys.argv[1:] if len(sys.argv) > 1 else ["nyc", "boston"]
+    args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    use_api = "--no-api" not in sys.argv
+    cities = args if args else ["nyc", "boston"]
     for c in cities:
-        regeocode_city(c)
+        if c == "nyc":
+            regeocode_nyc(use_api=use_api)
+        elif c == "boston":
+            regeocode_boston(use_api=use_api)
+        else:
+            print(f"Unknown city: {c}")
 
 
 if __name__ == "__main__":
