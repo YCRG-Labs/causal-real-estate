@@ -189,9 +189,25 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42) -> d
         # Conservative: take the first N of emb_df to match.
         emb_df = emb_df.iloc[: confounders.shape[0]].reset_index(drop=True)
 
-    descriptions = emb_df["clean_description"].fillna(emb_df["description"]).astype(str).tolist()
-    lat = emb_df["latitude"].values.astype(float)
-    lon = emb_df["longitude"].values.astype(float)
+    # robust to schema drift: older parquets only have `description`
+    desc_col = "clean_description" if "clean_description" in emb_df.columns else "description"
+    if "clean_description" in emb_df.columns:
+        descriptions = emb_df["clean_description"].fillna(emb_df["description"]).astype(str).tolist()
+    else:
+        descriptions = emb_df["description"].astype(str).tolist()
+    lat = pd.to_numeric(emb_df["latitude"], errors="coerce").values.astype(float)
+    lon = pd.to_numeric(emb_df["longitude"], errors="coerce").values.astype(float)
+
+    # drop rows with non-finite coords (would crash cKDTree)
+    finite_mask = np.isfinite(lat) & np.isfinite(lon)
+    n_drop = int((~finite_mask).sum())
+    if n_drop:
+        print(f"  dropping {n_drop} rows with non-finite lat/lon")
+        descriptions = [d for d, ok in zip(descriptions, finite_mask) if ok]
+        lat = lat[finite_mask]
+        lon = lon[finite_mask]
+        confounders = confounders[finite_mask]
+        Y = Y[finite_mask]
 
     if n_subset is not None and n_subset < len(descriptions):
         rng = np.random.default_rng(seed)

@@ -225,10 +225,13 @@ def main():
     print("\n" + "=" * 60)
     print(f"Done. {len(runs)} embedding sets in {total_elapsed:.1f}s total.")
     print("=" * 60)
-    summary = pd.DataFrame(runs)[
-        ["city", "model_tag", "embedding_dim", "n_listings", "encode_seconds"]
-    ]
-    print(summary.to_string(index=False))
+    if runs:
+        summary = pd.DataFrame(runs)[
+            ["city", "model_tag", "embedding_dim", "n_listings", "encode_seconds"]
+        ]
+        print(summary.to_string(index=False))
+    else:
+        print("(no successful runs — descriptions or model files missing)")
 
 
 if __name__ == "__main__":

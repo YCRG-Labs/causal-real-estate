@@ -240,6 +240,27 @@ def run_leace(city, variant="leace", seed=42):
     else:
         income = emb_df[inc_col].fillna(emb_df[inc_col].median()).values.astype(np.float64)
 
+    # drop rows with non-finite values in T or any Z column (LEACE SVD will
+    # crash on NaN/Inf; concept-erasure's whitening assumes finite covariances)
+    T_arr = np.asarray(T_np, dtype=np.float64)
+    finite_T = np.isfinite(T_arr).all(axis=1)
+    finite_ll = np.isfinite(latlon).all(axis=1)
+    finite_inc = np.isfinite(income)
+    finite_Y = np.isfinite(Y)
+    mask = finite_T & finite_ll & finite_inc & finite_Y
+    n_drop = int((~mask).sum())
+    if n_drop:
+        print(f"  dropping {n_drop}/{n} rows with non-finite T, lat/lon, income, or Y")
+        T_np = T_arr[mask]
+        z_lab = z_lab[mask]
+        latlon = latlon[mask]
+        income = income[mask]
+        Y = Y[mask]
+        n = len(Y)
+    if n < 50:
+        print(f"  too few rows after NaN drop ({n}), skipping {city}")
+        return {"city": city, "error": "too_few_rows_after_nan_filter", "n": n}
+
     rng = np.random.default_rng(seed)
     perm = rng.permutation(n)
     n_tr = int(0.7 * n)
