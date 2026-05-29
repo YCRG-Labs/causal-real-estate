@@ -7,6 +7,7 @@ Skips the slower pipeline pieces (adversarial deconfounding, CATE, randomization
 that don't bear on the immediate question of whether the dedup + geocode fix
 changes the headline numbers.
 """
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
 import sys
 import json
 import time

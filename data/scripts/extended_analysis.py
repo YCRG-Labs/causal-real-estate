@@ -1,3 +1,4 @@
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
 import sys
 import re
 import numpy as np

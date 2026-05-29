@@ -25,6 +25,7 @@ References:
   Bach et al. (2024) "Bootstrap consistency for general DML" arXiv:2604.17239
   Christensen & van der Laan (2025) "Cheap Subsampling" arXiv:2501.10289
 """
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
 import os
 # CRITICAL: set thread caps BEFORE any numerical library imports. OpenMP reads
 # OMP_NUM_THREADS once on first call and ignores later changes.

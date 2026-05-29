@@ -27,6 +27,7 @@ Usage:
   python baur_2023.py --n 200            # subset for smoke tests
 """
 from __future__ import annotations
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); import _silence  # noqa: F401
 
 import argparse
 import json

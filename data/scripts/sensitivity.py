@@ -34,6 +34,7 @@ Usage:
   python sensitivity.py --city sf --n_mc 50000 --out results/sensitivity/sf.json
 """
 from __future__ import annotations
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
 
 import argparse
 import json

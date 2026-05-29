@@ -13,6 +13,7 @@ Usage:
     python redfin_dof_crosscheck.py [--out results/dedup_rerun/redfin_dof.json]
 """
 from __future__ import annotations
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
 import argparse
 import json
 from pathlib import Path

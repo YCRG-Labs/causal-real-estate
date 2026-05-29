@@ -14,6 +14,7 @@ to avoid double-parallelism (the outer joblib spawns workers; LightGBM inside
 each worker would itself try to fan out to all cores).
 """
 from __future__ import annotations
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
 
 from typing import Optional
 

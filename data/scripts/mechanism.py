@@ -32,6 +32,7 @@ Refs (full dossier in research/mechanism/research_notes.md):
   Eisenstein, O'Connor, Smith, Xing 2010 EMNLP — geographic lexical variation
 """
 from __future__ import annotations
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
 
 import argparse
 import json

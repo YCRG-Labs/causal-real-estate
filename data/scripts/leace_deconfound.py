@@ -20,6 +20,7 @@ Usage:
     python leace_deconfound.py --city sf [--variant leace|splince] [--all]
 """
 from __future__ import annotations
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
 import argparse
 import json
 import sys

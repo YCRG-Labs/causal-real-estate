@@ -16,6 +16,7 @@ Usage:
     python threshold_sensitivity.py nyc        # one city
     python threshold_sensitivity.py nyc sf     # multiple
 """
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
 import sys
 import numpy as np
 from config import CITIES
