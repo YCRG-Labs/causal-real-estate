@@ -1,0 +1,21 @@
+[
+  {
+    "city": "nyc",
+    "n": 342,
+    "text_dim": 768,
+    "n_confounders": 35,
+    "has_rich_confounders": true,
+    "mode": "dirichlet",
+    "cross_fit_pca": false,
+    "drop_crime": false,
+    "B": 200,
+    "theta": 0.1682306158497986,
+    "se_if": 0.044869989921994306,
+    "se_cb": 0.15754688461304228,
+    "ci_low": -0.14243549096358432,
+    "ci_high": 0.4788967226631815,
+    "mde": 0.4411312769165184,
+    "t_pivot": 1.9718962236316089,
+    "elapsed_sec": 12.2
+  }
+]

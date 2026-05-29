@@ -50,17 +50,34 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from causal_inference import load_analysis_data, get_features_and_target
 
 
-def _pc1_randomized(T, seed=0):
-    """Leading principal component via randomized SVD. n_components=1, n_iter=2.
-    Returns the standardized PC1 score vector for the row population of T."""
-    Tc = T - T.mean(axis=0, keepdims=True)
-    U, s, Vt = randomized_svd(Tc, n_components=1, n_iter=2, n_oversamples=5,
+def _pc1_randomized(T, seed=0, weights=None):
+    """Leading principal component via randomized SVD.
+
+    weights=None  -> ordinary PC1 (each row weight 1).
+    weights=w     -> weighted PC1 with mean-centering and unit-variance
+                     scaling done under the weighted measure. This is the
+                     Bayesian / fractional-weighted bootstrap PCA step.
+    """
+    if weights is None:
+        Tc = T - T.mean(axis=0, keepdims=True)
+        U, s, Vt = randomized_svd(Tc, n_components=1, n_iter=2,
+                                  n_oversamples=5, random_state=seed)
+        pc1 = U[:, 0] * s[0]
+        sd = pc1.std()
+        return pc1 / sd if sd > 0 else pc1
+
+    w = np.asarray(weights, dtype=np.float64)
+    mu = np.average(T, axis=0, weights=w)
+    Tc = T - mu
+    Tw = Tc * np.sqrt(w)[:, None]
+    U, s, Vt = randomized_svd(Tw, n_components=1, n_iter=2, n_oversamples=5,
                               random_state=seed)
-    pc1 = (U[:, 0] * s[0])  # = T_centered @ V[:,0]
-    sd = pc1.std()
-    if sd <= 0:
-        return pc1
-    return (pc1 - pc1.mean()) / sd
+    v = Vt[0]
+    pc1 = Tc @ v
+    mean = np.average(pc1, weights=w)
+    var = np.average((pc1 - mean) ** 2, weights=w)
+    sd = np.sqrt(var) if var > 0 else 1.0
+    return (pc1 - mean) / sd
 
 
 def _make_lgbm():
@@ -82,46 +99,109 @@ def _make_lgbm():
     )
 
 
-def _dml_core_fast(T, conf, Y, k_folds=5, seed=0):
-    """Single DML estimate. Returns (theta, residuals_for_IF_SE)."""
+def _pc1_crossfit(T, k_folds, seed=0):
+    """Cross-fit PC1: for each fold, estimate the leading direction on the
+    TRAIN rows and project the held-out rows onto it, sign-aligned to the
+    full-sample direction so folds don't flip, standardized by the train
+    projection's mean/sd. Out-of-fold treatment, fixes the generated-regressor
+    undercoverage at small n."""
+    n = T.shape[0]
+    Tc = T - T.mean(axis=0, keepdims=True)
+    _, _, Vt_full = randomized_svd(Tc, n_components=1, n_iter=2,
+                                   n_oversamples=5, random_state=seed)
+    ref = Vt_full[0]
+    pc1 = np.zeros(n)
+    kf = KFold(n_splits=k_folds, shuffle=True, random_state=seed)
+    for tr, te in kf.split(np.arange(n)):
+        Tc_tr = T[tr] - T[tr].mean(axis=0, keepdims=True)
+        _, _, Vt_tr = randomized_svd(Tc_tr, n_components=1, n_iter=2,
+                                     n_oversamples=5, random_state=seed)
+        v = Vt_tr[0]
+        if np.dot(v, ref) < 0:
+            v = -v
+        proj_tr = (T[tr] - T[tr].mean(axis=0)) @ v
+        mu = float(proj_tr.mean())
+        sd = float(proj_tr.std()) or 1.0
+        pc1[te] = ((T[te] - T[tr].mean(axis=0)) @ v - mu) / sd
+    return pc1
+
+
+def _dml_core_fast(T, conf, Y, k_folds=5, seed=0,
+                   cross_fit_pca=False, weights=None):
+    """Single DML estimate. Returns (theta, se_if) or None.
+
+    weights: optional sample weights (Dirichlet for Bayesian bootstrap). When
+    provided, pc1 uses weighted PCA and the partialling-out is weighted.
+    """
     n = len(Y)
-    pc1 = _pc1_randomized(T, seed=seed)
+    if cross_fit_pca and weights is None:
+        pc1 = _pc1_crossfit(T, k_folds, seed=seed)
+    else:
+        pc1 = _pc1_randomized(T, seed=seed, weights=weights)
+
     conf_s = StandardScaler().fit_transform(conf)
     kf = KFold(n_splits=k_folds, shuffle=True, random_state=seed)
     Y_resid = np.zeros(n)
     T_resid = np.zeros(n)
     for tr, te in kf.split(np.arange(n)):
-        m_y = _make_lgbm(); m_y.fit(conf_s[tr], Y[tr])
+        m_y = _make_lgbm()
+        m_t = _make_lgbm()
+        if weights is None:
+            m_y.fit(conf_s[tr], Y[tr])
+            m_t.fit(conf_s[tr], pc1[tr])
+        else:
+            m_y.fit(conf_s[tr], Y[tr], sample_weight=weights[tr])
+            m_t.fit(conf_s[tr], pc1[tr], sample_weight=weights[tr])
         Y_resid[te] = Y[te] - m_y.predict(conf_s[te])
-        m_t = _make_lgbm(); m_t.fit(conf_s[tr], pc1[tr])
         T_resid[te] = pc1[te] - m_t.predict(conf_s[te])
-    denom = float(np.mean(T_resid ** 2))
-    if denom < 1e-12:
-        return None
-    theta = float(np.mean(T_resid * Y_resid)) / denom
-    se_if = float(np.sqrt(
-        np.var((Y_resid - theta * T_resid) * T_resid / denom, ddof=1) / n
-    ))
+
+    if weights is None:
+        denom = float(np.mean(T_resid ** 2))
+        if denom < 1e-12:
+            return None
+        theta = float(np.mean(T_resid * Y_resid)) / denom
+        se_if = float(np.sqrt(
+            np.var((Y_resid - theta * T_resid) * T_resid / denom, ddof=1) / n
+        ))
+    else:
+        denom = float(np.average(T_resid ** 2, weights=weights))
+        if denom < 1e-12:
+            return None
+        theta = float(np.average(T_resid * Y_resid, weights=weights)) / denom
+        se_if = None
     return theta, se_if
 
 
-def _boot_rep(T, conf, Y, rng_seed):
-    """One Cheap Bootstrap replicate: resample indices with replacement, run
-    full DML pipeline (PCA + nuisances refit), return theta."""
+def _boot_rep(T, conf, Y, rng_seed, mode="efron", cross_fit_pca=False):
+    """One cheap bootstrap replicate. mode='efron' resamples row indices with
+    replacement; mode='dirichlet' uses Dirichlet(1,...,1) weights (Rubin 1981
+    Bayesian bootstrap, fractional-weighted variant per Greifer fwb)."""
     rng = np.random.default_rng(rng_seed)
     n = len(Y)
-    idx = rng.integers(0, n, n)
-    res = _dml_core_fast(T[idx], conf[idx], Y[idx], seed=rng_seed)
+    if mode == "efron":
+        idx = rng.integers(0, n, n)
+        res = _dml_core_fast(T[idx], conf[idx], Y[idx], seed=rng_seed,
+                             cross_fit_pca=cross_fit_pca, weights=None)
+    elif mode == "dirichlet":
+        w = rng.dirichlet(np.ones(n)) * n  # E[w_i]=1, sum=n
+        res = _dml_core_fast(T, conf, Y, seed=rng_seed,
+                             cross_fit_pca=False, weights=w)
+    else:
+        raise ValueError(f"unknown bootstrap mode {mode}")
     return res[0] if res is not None else np.nan
 
 
-def fast_dml(city, B=50, k_folds=5, parallel=True):
+def fast_dml(city, B=50, k_folds=5, parallel=True, mode="efron",
+             cross_fit_pca=False, drop_crime=False):
+    spec_tag = (f"mode={mode} cross_fit_pca={cross_fit_pca} "
+                f"drop_crime={drop_crime}")
     t0 = time.time()
     res = load_analysis_data(city)
     if res is None:
         print(f"[{city}] no data"); return None
     emb_df, parcels = res
-    data = get_features_and_target(emb_df, parcels)
+    data = get_features_and_target(emb_df, parcels,
+                                   drop_mismatched_crime=drop_crime)
     if data is None:
         print(f"[{city}] no price target"); return None
     T, conf, Y, meta = data
@@ -131,26 +211,29 @@ def fast_dml(city, B=50, k_folds=5, parallel=True):
     n = len(Y)
 
     print(f"\n[{city}] n={n}  text_dim={T.shape[1]}  confounders={conf.shape[1]}  "
-          f"rich={meta['has_rich_confounders']}")
+          f"rich={meta['has_rich_confounders']}  spec=({spec_tag})")
 
     t1 = time.time()
-    main = _dml_core_fast(T, conf, Y, k_folds=k_folds, seed=0)
+    main = _dml_core_fast(T, conf, Y, k_folds=k_folds, seed=0,
+                          cross_fit_pca=cross_fit_pca, weights=None)
     if main is None:
         print(f"[{city}] treatment fully explained by confounders"); return None
     theta_hat, se_if = main
     t_point = time.time() - t1
 
-    print(f"  point: θ̂ = {theta_hat:.4f}  (IF SE {se_if:.4f}, {t_point:.2f}s)")
+    se_str = f"{se_if:.4f}" if se_if is not None else "n/a"
+    print(f"  point: θ̂ = {theta_hat:.4f}  (IF SE {se_str}, {t_point:.2f}s)")
 
     t2 = time.time()
     seeds = list(range(1, B + 1))
     if parallel:
         with parallel_config(backend="loky", inner_max_num_threads=1):
             boots = Parallel(n_jobs=-1, batch_size=1, verbose=0)(
-                delayed(_boot_rep)(T, conf, Y, s) for s in seeds
+                delayed(_boot_rep)(T, conf, Y, s, mode, cross_fit_pca)
+                for s in seeds
             )
     else:
-        boots = [_boot_rep(T, conf, Y, s) for s in seeds]
+        boots = [_boot_rep(T, conf, Y, s, mode, cross_fit_pca) for s in seeds]
     boots = np.array([b for b in boots if not np.isnan(b)])
     t_boot = time.time() - t2
 
@@ -175,6 +258,9 @@ def fast_dml(city, B=50, k_folds=5, parallel=True):
         "text_dim": int(T.shape[1]),
         "n_confounders": int(conf.shape[1]),
         "has_rich_confounders": bool(meta["has_rich_confounders"]),
+        "mode": mode,
+        "cross_fit_pca": cross_fit_pca,
+        "drop_crime": drop_crime,
         "B": len(boots),
         "theta": theta_hat,
         "se_if": se_if,
@@ -191,6 +277,10 @@ def main():
     argv = sys.argv[1:]
     B = 50
     parallel = True
+    mode = "efron"
+    cross_fit_pca = False
+    drop_crime = False
+    out_suffix = ""
     cities = []
     i = 0
     while i < len(argv):
@@ -199,23 +289,34 @@ def main():
             B = int(argv[i + 1]); i += 2
         elif a == "--serial":
             parallel = False; i += 1
+        elif a == "--dirichlet":
+            mode = "dirichlet"; out_suffix = "_dirichlet"; i += 1
+        elif a == "--cross-fit-pca":
+            cross_fit_pca = True; out_suffix += "_cfpca"; i += 1
+        elif a == "--no-crime":
+            drop_crime = True; out_suffix += "_nocrime"; i += 1
+        elif a == "--suffix":
+            out_suffix = argv[i + 1]; i += 2
         elif a.startswith("--"):
             i += 1
         else:
             cities.append(a); i += 1
     if not cities:
         cities = ["sf", "nyc", "boston"]
-    print(f"Cheap Bootstrap DML | cities={cities} | B={B} | parallel={parallel}\n")
+    print(f"Cheap Bootstrap DML | cities={cities} | B={B} | parallel={parallel} "
+          f"| mode={mode} | cross_fit_pca={cross_fit_pca} | "
+          f"drop_crime={drop_crime}\n")
 
     rows = []
     for c in cities:
-        r = fast_dml(c, B=B, parallel=parallel)
+        r = fast_dml(c, B=B, parallel=parallel, mode=mode,
+                     cross_fit_pca=cross_fit_pca, drop_crime=drop_crime)
         if r is not None:
             rows.append(r)
 
     print(f"\n{'='*72}\nSUMMARY\n{'='*72}")
     print(pd.DataFrame(rows).to_string(index=False))
-    out = Path("results/fast_bootstrap_dml.json")
+    out = Path(f"results/fast_bootstrap_dml{out_suffix}.json")
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w") as f:
         json.dump(rows, f, indent=2)
