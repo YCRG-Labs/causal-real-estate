@@ -230,6 +230,11 @@ def run_leace(city, variant="leace", seed=42):
     Y = np.asarray(Y).ravel()
     n = len(Y)
 
+    # get_features_and_target may have dropped rows for invalid Y; trim emb_df
+    # to match (rows correspond 1:1 from the top, per causal_inference loader)
+    if len(emb_df) != n:
+        emb_df = emb_df.iloc[:n].reset_index(drop=True)
+
     zip_codes = emb_df["zip"].astype(str).values
     z_lab = np.unique(zip_codes, return_inverse=True)[1]
     latlon = emb_df[["latitude", "longitude"]].values.astype(np.float64)

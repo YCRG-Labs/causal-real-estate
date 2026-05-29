@@ -51,7 +51,7 @@ MODEL_REGISTRY = {
         "dim": 1024,
         "needs_prefix": True,
         "doc_prefix": "search_document: ",
-        "model_kwargs": {"attn_implementation": "sdpa", "reference_compile": False},
+        "model_kwargs": {"attn_implementation": "sdpa"},
         "trust_remote_code": False,
     },
 }
