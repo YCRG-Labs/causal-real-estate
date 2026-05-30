@@ -1,0 +1,460 @@
+{
+  "schema": "diag_embedding_geometry.v1",
+  "settings": {
+    "embedding_model": "sentence-transformers/all-mpnet-base-v2",
+    "embedding_dim": 768,
+    "K_clusters": 10,
+    "K_pc_for_words": 5,
+    "decay_slope_range": "k = 1..50",
+    "anisotropy_subsample_for_mean_cosine": 500
+  },
+  "per_city": {
+    "sf": {
+      "n": 348,
+      "d": 768,
+      "effective_rank": {
+        "r_vershynin_op": 14.081833279920826,
+        "r_stable_F2": 51.496446987259255,
+        "r_roy_vetterli_entropy": 96.00228697646762,
+        "trace": 0.3724221822041334,
+        "frob2": 0.002693356336447913,
+        "op_norm": 0.026446995558111547,
+        "d": 768
+      },
+      "eigen_decay_slope_loglog_k1_50": -0.6953094640279294,
+      "eigen_decay_intercept": -3.371426808121684,
+      "participation_ratio_pc1_pc2_pc3_pc4_pc5": [
+        0.40438187069135834,
+        0.31831900968047344,
+        0.38429010886406273,
+        0.32377910218751543,
+        0.28704320313956266
+      ],
+      "anisotropy": {
+        "anisotropy_frobenius": 0.9658919891230107,
+        "mean_pairwise_cosine": -0.0021271533809511622
+      },
+      "kmeans_K10": {
+        "clusters": [
+          {
+            "cluster": 0,
+            "n": 19,
+            "mean_logp": 14.056367245733048,
+            "sd_logp": 0.5710348559187503
+          },
+          {
+            "cluster": 1,
+            "n": 30,
+            "mean_logp": 14.745941586247914,
+            "sd_logp": 0.963893167087424
+          },
+          {
+            "cluster": 2,
+            "n": 10,
+            "mean_logp": 14.154273488753983,
+            "sd_logp": 0.8513208912327745
+          },
+          {
+            "cluster": 3,
+            "n": 30,
+            "mean_logp": 14.035113384746952,
+            "sd_logp": 0.6567651330960623
+          },
+          {
+            "cluster": 4,
+            "n": 13,
+            "mean_logp": 14.11212222246218,
+            "sd_logp": 0.6206717366117933
+          },
+          {
+            "cluster": 5,
+            "n": 15,
+            "mean_logp": 13.895159792217186,
+            "sd_logp": 0.48545743470969466
+          },
+          {
+            "cluster": 6,
+            "n": 39,
+            "mean_logp": 13.80151564240739,
+            "sd_logp": 0.5721957839544611
+          },
+          {
+            "cluster": 7,
+            "n": 69,
+            "mean_logp": 14.29030491896765,
+            "sd_logp": 0.6351609898537718
+          },
+          {
+            "cluster": 8,
+            "n": 56,
+            "mean_logp": 14.111247708630168,
+            "sd_logp": 0.47324825379251223
+          },
+          {
+            "cluster": 9,
+            "n": 67,
+            "mean_logp": 14.094717720455616,
+            "sd_logp": 0.6771487183248053
+          }
+        ],
+        "total_var_logp": 0.47487264542930996,
+        "mean_within_var_logp": 0.4207768030745477,
+        "eta_squared_between": 0.11391652662127294
+      },
+      "davis_kahan": {
+        "pc1_var_over_pc2_var": 1.2948833815795395,
+        "pc1_var_over_bulk_mean": 26.525334223040957,
+        "sin_theta_proxy_bbp": 1.8415132622306982
+      },
+      "top_eigenvalues": [
+        0.026446995558111547,
+        0.02042422965213336,
+        0.014307651467730538,
+        0.013118177677784426,
+        0.011824662009672936,
+        0.00951205491918774,
+        0.009380089762394793,
+        0.008362800727256783,
+        0.007850527641880198,
+        0.007522885486069531
+      ]
+    },
+    "nyc": {
+      "n": 347,
+      "d": 768,
+      "effective_rank": {
+        "r_vershynin_op": 9.622085650789085,
+        "r_stable_F2": 41.96740481472162,
+        "r_roy_vetterli_entropy": 91.07946270816808,
+        "trace": 0.3949121130649965,
+        "frob2": 0.003716112009641192,
+        "op_norm": 0.0410422570945012,
+        "d": 768
+      },
+      "eigen_decay_slope_loglog_k1_50": -0.7250517945223456,
+      "eigen_decay_intercept": -3.2604939338182986,
+      "participation_ratio_pc1_pc2_pc3_pc4_pc5": [
+        0.44846901450007165,
+        0.3323954944087675,
+        0.22161669587498378,
+        0.37101198770464033,
+        0.32701796552420204
+      ],
+      "anisotropy": {
+        "anisotropy_frobenius": 0.9722936499059829,
+        "mean_pairwise_cosine": -0.002176207346775687
+      },
+      "kmeans_K10": {
+        "clusters": [
+          {
+            "cluster": 0,
+            "n": 7,
+            "mean_logp": 13.864273835408651,
+            "sd_logp": 0.03769099721787489
+          },
+          {
+            "cluster": 1,
+            "n": 60,
+            "mean_logp": 14.084097921690526,
+            "sd_logp": 0.8412571982049267
+          },
+          {
+            "cluster": 2,
+            "n": 6,
+            "mean_logp": 13.597655776313346,
+            "sd_logp": 0.18386567149708397
+          },
+          {
+            "cluster": 3,
+            "n": 51,
+            "mean_logp": 13.834327944349178,
+            "sd_logp": 0.4434252562423051
+          },
+          {
+            "cluster": 4,
+            "n": 23,
+            "mean_logp": 13.585115882160487,
+            "sd_logp": 0.7089522085244446
+          },
+          {
+            "cluster": 5,
+            "n": 84,
+            "mean_logp": 14.388133451398286,
+            "sd_logp": 0.9010066466919446
+          },
+          {
+            "cluster": 6,
+            "n": 28,
+            "mean_logp": 13.930838201163665,
+            "sd_logp": 0.508807206648101
+          },
+          {
+            "cluster": 7,
+            "n": 10,
+            "mean_logp": 13.54247186120782,
+            "sd_logp": 0.6132004955426351
+          },
+          {
+            "cluster": 8,
+            "n": 51,
+            "mean_logp": 13.285666561593661,
+            "sd_logp": 0.6946016838259368
+          },
+          {
+            "cluster": 9,
+            "n": 27,
+            "mean_logp": 13.741148007848054,
+            "sd_logp": 0.6688299237324653
+          }
+        ],
+        "total_var_logp": 0.6526972846503931,
+        "mean_within_var_logp": 0.5232350062560568,
+        "eta_squared_between": 0.19834965065571053
+      },
+      "davis_kahan": {
+        "pc1_var_over_pc2_var": 2.053583443822435,
+        "pc1_var_over_bulk_mean": 40.129501609431856,
+        "sin_theta_proxy_bbp": 0.9742390456506316
+      },
+      "top_eigenvalues": [
+        0.0410422570945012,
+        0.01998567782476238,
+        0.01546623996066089,
+        0.013293210302409188,
+        0.010659775466605341,
+        0.009803822690623088,
+        0.00934666789121235,
+        0.00893828985608219,
+        0.008361885720734282,
+        0.00744878675863879
+      ]
+    },
+    "boston": {
+      "n": 336,
+      "d": 768,
+      "effective_rank": {
+        "r_vershynin_op": 15.059398194568626,
+        "r_stable_F2": 49.984664345265784,
+        "r_roy_vetterli_entropy": 91.72395020068956,
+        "trace": 0.3966839205053056,
+        "frob2": 0.0031481282279004347,
+        "op_norm": 0.026341286376793928,
+        "d": 768
+      },
+      "eigen_decay_slope_loglog_k1_50": -0.7185638629103768,
+      "eigen_decay_intercept": -3.2305414369241063,
+      "participation_ratio_pc1_pc2_pc3_pc4_pc5": [
+        0.447548529183769,
+        0.35443373977921205,
+        0.40606623680870785,
+        0.25488345670153084,
+        0.22321632417135556
+      ],
+      "anisotropy": {
+        "anisotropy_frobenius": 0.9669104413717791,
+        "mean_pairwise_cosine": -0.0024495415682730115
+      },
+      "kmeans_K10": {
+        "clusters": [
+          {
+            "cluster": 0,
+            "n": 21,
+            "mean_logp": 13.485226127178334,
+            "sd_logp": 0.2785780159231563
+          },
+          {
+            "cluster": 1,
+            "n": 18,
+            "mean_logp": 14.449820077363569,
+            "sd_logp": 0.7386329520851668
+          },
+          {
+            "cluster": 2,
+            "n": 64,
+            "mean_logp": 13.731096975748896,
+            "sd_logp": 0.4732967617641229
+          },
+          {
+            "cluster": 3,
+            "n": 8,
+            "mean_logp": 14.561004735848499,
+            "sd_logp": 0.402493644739611
+          },
+          {
+            "cluster": 4,
+            "n": 12,
+            "mean_logp": 13.119532607718162,
+            "sd_logp": 0.7039513353850774
+          },
+          {
+            "cluster": 5,
+            "n": 68,
+            "mean_logp": 13.701891194726514,
+            "sd_logp": 0.6719254315369538
+          },
+          {
+            "cluster": 6,
+            "n": 72,
+            "mean_logp": 13.982577922617262,
+            "sd_logp": 0.7196575291280228
+          },
+          {
+            "cluster": 7,
+            "n": 18,
+            "mean_logp": 13.802737080406281,
+            "sd_logp": 0.48716519661457663
+          },
+          {
+            "cluster": 8,
+            "n": 11,
+            "mean_logp": 13.658230141397445,
+            "sd_logp": 0.48411224330280017
+          },
+          {
+            "cluster": 9,
+            "n": 44,
+            "mean_logp": 14.042021590454386,
+            "sd_logp": 0.7105203165028303
+          }
+        ],
+        "total_var_logp": 0.4628250494658103,
+        "mean_within_var_logp": 0.3884409374260497,
+        "eta_squared_between": 0.1607175586663131
+      },
+      "davis_kahan": {
+        "pc1_var_over_pc2_var": 1.215909409883408,
+        "pc1_var_over_bulk_mean": 23.82747791647412,
+        "sin_theta_proxy_bbp": 2.15210875768244
+      },
+      "top_eigenvalues": [
+        0.026341286376793928,
+        0.021663856009897776,
+        0.018871859506326357,
+        0.013946664429197243,
+        0.013219726419853086,
+        0.010870273410011481,
+        0.010199940347224715,
+        0.009329990209093983,
+        0.008743024721541105,
+        0.008434984638267445
+      ]
+    }
+  },
+  "cross_projection_pc1": {
+    "sf_to_nyc": {
+      "k_1": {
+        "cos_pc1A_pc1B_top": 0.27546314498930125,
+        "subspace_overlap_pc1A_into_Bk": 0.2754631449893014,
+        "residual_norm_pc1A": 0.9613116330059708
+      },
+      "k_5": {
+        "cos_pc1A_pc1B_top": 0.27546314498930125,
+        "subspace_overlap_pc1A_into_Bk": 0.6566582627526042,
+        "residual_norm_pc1A": 0.754188256311867
+      },
+      "k_20": {
+        "cos_pc1A_pc1B_top": 0.27546314498930125,
+        "subspace_overlap_pc1A_into_Bk": 0.7496854060737375,
+        "residual_norm_pc1A": 0.6617943728380121
+      }
+    },
+    "sf_to_boston": {
+      "k_1": {
+        "cos_pc1A_pc1B_top": 0.31079276759852426,
+        "subspace_overlap_pc1A_into_Bk": 0.31079276759852403,
+        "residual_norm_pc1A": 0.9504776986381386
+      },
+      "k_5": {
+        "cos_pc1A_pc1B_top": 0.31079276759852426,
+        "subspace_overlap_pc1A_into_Bk": 0.7252780399846647,
+        "residual_norm_pc1A": 0.6884560731927676
+      },
+      "k_20": {
+        "cos_pc1A_pc1B_top": 0.31079276759852426,
+        "subspace_overlap_pc1A_into_Bk": 0.7819865113749924,
+        "residual_norm_pc1A": 0.6232953521626572
+      }
+    },
+    "nyc_to_sf": {
+      "k_1": {
+        "cos_pc1A_pc1B_top": 0.27546314498930125,
+        "subspace_overlap_pc1A_into_Bk": 0.27546314498930163,
+        "residual_norm_pc1A": 0.96131163300597
+      },
+      "k_5": {
+        "cos_pc1A_pc1B_top": 0.27546314498930125,
+        "subspace_overlap_pc1A_into_Bk": 0.5415975467291827,
+        "residual_norm_pc1A": 0.8406379109800681
+      },
+      "k_20": {
+        "cos_pc1A_pc1B_top": 0.27546314498930125,
+        "subspace_overlap_pc1A_into_Bk": 0.8175392034575583,
+        "residual_norm_pc1A": 0.5758729467599463
+      }
+    },
+    "nyc_to_boston": {
+      "k_1": {
+        "cos_pc1A_pc1B_top": 0.2613291201811077,
+        "subspace_overlap_pc1A_into_Bk": 0.26132912018110754,
+        "residual_norm_pc1A": 0.9652497557344262
+      },
+      "k_5": {
+        "cos_pc1A_pc1B_top": 0.2613291201811077,
+        "subspace_overlap_pc1A_into_Bk": 0.7037229916218005,
+        "residual_norm_pc1A": 0.7104744548981785
+      },
+      "k_20": {
+        "cos_pc1A_pc1B_top": 0.2613291201811077,
+        "subspace_overlap_pc1A_into_Bk": 0.8145310514243292,
+        "residual_norm_pc1A": 0.5801199585133898
+      }
+    },
+    "boston_to_sf": {
+      "k_1": {
+        "cos_pc1A_pc1B_top": 0.31079276759852426,
+        "subspace_overlap_pc1A_into_Bk": 0.3107927675985247,
+        "residual_norm_pc1A": 0.9504776986381368
+      },
+      "k_5": {
+        "cos_pc1A_pc1B_top": 0.31079276759852426,
+        "subspace_overlap_pc1A_into_Bk": 0.4375736077153913,
+        "residual_norm_pc1A": 0.8991825942660012
+      },
+      "k_20": {
+        "cos_pc1A_pc1B_top": 0.31079276759852426,
+        "subspace_overlap_pc1A_into_Bk": 0.6358835451036503,
+        "residual_norm_pc1A": 0.7717850199805727
+      }
+    },
+    "boston_to_nyc": {
+      "k_1": {
+        "cos_pc1A_pc1B_top": 0.2613291201811077,
+        "subspace_overlap_pc1A_into_Bk": 0.2613291201811079,
+        "residual_norm_pc1A": 0.9652497557344248
+      },
+      "k_5": {
+        "cos_pc1A_pc1B_top": 0.2613291201811077,
+        "subspace_overlap_pc1A_into_Bk": 0.46566686661469436,
+        "residual_norm_pc1A": 0.8849600947710871
+      },
+      "k_20": {
+        "cos_pc1A_pc1B_top": 0.2613291201811077,
+        "subspace_overlap_pc1A_into_Bk": 0.6515909118326665,
+        "residual_norm_pc1A": 0.7585705528275354
+      }
+    }
+  },
+  "references": [
+    "Vershynin 2010 arXiv:1011.3027",
+    "Roy-Vetterli 2007 EUSIPCO",
+    "Hsu-Kakade-Zhang 2012",
+    "Gao et al. 2019 ICLR 1907.12009",
+    "Ethayarajh 2019 EMNLP 1909.00512",
+    "Li et al. 2020 EMNLP 2011.05864",
+    "Mu-Viswanath 2018 ICLR 1702.01417",
+    "Wang-Isola 2020 ICML 2005.10242",
+    "Reimers-Gurevych 2019 EMNLP 1908.10084",
+    "Yu-Wang-Samworth 2015 Biometrika",
+    "Bartlett-Long-Lugosi-Tsigler 2020 PNAS"
+  ]
+}
