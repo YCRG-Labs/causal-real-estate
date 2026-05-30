@@ -58,7 +58,13 @@ BROWSER_HEADERS = {
 }
 PER_HOST_DELAY_S = 2.0
 LISTING_PRICE_RE = re.compile(r'"price":\s*\{\s*"value":\s*(\d+)')
-LISTING_DATA_RE = re.compile(r'<script[^>]*type="application/ld\+json"[^>]*>([^<]+)</script>')
+LISTING_DATA_RE = re.compile(r'<script[^>]*type="application/ld\+json"[^>]*>(.+?)</script>', re.DOTALL)
+META_DESCRIPTION_RE = re.compile(r'<meta\s+name="description"\s+content="([^"]+)"')
+RESIDENCE_TYPES = {
+    "Residence", "House", "SingleFamilyResidence", "Apartment",
+    "Townhouse", "Condominium", "ApartmentComplex", "MultiUnit",
+    "Place", "Accommodation",
+}
 
 
 @dataclass
@@ -145,6 +151,87 @@ async def fetch_city_index(client, cfg: CityConfig, max_pages: int = 30) -> list
     return list(dict.fromkeys(urls))
 
 
+def _type_tokens(item: dict) -> set[str]:
+    t = item.get("@type")
+    if isinstance(t, str):
+        return {t}
+    if isinstance(t, list):
+        return {x for x in t if isinstance(x, str)}
+    return set()
+
+
+def _ingest_residence_item(item: dict, listing: Listing) -> None:
+    addr = item.get("address")
+    if isinstance(addr, dict):
+        parts = [
+            addr.get("streetAddress", ""),
+            addr.get("addressLocality", ""),
+            addr.get("addressRegion", ""),
+            addr.get("postalCode", ""),
+        ]
+        candidate = " ".join(p for p in parts if p).strip()
+        if candidate and not listing.address:
+            listing.address = candidate
+        if not listing.zip:
+            listing.zip = addr.get("postalCode", "") or ""
+    geo = item.get("geo")
+    if isinstance(geo, dict):
+        try:
+            lat = geo.get("latitude")
+            lon = geo.get("longitude")
+            if lat is not None and listing.lat_centroid is None:
+                listing.lat_centroid = float(lat)
+            if lon is not None and listing.lon_centroid is None:
+                listing.lon_centroid = float(lon)
+        except (TypeError, ValueError):
+            pass
+    for beds_field in ("numberOfBedrooms", "numberOfRooms"):
+        if beds_field in item and listing.beds is None:
+            try:
+                listing.beds = float(item[beds_field])
+                break
+            except (TypeError, ValueError):
+                pass
+    for baths_field in ("numberOfBathroomsTotal", "numberOfFullBathrooms"):
+        if baths_field in item and listing.baths is None:
+            try:
+                listing.baths = float(item[baths_field])
+                break
+            except (TypeError, ValueError):
+                pass
+    fs = item.get("floorSize")
+    if isinstance(fs, dict) and fs.get("value") and listing.sqft is None:
+        try:
+            listing.sqft = float(fs["value"])
+        except (TypeError, ValueError):
+            pass
+    yr = item.get("yearBuilt")
+    if yr is not None and listing.year_built is None:
+        try:
+            listing.year_built = int(yr)
+        except (TypeError, ValueError):
+            pass
+    cat = item.get("accommodationCategory") or item.get("@type")
+    if isinstance(cat, list):
+        cat = next((c for c in cat if c not in ("Product", "RealEstateListing")), None)
+    if isinstance(cat, str) and cat and not listing.property_type:
+        listing.property_type = cat
+
+
+def _ingest_product_item(item: dict, listing: Listing) -> None:
+    offers = item.get("offers")
+    if isinstance(offers, dict):
+        price = offers.get("price")
+        if price is not None and listing.price is None:
+            try:
+                listing.price = float(str(price).replace(",", ""))
+            except (TypeError, ValueError):
+                pass
+    desc = item.get("description")
+    if isinstance(desc, str) and desc and not listing.description:
+        listing.description = desc
+
+
 def parse_listing_html(url: str, html: str) -> Listing:
     listing = Listing(
         url=url,
@@ -153,50 +240,36 @@ def parse_listing_html(url: str, html: str) -> Listing:
     )
     ldjson_matches = LISTING_DATA_RE.findall(html)
     for raw in ldjson_matches:
+        raw = raw.strip()
+        if not raw:
+            continue
         try:
             payload = json.loads(raw)
         except json.JSONDecodeError:
             continue
-        if isinstance(payload, list):
-            payload = next((p for p in payload if isinstance(p, dict) and p.get("@type") in ("Residence", "House", "SingleFamilyResidence", "Apartment")), payload[0] if payload else {})
-        if not isinstance(payload, dict):
-            continue
-        if payload.get("@type") in ("Residence", "House", "SingleFamilyResidence", "Apartment"):
-            addr = payload.get("address", {})
-            if isinstance(addr, dict):
-                listing.address = " ".join(filter(None, [
-                    addr.get("streetAddress", ""), addr.get("addressLocality", ""),
-                    addr.get("addressRegion", ""), addr.get("postalCode", ""),
-                ])).strip()
-                listing.zip = addr.get("postalCode", "") or listing.zip
-            geo = payload.get("geo", {})
-            if isinstance(geo, dict):
-                try:
-                    listing.lat_centroid = float(geo.get("latitude")) if geo.get("latitude") else None
-                    listing.lon_centroid = float(geo.get("longitude")) if geo.get("longitude") else None
-                except (TypeError, ValueError):
-                    pass
-            if "numberOfRooms" in payload:
-                try:
-                    listing.beds = float(payload["numberOfRooms"])
-                except (TypeError, ValueError):
-                    pass
-            if "floorSize" in payload:
-                fs = payload["floorSize"]
-                if isinstance(fs, dict) and fs.get("value"):
-                    try:
-                        listing.sqft = float(fs["value"])
-                    except (TypeError, ValueError):
-                        pass
-    price_match = LISTING_PRICE_RE.search(html)
-    if price_match:
-        try:
-            listing.price = float(price_match.group(1))
-        except (TypeError, ValueError):
-            pass
-    desc_match = re.search(r'"marketingRemarks":\s*"([^"]+)"', html)
-    if desc_match:
-        listing.description = desc_match.group(1).encode("utf-8").decode("unicode_escape", errors="ignore")
+        items = payload if isinstance(payload, list) else [payload]
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            types = _type_tokens(item)
+            if types & RESIDENCE_TYPES:
+                _ingest_residence_item(item, listing)
+            if "Product" in types or "RealEstateListing" in types:
+                _ingest_product_item(item, listing)
+                main = item.get("mainEntity")
+                if isinstance(main, dict):
+                    _ingest_residence_item(main, listing)
+    if not listing.description:
+        m = META_DESCRIPTION_RE.search(html)
+        if m:
+            listing.description = m.group(1)
+    if listing.price is None:
+        price_match = LISTING_PRICE_RE.search(html)
+        if price_match:
+            try:
+                listing.price = float(price_match.group(1))
+            except (TypeError, ValueError):
+                pass
     beds_match = re.search(r'"beds":\s*(\d+(?:\.\d+)?)', html)
     if beds_match and listing.beds is None:
         try:
@@ -298,11 +371,67 @@ async def scrape_all(cities: list[CityConfig], resume: bool, max_listings: int) 
     return out
 
 
+def reparse_city(cfg: CityConfig) -> int:
+    import gzip
+    parquet_out = PROCESSED_DIR / f"{cfg.slug}_listings.parquet"
+    seen_file = seen_path(cfg.slug)
+    if not seen_file.exists():
+        print(f"[{cfg.slug}] no _seen.jsonl at {seen_file}; skipping", file=sys.stderr)
+        return 0
+    url_to_sha: dict[str, str] = {}
+    with seen_file.open() as f:
+        for line in f:
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if row.get("status") == 200 and row.get("sha"):
+                url_to_sha[row["url"]] = row["sha"]
+    html_dir = city_raw_dir(cfg.slug) / "html"
+    listings: list[Listing] = []
+    n_missing = 0
+    for url, sha in url_to_sha.items():
+        cache_path = html_dir / f"{sha[:16]}.html.gz"
+        if not cache_path.exists():
+            n_missing += 1
+            continue
+        try:
+            with gzip.open(cache_path, "rt", encoding="utf-8") as f:
+                html = f.read()
+        except Exception as e:
+            print(f"  [{cfg.slug}] {cache_path.name} read error: {e}", file=sys.stderr)
+            continue
+        listings.append(parse_listing_html(url, html))
+    if not listings:
+        print(f"[{cfg.slug}] no cached HTML to re-parse")
+        return 0
+    df = pd.DataFrame([asdict(l) for l in listings])
+    df = df.drop_duplicates(subset=["url"], keep="last")
+    df.to_parquet(parquet_out, index=False)
+    n_addr = int((df["address"].astype(str).str.strip() != "").sum()) if "address" in df.columns else 0
+    n_desc = int((df["description"].astype(str).str.strip() != "").sum()) if "description" in df.columns else 0
+    n_latlon = int(df["lat_centroid"].notna().sum()) if "lat_centroid" in df.columns else 0
+    print(f"[{cfg.slug}] reparsed {len(df)} listings (addresses={n_addr}, descriptions={n_desc}, latlon={n_latlon}, missing_html={n_missing})")
+    return len(df)
+
+
+def reparse_all(cities: list[CityConfig]) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for cfg in cities:
+        try:
+            out[cfg.slug] = reparse_city(cfg)
+        except Exception as e:
+            print(f"[{cfg.slug}] reparse FAILED: {e}", file=sys.stderr)
+            out[cfg.slug] = -1
+    return out
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Async Redfin scraper for the 12-city expansion")
     parser.add_argument("--cities", type=str, default="new9", help="comma-separated slugs or 'new9' or 'all'")
     parser.add_argument("--max-listings", type=int, default=350, help="cap per city; 0 for no cap")
     parser.add_argument("--no-resume", action="store_true")
+    parser.add_argument("--reparse", action="store_true", help="re-parse cached HTML without any network fetch")
     args = parser.parse_args()
     if args.cities == "new9":
         cities = list_new()
@@ -312,9 +441,13 @@ def main() -> int:
     else:
         slugs = [s.strip() for s in args.cities.split(",") if s.strip()]
         cities = [CITIES[s] for s in slugs]
-    print(f"Scraping {len(cities)} cities: {[c.slug for c in cities]}")
     t0 = time.time()
-    results = asyncio.run(scrape_all(cities, resume=not args.no_resume, max_listings=args.max_listings))
+    if args.reparse:
+        print(f"Re-parsing cached HTML for {len(cities)} cities: {[c.slug for c in cities]}")
+        results = reparse_all(cities)
+    else:
+        print(f"Scraping {len(cities)} cities: {[c.slug for c in cities]}")
+        results = asyncio.run(scrape_all(cities, resume=not args.no_resume, max_listings=args.max_listings))
     print(f"\nDone in {(time.time()-t0)/60:.1f} min:")
     for slug, count in results.items():
         print(f"  {slug}: {count} listings")
