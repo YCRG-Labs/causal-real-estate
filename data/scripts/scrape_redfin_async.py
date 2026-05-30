@@ -33,7 +33,23 @@ from city_endpoints import CITIES, CityConfig, list_new  # noqa: E402
 
 RAW_DIR = REPO_ROOT / "data" / "raw" / "redfin"
 PROCESSED_DIR = REPO_ROOT / "data" / "processed"
-USER_AGENT = "YCRG-Labs-2026/1.0 (jacobcrainic@icloud.com; research, polite)"
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+BROWSER_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Sec-Ch-Ua": '"Chromium";v="121", "Not A(Brand";v="99"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Linux"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+}
 PER_HOST_DELAY_S = 2.0
 LISTING_PRICE_RE = re.compile(r'"price":\s*\{\s*"value":\s*(\d+)')
 LISTING_DATA_RE = re.compile(r'<script[^>]*type="application/ld\+json"[^>]*>([^<]+)</script>')
@@ -99,6 +115,7 @@ def html_sha256(html: str) -> str:
 
 async def fetch_city_index(client: httpx.AsyncClient, cfg: CityConfig, max_pages: int = 30) -> list[str]:
     urls: list[str] = []
+    expected_state = cfg.redfin_state_slug
     for page in range(1, max_pages + 1):
         index_url = f"{cfg.redfin_url}/page-{page}" if page > 1 else cfg.redfin_url
         try:
@@ -109,6 +126,11 @@ async def fetch_city_index(client: httpx.AsyncClient, cfg: CityConfig, max_pages
         if r.status_code != 200:
             print(f"  [{cfg.slug}] index page {page} status {r.status_code}, stopping", file=sys.stderr)
             break
+        if page == 1:
+            final_url = str(r.url)
+            if f"/{expected_state}/" not in final_url:
+                print(f"  [{cfg.slug}] WARNING: redirected to {final_url}, expected state {expected_state}; aborting", file=sys.stderr)
+                return []
         page_urls = re.findall(r'href="(/[A-Z]{2}/[^"]+/home/\d+)"', r.text)
         if not page_urls:
             break
@@ -227,7 +249,7 @@ async def scrape_city(cfg: CityConfig, resume: bool, max_listings: int) -> int:
     limits = httpx.Limits(max_keepalive_connections=4, max_connections=8)
     timeout = httpx.Timeout(30.0, connect=10.0)
     async with httpx.AsyncClient(
-        headers={"User-Agent": USER_AGENT, "Accept": "text/html,application/xhtml+xml"},
+        headers=BROWSER_HEADERS,
         follow_redirects=True, transport=transport, limits=limits, timeout=timeout,
     ) as client:
         print(f"[{cfg.slug}] discovering listing URLs...")
@@ -244,6 +266,9 @@ async def scrape_city(cfg: CityConfig, resume: bool, max_listings: int) -> int:
             if listing is not None:
                 listings.append(listing)
             await asyncio.sleep(PER_HOST_DELAY_S)
+    if not listings:
+        print(f"[{cfg.slug}] no listings collected; skipping parquet write")
+        return 0
     df = pd.DataFrame([asdict(l) for l in listings])
     df = df.drop_duplicates(subset=["url"], keep="last")
     df.to_parquet(parquet_out, index=False)

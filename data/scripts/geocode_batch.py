@@ -41,7 +41,13 @@ def load_listings_for_geocoding(slugs: list[str]) -> pd.DataFrame:
             print(f"  [{slug}] no listings parquet at {path}, skipping", file=sys.stderr)
             continue
         df = pd.read_parquet(path)
+        if "address" not in df.columns or len(df) == 0:
+            print(f"  [{slug}] parquet has no address column or is empty, skipping", file=sys.stderr)
+            continue
         df = df[df["address"].astype(str).str.strip() != ""].copy()
+        if df.empty:
+            print(f"  [{slug}] all addresses empty after filter, skipping", file=sys.stderr)
+            continue
         df["__city_slug"] = slug
         frames.append(df)
     if not frames:

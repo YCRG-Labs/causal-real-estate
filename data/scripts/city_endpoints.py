@@ -323,7 +323,7 @@ CITIES: dict[str, CityConfig] = {
         slug="dallas",
         display_name="Dallas",
         state="TX", state_fips="48", county_fips=("113",),
-        redfin_city_id="5751", redfin_state_slug="TX", redfin_name_slug="Dallas",
+        redfin_city_id="30794", redfin_state_slug="TX", redfin_name_slug="Dallas",
         parcel=ParcelSource(
             url="https://www.dallascad.org/gisdataproducts.aspx",
             fmt="shapefile", crs=2276,
