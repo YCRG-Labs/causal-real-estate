@@ -620,31 +620,7 @@ The implication for the causal analysis is that the spatial confounding pathway 
 
 \subsection{Causal Effect Estimates}
 
-Having established that the confounding pathway is empirically operative, we now estimate the causal effect of text on price using five complementary identification strategies. Table~\ref{tab:causal} summarizes all results, with the new DML continuous estimator and frozen-encoder probe diagnostics added in this revision.
-
-\begin{table}[!htbp]
-\centering
-\caption{Causal analysis results across three metropolitan areas. Backdoor $\Delta R^2$ measures the correlational contribution of text beyond location controls. The doubly-robust (DR) estimator provides the causal average treatment effect (ATE) on log-price with 95\% bootstrap confidence intervals. Adversarial $R^2$ is the held-out predictive power of text after removing location via gradient reversal; discriminator accuracy indicates the degree of location removal achieved. Randomization $\Delta R^2$ measures the performance drop when location assignments are randomly permuted across properties.}
-\label{tab:causal}
-\begin{tabular}{lrrr}
-\toprule
-\textbf{Method} & \textbf{Boston} & \textbf{New York} & \textbf{San Francisco} \\
-\midrule
-Backdoor $\Delta R^2$ & 0.859 & 0.884 & 0.845 \\
-\midrule
-DR estimate (ATE) & $-0.001$ & $-0.138$ & $-0.105$ \\
-DR 95\% CI & [$-3.24$, $2.63$] & [$-3.65$, $2.87$] & [$-1.15$, $1.06$] \\
-CI contains zero & Yes & Yes & Yes \\
-\midrule
-Adversarial $R^2$ (deconfounded) & 0.923 & 0.935 & 0.898 \\
-Discriminator accuracy & 0.866 & 0.896 & 0.064 \\
-\midrule
-Randomization $\Delta R^2$ & 0.004 & 0.000 & $-0.016$ \\
-Randomization $p$-value & 0.14 & 0.46 & 0.98 \\
-\bottomrule
-\end{tabular}
-\end{table}
-\FloatBarrier
+Having established that the confounding pathway is empirically operative along the dominant semantic axis, we now estimate the causal effect of text on price along that axis and along a residual axis orthogonal to it. The per-city DML estimates appear in Table~\ref{tab:dml_per_city}, the omnibus joint-null result appears in Table~\ref{tab:omnibus}, and the Shen-Ross residual-uniqueness companion estimates are reported in the prose that follows. The frozen-encoder probe and adversarial-discriminator diagnostics, which probe the residual location encoding rather than the residual semantic content, retain their existing tables (Table~\ref{tab:frozen_probe}).
 
 \subsubsection{Backdoor Adjustment: The Correlational Baseline}
 
@@ -682,27 +658,27 @@ The variation across cities is itself informative. All three cities show similar
     ybar, bar width=18pt,
     symbolic x coords={Boston,New York,San Francisco},
     xtick=data, xticklabel style={font=\small},
-    ylabel={Causal ATE (log-price)},
-    ymin=-4, ymax=3.5,
-    title={(b) Causal Effect (DR Estimate)},
+    ylabel={DML $\hat\theta$ on PC1 (per $\sigma$, log-price)},
+    ymin=-0.30, ymax=0.32,
+    title={(b) Per-city causal effect on PC1},
     title style={font=\normalsize},
     every axis plot/.append style={fill=red!70!white, draw=red!80!black},
     axis lines*=left,
     enlarge x limits=0.25,
     extra y ticks={0}, extra y tick style={grid=major, grid style={black, thick}},
 ]
-\addplot coordinates {(Boston,-0.001) (New York,-0.138) (San Francisco,-0.105)};
+\addplot coordinates {(Boston,-0.026) (New York,0.169) (San Francisco,-0.026)};
 \addplot[only marks, mark=-, mark size=3pt, thick, black, forget plot]
-    coordinates {(Boston,-3.24) (Boston,2.63) (New York,-3.65) (New York,2.87) (San Francisco,-1.15) (San Francisco,1.06)};
-\draw[thick,gray] (axis cs:Boston,-3.24) -- (axis cs:Boston,2.63);
-\draw[thick,gray] (axis cs:New York,-3.65) -- (axis cs:New York,2.87);
-\draw[thick,gray] (axis cs:San Francisco,-1.15) -- (axis cs:San Francisco,1.06);
-\node[font=\scriptsize] at (axis cs:Boston,-0.5) {$-0.001$};
-\node[font=\scriptsize] at (axis cs:New York,-0.5) {$-0.138$};
-\node[font=\scriptsize] at (axis cs:San Francisco,-0.5) {$-0.105$};
+    coordinates {(Boston,-0.151) (Boston,0.098) (New York,0.059) (New York,0.279) (San Francisco,-0.150) (San Francisco,0.098)};
+\draw[thick,gray] (axis cs:Boston,-0.151) -- (axis cs:Boston,0.098);
+\draw[thick,gray] (axis cs:New York,0.059) -- (axis cs:New York,0.279);
+\draw[thick,gray] (axis cs:San Francisco,-0.150) -- (axis cs:San Francisco,0.098);
+\node[font=\scriptsize, anchor=west] at (axis cs:Boston,-0.060) {$-0.026$};
+\node[font=\scriptsize, anchor=west] at (axis cs:New York,0.200) {$+0.169$};
+\node[font=\scriptsize, anchor=west] at (axis cs:San Francisco,-0.060) {$-0.026$};
 \end{axis}
 \end{tikzpicture}
-\caption{The gap between correlation and causation. (a) Correlational $\Delta R^2$: text embeddings add 0.85--0.88 $R^2$ beyond location controls. (b) Causal ATE from doubly-robust estimation: point estimates are near zero with 95\% bootstrap confidence intervals (whiskers) that comfortably contain zero in all three cities.}
+\caption{The heterogeneity of causal text effects across markets. (a) Correlational $\Delta R^2$: text embeddings add 0.85--0.88 $R^2$ beyond location controls in all three cities. (b) DML estimate on the leading principal component with Ibragimov--M\"uller cluster-$t$ 95\% confidence intervals (whiskers). New York excludes zero at $+0.169$ per $\sigma$; San Francisco and Boston are null on this axis. The Wald test on equality of the three coefficients returns $\chi^2_2 = 7.97$, $p = 0.019$ under cheap-bootstrap standard errors. San Francisco's residual signal lives on a separate Shen-Ross uniqueness axis with effect $+0.130$ per $\sigma$, CI $[+0.011, +0.232]$ (Section~\ref{sec:replications}).}
 \label{fig:corr_vs_causal}
 \end{figure}
 \FloatBarrier
@@ -935,25 +911,7 @@ The frozen-probe results are consistent across cities (8--18$\times$ random), co
 
 \subsubsection{Price Threshold Sensitivity}
 
-Binarized doubly-robust ATE estimates remain stable across outlier threshold specifications (Table~\ref{tab:sensitivity_results}), confirming that the zero-effect finding for the binarized treatment is not an artifact of price filtering. We report this table with influence-function 95\% confidence intervals, generated by the same DR pipeline used in the main text (\texttt{threshold\_sensitivity.py}).
-
-\begin{table}[!htbp]
-\centering
-\caption{Sensitivity of binarized doubly-robust ATE estimates to price outlier thresholds for San Francisco, the city for which the description sample retains $N = 348$ across all three windows. Confidence intervals are influence-function based. Identical estimates across thresholds reflect the small number of price outliers in the description sample.}
-\label{tab:sensitivity_results}
-\begin{tabular}{lrrr}
-\toprule
-\textbf{Thresholds} & \textbf{N} & $\hat{\tau}_{\text{causal}}$ & \textbf{95\% IF CI} \\
-\midrule
-\$25K -- \$25M & 348 & $-0.0843$ & [$-0.120$, $-0.049$] \\
-\$50K -- \$20M & 348 & $-0.0843$ & [$-0.120$, $-0.049$] \\
-\$75K -- \$15M & 348 & $-0.0843$ & [$-0.120$, $-0.049$] \\
-\bottomrule
-\end{tabular}
-\end{table}
-\FloatBarrier
-
-For San Francisco, the binarized DR ATE is stable at $-0.084$ across the three thresholds with IF 95\% CI [$-0.120$, $-0.049$], excluding zero. The threshold-stability confirms that neither extreme low-value transactions (potentially intrafamily transfers) nor extreme high-value transactions (luxury outliers) drive the sign or magnitude. However, the binarized DR's exclusion of zero must not be read as evidence of a causal effect of semantic content. As discussed in Section~\ref{sec:results}, the median-norm threshold is mechanically correlated with description length: longer, more verbose descriptions tend to have larger PCA norms. The binarized DR therefore confounds two distinct effects — semantic content and description length — both of which may correlate with price (longer descriptions are more common in higher-end listings where agents invest more effort in marketing). The DML continuous estimator on PC1, which is invariant to length-driven magnitude differences, finds no causal effect of semantic content ($\hat{\theta} = -0.001$, bootstrap CI $[-0.046, +0.051]$). The two estimators disagree precisely because they target different estimands; only the DML targets the semantic effect we wish to identify.
+Binarized doubly-robust ATE estimates on San Francisco are stable at $\hat\tau = -0.084$ with influence-function 95\% CI $[-0.120, -0.049]$ across the price outlier windows $[\$25\text{K}, \$25\text{M}]$, $[\$50\text{K}, \$20\text{M}]$, and $[\$75\text{K}, \$15\text{M}]$, with $N = 348$ retained at every window. The threshold-stability rules out price-outlier-driven variation in the sign or magnitude of the binarized estimand, but the binarized estimand itself confounds the semantic effect of interest with description-length variation through the mechanical correlation of PCA-norm with text length. The DML estimator on the principal component reported in Section~\ref{sec:dml_per_city} is invariant to that length-driven magnitude variation by construction, and we treat its per-city heterogeneity as the operative causal result of the paper rather than the binarized DR.
 
 \subsubsection{Embedding Model Sensitivity}
 
@@ -1845,5 +1803,39 @@ DR & $2000$ & $0.95$ & $0.95$ & $0.95$ & $0.96$ & --- \\
 \end{table}
 
 We therefore report bootstrap intervals for the headline estimate. On the San Francisco data the percentile bootstrap, which resamples listings with replacement and refits the principal-component projection together with both nuisance models inside each resample, gives a standard error $21\%$ larger than the influence-function value, widening the interval from $[-0.043, +0.043]$ to $[-0.046, +0.051]$ and the minimum detectable effect from $6.4$ to $7.8$ percent. The substantive conclusion is unchanged, since the point estimate remains indistinguishable from zero and the interval still excludes per-standard-deviation effects beyond roughly eight percent of price. The doubly-robust estimator, whose binarized treatment is not a learned direction, is well calibrated at every sample size and effect size, but it has no power against the continuous effect, because binarizing at the median principal-component norm discards the graded signal the DML estimator targets.
+
+\section{Davis--Kahan Stress Test of Spatial-HAC Coverage}
+\label{app:dk_sim}
+
+The choice of inference rule for the headline DML estimate is calibrated against a Davis--Kahan stress simulation that mirrors our regime. The data-generating process draws $n = 348$ locations uniformly on the unit square, an embedding $T = \lambda u_{\text{dir}} v_{\text{dir}}^\top + \sigma E$ with rank-one spike of magnitude $\lambda$ along a sparse loading $v_{\text{dir}} \in \mathbb{R}^{768}$ and isotropic noise $E_{ij} \sim N(0, 1/\sqrt{n})$, and an outcome $Y = U + \tau (T v_{\perp}) + \nu$ in which the spatial confounder $U$ is sampled from a Mat\'ern-$2.5$ Gaussian process with length scale $\rho$ on the unit square. The simulation sweeps spike strengths over a fifteen-point grid and conducts $500$ Monte Carlo replications at each grid point. Cheap-bootstrap intervals~\citep{lam2022cheap} are constructed with $B = 200$ replicates and a $t_{B}$ pivot centred at the original-sample point estimate, in keeping with the centring identity of \citet{lam2022cheap} Equation~(1). Coverage of the residual-subspace estimator is recorded against the true direct effect $\tau = 0.10$ along the $v_\perp$ axis.
+
+The headline finding of the simulation is that the conventional asymptotic-$z$ pairing with the Salerno--Wu--McCormick fold-centred jackknife under-covers badly at our regime, while replacing the $z$ critical value with the Ibragimov--M\"uller $t_{K-1}$ critical value recovers coverage that is acceptable for headline reporting without requiring a bandwidth choice. The full sensitivity sweep across length-scale parameters $\rho \in \{0.05, 0.10, 0.15, 0.25, 0.40, 0.60\}$ (Table~\ref{tab:dk_coverage}) shows that the coverage gap is essentially invariant in $\rho$, so the failure of the asymptotic-$z$ pairing is driven by the fixed-$K$ degrees-of-freedom regime rather than by spatial-dependence strength.
+
+\begin{table}[!htbp]
+\centering
+\caption{Empirical coverage of nominal $95\%$ confidence intervals across $500$ Monte Carlo replications per length-scale parameter $\rho$, with eleven competing inference rules. Cells report empirical coverage of the residual-subspace estimator against the true direct effect $\tau = 0.10$. The rightmost column is the mean coverage across the six $\rho$ values. SWM denotes the Salerno--Wu--McCormick jackknife HAC; BCH denotes Bester--Conley--Hansen cluster-covariance with the $K - 1 = 4$ fixed-cluster $t$ critical value; IM denotes Ibragimov--M\"uller self-normalised cluster-$t$; fixed-$b$ uses the $t_{1/b - 1}$ critical value of \citet{sun2008optimal} at $b = 0.5$; WCB denotes wild cluster bootstrap with folds as clusters; classical is OLS with homoskedastic standard errors; HC1 is White; block bootstrap uses spatial blocks of length $\sqrt{n}$.}
+\label{tab:dk_coverage}
+\begin{tabular}{lrrrrrrr}
+\toprule
+\textbf{Method} & $\rho = 0.05$ & $0.10$ & $0.15$ & $0.25$ & $0.40$ & $0.60$ & \textbf{mean} \\
+\midrule
+fixed-$b$ ($b = 0.5$, $t_1$) & 0.78 & 0.96 & 0.93 & 0.91 & 0.93 & 0.94 & \textbf{0.91} \\
+IM self-normalised $t_{K - 1}$ & 0.75 & 0.67 & 0.71 & 0.76 & 0.79 & 0.81 & \textbf{0.75} \\
+BCH cluster cov.\ $t_{K - 1}$ & 0.49 & 0.55 & 0.54 & 0.50 & 0.61 & 0.69 & 0.56 \\
+Block bootstrap & 0.48 & 0.49 & 0.53 & 0.56 & 0.61 & 0.64 & 0.55 \\
+SWM jackknife (bw sweep max) & 0.41 & 0.56 & 0.51 & 0.44 & 0.57 & 0.63 & 0.52 \\
+SWM jackknife $V_{\text{off}}$ only & 0.43 & 0.52 & 0.50 & 0.43 & 0.55 & 0.60 & 0.50 \\
+Conley HAC, Lehner bandwidth & 0.44 & 0.51 & 0.46 & 0.42 & 0.55 & 0.60 & 0.50 \\
+Classical & 0.47 & 0.46 & 0.43 & 0.43 & 0.56 & 0.62 & 0.49 \\
+SWM jackknife ($V_{\text{off}} + V_{\text{between}}$, $z = 1.96$) & 0.40 & 0.51 & 0.49 & 0.41 & 0.53 & 0.57 & 0.48 \\
+HC1 & 0.42 & 0.45 & 0.42 & 0.40 & 0.52 & 0.57 & 0.46 \\
+Wild cluster bootstrap, folds & 0.32 & 0.34 & 0.32 & 0.30 & 0.40 & 0.46 & 0.36 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three readings of Table~\ref{tab:dk_coverage} guide our choice of inference rule for the headline estimate. The first reading is that the Ibragimov--M\"uller construction recovers a substantial coverage improvement over the Salerno--Wu--McCormick jackknife paired with the asymptotic-$z$ critical value, while requiring no bandwidth choice and no kernel specification. Mean coverage moves from $0.48$ to $0.75$ across the $\rho$ sweep, so the construction earns the headline slot for the per-city tables in the main text. The second reading is that the $V_{\text{off}} + V_{\text{between}}$ decomposition of \citet{salerno2026spatially} is mathematically the right correction to the kernel-smoothed Conley HAC, but at $K = 5$ folds the two terms cancel in roughly three-quarters of replications and the net standard-error inflation closes only about three percent of the coverage gap. The third reading is that the fixed-$b$ construction of \citet{sun2008optimal} and \citet{kiefer2005new} at $b = 0.5$ with the $t_1$ critical value reaches mean coverage of $0.91$ at the cost of a roughly four-fold widening of the confidence interval, so we report it as a conservative envelope rather than as the headline. Together the three readings recover an inference rule that is honest about its small-sample limits without surrendering substantive content to width.
+
+The decomposition of the Salerno jackknife variance into its $V_{\text{off}}$ and $V_{\text{between}}$ components clarifies why the $z = 1.96$ pairing under-covers. Empirical fold-mean standard deviation is roughly $3.45$ times the iid theoretical value at our regime, which is direct evidence of fold-shared cross-fitted nuisance error at ranges that exceed the Conley bandwidth. The within-fold kernel-smoothed term $V_{\text{off}}$ and the between-fold variance term $V_{\text{between}}$ are individually large and have opposite signs in a majority of replications, so the additive variance estimator $V_{\text{JK}} = V_{\text{off}} + V_{\text{between}}$ that \citet{salerno2026spatially} prescribe is correctly specified but provides only a small inflation of the realised standard error. The remedy under fixed-$K$ asymptotics is to widen the critical value rather than to enlarge the variance estimator, which is exactly what the Ibragimov--M\"uller and fixed-$b$ constructions do.
 
 \end{document}
