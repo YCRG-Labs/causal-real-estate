@@ -23,8 +23,14 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-import httpx
 import pandas as pd
+
+try:
+    from curl_cffi.requests import AsyncSession
+    _BACKEND = "curl_cffi"
+except ImportError:
+    import httpx
+    _BACKEND = "httpx"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
@@ -113,14 +119,14 @@ def html_sha256(html: str) -> str:
     return hashlib.sha256(html.encode("utf-8", errors="ignore")).hexdigest()
 
 
-async def fetch_city_index(client: httpx.AsyncClient, cfg: CityConfig, max_pages: int = 30) -> list[str]:
+async def fetch_city_index(client, cfg: CityConfig, max_pages: int = 30) -> list[str]:
     urls: list[str] = []
     expected_state = cfg.redfin_state_slug
     for page in range(1, max_pages + 1):
         index_url = f"{cfg.redfin_url}/page-{page}" if page > 1 else cfg.redfin_url
         try:
             r = await client.get(index_url)
-        except httpx.HTTPError as e:
+        except Exception as e:
             print(f"  [{cfg.slug}] index page {page} error: {e}", file=sys.stderr)
             break
         if r.status_code != 200:
@@ -215,10 +221,10 @@ def parse_listing_html(url: str, html: str) -> Listing:
     return listing
 
 
-async def fetch_listing(client: httpx.AsyncClient, cfg: CityConfig, url: str) -> Listing | None:
+async def fetch_listing(client, cfg: CityConfig, url: str) -> Listing | None:
     try:
         r = await client.get(url)
-    except httpx.HTTPError as e:
+    except Exception as e:
         append_seen(cfg.slug, url, -1, "")
         print(f"  [{cfg.slug}] {url} error: {e}", file=sys.stderr)
         return None
@@ -245,14 +251,18 @@ async def scrape_city(cfg: CityConfig, resume: bool, max_listings: int) -> int:
             existing = [Listing(**row) for row in df.to_dict(orient="records")]
         except Exception as e:
             print(f"  [{cfg.slug}] existing parquet load failed: {e}", file=sys.stderr)
-    transport = httpx.AsyncHTTPTransport(retries=2)
-    limits = httpx.Limits(max_keepalive_connections=4, max_connections=8)
-    timeout = httpx.Timeout(30.0, connect=10.0)
-    async with httpx.AsyncClient(
-        headers=BROWSER_HEADERS,
-        follow_redirects=True, transport=transport, limits=limits, timeout=timeout,
-    ) as client:
-        print(f"[{cfg.slug}] discovering listing URLs...")
+    if _BACKEND == "curl_cffi":
+        client_ctx = AsyncSession(impersonate="chrome120", timeout=30.0)
+    else:
+        transport = httpx.AsyncHTTPTransport(retries=2)
+        limits = httpx.Limits(max_keepalive_connections=4, max_connections=8)
+        timeout = httpx.Timeout(30.0, connect=10.0)
+        client_ctx = httpx.AsyncClient(
+            headers=BROWSER_HEADERS,
+            follow_redirects=True, transport=transport, limits=limits, timeout=timeout,
+        )
+    async with client_ctx as client:
+        print(f"[{cfg.slug}] discovering listing URLs (backend={_BACKEND})...")
         listing_urls = await fetch_city_index(client, cfg)
         if max_listings > 0:
             listing_urls = listing_urls[:max_listings]
