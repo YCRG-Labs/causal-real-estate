@@ -849,27 +849,21 @@ The visual carrier of the shrinkage trajectory is Figure~\ref{fig:escalation}, w
 \begin{tikzpicture}
 \begin{axis}[
     causalre body,
-    width=0.62\textwidth, height=5.6cm,
+    width=0.62\textwidth, height=5.0cm,
     xlabel={Cumulative confounder dimensions},
     ylabel={Binarized DR ATE on $\log$ price},
     xmin=-3, xmax=64,
-    ymin=-0.32, ymax=0.10,
+    ymin=-0.28, ymax=0.05,
     xtick={0,31,43,47,55,61},
     xticklabels={None, +Zip{,}+Coord, +Census, +Crime, +Amen., +Micro},
     x tick label style={font=\scriptsize, rotate=30, anchor=north east},
-    ytick={-0.30,-0.20,-0.10,0,0.10},
+    ytick={-0.25,-0.20,-0.15,-0.10,-0.05,0,0.05},
+    yticklabel style={/pgf/number format/fixed, /pgf/number format/precision=2},
     extra y ticks={0},
     extra y tick style={grid=major, grid style={black, dashed, thin}},
     extra y tick labels={},
     clip=true,
 ]
-\draw[thin, gray] (axis cs:32,-0.290)  -- (axis cs:32, 0.090);
-\draw[thin, gray] (axis cs:43,-0.290)  -- (axis cs:43, 0.090);
-\draw[thin, gray] (axis cs:47,-0.290)  -- (axis cs:47, 0.090);
-\draw[thin, gray] (axis cs:55,-0.290)  -- (axis cs:55, 0.090);
-\draw[thin, gray] (axis cs:61,-0.290)  -- (axis cs:61, 0.090);
-\draw[thin, gray, dotted] (axis cs:0, -0.290) -- (axis cs:0, 0.090);
-\draw[thin, gray, dotted] (axis cs:30,-0.290) -- (axis cs:30, 0.090);
 \addplot[color=cNYC, thick, mark=*, mark size=2pt] coordinates {
     (0,  -0.255)
     (30, -0.228)
@@ -881,7 +875,7 @@ The visual carrier of the shrinkage trajectory is Figure~\ref{fig:escalation}, w
 };
 \end{axis}
 \end{tikzpicture}
-\caption{Confounder escalation for New York. The horizontal axis is the cumulative dimensionality of the adjustment set, rising from zero with no controls through six escalations to the full sixty-one-feature specification, and the vertical axis is the binarized doubly-robust ATE on log price for the leading sentence-BERT principal component, with the dashed horizontal line marking the null. Filled circles are point estimates and solid gray whiskers are ninety-five percent bootstrap intervals at $B = 500$ resamples. Two whiskers are clipped at the plot edges for legibility: the no-controls interval extends to $[-3.61, +2.66]$ and the zip-only interval to $[-3.27, +2.80]$, both shown as dotted segments at the axis limits. The coordinate block at $d = 32$ does almost all of the magnitude-shrinkage work, collapsing the point estimate from $-0.228$ to $-0.038$ and tightening the confidence band by roughly a factor of three. The monotone-shrinkage pattern is the Cinelli--Hazlett signature of confounding bias being removed as the spatial adjustment set is enriched.}
+\caption{Confounder escalation for New York. The horizontal axis is the cumulative dimensionality of the adjustment set, rising from zero with no controls through six escalations to the full sixty-one-feature specification, and the vertical axis is the binarized doubly-robust ATE on log price for the leading sentence-BERT principal component. The dashed horizontal line marks the null. The figure presents the point-estimate trajectory alone in the manner of the extreme-scenarios layout of \citet{cinelli2020making}; the per-point ninety-five percent bootstrap confidence intervals at $B = 500$ resamples are reported in Table~\ref{tab:escalation} immediately above and all seven contain zero. The coordinate block at $d = 32$ collapses the point estimate from $-0.228$ to $-0.038$ in a single step of only two added dimensions, and each of the four subsequent blocks moves the estimate by less than a hundredth of a log-price standard deviation. The monotone-shrinkage signature is the textbook pattern of confounding bias being removed as the spatial adjustment set is enriched.}
 \label{fig:escalation}
 \end{figure}
 \FloatBarrier
@@ -1941,8 +1935,9 @@ To complement the written proofs in Appendices~\ref{app:proofs} and~\ref{app:fro
 
 \begin{table}[!htbp]
 \centering
-\small
-\begin{tabular}{lll}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{0.30\textwidth} p{0.45\textwidth} p{0.18\textwidth}}
 \toprule
 \textbf{Claim} & \textbf{Verification method} & \textbf{Tool} \\
 \midrule
@@ -1953,7 +1948,7 @@ Proposition~1 (Zero Causal Effect, \S\ref{sec:methods}) & Edge-set check ($T \no
 Corollary~1 (Zero Effect under True SCM, App.~\ref{app:proofs}) & Same as Proposition~1 & pgmpy \\
 Proposition~2(a) (variational MI inequality) & Symbolic KL nonneg + numerical $V$-chain & SymPy + PyTorch \\
 Proposition~2(b1) (algebraic identity) & Symbolic and numerical equality, $|\Delta| < 10^{-8}$ & SymPy + PyTorch \\
-Proposition~2(b2) (consistency of post-hoc $\hat V_{\Phi'}^{\text{post}}$) & Monte Carlo $n$-sweep; log-log slope vs.\ rate predicted by Xu et al.~2020 Thm~3 & scikit-learn \\
+Proposition~2(b2) (consistency of post-hoc $\hat V_{\Phi'}^{\text{post}}$) & Monte Carlo $n$-sweep; log-log slope vs.\ rate predicted by \citet{xu2020theory} Thm~3 & scikit-learn \\
 Proposition~2(c) (XOR saddle-gap, identity-encoder construction) & Wraps \texttt{frozen\_probe\_gap.py}; assertions on $V_\Phi$, $V_{\Phi'}$ & PyTorch \\
 Proposition~2(c) (joint-game saddle existence + collapsed-encoder counterexample) & Explicit construction at $\phi_{\text{id}}$ and $\phi_{\text{collapse}}$; sweep over joint-game weight $\alpha$ & PyTorch \\
 \bottomrule
