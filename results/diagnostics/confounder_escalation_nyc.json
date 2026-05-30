@@ -1,0 +1,66 @@
+{
+  "city": "nyc",
+  "n": 347,
+  "seed": 42,
+  "n_resamples": 500,
+  "shrinkage_none_to_full": 0.9510131470434181,
+  "all_cis_contain_zero": true,
+  "levels": [
+    {
+      "level": "none",
+      "n_confounders": 0,
+      "ate": -0.25540773169164416,
+      "ci_low": -3.613319719100044,
+      "ci_high": 2.6643125761006172,
+      "contains_zero": true
+    },
+    {
+      "level": "zip",
+      "n_confounders": 30,
+      "ate": -0.22830603961938897,
+      "ci_low": -3.270179319433457,
+      "ci_high": 2.8037457234222725,
+      "contains_zero": true
+    },
+    {
+      "level": "coordinates",
+      "n_confounders": 32,
+      "ate": -0.038194621182244204,
+      "ci_low": -1.1785542105044,
+      "ci_high": 0.9722323510852445,
+      "contains_zero": true
+    },
+    {
+      "level": "census",
+      "n_confounders": 43,
+      "ate": -0.021768283748096744,
+      "ci_low": -0.8235285068064613,
+      "ci_high": 0.833695319110895,
+      "contains_zero": true
+    },
+    {
+      "level": "crime",
+      "n_confounders": 47,
+      "ate": -0.01831038915201139,
+      "ci_low": -0.7503294110630069,
+      "ci_high": 0.8657023959670815,
+      "contains_zero": true
+    },
+    {
+      "level": "amenity",
+      "n_confounders": 55,
+      "ate": -0.02237360774660517,
+      "ci_low": -0.7207129974911946,
+      "ci_high": 0.7894738973401119,
+      "contains_zero": true
+    },
+    {
+      "level": "micro_geo",
+      "n_confounders": 61,
+      "ate": -0.0125116209963527,
+      "ci_low": -0.645650083522656,
+      "ci_high": 0.8358781486727364,
+      "contains_zero": true
+    }
+  ]
+}

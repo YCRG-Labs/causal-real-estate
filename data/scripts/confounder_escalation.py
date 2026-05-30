@@ -122,6 +122,7 @@ def dr_estimate(T_pca, confounders, Y):
 
     outcome = make_regressor(
         n_estimators=200, max_depth=5, learning_rate=0.05, random_state=42,
+        force_sklearn=True,
     )
     outcome.fit(np.hstack([treatment.reshape(-1, 1), conf_s]), Y)
 
@@ -201,11 +202,11 @@ def run_escalation(city):
 
         results.append({
             "level": level_name,
-            "n_confounders": conf_valid.shape[1],
-            "ate": ate,
-            "ci_low": ci_lo,
-            "ci_high": ci_hi,
-            "contains_zero": contains_zero,
+            "n_confounders": int(conf_valid.shape[1]),
+            "ate": float(ate),
+            "ci_low": float(ci_lo),
+            "ci_high": float(ci_hi),
+            "contains_zero": bool(contains_zero),
         })
 
     ates = [r["ate"] for r in results]
@@ -229,17 +230,16 @@ def run_escalation(city):
         "n": int(len(Y_v)),
         "seed": 42,
         "n_resamples": 500,
-        "shrinkage_none_to_full": (
+        "shrinkage_none_to_full": float(
             1 - abs(results[-1]["ate"]) / max(abs(results[0]["ate"]), 1e-10)
-            if len(results) >= 2 else None
-        ),
+        ) if len(results) >= 2 else None,
         "all_cis_contain_zero": bool(all_contain_zero),
         "levels": results,
     }
     out_path = RESULTS_DIR / f"confounder_escalation_{city}.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
-        json.dump(payload, f, indent=2)
+        json.dump(payload, f, indent=2, default=str)
     print(f"Saved escalation results to {out_path}")
 
     return results

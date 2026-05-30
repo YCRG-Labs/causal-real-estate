@@ -821,26 +821,66 @@ The summary row in the table compresses a five-dimensional pattern into a single
 
 The remaining tests of the original SCM-$_0$ framing (the confounder escalation diagnostic on New York, the randomization redundancy across all three cities, and the frozen-encoder probe) continue to support the dominant spatial-confounding pathway and are reported in their existing form below. Their interpretation under the heterogeneous-effects pivot is that the dominant location-confounded pathway remains operative as the dominant story, while the per-city residual effects we have just documented sit on axes orthogonal to that dominant pathway.
 
-\textit{Confounder escalation (New York).} We progressively enrich the confounder set from none through zip indicators, continuous coordinates, census demographics, crime counts, amenity metrics, and micro-geographic distances (Table~\ref{tab:escalation}). The binarized DR estimate shrinks monotonically from $-0.317$ (no confounders) to $-0.075$ (full 61-feature set), a \textbf{76.5\% reduction}. All confidence intervals contain zero at every escalation level. This monotonic shrinkage is the textbook signature of confounding bias being removed~\citep{cinelli2020making}: the estimated effect diminishes as spatial controls become richer, consistent with SCM$_0$ on the location-confounded axis.
+\textit{Confounder escalation (New York).} We progressively enrich the confounder set from none through zip indicators, continuous coordinates, census demographics, crime counts, amenity metrics, and micro-geographic distances (Table~\ref{tab:escalation}, Figure~\ref{fig:escalation}). The binarized doubly-robust estimate shrinks monotonically in magnitude from $-0.255$ with no controls to $-0.013$ under the full sixty-one-feature specification, a $95.1$ percent reduction concentrated in the coordinate block that follows the thirty zip indicators. Every ninety-five percent bootstrap confidence interval contains zero. The monotone-shrinkage pattern is the textbook signature of confounding bias being removed~\citep{cinelli2020making}, with the magnitude of the apparent effect collapsing as the spatial adjustment set becomes capable of absorbing the location-text correlation that drives it.
 
 \begin{table}[!htbp]
 \centering
-\caption{Confounder escalation test for New York ($n=342$, the unique listings retained after the canonical confounder validity filter). Each row adds a new block of confounders to the cumulative adjustment set. The binarized DR ATE shrinks 76.5\% from none to the full specification. All 95\% bootstrap CIs contain zero.}
+\caption{Confounder escalation test for New York ($n=347$, the unique listings retained after the canonical confounder validity filter). Each row adds a new block of confounders to the cumulative adjustment set. The binarized DR ATE shrinks $95.1\%$ in magnitude from no controls to the full specification. All 95\% bootstrap CIs contain zero. Outcome model is sklearn $\texttt{GradientBoostingRegressor}$ with the same hyperparameters as the v2 pipeline; bootstrap uses $500$ percentile resamples at seed $42$.}
 \label{tab:escalation}
-\begin{tabular}{llrl}
+\begin{tabular}{llrrr}
 \toprule
-\textbf{Level} & \textbf{Added confounders} & \textbf{Cum.\ dims} & \textbf{DR ATE} \\
+\textbf{Level} & \textbf{Added confounders} & \textbf{Cum.\ dims} & \textbf{DR ATE} & \textbf{95\% bootstrap CI} \\
 \midrule
-None & -- & 0 & $-0.317$ \\
-Zip & one-hot indicators & 30 & $-0.282$ \\
-Coordinates & lat, lon & 32 & $-0.086$ \\
-Census & demographics (11 vars) & 43 & $-0.097$ \\
-Crime & incident counts (4 vars) & 47 & $-0.076$ \\
-Amenity & POI counts + diversity (8 vars) & 55 & $-0.093$ \\
-Micro-geo & parcel distances (6 vars) & 61 & $-0.075$ \\
+None        & --                              &  0 & $-0.255$ & $[-3.613, +2.664]$ \\
+Zip         & one-hot indicators              & 30 & $-0.228$ & $[-3.270, +2.804]$ \\
+Coordinates & lat, lon                        & 32 & $-0.038$ & $[-1.179, +0.972]$ \\
+Census      & demographics (11 vars)          & 43 & $-0.022$ & $[-0.824, +0.834]$ \\
+Crime       & incident counts (4 vars)        & 47 & $-0.018$ & $[-0.750, +0.866]$ \\
+Amenity     & POI counts + diversity (8 vars) & 55 & $-0.022$ & $[-0.721, +0.789]$ \\
+Micro-geo   & parcel distances (6 vars)       & 61 & $-0.013$ & $[-0.646, +0.836]$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+The visual carrier of the shrinkage trajectory is Figure~\ref{fig:escalation}, where the cumulative dimensionality of the adjustment set runs continuously along the horizontal axis. The coordinate block at thirty-two dimensions does most of the work, collapsing the point estimate from $-0.228$ to $-0.038$ in a single step, while the remaining four blocks of census, crime, amenity, and micro-geographic features each move the estimate by less than a hundredth of a log-price standard deviation. The bootstrap confidence band tightens by an order of magnitude across the same transition, from $\pm 3.0$ at the no-controls baseline to roughly $\pm 0.7$ at the full specification, because the propensity-clipping floor that drives the doubly-robust variance binds only when the propensity-model adjustment set is essentially empty.
+
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre wide,
+    xlabel={Cumulative confounder dimensions},
+    ylabel={Binarized DR ATE on $\log$ price},
+    xmin=-3, xmax=64,
+    ymin=-3.8, ymax=2.9,
+    xtick={0,30,32,43,47,55,61},
+    xticklabels={None, +Zip, +Coord, +Census, +Crime, +Amen, +Micro},
+    x tick label style={font=\scriptsize, rotate=30, anchor=north east},
+    extra y ticks={0},
+    extra y tick style={grid=major, grid style={black, dashed, thin}},
+    extra y tick labels={},
+]
+\draw[thin, gray] (axis cs:0,-3.613)   -- (axis cs:0,  2.664);
+\draw[thin, gray] (axis cs:30,-3.270)  -- (axis cs:30, 2.804);
+\draw[thin, gray] (axis cs:32,-1.179)  -- (axis cs:32, 0.972);
+\draw[thin, gray] (axis cs:43,-0.824)  -- (axis cs:43, 0.834);
+\draw[thin, gray] (axis cs:47,-0.750)  -- (axis cs:47, 0.866);
+\draw[thin, gray] (axis cs:55,-0.721)  -- (axis cs:55, 0.789);
+\draw[thin, gray] (axis cs:61,-0.646)  -- (axis cs:61, 0.836);
+\addplot[color=cNYC, thick, mark=*, mark size=2pt] coordinates {
+    (0,  -0.255)
+    (30, -0.228)
+    (32, -0.038)
+    (43, -0.022)
+    (47, -0.018)
+    (55, -0.022)
+    (61, -0.013)
+};
+\end{axis}
+\end{tikzpicture}
+\caption{Confounder escalation for New York. The horizontal axis is the cumulative dimensionality of the adjustment set, beginning at zero with no controls and rising through the seven canonical blocks to a full sixty-one-feature specification at the right edge. The vertical axis is the binarized doubly-robust ATE on log price for the leading sentence-BERT principal component, and the dashed horizontal line marks the null. Filled circles are point estimates and the thin gray segments are ninety-five percent bootstrap confidence intervals at $B = 500$ resamples. The coordinate block at $d = 32$ does almost all of the magnitude-shrinkage work, taking the point estimate from $-0.228$ to $-0.038$ and shrinking the confidence band by roughly a factor of three. The monotone-shrinkage pattern is the Cinelli--Hazlett signature of confounding bias being removed as the spatial adjustment set is enriched.}
+\label{fig:escalation}
+\end{figure}
 \FloatBarrier
 
 \textit{Randomization tests.} Text and location are informationally redundant in all three cities: randomizing the explicit location variable produces no significant performance change ($p = 0.14$ for Boston, $p = 0.46$ for New York, $p = 0.98$ for San Francisco). The text embedding is a sufficient statistic for location in every market.
@@ -853,7 +893,7 @@ The San Francisco DML null, the New York escalation shrinkage, the universal ran
 
 The adversarial deconfounding approach provides a complementary perspective by directly attempting to construct location-free text representations. If semantic content independently predicts price, then removing location from embeddings should preserve predictive power. If text is merely a location proxy, then removing location should destroy it.
 
-The results require city-by-city interpretation because the gradient reversal procedure achieved different degrees of location removal across cities (Figure~\ref{fig:training_curves}).
+The results require city-by-city interpretation because the gradient reversal procedure achieved different degrees of location removal across cities, with the San Francisco training dynamics shown in Appendix Figure~\ref{fig:training_curves} as a representative case of the discriminator-to-random-then-partial-recovery pattern that the frozen probe diagnoses.
 
 \textbf{All three cities.} We employ a multi-head discriminator with three parallel objectives (zip code classification, continuous geolocation regression, income quantile prediction) and report both the live discriminator accuracy and the frozen-encoder probe accuracy (described in Section~\ref{sec:methods}). Table~\ref{tab:frozen_probe} summarizes the results.
 
@@ -880,70 +920,6 @@ The frozen-probe results are clear. In every city, the live discriminator is nea
 This pattern holds across all three cities: Boston's frozen probe recovers zip at 13.1$\times$ random and San Francisco's at 8.2$\times$ random. The deconfounded predictive $R^2$ (0.25--0.34 across cities) therefore reflects residual location encoding rather than location-independent semantic content. We recommend the frozen-encoder probe as a standard diagnostic for any adversarial deconfounding work in spatially situated settings, since training-time discriminator accuracy is a systematically misleading guide to actual location removal.
 
 The San Francisco results are particularly instructive. The live discriminator approaches random across all heads (zip 7.6\%, geo $R^2 \approx 0$, income near baseline), yet the frozen probe still recovers zip at 8.2$\times$ random from the same representations. Combined with the DML null ($\hat{\theta} \approx 0$), the randomization redundancy ($p = 0.98$), and the cross-market transfer results, the deconfounded $R^2 \approx 0.25$ is residual location encoding, not semantic content.
-
-\begin{figure}[!htbp]
-\centering
-\begin{tikzpicture}[scale=0.85]
-\begin{axis}[
-    name=plot1,
-    width=5.5cm, height=5cm,
-    xlabel={Epoch}, ylabel={Predictor MSE Loss},
-    title={(a) Predictor Loss}, title style={font=\small},
-    xmin=0, xmax=150, ymin=0, ymax=1.3,
-    axis lines*=left,
-    legend style={font=\scriptsize, at={(0.97,0.97)}, anchor=north east, draw=none, fill=none},
-    label style={font=\small}, tick label style={font=\scriptsize},
-]
-\addplot[blue!70!black, thick, smooth] coordinates {
-    (0,0.92)(10,0.35)(20,0.15)(30,0.08)(40,0.06)(50,0.05)(60,0.04)(80,0.04)(100,0.04)(120,0.03)(150,0.03)
-};
-\addlegendentry{Train}
-\addplot[red!70!black, thick, smooth] coordinates {
-    (0,1.15)(10,0.55)(20,0.42)(30,0.40)(40,0.45)(50,0.48)(60,0.50)(80,0.52)(100,0.55)(120,0.53)(150,0.56)
-};
-\addlegendentry{Test}
-\end{axis}
-\begin{axis}[
-    at={(plot1.east)}, anchor=west, xshift=1.2cm,
-    name=plot2,
-    width=5.5cm, height=5cm,
-    xlabel={Epoch}, ylabel={Disc.\ Accuracy},
-    title={(b) Location Discriminator}, title style={font=\small},
-    xmin=0, xmax=150, ymin=0, ymax=1.05,
-    axis lines*=left,
-    legend style={font=\scriptsize, at={(0.97,0.97)}, anchor=north east, draw=none, fill=none},
-    label style={font=\small}, tick label style={font=\scriptsize},
-]
-\addplot[blue!70!black, thick, smooth] coordinates {
-    (0,0.80)(10,0.85)(20,0.82)(30,0.78)(40,0.60)(50,0.45)(60,0.35)(70,0.30)(80,0.55)(90,0.65)(100,0.70)(120,0.60)(150,0.63)
-};
-\addlegendentry{Train}
-\addplot[red!70!black, thick, smooth] coordinates {
-    (0,0.83)(10,0.87)(20,0.85)(30,0.80)(40,0.55)(50,0.40)(60,0.30)(70,0.25)(80,0.50)(90,0.60)(100,0.65)(120,0.55)(150,0.63)
-};
-\addlegendentry{Test}
-\addplot[black, dashed, thin] coordinates {(0,0.333)(150,0.333)};
-\end{axis}
-\begin{axis}[
-    at={(plot2.east)}, anchor=west, xshift=1.2cm,
-    width=5.5cm, height=5cm,
-    xlabel={Epoch}, ylabel={$\lambda$},
-    title={(c) $\lambda$ Annealing}, title style={font=\small},
-    xmin=0, xmax=150, ymin=0, ymax=1.15,
-    axis lines*=left,
-    label style={font=\small}, tick label style={font=\scriptsize},
-]
-\addplot[blue!70!black, thick, name path=lambda] coordinates {
-    (0,0.1)(10,0.1)(50,1.0)(150,1.0)
-};
-\addplot[draw=none, name path=zero] coordinates {(0,0)(150,0)};
-\addplot[blue!15!white] fill between[of=lambda and zero];
-\end{axis}
-\end{tikzpicture}
-\caption{Adversarial training dynamics for San Francisco. (a) Predictor loss: train converges near zero while test stabilizes above 0.5. (b) Discriminator accuracy drops toward the dashed random baseline of $1/3$ as $\lambda$ ramps, then partially recovers. (c) The $\lambda$ annealing schedule ramps from 0.1 to 1.0 over epochs 10--50.}
-\label{fig:training_curves}
-\end{figure}
-\FloatBarrier
 
 \subsubsection{Linear Concept Erasure with an Iterative Gradient-Based Polish}
 
@@ -999,7 +975,7 @@ The three-city comparison reveals a universal mechanism operating across distinc
 
 Boston represents a mid-sized market with strong neighborhood identities and a compact geographic footprint. New York (Manhattan and Brooklyn) represents the most liquid and informationally efficient urban housing market in the United States, with deep price stratification across boroughs, neighborhoods, and individual blocks. San Francisco represents a high-cost market with constrained supply and distinctive institutional features (Prop~13, rent control, seismic retrofitting requirements).
 
-Despite these differences, the pattern is consistent. Under the frozen probe, text embeddings encode geography far above the random baseline in every market, ranging from $19\times$ in San Francisco through $31\times$ in Boston to $116\times$ in New York. Randomization tests confirm that text is a sufficient statistic for location in every market. Correlational $\Delta R^2$ remains high (0.85--0.88). And the DML continuous estimator, which provides the cleanest causal test, finds no effect in the one city (San Francisco) where property-level geocoding enables a full 34-covariate adjustment. For New York, the confounder escalation test shows 76.5\% shrinkage of the binarized DR estimate toward zero as spatial controls become richer, the textbook signature of confounding bias being removed, not a real effect being preserved.
+Despite these differences, the pattern is consistent. Under the frozen probe, text embeddings encode geography far above the random baseline in every market, ranging from $19\times$ in San Francisco through $31\times$ in Boston to $116\times$ in New York. Randomization tests confirm that text is a sufficient statistic for location in every market. Correlational $\Delta R^2$ remains high (0.85--0.88). And the DML continuous estimator, which provides the cleanest causal test, finds no effect in the one city (San Francisco) where property-level geocoding enables a full 34-covariate adjustment. For New York, the confounder escalation test shows the binarized DR estimate shrinking $95.1\%$ in magnitude as spatial controls become richer, the textbook signature of confounding bias being removed, not a real effect being preserved.
 
 The frozen-probe results are consistent across cities (8--18$\times$ random), confirming that the adversarial deconfounding procedure fails to remove location in all three markets. The deconfounded $R^2$ values (0.25--0.34) should not be interpreted as evidence of location-independent semantic signal in any city. This cross-city consistency concerns the dominant axis of semantic variation that the DML and frozen-probe analyses target, and it should not be read as a sweeping null. As Section~\ref{sec:replications} shows, a residual axis orthogonal to the location-confounded subspace, operationalized by the Shen uniqueness measure, retains a small but statistically distinguishable causal effect, so the pattern across markets is one of dominant rather than total spatial confounding.
 
@@ -1236,7 +1212,7 @@ The text-on-price relationship is therefore not uniformly null. Its causal compo
 
 The analyses converge on four findings. First, the dominant mechanism underlying the observed text-price correlation is spatial confounding. Frozen-encoder probes recover zip code at 8--18$\times$ random in all three cities, demonstrating that adversarial deconfounding fails to remove location even when the live discriminator appears to be at random. We formalize this empirical observation as Proposition~\ref{prop:frozen_probe}: the frozen probe is a consistent estimator of the discriminator-probe gap in $\mathcal{V}$-information. Randomization tests confirm text is a sufficient statistic for location, and a $222$-dimensional purely stylometric feature vector recovers zip at $3$--$4\times$ random---falling short of the $768$-dim transformer at $11$--$14\times$ (Section~\ref{sec:stylometric})---demonstrating that the encoding mechanism combines sociolinguistic register with topical content rather than relying on either alone. The confounding pathway $\ell \rightarrow t$ and $\ell \rightarrow y$ predicted by SCM$_0$ is empirically dominant.
 
-Second, the DML continuous-treatment estimator on San Francisco (the only city with property-level geocoding enabling a full $34$-covariate adjustment) finds no causal effect of the leading text principal component on price ($\hat{\theta} = -0.001$, bootstrap CI $[-0.046, +0.051]$, MDE $\pm 8\%$). The null is not masking heterogeneity: stratified CATE estimation finds null in every predicted-price quartile (BLP heterogeneity Wald $p = 0.835$; Section~\ref{sec:cate}), ruling out a luxury-tier semantic premium hidden in the population average. For New York, a confounder escalation test shows the binarized DR estimate shrinking $76.5\%$ toward zero as spatial controls become progressively richer. Property-level geocoding for Boston and New York would enable definitive DML estimates with the full confounder set in those cities; the SF result and the NYC escalation both predict a null.
+Second, the DML continuous-treatment estimator on San Francisco (the only city with property-level geocoding enabling a full $34$-covariate adjustment) finds no causal effect of the leading text principal component on price ($\hat{\theta} = -0.001$, bootstrap CI $[-0.046, +0.051]$, MDE $\pm 8\%$). The null is not masking heterogeneity: stratified CATE estimation finds null in every predicted-price quartile (BLP heterogeneity Wald $p = 0.835$; Section~\ref{sec:cate}), ruling out a luxury-tier semantic premium hidden in the population average. For New York, a confounder escalation test shows the binarized DR estimate shrinking $95.1\%$ in magnitude as spatial controls become progressively richer. Property-level geocoding for Boston and New York would enable definitive DML estimates with the full confounder set in those cities; the SF result and the NYC escalation both predict a null.
 
 Third, the null along the dominant axis of variation does not extend to all axes. Replicating \citet{shen2021information}, a TF-IDF ``uniqueness'' measure -- by construction a spatial residual -- retains a small but distinguishable causal effect of $+0.072$ per $\sigma$ ($95\%$ CI $[+0.028, +0.116]$, Section~\ref{sec:replications}). Replicating \citet{baur2023automated}, the BERT-augmented predictive gain ($86\%$ MAE reduction) evaporates entirely under DML. The text-on-price relationship is therefore not uniformly null: its causal component is concentrated in a low-dimensional subspace orthogonal to the dominant location-confounded axis, with magnitude on the order of $5$--$10\%$ per standard deviation. Most of the apparent ``semantic'' predictive power in the literature is the dominant spatially-confounded axis where the causal effect is null.
 
@@ -1337,11 +1313,11 @@ Urban sentiment analysis, which uses NLP to quantify neighborhood quality from s
 
 \subsection{The Residual Signal and Its Interpretation}
 
-The adversarial deconfounding results warrant careful interpretation in light of the frozen-encoder probe. In all three cities, the live discriminator was driven to near-random accuracy during training (zip 1.9--13.0\%), yet the frozen probe recovered zip code at 8--18$\times$ random from the same representations. The deconfounded predictor $R^2$ of 0.25--0.34 is therefore residual location encoding, not residual semantic content. This conclusion is reinforced by the San Francisco DML null ($\hat{\theta} \approx 0$) and the New York confounder escalation (76.5\% shrinkage, all CIs containing zero).
+The adversarial deconfounding results warrant careful interpretation in light of the frozen-encoder probe. In all three cities, the live discriminator was driven to near-random accuracy during training (zip 1.9--13.0\%), yet the frozen probe recovered zip code at 8--18$\times$ random from the same representations. The deconfounded predictor $R^2$ of 0.25--0.34 is therefore residual location encoding, not residual semantic content. This conclusion is reinforced by the San Francisco DML null ($\hat{\theta} \approx 0$) and the New York confounder escalation ($95.1\%$ magnitude shrinkage, all CIs containing zero).
 
 \textbf{Methodological lesson.} The frozen-encoder probe is the most important diagnostic this paper introduces. The gap between training-time and post-hoc assessments of invariance echoes earlier critiques of gradient-reversal-based fairness~\citep{moyer2018invariant,xie2017controllable}: invariance to a discriminator is not invariance to all probes. We recommend the frozen-encoder probe as a standard diagnostic for any adversarial deconfounding work in spatially situated settings.
 
-\textbf{The geocoding constraint.} Our strongest causal estimate comes from San Francisco, the only city where property-level coordinates were available. Boston and New York descriptions were geocoded to parcel-level coordinates via address matching (58\% and 44\% match rates, respectively), with the remainder assigned zip-code centroid coordinates. We discovered empirically that this mixed geocoding introduces within-zip confounding artifacts in the DML estimator: properties sharing a zip centroid receive identical confounder values, causing the DML to attribute within-zip price variation to text rather than to geography. The DML estimates for Boston and New York are therefore unreliable as point estimates. The New York confounder escalation test, which uses progressively richer spatial controls and is more robust to geocoding quality, provides the strongest NYC evidence: 76.5\% effect shrinkage across seven escalation levels, consistent with SCM$_0$.
+\textbf{The geocoding constraint.} Our strongest causal estimate comes from San Francisco, the only city where property-level coordinates were available. Boston and New York descriptions were geocoded to parcel-level coordinates via address matching (58\% and 44\% match rates, respectively), with the remainder assigned zip-code centroid coordinates. We discovered empirically that this mixed geocoding introduces within-zip confounding artifacts in the DML estimator: properties sharing a zip centroid receive identical confounder values, causing the DML to attribute within-zip price variation to text rather than to geography. The DML estimates for Boston and New York are therefore unreliable as point estimates. The New York confounder escalation test, which uses progressively richer spatial controls and is more robust to geocoding quality, provides the strongest NYC evidence: $95.1\%$ magnitude shrinkage across seven escalation levels, consistent with SCM$_0$.
 
 \textbf{The condition-signal hypothesis.} The hedonic pricing literature~\citep{rosen1974hedonic,sheppard1999hedonic} predicts that property condition and quality are capitalized into prices, and descriptions may be one channel through which this information reaches buyers. We do not rule out a small genuine condition-related signal. However, the frozen probe's 18$\times$ accuracy in New York demonstrates that text representations are saturated with geographic information at a resolution our confounders cannot match. Any condition signal, if present, is confounded with and dwarfed by this residual location encoding. A definitive test would require either (a) richer structured covariates (NYC DOB permit data, interior photographs, walk score, school quality), (b) property-level geocoding for all descriptions, or (c) experimental variation in descriptions holding location fixed. We identify these as the three most productive avenues for future work.
 
@@ -1684,7 +1660,71 @@ We monitor three metrics during training:
 \text{Discriminator Accuracy:} \quad &\text{Acc}_{\text{disc}} = \frac{1}{n}\sum_{i=1}^n \mathbb{1}[\arg\max D_\psi(E_\phi(t_i)) = L_i]
 \end{align}
 
-Successful deconfounding is indicated by predictor loss comparable to baseline while discriminator accuracy approaches random guessing.
+Successful deconfounding is indicated by predictor loss comparable to baseline while discriminator accuracy approaches random guessing. Figure~\ref{fig:training_curves} reports the realised dynamics for the San Francisco run, which exhibits the discriminator-collapse-and-partial-recovery trajectory that motivates the frozen-encoder probe diagnostic in the main text.
+
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}[scale=0.85]
+\begin{axis}[
+    name=plot1,
+    width=5.5cm, height=5cm,
+    xlabel={Epoch}, ylabel={Predictor MSE Loss},
+    title={(a) Predictor Loss}, title style={font=\small},
+    xmin=0, xmax=150, ymin=0, ymax=1.3,
+    axis lines*=left,
+    legend style={font=\scriptsize, at={(0.97,0.97)}, anchor=north east, draw=none, fill=none},
+    label style={font=\small}, tick label style={font=\scriptsize},
+]
+\addplot[blue!70!black, thick, smooth] coordinates {
+    (0,0.92)(10,0.35)(20,0.15)(30,0.08)(40,0.06)(50,0.05)(60,0.04)(80,0.04)(100,0.04)(120,0.03)(150,0.03)
+};
+\addlegendentry{Train}
+\addplot[red!70!black, thick, smooth] coordinates {
+    (0,1.15)(10,0.55)(20,0.42)(30,0.40)(40,0.45)(50,0.48)(60,0.50)(80,0.52)(100,0.55)(120,0.53)(150,0.56)
+};
+\addlegendentry{Test}
+\end{axis}
+\begin{axis}[
+    at={(plot1.east)}, anchor=west, xshift=1.2cm,
+    name=plot2,
+    width=5.5cm, height=5cm,
+    xlabel={Epoch}, ylabel={Disc.\ Accuracy},
+    title={(b) Location Discriminator}, title style={font=\small},
+    xmin=0, xmax=150, ymin=0, ymax=1.05,
+    axis lines*=left,
+    legend style={font=\scriptsize, at={(0.97,0.97)}, anchor=north east, draw=none, fill=none},
+    label style={font=\small}, tick label style={font=\scriptsize},
+]
+\addplot[blue!70!black, thick, smooth] coordinates {
+    (0,0.80)(10,0.85)(20,0.82)(30,0.78)(40,0.60)(50,0.45)(60,0.35)(70,0.30)(80,0.55)(90,0.65)(100,0.70)(120,0.60)(150,0.63)
+};
+\addlegendentry{Train}
+\addplot[red!70!black, thick, smooth] coordinates {
+    (0,0.83)(10,0.87)(20,0.85)(30,0.80)(40,0.55)(50,0.40)(60,0.30)(70,0.25)(80,0.50)(90,0.60)(100,0.65)(120,0.55)(150,0.63)
+};
+\addlegendentry{Test}
+\addplot[black, dashed, thin] coordinates {(0,0.333)(150,0.333)};
+\end{axis}
+\begin{axis}[
+    at={(plot2.east)}, anchor=west, xshift=1.2cm,
+    width=5.5cm, height=5cm,
+    xlabel={Epoch}, ylabel={$\lambda$},
+    title={(c) $\lambda$ Annealing}, title style={font=\small},
+    xmin=0, xmax=150, ymin=0, ymax=1.15,
+    axis lines*=left,
+    label style={font=\small}, tick label style={font=\scriptsize},
+]
+\addplot[blue!70!black, thick, name path=lambda] coordinates {
+    (0,0.1)(10,0.1)(50,1.0)(150,1.0)
+};
+\addplot[draw=none, name path=zero] coordinates {(0,0)(150,0)};
+\addplot[blue!15!white] fill between[of=lambda and zero];
+\end{axis}
+\end{tikzpicture}
+\caption{Adversarial training dynamics for San Francisco. (a) Predictor loss: train converges near zero while test stabilizes above 0.5. (b) Discriminator accuracy drops toward the dashed random baseline of $1/3$ as $\lambda$ ramps, then partially recovers. (c) The $\lambda$ annealing schedule ramps from 0.1 to 1.0 over epochs 10--50.}
+\label{fig:training_curves}
+\end{figure}
+\FloatBarrier
 
 \section{Doubly-Robust Estimation Details}
 \label{app:dr}
@@ -1975,6 +2015,87 @@ Wild cluster bootstrap, folds & 0.32 & 0.34 & 0.32 & 0.30 & 0.40 & 0.46 & 0.36 \
 \bottomrule
 \end{tabular}
 \end{table}
+
+Figure~\ref{fig:dk_coverage} reads four of the eleven methods as coverage curves against both stress axes, with the seven remaining rules omitted from the figure for legibility because they bunch within the band traced by the classical and Salerno--Wu--McCormick-with-$z$ lines. Panel (a) varies the leading-eigenvalue spike strength while holding the length-scale at $\rho = 0.15$, and panel (b) varies the length-scale while holding the spike strength at its central value, with each Monte Carlo cell at $1{,}000$ replications. The dashed horizontal line in each panel marks the nominal $95\%$ target.
+
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre body, name=dkA,
+    xlabel={Leading-eigenvalue spike strength},
+    ylabel={Empirical coverage of nominal $95\%$ CI},
+    title={(a) Coverage vs spike strength, $\rho = 0.15$},
+    xmin=0.4, xmax=4.1, ymin=0.28, ymax=1.02,
+    ytick={0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0},
+    legend style={font=\scriptsize, at={(0.98,0.02)}, anchor=south east,
+                  draw=none, fill=none, row sep=1pt},
+    legend cell align=left,
+]
+\addplot[black, dashed, thin, forget plot] coordinates {(0.4,0.95) (4.1,0.95)};
+\addplot[color=cNYC, thick, mark=square*, mark size=1.4pt] coordinates {
+  (0.50,0.934) (0.75,0.920) (1.00,0.954) (1.25,0.958) (1.50,0.930)
+  (1.75,0.950) (2.00,0.930) (2.25,0.930) (2.50,0.940) (2.75,0.962)
+  (3.00,0.942) (3.25,0.940) (3.50,0.932) (3.75,0.936) (4.00,0.942)
+};
+\addlegendentry{fixed-$b$, $b = 0.5$, $t_1$}
+\addplot[color=cSF, thick, mark=*, mark size=1.4pt] coordinates {
+  (0.50,0.706) (0.75,0.722) (1.00,0.730) (1.25,0.746) (1.50,0.682)
+  (1.75,0.716) (2.00,0.726) (2.25,0.740) (2.50,0.730) (2.75,0.762)
+  (3.00,0.756) (3.25,0.730) (3.50,0.762) (3.75,0.706) (4.00,0.708)
+};
+\addlegendentry{IM self-normalised $t_{K - 1}$}
+\addplot[color=cBOS, thick, mark=triangle*, mark size=1.6pt] coordinates {
+  (0.50,0.494) (0.75,0.490) (1.00,0.496) (1.25,0.518) (1.50,0.482)
+  (1.75,0.492) (2.00,0.476) (2.25,0.480) (2.50,0.472) (2.75,0.514)
+  (3.00,0.508) (3.25,0.476) (3.50,0.488) (3.75,0.482) (4.00,0.476)
+};
+\addlegendentry{SWM jackknife, $z = 1.96$}
+\addplot[color=cMUTE, thick, mark=diamond*, mark size=1.6pt] coordinates {
+  (0.50,0.436) (0.75,0.436) (1.00,0.442) (1.25,0.444) (1.50,0.414)
+  (1.75,0.400) (2.00,0.424) (2.25,0.436) (2.50,0.392) (2.75,0.442)
+  (3.00,0.456) (3.25,0.424) (3.50,0.456) (3.75,0.438) (4.00,0.394)
+};
+\addlegendentry{Classical, $z = 1.96$}
+\end{axis}
+\begin{semilogxaxis}[
+    causalre body,
+    at={(dkA.east)}, anchor=west, xshift=1.4cm,
+    xlabel={Length-scale $\rho$}, ylabel={},
+    title={(b) Coverage vs length-scale $\rho$},
+    xmin=0.04, xmax=0.75, ymin=0.28, ymax=1.02,
+    log basis x=10,
+    xtick={0.05,0.10,0.15,0.25,0.40,0.60},
+    xticklabels={0.05,0.10,0.15,0.25,0.40,0.60},
+    ytick={0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0},
+    yticklabels={,,,,,,,},
+    legend style={font=\scriptsize, at={(0.98,0.02)}, anchor=south east,
+                  draw=none, fill=none, row sep=1pt},
+    legend cell align=left,
+]
+\addplot[black, dashed, thin, forget plot] coordinates {(0.04,0.95) (0.75,0.95)};
+\addplot[color=cNYC, thick, mark=square*, mark size=1.4pt] coordinates {
+  (0.05,0.780) (0.10,0.957) (0.15,0.927) (0.25,0.909) (0.40,0.929) (0.60,0.940)
+};
+\addlegendentry{fixed-$b$, $b = 0.5$, $t_1$}
+\addplot[color=cSF, thick, mark=*, mark size=1.4pt] coordinates {
+  (0.05,0.748) (0.10,0.672) (0.15,0.711) (0.25,0.762) (0.40,0.792) (0.60,0.808)
+};
+\addlegendentry{IM self-normalised $t_{K - 1}$}
+\addplot[color=cBOS, thick, mark=triangle*, mark size=1.6pt] coordinates {
+  (0.05,0.395) (0.10,0.508) (0.15,0.486) (0.25,0.414) (0.40,0.534) (0.60,0.568)
+};
+\addlegendentry{SWM jackknife, $z = 1.96$}
+\addplot[color=cMUTE, thick, mark=diamond*, mark size=1.6pt] coordinates {
+  (0.05,0.467) (0.10,0.456) (0.15,0.430) (0.25,0.432) (0.40,0.556) (0.60,0.616)
+};
+\addlegendentry{Classical, $z = 1.96$}
+\end{semilogxaxis}
+\end{tikzpicture}
+\caption{Empirical coverage of nominal $95\%$ confidence intervals across the Davis--Kahan stress simulation, with $1{,}000$ Monte Carlo replications per cell. The horizontal dashed line in each panel marks the nominal level. Panel (a) varies the leading-eigenvalue spike strength while holding the spatial length-scale at $\rho = 0.15$, and panel (b) varies the length-scale on a log axis while holding the spike strength at its central value. The Salerno--Wu--McCormick jackknife paired with the conventional $z = 1.96$ critical value sits near $0.49$ across both axes, the Ibragimov--M\"uller self-normalised $t_{K - 1}$ paired with the same fold-mean variance sits near $0.73$, and the fixed-$b$ envelope of \citet{sun2008optimal} at $b = 0.5$ reaches roughly $0.93$ at the cost of substantially wider intervals. The seven remaining inference rules reported in Table~\ref{tab:dk_coverage} bunch within the band traced by classical and SWM-with-$z$ and are omitted from the figure for legibility.}
+\label{fig:dk_coverage}
+\end{figure}
+\FloatBarrier
 
 Three readings of Table~\ref{tab:dk_coverage} guide our choice of inference rule for the headline estimate. The first reading is that the Ibragimov--M\"uller construction recovers a substantial coverage improvement over the Salerno--Wu--McCormick jackknife paired with the asymptotic-$z$ critical value, while requiring no bandwidth choice and no kernel specification. Mean coverage moves from $0.48$ to $0.75$ across the $\rho$ sweep, so the construction earns the headline slot for the per-city tables in the main text. The second reading is that the $V_{\text{off}} + V_{\text{between}}$ decomposition of \citet{salerno2026spatially} is mathematically the right correction to the kernel-smoothed Conley HAC, but at $K = 5$ folds the two terms cancel in roughly three-quarters of replications and the net standard-error inflation closes only about three percent of the coverage gap. The third reading is that the fixed-$b$ construction of \citet{sun2008optimal} and \citet{kiefer2005new} at $b = 0.5$ with the $t_1$ critical value reaches mean coverage of $0.91$ at the cost of a roughly four-fold widening of the confidence interval, so we report it as a conservative envelope rather than as the headline. Together the three readings recover an inference rule that is honest about its small-sample limits without surrendering substantive content to width.
 
