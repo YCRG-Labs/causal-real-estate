@@ -1,4 +1,7 @@
+import json
 import sys
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
@@ -11,6 +14,8 @@ from config import PROCESSED_DIR, CITIES, EMBEDDING_DIM
 from canonical_confounders import (
     CENSUS, CRIME, AMENITY, MICRO_GEO,
 )
+
+RESULTS_DIR = Path(__file__).resolve().parents[2] / "results" / "diagnostics"
 
 
 ESCALATION_LEVELS = [
@@ -218,6 +223,24 @@ def run_escalation(city):
     else:
         sig_levels = [r["level"] for r in results if not r["contains_zero"]]
         print(f"CIs exclude zero at: {', '.join(sig_levels)}")
+
+    payload = {
+        "city": city,
+        "n": int(len(Y_v)),
+        "seed": 42,
+        "n_resamples": 500,
+        "shrinkage_none_to_full": (
+            1 - abs(results[-1]["ate"]) / max(abs(results[0]["ate"]), 1e-10)
+            if len(results) >= 2 else None
+        ),
+        "all_cis_contain_zero": bool(all_contain_zero),
+        "levels": results,
+    }
+    out_path = RESULTS_DIR / f"confounder_escalation_{city}.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w") as f:
+        json.dump(payload, f, indent=2)
+    print(f"Saved escalation results to {out_path}")
 
     return results
 

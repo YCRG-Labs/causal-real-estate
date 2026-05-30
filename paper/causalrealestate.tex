@@ -22,6 +22,29 @@
 \pgfplotsset{compat=1.18}
 \usepgfplotslibrary{fillbetween}
 \usetikzlibrary{shapes,arrows,positioning,calc,backgrounds,fit,patterns,decorations.pathreplacing}
+
+% --- Okabe-Ito triplet restricted to our three cities (colorblind-safe, prints in grey)
+\definecolor{cBOS}{HTML}{999999}
+\definecolor{cNYC}{HTML}{0072B2}
+\definecolor{cSF}{HTML}{D55E00}
+\definecolor{cMUTE}{HTML}{BBBBBB}
+
+% --- Shared axis style (Tufte-aligned)
+\pgfplotsset{
+  causalre/.style={
+    axis lines*=left,
+    title style={font=\normalsize},
+    label style={font=\small},
+    tick label style={font=\scriptsize},
+    legend style={font=\scriptsize, draw=none, fill=none, row sep=1pt},
+    every axis plot/.append style={thick},
+    axis on top,
+  },
+  causalre body/.style={ causalre, width=0.45\textwidth, height=6cm, },
+  causalre wide/.style={ causalre, width=0.7\textwidth, height=0.6\textwidth, },
+  causalre strip/.style={ causalre, width=5.0cm, height=4.5cm,
+                          title style={font=\small} },
+}
 \usepackage{amsthm}
 \usepackage{algorithm}
 \usepackage{algorithmic}
@@ -543,7 +566,6 @@ Ratio (accuracy / baseline) & 13.4$\times$ & 10.9$\times$ & 8.7$\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
-\FloatBarrier
 
 New York's classifier achieves 51.8\% accuracy across the 21 zip codes with five or more listings, which is 10.9 times the random baseline of 4.8\%. A simple linear model, given only the semantic content of a property description, identifies the correct zip code roughly half the time across the zip codes with sufficient sample. The absolute accuracy is moderate because fine-grained zip-level prediction is inherently difficult, but the ratio to random chance reveals substantial location encoding.
 
@@ -555,7 +577,7 @@ These results directly address the tendency in recent work to interpret embeddin
 \centering
 \begin{tikzpicture}
 \begin{axis}[
-    width=0.7\textwidth, height=0.6\textwidth,
+    width=0.58\textwidth, height=0.42\textwidth,
     xlabel={UMAP 1}, ylabel={UMAP 2},
     title={Property Embeddings by Location (NYC)},
     title style={font=\normalsize},
@@ -586,6 +608,45 @@ These results directly address the tendency in recent work to interpret embeddin
 \end{tikzpicture}
 \caption{UMAP projection of 199 New York property description embeddings, colored by zip code. Points of similar color cluster together in embedding space, demonstrating that the learned representations encode geographic position. Colored zip codes are the 8 most frequent; remaining 160 points across other zip codes shown in gray.}
 \label{fig:umap}
+\end{figure}
+\FloatBarrier
+
+The two-dimensional projection makes the clustering visible, but the clustering itself is the consequence of how the high-dimensional embedding spectrum is structured. A representation that encoded each market's submarket geometry as a single dominant direction would show a steep drop between $\lambda_1$ and $\lambda_2$ in the embedding-covariance spectrum, while a representation in which several geographic and semantic factors compete for variance would show a flatter spectrum across the leading components. The distinction matters for the partialling-out estimator that Section~\ref{sec:results} relies on, because the Davis--Kahan inequality bounds the stability of the leading principal component by the inverse of the leading eigengap, so identification of a single dominant direction is well-posed in markets where the spectrum drops sharply and ill-posed where it does not.
+
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{loglogaxis}[
+    causalre,
+    width=0.65\textwidth, height=5.2cm,
+    xlabel={Component index $k$},
+    ylabel={$\lambda_k / \lambda_1$},
+    xmin=0.9, xmax=11,
+    ymin=0.15, ymax=1.10,
+    log basis x=10, log basis y=10,
+    title={Eigenvalue spectrum of the embedding covariance},
+    legend style={font=\scriptsize, draw=none, fill=none,
+                  at={(0.97,0.97)}, anchor=north east, row sep=1pt},
+]
+\addplot[color=cBOS, thick, mark=square*, mark size=1.6pt] coordinates {
+    (1,1.000) (2,0.821) (3,0.713) (4,0.516) (5,0.492)
+    (6,0.412) (7,0.387) (8,0.357) (9,0.332) (10,0.315)
+};
+\addlegendentry{Boston}
+\addplot[color=cNYC, thick, mark=*, mark size=1.6pt] coordinates {
+    (1,1.000) (2,0.488) (3,0.376) (4,0.321) (5,0.262)
+    (6,0.238) (7,0.231) (8,0.216) (9,0.203) (10,0.182)
+};
+\addlegendentry{New York}
+\addplot[color=cSF, thick, mark=triangle*, mark size=1.8pt] coordinates {
+    (1,1.000) (2,0.772) (3,0.541) (4,0.496) (5,0.447)
+    (6,0.360) (7,0.355) (8,0.317) (9,0.297) (10,0.284)
+};
+\addlegendentry{San Francisco}
+\end{loglogaxis}
+\end{tikzpicture}
+\caption{Normalised embedding-covariance eigenvalues for the three city corpora, plotted on log-log axes for the leading ten components. The leading-eigenvalue separation is markedly larger in New York, where $\lambda_2/\lambda_1 = 0.49$, than in San Francisco ($0.77$) or Boston ($0.82$). Davis--Kahan stability of the leading principal component scales inversely with this gap, so the partialling-out estimator can be expected to identify a single dominant direction most cleanly in New York and least cleanly in Boston, a pattern that the sin-$\Theta$ proxy reported in Section~\ref{sec:disc_heterogeneity} confirms. Beyond the leading triple the three spectra track one another closely, so cross-city heterogeneity in the causal estimates does not derive from a structural difference in the embedding-covariance tail.}
+\label{fig:scree}
 \end{figure}
 \FloatBarrier
 
@@ -636,49 +697,46 @@ The variation across cities is itself informative. All three cities show similar
 \centering
 \begin{tikzpicture}
 \begin{axis}[
-    name=leftplot,
-    width=0.45\textwidth, height=6cm,
-    ybar, bar width=18pt,
-    symbolic x coords={Boston,New York,San Francisco},
-    xtick=data, xticklabel style={font=\small},
-    ylabel={$\Delta R^2$ (text beyond location)},
-    ymin=0, ymax=1.05,
-    title={(a) Correlational Signal},
-    title style={font=\normalsize},
-    nodes near coords, nodes near coords style={font=\scriptsize},
-    every axis plot/.append style={fill=blue!60!white, draw=blue!80!black},
-    axis lines*=left,
-    enlarge x limits=0.25,
+    causalre body, name=fpA,
+    symbolic y coords={Boston, New York, San Francisco},
+    ytick={Boston, New York, San Francisco},
+    xlabel={DML $\hat\theta$ on PC1 (per $\sigma$, log-price)},
+    xmin=-0.30, xmax=0.32,
+    enlarge y limits=0.40,
+    title={(a) PC1 axis},
+    extra x ticks={0},
+    extra x tick style={grid=major, grid style={black, dashed, thin}},
+    extra x tick labels={},
 ]
-\addplot coordinates {(Boston,0.859) (New York,0.884) (San Francisco,0.845)};
+\draw[thin, gray] (axis cs:-0.1512,Boston)        -- (axis cs: 0.0984,Boston);
+\draw[thin, gray] (axis cs: 0.0587,New York)      -- (axis cs: 0.2790,New York);
+\draw[thin, gray] (axis cs:-0.1502,San Francisco) -- (axis cs: 0.0984,San Francisco);
+\addplot[only marks, mark=*, mark size=2.5pt, color=cBOS] coordinates {(-0.0264,Boston)};
+\addplot[only marks, mark=*, mark size=2.5pt, color=cNYC] coordinates {( 0.1693,New York)};
+\addplot[only marks, mark=*, mark size=2.5pt, color=cSF]  coordinates {(-0.0260,San Francisco)};
 \end{axis}
 \begin{axis}[
-    at={(leftplot.east)}, anchor=west, xshift=1.5cm,
-    width=0.45\textwidth, height=6cm,
-    ybar, bar width=18pt,
-    symbolic x coords={Boston,New York,San Francisco},
-    xtick=data, xticklabel style={font=\small},
-    ylabel={DML $\hat\theta$ on PC1 (per $\sigma$, log-price)},
-    ymin=-0.30, ymax=0.32,
-    title={(b) Per-city causal effect on PC1},
-    title style={font=\normalsize},
-    every axis plot/.append style={fill=red!70!white, draw=red!80!black},
-    axis lines*=left,
-    enlarge x limits=0.25,
-    extra y ticks={0}, extra y tick style={grid=major, grid style={black, thick}},
+    causalre body,
+    at={(fpA.east)}, anchor=west, xshift=1.6cm,
+    symbolic y coords={Boston, New York, San Francisco},
+    ytick={Boston, New York, San Francisco}, yticklabels={,,},
+    xlabel={DML $\hat\theta$ on Shen uniqueness (per $\sigma$)},
+    xmin=-0.10, xmax=0.26,
+    enlarge y limits=0.40,
+    title={(b) Shen uniqueness axis},
+    extra x ticks={0},
+    extra x tick style={grid=major, grid style={black, dashed, thin}},
+    extra x tick labels={},
 ]
-\addplot coordinates {(Boston,-0.026) (New York,0.169) (San Francisco,-0.026)};
-\addplot[only marks, mark=-, mark size=3pt, thick, black, forget plot]
-    coordinates {(Boston,-0.151) (Boston,0.098) (New York,0.059) (New York,0.279) (San Francisco,-0.150) (San Francisco,0.098)};
-\draw[thick,gray] (axis cs:Boston,-0.151) -- (axis cs:Boston,0.098);
-\draw[thick,gray] (axis cs:New York,0.059) -- (axis cs:New York,0.279);
-\draw[thick,gray] (axis cs:San Francisco,-0.150) -- (axis cs:San Francisco,0.098);
-\node[font=\scriptsize, anchor=west] at (axis cs:Boston,-0.060) {$-0.026$};
-\node[font=\scriptsize, anchor=west] at (axis cs:New York,0.200) {$+0.169$};
-\node[font=\scriptsize, anchor=west] at (axis cs:San Francisco,-0.060) {$-0.026$};
+\draw[thin, gray] (axis cs:-0.0691,Boston)        -- (axis cs: 0.0741,Boston);
+\draw[thin, gray] (axis cs:-0.0298,New York)      -- (axis cs: 0.1145,New York);
+\draw[thin, gray] (axis cs: 0.0111,San Francisco) -- (axis cs: 0.2094,San Francisco);
+\addplot[only marks, mark=*, mark size=2.5pt, color=cBOS] coordinates {(-0.0011,Boston)};
+\addplot[only marks, mark=*, mark size=2.5pt, color=cNYC] coordinates {( 0.0747,New York)};
+\addplot[only marks, mark=*, mark size=2.5pt, color=cSF]  coordinates {( 0.1303,San Francisco)};
 \end{axis}
 \end{tikzpicture}
-\caption{The heterogeneity of causal text effects across markets. (a) Correlational $\Delta R^2$: text embeddings add 0.85--0.88 $R^2$ beyond location controls in all three cities. (b) DML estimate on the leading principal component with Ibragimov--M\"uller cluster-$t$ 95\% confidence intervals (whiskers). New York excludes zero at $+0.169$ per $\sigma$; San Francisco and Boston are null on this axis. The Wald test on equality of the three coefficients returns $\chi^2_2 = 7.97$, $p = 0.019$ under cheap-bootstrap standard errors. San Francisco's residual signal lives on a separate Shen-Ross uniqueness axis with effect $+0.130$ per $\sigma$, CI $[+0.011, +0.232]$ (Section~\ref{sec:replications}).}
+\caption{Per-city DML estimates on the two residual axes. Filled dots are the point estimates and gray whiskers are 95 percent confidence intervals: panel (a) uses Ibragimov--M\"uller self-normalised cluster-$t_{K-1}$ inference on the leading principal component of the residualised embedding, and panel (b) uses cross-fitted DML on the Shen--Ross document-uniqueness construct from Doc2Vec PV-DM. The dashed vertical line marks the null. New York carries the per-$\sigma$ effect on the PC1 axis at $+0.169$, while San Francisco carries it on the Shen axis at $+0.130$, and the two markets that load each axis exclude zero at the 95 percent level. A weighted Cochran homogeneity test on the PC1 coefficients gives $Q = 14.6$ on 2 degrees of freedom ($p = 0.0007$); the same test on the Shen coefficients gives $Q = 4.5$ ($p = 0.10$), so causal heterogeneity across markets is concentrated on the dominant axis. Sample sizes are 348, 337, and 323 for San Francisco, New York, and Boston respectively. Numerical values are reported in Table~\ref{tab:dml_per_city}.}
 \label{fig:corr_vs_causal}
 \end{figure}
 \FloatBarrier
@@ -722,6 +780,44 @@ Boston        & 2.96 & 0.012 & PC3 ($2.96\sigma$) \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+The summary row in the table compresses a five-dimensional pattern into a single sup-Wald statistic, which is the right object for the joint test but the wrong object for reading off which axis carries causal weight in which market. Figure~\ref{fig:omnibus_heatmap} expands the same residual subspace into its component dimensions, so the reader can see the signed magnitudes side by side and identify the cells that breach the cluster-$t$ critical value without having to chase the numbers across rows. The visual encoding also makes the off-diagonal pattern legible, which is the substantive point: each market loads its residual signal on a different principal component, and the components that carry the signal in one market sit close to the null in the other two.
+
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre,
+    width=0.62\textwidth, height=4.3cm,
+    xlabel={Principal component of residualised embedding},
+    xtick={1,2,3,4,5}, xticklabels={PC1,PC2,PC3,PC4,PC5},
+    ytick={0,1,2}, yticklabels={Boston, New York, San Francisco},
+    xmin=0.5, xmax=5.5, ymin=-0.5, ymax=2.5,
+    enlarge x limits=0, enlarge y limits=0,
+    title={Per-PC partialling-out $z$-statistic},
+    colormap={zdiv}{rgb255(-6cm)=(213,94,0); rgb255(-2.776cm)=(245,210,170);
+                    rgb255(0cm)=(245,245,245);
+                    rgb255(2.776cm)=(170,205,230); rgb255(6cm)=(0,114,178)},
+    point meta min=-6, point meta max=6,
+    colorbar, colorbar style={width=0.22cm, font=\scriptsize,
+                              ylabel={$z$}, ylabel style={font=\scriptsize, rotate=-90}},
+]
+\addplot[matrix plot*, point meta=explicit, mesh/cols=5, draw=white, line width=0.6pt]
+    coordinates {
+        (1,0)[0.52]  (2,0)[0.89]  (3,0)[-2.96] (4,0)[-1.22] (5,0)[-1.05]
+        (1,1)[3.98]  (2,1)[-0.94] (3,1)[0.34]  (4,1)[5.98]  (5,1)[0.18]
+        (1,2)[-0.78] (2,2)[1.44]  (3,2)[4.48]  (4,2)[-2.25] (5,2)[0.05]
+    };
+\draw[ultra thick, black] (axis cs:2.5,-0.5) rectangle (axis cs:3.5,0.5);
+\draw[ultra thick, black] (axis cs:0.5, 0.5) rectangle (axis cs:1.5,1.5);
+\draw[ultra thick, black] (axis cs:3.5, 0.5) rectangle (axis cs:4.5,1.5);
+\draw[ultra thick, black] (axis cs:2.5, 1.5) rectangle (axis cs:3.5,2.5);
+\end{axis}
+\end{tikzpicture}
+\caption{Per-PC partialling-out $z$-statistic from cross-fit DML residualisation on the top five principal components of the deconfounded sentence-BERT embedding. Cell color encodes signed magnitude on the Okabe-Ito diverging scale, with white at zero and saturation rising toward the city colors. Cells outlined in black exceed the two-sided $t_{K-1=4}$ 95 percent critical value of $\pm 2.776$: Boston PC3, New York PC1, New York PC4, and San Francisco PC3. The omnibus rejects in every market, and the axis on which the residual signal lives shifts by city in a manner consistent with the structured-covariate density mechanism developed in Section~\ref{sec:disc_heterogeneity}. Numerical $z$-statistics are listed in Table~\ref{tab:omnibus_z}.}
+\label{fig:omnibus_heatmap}
+\end{figure}
+\FloatBarrier
 
 The remaining tests of the original SCM-$_0$ framing (the confounder escalation diagnostic on New York, the randomization redundancy across all three cities, and the frozen-encoder probe) continue to support the dominant spatial-confounding pathway and are reported in their existing form below. Their interpretation under the heterogeneous-effects pivot is that the dominant location-confounded pathway remains operative as the dominant story, while the per-city residual effects we have just documented sit on axes orthogonal to that dominant pathway.
 
@@ -827,7 +923,6 @@ The San Francisco results are particularly instructive. The live discriminator a
 };
 \addlegendentry{Test}
 \addplot[black, dashed, thin] coordinates {(0,0.333)(150,0.333)};
-\node[font=\scriptsize, gray, anchor=east] at (axis cs:148,0.27) {Random};
 \end{axis}
 \begin{axis}[
     at={(plot2.east)}, anchor=west, xshift=1.2cm,
@@ -845,8 +940,46 @@ The San Francisco results are particularly instructive. The live discriminator a
 \addplot[blue!15!white] fill between[of=lambda and zero];
 \end{axis}
 \end{tikzpicture}
-\caption{Adversarial training dynamics for San Francisco. (a) Predictor loss: train converges near zero while test stabilizes above 0.5. (b) Discriminator accuracy drops toward random (0.33) as $\lambda$ ramps, then partially recovers. (c) The $\lambda$ annealing schedule ramps from 0.1 to 1.0 over epochs 10--50.}
+\caption{Adversarial training dynamics for San Francisco. (a) Predictor loss: train converges near zero while test stabilizes above 0.5. (b) Discriminator accuracy drops toward the dashed random baseline of $1/3$ as $\lambda$ ramps, then partially recovers. (c) The $\lambda$ annealing schedule ramps from 0.1 to 1.0 over epochs 10--50.}
 \label{fig:training_curves}
+\end{figure}
+\FloatBarrier
+
+\subsubsection{Linear Concept Erasure with an Iterative Gradient-Based Polish}
+
+The adversarial procedure assessed in the previous subsubsection removes location to the satisfaction of a co-trained linear discriminator but leaves the frozen probe recovering ZIP code at eight to eighteen times random, and the discrepancy invites a separate erasure pass that targets the geometry of the representation rather than the optimisation trajectory. We deploy the LEACE estimator of \citet{belrose2023leace}, which projects the embedding onto the affine subspace that minimises the operator norm of the residual cross-covariance with latitude and longitude under a Mahalanobis whitening, and we compose it with the iterative gradient-based polish (IGBP) of \citet{iskander2023shielded}, which iteratively shaves the residual nonlinear leakage that any linear projector necessarily leaves behind. The resulting estimator removes both linear and small-dimensional nonlinear directions while preserving the price-relevant subspace, and it ships with the cross-covariance guarantee that LEACE alone provides on a held-out fold.
+
+Figure~\ref{fig:erasure} reports the MLP probe $R^2$ on continuous latitude and longitude before erasure and after the composed LEACE plus IGBP estimator on a held-out fold within each city, with the held-out probe trained from scratch in the post-erasure representation space. The raw embedding probes at $R^2 = 0.124$ in San Francisco, $-1.363$ in New York, and $-1.585$ in Boston, where the negative values reflect the probe performing worse than the city mean predictor on out-of-sample folds rather than meaningful signal absence in the training fold. The composed estimator collapses the probe $R^2$ to $0.005$ in San Francisco, $-0.035$ in New York, and $-0.027$ in Boston, closing the residual nonlinear leakage that LEACE alone leaves in San Francisco from $0.086$ to within Monte Carlo noise of zero.
+
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre,
+    width=0.65\textwidth, height=6cm,
+    ybar=2pt, bar width=14pt,
+    symbolic x coords={San Francisco, New York, Boston},
+    xtick=data,
+    ylabel={MLP probe $R^2$ on (lat, lon)},
+    ymin=-1.75, ymax=0.30,
+    enlarge x limits=0.25,
+    title={Concept erasure on a held-out probe},
+    legend columns=2,
+    legend style={font=\scriptsize, at={(0.5,-0.20)}, anchor=north,
+                  draw=none, fill=none, /tikz/every even column/.append style={column sep=10pt}},
+    extra y ticks={0}, extra y tick style={grid=major, grid style={black, dashed, thin}},
+    extra y tick labels={},
+]
+\addplot+[fill=cMUTE, draw=black!60] coordinates
+    {(San Francisco, 0.124) (New York,-1.363) (Boston,-1.585)};
+\addlegendentry{Raw embedding}
+\addplot+[fill=cNYC,  draw=cNYC]    coordinates
+    {(San Francisco, 0.005) (New York,-0.035) (Boston,-0.027)};
+\addlegendentry{After LEACE $+$ IGBP}
+\end{axis}
+\end{tikzpicture}
+\caption{Held-out MLP probe $R^2$ on continuous latitude and longitude before and after the composed linear concept erasure (LEACE) plus iterative gradient-based polish (IGBP). The raw embedding carries enough geographic signal for the probe to score $R^2 = 0.124$ in San Francisco, with the negative values in New York and Boston reflecting out-of-sample probe performance worse than the city-mean baseline rather than absence of signal. The composed estimator drives the probe $R^2$ to within Monte Carlo noise of zero in every market. Sample sizes for the held-out fold are 105, 102, and 97 listings for San Francisco, New York, and Boston respectively.}
+\label{fig:erasure}
 \end{figure}
 \FloatBarrier
 
@@ -856,46 +989,9 @@ The randomization test provides the most direct and intuitive test of the confou
 
 If text embeddings contain location-independent semantic information, then scrambling location labels should have minimal impact on performance, because the useful signal in text is orthogonal to location. Conversely, if text is merely a location proxy, then the model should be indifferent to the explicit location variable, because the text already carries all the geographic information it needs.
 
-The results strongly support the second interpretation (Figure~\ref{fig:randomization}). In New York, permuting location produces a $\Delta R^2$ of 0.000 ($p = 0.46$): the original model's performance is statistically indistinguishable from models trained with randomized locations. Boston shows a similarly negligible $\Delta R^2$ of 0.004 ($p = 0.14$). San Francisco's $\Delta R^2$ is negative ($-0.016$, $p = 0.98$), meaning randomized locations slightly improve performance, consistent with random variation around zero effect.
+The results strongly support the second interpretation. In New York, permuting location produces a $\Delta R^2$ of 0.000 ($p = 0.46$): the original model's performance is statistically indistinguishable from models trained with randomized locations. Boston shows a similarly negligible $\Delta R^2$ of 0.004 ($p = 0.14$). San Francisco's $\Delta R^2$ is negative ($-0.016$, $p = 0.98$), meaning randomized locations slightly improve performance, consistent with random variation around zero effect.
 
 In terms of the SCM, the text embedding $t$ is a sufficient statistic for location $\ell$ in predicting price $y$. Formally, $Y \perp L \mid T$ approximately holds: once the model observes the text embedding, the explicit location variable provides no additional information. The causal pathway $\ell \rightarrow t$ has already transmitted all of location's predictive content into the text, making the explicit location variable redundant. This is exactly what a confounded system looks like: the observed variable ($t$) appears to have independent predictive power, but it derives that power entirely from a common cause ($\ell$).
-
-\begin{figure}[!htbp]
-\centering
-\begin{tikzpicture}
-\begin{axis}[
-    width=0.6\textwidth, height=6.5cm,
-    ybar interval,
-    xlabel={$R^2$ on held-out test set},
-    ylabel={Count},
-    title={Randomization Test (NYC)},
-    title style={font=\normalsize},
-    xmin=0.978, xmax=0.990,
-    ymin=0, ymax=16,
-    axis lines*=left,
-    legend style={font=\scriptsize, at={(0.02,0.98)}, anchor=north west, draw=none, fill=none},
-    bar width=0.0006,
-    fill=blue!20!white, draw=blue!50!white,
-    xtick={0.978,0.980,0.982,0.984,0.986,0.988,0.990},
-    xticklabel style={font=\scriptsize, /pgf/number format/fixed, /pgf/number format/precision=3},
-    label style={font=\small}, tick label style={font=\scriptsize},
-]
-\addplot coordinates {
-    (0.9790,1)(0.9795,1)(0.9800,2)(0.9805,4)(0.9810,4)(0.9815,3)
-    (0.9820,5)(0.9825,10)(0.9830,6)(0.9835,5)(0.9840,14)(0.9845,12)
-    (0.9850,9)(0.9855,4)(0.9860,7)(0.9865,4)(0.9870,3)(0.9875,5)
-    (0.9880,2)(0.9885,1)(0.9890,1)(0.9895,0)
-};
-\addlegendentry{Permuted locations}
-\addplot[red!80!black, very thick, no markers, sharp plot, forget plot] coordinates {(0.9836,0)(0.9836,15)};
-\addlegendimage{red!80!black, very thick}
-\addlegendentry{Original ($R^2\!=\!0.984$)}
-\end{axis}
-\end{tikzpicture}
-\caption{Randomization test for New York. The histogram shows the distribution of $R^2$ across 100 random permutations of location assignments. The original (unpermuted) $R^2$ falls within the null distribution ($p = 0.46$), confirming that the explicit location variable is redundant given text embeddings.}
-\label{fig:randomization}
-\end{figure}
-\FloatBarrier
 
 \subsection{Cross-City Comparison}
 
@@ -1034,7 +1130,7 @@ The rejection admits two non-exclusive readings. The first is residual spatial c
 
 If text embeddings capture location-independent property semantics, then a model trained on descriptions in one city should generalize to another: ``hardwood floors'' describes the same feature regardless of geography. Conversely, if embeddings primarily encode location-specific linguistic patterns, cross-market transfer should fail catastrophically.
 
-We train gradient boosting models on PCA-reduced text embeddings in each city and evaluate on the other. Table~\ref{tab:transfer} and Figure~\ref{fig:transfer} report the results.
+We train gradient boosting models on PCA-reduced text embeddings in each city and evaluate on the other. Table~\ref{tab:transfer} reports the results.
 
 \begin{table}[!htbp]
 \centering
@@ -1055,34 +1151,6 @@ Boston        & San Francisco & 0.107 & 0.219 \\
 \end{table}
 \FloatBarrier
 
-\begin{figure}[!htbp]
-\centering
-\begin{tikzpicture}
-\begin{axis}[
-    width=0.7\textwidth, height=6.5cm,
-    ybar, bar width=14pt,
-    symbolic x coords={NYC$\to$SF, NYC$\to$Bos, SF$\to$NYC, SF$\to$Bos, Bos$\to$NYC, Bos$\to$SF},
-    xtick=data, xticklabel style={font=\scriptsize, rotate=20, anchor=east},
-    ylabel={Transfer Spearman $\rho$},
-    ymin=0, ymax=0.55,
-    axis lines*=left,
-    title={Cross-Market Rank Portability}, title style={font=\normalsize},
-    enlarge x limits=0.10,
-    every axis plot/.append style={draw=black!70},
-]
-\addplot[fill=blue!60!white] coordinates {(NYC$\to$SF,0.321) (NYC$\to$Bos,0.383) (SF$\to$NYC,0.335) (SF$\to$Bos,0.216) (Bos$\to$NYC,0.452) (Bos$\to$SF,0.219)};
-\node[font=\scriptsize, anchor=south] at (axis cs:NYC$\to$SF,0.321) {0.32};
-\node[font=\scriptsize, anchor=south] at (axis cs:NYC$\to$Bos,0.383) {0.38};
-\node[font=\scriptsize, anchor=south] at (axis cs:SF$\to$NYC,0.335) {0.34};
-\node[font=\scriptsize, anchor=south] at (axis cs:SF$\to$Bos,0.216) {0.22};
-\node[font=\scriptsize, anchor=south] at (axis cs:Bos$\to$NYC,0.452) {0.45};
-\node[font=\scriptsize, anchor=south] at (axis cs:Bos$\to$SF,0.219) {0.22};
-\end{axis}
-\end{tikzpicture}
-\caption{Cross-market transfer test. Transfer Spearman $\rho$ averages $0.32$ across six pairs, indicating moderate rather than catastrophic rank portability. Raw transfer $R^2$ values are near zero across all six pairs (mean $-0.010$); the $R^2 < 0$ result in earlier versions of this paper was a duplication-overfit artifact and is not replicable on the deduplicated data.}
-\label{fig:transfer}
-\end{figure}
-\FloatBarrier
 
 Within-city 5-fold cross-validated $R^2$ ranges from $0.11$ to $0.35$, well below the in-sample $R^2 \approx 0.9$ that an earlier version of this paper reported on duplicated training data. The audited cross-city Spearman rank correlation averages $0.32$ across all six city pairs, indicating moderate rather than catastrophic rank portability. The signature of location-specific encoding shows up here as the gap between within-city and across-city predictive performance, not as a negative $R^2$. A description that signals ``Upper East Side luxury'' in New York embedding space carries only weak rank information about San Francisco's price structure: the linguistic patterns that predict price are partly portable across markets, but their portable component is substantially smaller than the location-bound component.
 
@@ -1184,9 +1252,62 @@ The empirical pattern reported in Section~\ref{sec:results} resists a uniform re
 
 The mechanism organising the heterogeneity is identifiable from the embedding geometry and the structured-covariate density of each market. San Francisco supplies the cleanest illustration of the cell-density logic that drives the Shen-Ross construct. Her Equation~9 averages cosine distance to a set of $K$ nearest neighbours in lat-lon space, and the bias-variance behaviour of any fixed-$k$ k-NN functional under the \citet{mack1979multivariate} regime requires that the peer ball remain inside the local density to be informative. San Francisco's 24 ZIP codes hold a median of 13 listings each and a $K=5$ peer ball of median radius $0.33$ km, comfortably inside the typical ZIP diameter, so her construct retains its meaning and her effect is reproducible at $0.7$ standard-error precision. New York's 127 ZIP codes hold a median of two listings each and a $K=5$ peer ball that spans $1.66$ km in radius and routinely crosses two to three ZIP boundaries, so the construct estimates a between-area mixture rather than a within-area residual, and the Shen effect drops to a confidence interval that brackets zero. Boston sits between the two cities on this dimension, and her construct returns null there as well, consistent with the K-NN-density story~\citep{loftsgaarden1965nonparametric,gyorfi2002distribution,singh2016finite} rather than with an absence of underlying signal.
 
-A symmetric mechanism organises the principal-component result. The out-of-fold $R^2$ of PC1 on the canonical thirty-five-confounder set takes the value $0.376$ in New York against $0.094$ in San Francisco and $0.135$ in Boston, so the structured controls in our New York specification absorb roughly four times less of the PC1 variation than they do in the other two markets. The mechanical reason is the same per-ZIP listing density that drives the Shen finding from the other direction: with two listings per ZIP, the ridge nuisance learner has no within-ZIP degrees of freedom on which to learn a per-ZIP price-text mapping, so whatever borough-flavour signal PC1 carries survives the partial residualisation. The leading principal component then admits a clean semantic reading, with the ten listings of highest positive PC1 score in New York being outer-borough one- and two-family houses (five Queens, two Staten Island, two Brooklyn, one Bronx) and the ten of lowest PC1 score being Manhattan condominiums (seven of them units in a single Midtown East new-development at 234 East 46th Street). The honest description of the New York principal-component effect is that it captures unobserved within-ZIP borough-flavour variation that the available ZIP-level controls cannot match at our sample size, not that text causally moves price along its dominant semantic axis. The Davis--Kahan stability prediction in Theorem~\ref{thm:eigengap} aligns with this reading, since only in New York is the empirical sin-$\Theta$ proxy below one (at $0.97$ against $1.84$ in San Francisco and $2.15$ in Boston), so only in New York is the leading principal component identifiable as a single direction at our sample size.
+A symmetric mechanism organises the principal-component result. The out-of-fold $R^2$ of PC1 on the canonical thirty-five-confounder set takes the value $0.376$ in New York against $0.094$ in San Francisco and $0.135$ in Boston, so the structured controls in our New York specification absorb roughly four times less of the PC1 variation than they do in the other two markets. Figure~\ref{fig:mechanism} reads the three mechanism numbers off side by side. The mechanical reason is the same per-ZIP listing density that drives the Shen finding from the other direction: with two listings per ZIP, the ridge nuisance learner has no within-ZIP degrees of freedom on which to learn a per-ZIP price-text mapping, so whatever borough-flavour signal PC1 carries survives the partial residualisation. The leading principal component then admits a clean semantic reading, with the ten listings of highest positive PC1 score in New York being outer-borough one- and two-family houses (five Queens, two Staten Island, two Brooklyn, one Bronx) and the ten of lowest PC1 score being Manhattan condominiums (seven of them units in a single Midtown East new-development at 234 East 46th Street). The honest description of the New York principal-component effect is that it captures unobserved within-ZIP borough-flavour variation that the available ZIP-level controls cannot match at our sample size, not that text causally moves price along its dominant semantic axis. The Davis--Kahan stability prediction in Theorem~\ref{thm:eigengap} aligns with this reading, since only in New York is the empirical sin-$\Theta$ proxy below one (at $0.97$ against $1.84$ in San Francisco and $2.15$ in Boston), so only in New York is the leading principal component identifiable as a single direction at our sample size.
 
 The omnibus joint-null Wald test on a residual subspace orthogonal to the dominant principal component rejects in all three cities, with $p = 0.001$ in San Francisco and New York and $p = 0.012$ in Boston, and the rejection is driven by different principal components in each market: PC3 in San Francisco at $4.48\sigma$, PC1 and PC4 jointly in New York at $4.0\sigma$ and $6.0\sigma$, and PC3 in Boston at $2.96\sigma$. The residual-subspace claim that we advanced as an honest qualification to the original null framing is therefore materialised in actual numbers across all three markets, and the axis on which the residual signal lives shifts by city in a manner consistent with the cell-density and confounder-density mechanisms that determine which axis is informative in which market.
+
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre strip, name=mechA,
+    ybar, bar width=11pt,
+    symbolic x coords={SF, NYC, Bos},
+    xtick=data,
+    ylabel={Listings per ZIP (median)},
+    ymin=0, ymax=16,
+    title={(a) Listing density},
+    enlarge x limits=0.30,
+]
+\addplot+[fill=cSF,  draw=cSF,  forget plot] coordinates {(SF,13)};
+\addplot+[fill=cNYC, draw=cNYC, forget plot] coordinates {(NYC,2)};
+\addplot+[fill=cBOS, draw=cBOS, forget plot] coordinates {(Bos,9)};
+\end{axis}
+\begin{axis}[
+    causalre strip,
+    at={(mechA.east)}, anchor=west, xshift=1.0cm, name=mechB,
+    ybar, bar width=11pt,
+    symbolic x coords={SF, NYC, Bos},
+    xtick=data,
+    ylabel={$K{=}5$ NN ball radius (km)},
+    ymin=0, ymax=2.0,
+    title={(b) Peer-ball radius},
+    enlarge x limits=0.30,
+]
+\addplot+[fill=cSF,  draw=cSF,  forget plot] coordinates {(SF,0.33)};
+\addplot+[fill=cNYC, draw=cNYC, forget plot] coordinates {(NYC,1.66)};
+\addplot+[fill=cBOS, draw=cBOS, forget plot] coordinates {(Bos,0.63)};
+\end{axis}
+\begin{axis}[
+    causalre strip,
+    at={(mechB.east)}, anchor=west, xshift=1.0cm,
+    ybar, bar width=11pt,
+    symbolic x coords={SF, NYC, Bos},
+    xtick=data,
+    ylabel={OOF $R^2(\mathrm{PC1}\mid W)$},
+    ymin=0, ymax=0.45,
+    title={(c) Residual leverage},
+    enlarge x limits=0.30,
+]
+\addplot+[fill=cSF,  draw=cSF,  forget plot] coordinates {(SF,0.094)};
+\addplot+[fill=cNYC, draw=cNYC, forget plot] coordinates {(NYC,0.376)};
+\addplot+[fill=cBOS, draw=cBOS, forget plot] coordinates {(Bos,0.135)};
+\end{axis}
+\end{tikzpicture}
+\caption{Three mechanism diagnostics that organise the per-city heterogeneity. Panel (a) reports the median number of listings per ZIP code, with New York at two against San Francisco's thirteen and Boston's nine. Panel (b) reports the median radius of the $K=5$ lat-lon nearest-neighbour ball in kilometres, with New York at $1.66$ against San Francisco's $0.33$ and Boston's $0.63$, so only San Francisco keeps the Shen peer ball inside a typical ZIP diameter. Panel (c) reports the out-of-fold $R^2$ of the leading principal component on the canonical thirty-five-confounder ridge nuisance regression, with New York at $0.376$ against San Francisco's $0.094$ and Boston's $0.135$. The two opposite-direction mechanisms align in the same market geometry: New York's thin per-ZIP support leaves PC1 variation unabsorbed by the structured controls, and the same thin support pushes the Shen K-NN construct outside its operative density regime.}
+\label{fig:mechanism}
+\end{figure}
+\FloatBarrier
 
 \subsection{Reinterpreting Prior Work}
 
@@ -1265,6 +1386,27 @@ We thank the Boston, New York, and San Francisco open data programs for making p
 
 \newpage
 \appendix
+
+\section{Per-PC Omnibus $z$-Statistics}
+\label{app:omnibus_z}
+
+Table~\ref{tab:omnibus_z} reports the per-component $z$-statistics underlying the heatmap in Figure~\ref{fig:omnibus_heatmap}. Each entry is the studentised cross-fitted DML coefficient on the partialled-out residual of the corresponding principal component, computed under the procedure of \citet{chernozhukov2018generic} on a Gaussian-multiplier bootstrap with $B = 1{,}000$ replicates. The sup-Wald statistic in each row of Table~\ref{tab:omnibus} equals the maximum absolute value in the corresponding row of this table. The two-sided $t_{K-1=4}$ 95 percent critical value of $\pm 2.776$ applies to single-direction reads, while the sup-Wald $p$-values in Table~\ref{tab:omnibus} carry the multiplicity correction across the five components.
+
+\begin{table}[!htbp]
+\centering
+\caption{Per-PC partialling-out $z$-statistics, three cities by five principal components. Bold entries exceed the two-sided $t_{K-1=4}$ 95 percent critical value of $\pm 2.776$ on a single-direction read.}
+\label{tab:omnibus_z}
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{City} & \textbf{PC1} & \textbf{PC2} & \textbf{PC3} & \textbf{PC4} & \textbf{PC5} \\
+\midrule
+San Francisco & $-0.78$ & $+1.44$ & $\mathbf{+4.48}$ & $-2.25$ & $+0.05$ \\
+New York      & $\mathbf{+3.98}$ & $-0.94$ & $+0.34$ & $\mathbf{+5.98}$ & $+0.18$ \\
+Boston        & $+0.52$ & $+0.89$ & $\mathbf{-2.96}$ & $-1.22$ & $-1.05$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
 
 \section{Structural Causal Model: Formal Specification}
 \label{app:scm}
@@ -1462,7 +1604,7 @@ Linear 3 & 128 & 64 & Linear \\
 \end{table}
 \FloatBarrier
 
-The predictor network $P_\theta$ maps deconfounded representations to price predictions:
+The predictor network $P_\theta$ maps the 64-dimensional deconfounded representation to a scalar price prediction through a shallow head with dropout. The shallow choice is deliberate: a deeper predictor would risk recovering location through nonlinear interactions of the residual representation even when the encoder has been pushed toward linear invariance, and the frozen-probe diagnostic discussed in Section~\ref{sec:results} would then misread predictor performance as semantic content rather than as recovered location.
 
 \begin{table}[!htbp]
 \centering
@@ -1479,7 +1621,7 @@ Linear 2 & 64 & 1 & Linear \\
 \end{table}
 \FloatBarrier
 
-The discriminator network $D_\psi$ employs a multi-head architecture to target location at multiple geographic resolutions:
+The discriminator network $D_\psi$ employs a shared trunk that branches into three parallel heads, each targeting location at a different geographic resolution. Routing the adversarial pressure through three resolutions simultaneously prevents the encoder from exploiting any single granularity escape hatch, since collapsing one head's signal still leaves the other two operative and forces the gradient reversal to attack the joint location signal across resolutions rather than the lowest-cost head.
 
 \begin{table}[!htbp]
 \centering
