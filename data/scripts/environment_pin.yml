@@ -1,0 +1,82 @@
+# Pinned environment for the 12-city JBES expansion.
+#
+# Purpose: lock the exact versions that produce the canonical 3-city headline
+# numbers (NYC PC1 +0.169, SF Shen +0.130, Boston null) so that adding 9 new
+# cities does not introduce environment drift like the LightGBM-vs-sklearn
+# regression we hit earlier in this project.
+#
+# Usage on Brev:
+#   conda env create -f data/scripts/environment_pin.yml
+#   conda activate causal-real-estate-pinned
+#   cd data/scripts && python3 confounder_escalation.py nyc
+#   # Verify shrinkage = 95.1% and ATE trajectory matches Table 10 in the paper.
+#
+# Pinned ML libraries are the ones implicated in prior drift. GIS + scraping
+# libraries are pinned at minor-version granularity, which is sufficient for
+# reproducibility without forcing rebuilds on patch updates.
+
+name: causal-real-estate-pinned
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.11.7
+
+  # ML / stats (pinned exactly; produced the canonical 3-city numbers)
+  - scikit-learn=1.4.0
+  - lightgbm=4.3.0       # available as backend but force_sklearn=True in inference paths
+  - scipy=1.12.0
+  - numpy=1.26.3
+  - pandas=2.2.0
+  - pyarrow=15.0.0
+
+  # NLP (sentence-BERT pipeline)
+  - pytorch=2.2.0
+  - transformers=4.37.2
+  - sentence-transformers=2.3.1
+  - gensim>=4.3,<4.4
+
+  # GIS (used by scraping + parcel matching)
+  - geopandas=0.14.3
+  - shapely=2.0.3
+  - pyproj=3.6.1
+  - rtree=1.2.0
+  - fiona=1.9.5
+  - pyogrio>=0.7,<0.8
+
+  # Spatial inference + econometrics
+  - statsmodels=0.14.1
+  - econml>=0.15
+
+  # Scraping
+  - requests>=2.31,<2.32
+  - beautifulsoup4>=4.12,<4.13
+  - lxml>=5.0,<6.0
+  - playwright>=1.40,<1.42
+
+  # Causal verification toolchain
+  - sympy>=1.12,<1.13
+  - pip
+  - pip:
+      - dowhy>=0.11,<0.12
+      - pgmpy>=0.1.24,<0.1.27
+
+# Reproducibility notes:
+#
+# 1. The force_sklearn=True override in confounder_escalation.py and the v2
+#    pipeline ridge nuisance is what makes the 3-city numbers reproduce
+#    across machines. Do not revert without rerunning the full headline.
+#
+# 2. The Census Bureau geocoder is the canonical geocoding source; do not
+#    swap for Nominatim or Geocodio without re-running all 12-city DML.
+#
+# 3. The Overpass API is rate-limited per public-server etiquette; the scrape
+#    pipeline must respect 1 req/sec per worker and back off on 429.
+#
+# 4. To verify the environment reproduces canonical results, run:
+#       cd data/scripts && python3 confounder_escalation.py nyc
+#    and confirm:
+#       n=347, shrinkage=95.1%, ATE trajectory -0.255 -> -0.013
+#    If those numbers do not reproduce, do not proceed with new-city scraping
+#    until the drift is identified.
