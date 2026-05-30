@@ -1,0 +1,284 @@
+{
+  "seed": 42,
+  "cities": {
+    "sf": {
+      "n": 348,
+      "n_unique_latlon": 348,
+      "n_zips": 24,
+      "iterative_leace": [
+        {
+          "iter": 0,
+          "sigma_xz_frob": 0.11244022060924133,
+          "ridge_r2_latlon": -0.03145071321889753,
+          "mlp_r2_latlon": 0.12423582300142061,
+          "ridge_r2_price": 0.24041079432937174,
+          "guardedness_residual": NaN
+        },
+        {
+          "iter": 1,
+          "sigma_xz_frob": 5.543522972142308e-16,
+          "ridge_r2_latlon": -0.006327220796909727,
+          "mlp_r2_latlon": 0.08567708499556081,
+          "ridge_r2_price": 0.23440883473719498,
+          "guardedness_residual": 9.44561518094879e-17
+        },
+        {
+          "iter": 2,
+          "sigma_xz_frob": 5.543522972142308e-16,
+          "ridge_r2_latlon": -0.006327220796909727,
+          "mlp_r2_latlon": 0.08567708499556081,
+          "ridge_r2_price": 0.23440883473719498,
+          "guardedness_residual": 9.866961342365669e-17
+        }
+      ],
+      "shuffle_sanity": {
+        "observed_post_leace_mlp_r2": 0.08567708499556081,
+        "shuffled_distribution": {
+          "mean": -1.362824553435321,
+          "std": 0.25113449565255935,
+          "min": -1.764820245041215,
+          "max": -1.120992787504252,
+          "values": [
+            -1.120992787504252,
+            -1.1997615885998412,
+            -1.4171761893658317,
+            -1.764820245041215,
+            -1.3113719566654651
+          ],
+          "n_perm": 5
+        }
+      },
+      "igbp": [
+        {
+          "outer": 0,
+          "mlp_r2_latlon": 0.12423582300142061,
+          "ridge_r2_price": 0.24041079432937174
+        },
+        {
+          "outer": 1,
+          "mlp_r2_latlon": 0.09366101049894265,
+          "ridge_r2_price": 0.24654105861365183,
+          "v_norm_check": 1.0
+        },
+        {
+          "outer": 2,
+          "mlp_r2_latlon": 0.1341292813645666,
+          "ridge_r2_price": 0.2396242137729081,
+          "v_norm_check": 1.0
+        },
+        {
+          "outer": 3,
+          "mlp_r2_latlon": 0.1329111275330605,
+          "ridge_r2_price": 0.2388811932919197,
+          "v_norm_check": 0.9999999999999999
+        },
+        {
+          "outer": 4,
+          "mlp_r2_latlon": 0.021042763618986826,
+          "ridge_r2_price": 0.23839877347939398,
+          "v_norm_check": 1.0
+        },
+        {
+          "outer": 5,
+          "mlp_r2_latlon": 0.03361690570778769,
+          "ridge_r2_price": 0.23828979075127144,
+          "v_norm_check": 1.0
+        }
+      ],
+      "rlace": {
+        "status": "skipped",
+        "reason": "shauli-ravfogel/rlace is a git-only repo, not pip-installable; see literature appendix"
+      },
+      "kernelized_erasure": {
+        "status": "skipped",
+        "reason": "Ravfogel et al. arXiv:2201.12191 shows cross-kernel transfer fails; noted in appendix"
+      }
+    },
+    "nyc": {
+      "n": 337,
+      "n_unique_latlon": 319,
+      "n_zips": 125,
+      "iterative_leace": [
+        {
+          "iter": 0,
+          "sigma_xz_frob": 0.0626005236892975,
+          "ridge_r2_latlon": -2.162445825052786,
+          "mlp_r2_latlon": -1.363447738346082,
+          "ridge_r2_price": 0.4560570403597468,
+          "guardedness_residual": NaN
+        },
+        {
+          "iter": 1,
+          "sigma_xz_frob": 3.6205033206984744e-16,
+          "ridge_r2_latlon": -0.014560338047951316,
+          "mlp_r2_latlon": -0.2827376559197635,
+          "ridge_r2_price": 0.45381185611309416,
+          "guardedness_residual": 3.967300136538244e-17
+        },
+        {
+          "iter": 2,
+          "sigma_xz_frob": 3.6205033206984744e-16,
+          "ridge_r2_latlon": -0.014560338047951316,
+          "mlp_r2_latlon": -0.2827376559197635,
+          "ridge_r2_price": 0.45381185611309416,
+          "guardedness_residual": 4.2690095406158896e-17
+        }
+      ],
+      "shuffle_sanity": {
+        "observed_post_leace_mlp_r2": -0.2827376559197635,
+        "shuffled_distribution": {
+          "mean": -1.6410367701266975,
+          "std": 0.3744076832691671,
+          "min": -2.019190523045445,
+          "max": -1.163285244103804,
+          "values": [
+            -1.6170063301287347,
+            -1.4018041675807265,
+            -2.019190523045445,
+            -2.003897585774776,
+            -1.163285244103804
+          ],
+          "n_perm": 5
+        }
+      },
+      "igbp": [
+        {
+          "outer": 0,
+          "mlp_r2_latlon": -1.363447738346082,
+          "ridge_r2_price": 0.4560570403597468
+        },
+        {
+          "outer": 1,
+          "mlp_r2_latlon": -1.590695232255987,
+          "ridge_r2_price": 0.45561282269354275,
+          "v_norm_check": 1.0
+        },
+        {
+          "outer": 2,
+          "mlp_r2_latlon": -0.7654772348694316,
+          "ridge_r2_price": 0.4555607527936306,
+          "v_norm_check": 1.0
+        },
+        {
+          "outer": 3,
+          "mlp_r2_latlon": -0.4478245774273073,
+          "ridge_r2_price": 0.45500085049258454,
+          "v_norm_check": 1.0
+        },
+        {
+          "outer": 4,
+          "mlp_r2_latlon": -0.48960960263020015,
+          "ridge_r2_price": 0.45578298777841697,
+          "v_norm_check": 1.0
+        },
+        {
+          "outer": 5,
+          "mlp_r2_latlon": -0.5071300464372166,
+          "ridge_r2_price": 0.45444559822601105,
+          "v_norm_check": 1.0
+        }
+      ],
+      "rlace": {
+        "status": "skipped",
+        "reason": "shauli-ravfogel/rlace is a git-only repo, not pip-installable; see literature appendix"
+      },
+      "kernelized_erasure": {
+        "status": "skipped",
+        "reason": "Ravfogel et al. arXiv:2201.12191 shows cross-kernel transfer fails; noted in appendix"
+      }
+    },
+    "boston": {
+      "n": 323,
+      "n_unique_latlon": 299,
+      "n_zips": 32,
+      "iterative_leace": [
+        {
+          "iter": 0,
+          "sigma_xz_frob": 0.06541092639785692,
+          "ridge_r2_latlon": -2.162433492654638,
+          "mlp_r2_latlon": -1.5848029834200938,
+          "ridge_r2_price": 0.2924947278214165,
+          "guardedness_residual": NaN
+        },
+        {
+          "iter": 1,
+          "sigma_xz_frob": 3.797435329402269e-16,
+          "ridge_r2_latlon": -0.0291168829304147,
+          "mlp_r2_latlon": -0.03297424592230269,
+          "ridge_r2_price": 0.2995971088003272,
+          "guardedness_residual": 4.4277784604635443e-17
+        },
+        {
+          "iter": 2,
+          "sigma_xz_frob": 3.797435329402269e-16,
+          "ridge_r2_latlon": -0.0291168829304147,
+          "mlp_r2_latlon": -0.03297424592230269,
+          "ridge_r2_price": 0.2995971088003272,
+          "guardedness_residual": 4.5640933311317796e-17
+        }
+      ],
+      "shuffle_sanity": {
+        "observed_post_leace_mlp_r2": -0.03297424592230269,
+        "shuffled_distribution": {
+          "mean": -2.0128616866793854,
+          "std": 0.3704795883980407,
+          "min": -2.51520486767771,
+          "max": -1.7087023901460956,
+          "values": [
+            -1.7766134699517577,
+            -2.51520486767771,
+            -1.7602127107406969,
+            -2.303574994880667,
+            -1.7087023901460956
+          ],
+          "n_perm": 5
+        }
+      },
+      "igbp": [
+        {
+          "outer": 0,
+          "mlp_r2_latlon": -1.5848029834200938,
+          "ridge_r2_price": 0.2924947278214165
+        },
+        {
+          "outer": 1,
+          "mlp_r2_latlon": -1.7059252868119101,
+          "ridge_r2_price": 0.29301015734569813,
+          "v_norm_check": 1.0
+        },
+        {
+          "outer": 2,
+          "mlp_r2_latlon": -0.6636939609188551,
+          "ridge_r2_price": 0.29496792787813664,
+          "v_norm_check": 1.0
+        },
+        {
+          "outer": 3,
+          "mlp_r2_latlon": -0.5569748829415768,
+          "ridge_r2_price": 0.29488514291451395,
+          "v_norm_check": 1.0000000000000002
+        },
+        {
+          "outer": 4,
+          "mlp_r2_latlon": -0.5623996149215397,
+          "ridge_r2_price": 0.2929523712666855,
+          "v_norm_check": 1.0
+        },
+        {
+          "outer": 5,
+          "mlp_r2_latlon": -0.4288969040160775,
+          "ridge_r2_price": 0.2962358757702376,
+          "v_norm_check": 1.0
+        }
+      ],
+      "rlace": {
+        "status": "skipped",
+        "reason": "shauli-ravfogel/rlace is a git-only repo, not pip-installable; see literature appendix"
+      },
+      "kernelized_erasure": {
+        "status": "skipped",
+        "reason": "Ravfogel et al. arXiv:2201.12191 shows cross-kernel transfer fails; noted in appendix"
+      }
+    }
+  }
+}

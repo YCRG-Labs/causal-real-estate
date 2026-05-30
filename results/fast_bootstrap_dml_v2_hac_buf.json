@@ -1,0 +1,50 @@
+{
+  "wall_sec": 0.89,
+  "rows": [
+    {
+      "city": "sf",
+      "n": 348,
+      "text_dim": 768,
+      "n_confounders": 34,
+      "has_rich_confounders": true,
+      "learner": "ridge",
+      "mode": "efron",
+      "drop_crime": false,
+      "B": 25,
+      "theta": 0.06546205656475088,
+      "se_if": 0.05026512731211226,
+      "se_cb": 0.1176550738241928,
+      "ci_low": -0.17685310390320955,
+      "ci_high": 0.3077772170327113,
+      "mde": 0.3294342067077398,
+      "t_pivot": 2.0595385527532977,
+      "elapsed_sec": 0.89,
+      "load_sec": 0.401,
+      "boot_sec": 0.446,
+      "buffered_kfold": true,
+      "buffer_quantile": 0.05,
+      "spatial_hac": {
+        "conley_hac_se": 0.04570919976474454,
+        "salerno_jk_se": 0.08691553235286778,
+        "v_jk_decomposition": {
+          "v_jk": 0.007554309764182405,
+          "v_off": -0.0005402423672996174,
+          "v_between": 0.008094552131482023,
+          "v_diag": 0.002425945068955152,
+          "theta_hat": 0.0,
+          "h_n": 0.015195537941110388
+        },
+        "bandwidth_sweep": {
+          "0.05": 0.0878460159587641,
+          "0.1": 0.08691553235286778,
+          "0.15": 0.08644213720617121,
+          "0.2": 0.08606049758050888,
+          "max": 0.0878460159587641
+        },
+        "bandwidth_quantile": 0.1,
+        "n_used": 348
+      },
+      "spatial_hac_se": 0.08691553235286778
+    }
+  ]
+}

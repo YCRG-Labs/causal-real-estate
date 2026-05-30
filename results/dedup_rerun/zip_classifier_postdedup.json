@@ -1,0 +1,68 @@
+{
+  "boston": {
+    "n_total": 349,
+    "n_zips_unique": 33,
+    "pca_50_rare_floor_5": {
+      "accuracy": 0.5840559440559441,
+      "accuracy_sd": 0.012437683244325464,
+      "n_obs": 327,
+      "n_classes_after_filter": 23,
+      "rare_floor": 5,
+      "random_baseline_uniform": 0.043478260869565216,
+      "ratio_uniform": 13.433286713286714,
+      "n_pca": 50
+    },
+    "full_768_no_filter": {
+      "accuracy": 0.6132919254658387,
+      "accuracy_sd": 0.029972660922284483,
+      "n_obs": 349,
+      "n_classes": 33,
+      "random_baseline_uniform": 0.030303030303030304,
+      "ratio_uniform": 20.238633540372675
+    }
+  },
+  "nyc": {
+    "n_total": 347,
+    "n_zips_unique": 127,
+    "pca_50_rare_floor_5": {
+      "accuracy": 0.5177339901477833,
+      "accuracy_sd": 0.05801839028781907,
+      "n_obs": 143,
+      "n_classes_after_filter": 21,
+      "rare_floor": 5,
+      "random_baseline_uniform": 0.047619047619047616,
+      "ratio_uniform": 10.87241379310345,
+      "n_pca": 50
+    },
+    "full_768_no_filter": {
+      "accuracy": 0.3054658385093168,
+      "accuracy_sd": 0.049102747575379226,
+      "n_obs": 347,
+      "n_classes": 127,
+      "random_baseline_uniform": 0.007874015748031496,
+      "ratio_uniform": 38.79416149068324
+    }
+  },
+  "sf": {
+    "n_total": 348,
+    "n_zips_unique": 24,
+    "pca_50_rare_floor_5": {
+      "accuracy": 0.4157155399473222,
+      "accuracy_sd": 0.06749475362171227,
+      "n_obs": 339,
+      "n_classes_after_filter": 21,
+      "rare_floor": 5,
+      "random_baseline_uniform": 0.047619047619047616,
+      "ratio_uniform": 8.730026338893767,
+      "n_pca": 50
+    },
+    "full_768_no_filter": {
+      "accuracy": 0.46256728778467904,
+      "accuracy_sd": 0.021078760256978326,
+      "n_obs": 348,
+      "n_classes": 24,
+      "random_baseline_uniform": 0.041666666666666664,
+      "ratio_uniform": 11.101614906832298
+    }
+  }
+}

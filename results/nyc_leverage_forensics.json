@@ -1,0 +1,337 @@
+{
+  "city": "nyc",
+  "n": 342,
+  "k_folds": 5,
+  "seed": 0,
+  "headline": {
+    "theta_hat": 0.1733462009730047,
+    "se_IF": 0.04572143243671163,
+    "salerno_hac_se": 0.051787146082289126,
+    "denom_T_resid_sq": 0.5518079755270666
+  },
+  "row218": {
+    "filtered_index": 218,
+    "raw_index": 222,
+    "address": "520 Park Ave Ph 59",
+    "zip": "10065",
+    "city_name": "New York",
+    "state": "NY",
+    "latitude": 40.7638765,
+    "longitude": -73.9696262,
+    "price_usd": 40000000,
+    "log_price": 17.50439001207821,
+    "url": "/NY/New-York/520-Park-Ave-10065/unit-59/home/170876999",
+    "description_full": "Uncompromising quality and serene vistas of Central Park and the Manhattan skyline abound in this full floor 4,322 square foot penthouse at Robert A. M. Stern\u2019s lauded 520 Park Avenue. Meticulously renovated and conceptualized by the current owners, this 59th floor residence has been transformed into an exceptionally grand pied-a-terre using the finest of materials. Enter via a private key-locked elevator landing into the grand entry gallery , elegantly finished with marble slab flooring and trim, custom moldings, and framed with custom metal and glass pocket doors. Three grand entertaining rooms \u2013 a formal dining room, formal living room, and study/sitting room \u2013 all flow together beautifully, wrapping the northeast corner of the apartment and allow for large-scale gatherings as well as more intimate moments. These spaces are custom designed with details including intricate moldings and built-in millwork, white oak herringbone flooring, and stunning northern views of Central Park and eastern exposures to the river through oversized windows. The windowed eat-in kitchen , custom-designed with hand-painted Christopher Peacock cabinetry, offers an expansive central island , Covelano Oro marble countertops, and a full appliance package including Wolf, Sub-Zero, and Miele appliances. Encompassing the southeast corner of the residence, the home\u2019s primary suite has been crafted for the ultimate in privacy and convenience. A south-facing primary bedroom with views of the Empire State Building, two primary bathrooms finished in Caldia Classico and Arabescato marble, and two walk-in closets make for an enviable retreat. A private en-suite guest bedroom facing south, powder room finished in white onyx, and separate laundry facilities complete this rare offering. Currently configured as a generous two-bedroom with multiple entertaining rooms, it is easily convertible back to a three-bedroom home with three en-suite baths as indicated in the alternate floor plan. A private storage unit and wine cellar both transfer with this unit. Designed by the renowned architect Robert A. M. Stern and developed by Zeckendorf Development, 520 Park Avenue is an ultra-luxury limestone-clad skyscraper that defines modern opulence on Manhattan\u2019s Upper East Side. This exclusive boutique tower features only 35 full-floor and multi-floor residences, each offering access to over 15,000 square feet of world-class amenities - headlined by a vaulted double-height indoor swimming pool bathed in natural light from a landscaped garden above. Additional features include a bi-level state-of-the-art fitness center, a private screening room, a walnut-paneled salon, and more. Every detail, from the grand bronze entry doors to the hand-carved stone latticework, is crafted to evoke the timeless elegance of New York's historic 1920s apartment houses while providing the absolute height of 21st-century comfort. Key things to know Full-floor penthouse spanning 4,322 square feet with private key-locked elevator. Three grand entertaining rooms wrap the northeast corner with Central Park and river views. Windowed kitchen features hand-painted Christopher Peacock cabinetry and Covelano Oro marble countertops. South-facing primary suite offers Empire State Building views, dual marble baths, two walk-in closets. Private storage and wine cellar transfer, with building amenities including pool, gym, screening room. Summarized by Redfin Was this helpful? Yes \u2022 No Show more",
+    "description_excerpt": "Uncompromising quality and serene vistas of Central Park and the Manhattan skyline abound in this full floor 4,322 square foot penthouse at Robert A. M. Stern\u2019s lauded 520 Park Avenue. Meticulously renovated and conceptualized by the current owners, this 59th floor residence has been transformed into an exceptionally grand pied-a-terre using the finest of materials. Enter via a private key-locked elevator landing into the grand entry gallery , elegantly finished with marble slab flooring and trim, custom moldings, and framed with custom metal and glass pocket doors. Three grand entertaining rooms \u2013 a formal dining room, formal living room, and study/sitting room \u2013 all flow together beautifully, wrapping the northeast corner of the apartment and allow for large-scale gatherings as well as more intimate moments. These spaces are custom designed with details including intricate moldings and built-in millwork, white oak herringbone flooring, and stunning northern views of Central Park and eastern exposures to the river through oversized windows. The windowed eat-in kitchen , custom-designed with hand-painted Christopher Peacock cabinetry, offers an expansive central island , Covelano O",
+    "BBL_matched": "1013750036.0",
+    "Y_resid": 3.0257322710058023,
+    "T_resid": -1.1309640807123849,
+    "IC": -6.603235715479162,
+    "IC2_share": 0.17885185940237602,
+    "h_leverage": 0.006777718772326265,
+    "cooks_D": 0.1651416690962385,
+    "z_score_IC": -7.809512408352408,
+    "fold_id": 2,
+    "price_rank_in_sample": 1,
+    "second_highest_price": 15000000,
+    "price_ratio_to_2nd": 2.6666666666666665
+  },
+  "top10_IC": [
+    {
+      "filtered_row": 218,
+      "raw_row": 222,
+      "address": "520 Park Ave Ph 59",
+      "zip": "10065",
+      "price_usd": 40000000,
+      "Y_resid": 3.0257322710058023,
+      "T_resid": -1.1309640807123849,
+      "IC": -6.603235715479162,
+      "IC2_share": 0.17885185940237602,
+      "h_leverage": 0.006777718772326265,
+      "cooks_D": 0.1651416690962385,
+      "z_score_IC": -7.809512408352408
+    },
+    {
+      "filtered_row": 318,
+      "raw_row": 323,
+      "address": "183 Arlington Pl",
+      "zip": "10303",
+      "price_usd": 549999,
+      "Y_resid": -0.1876870187206947,
+      "T_resid": 3.1606216101142968,
+      "IC": -4.213158644932907,
+      "IC2_share": 0.07281074650449045,
+      "h_leverage": 0.05293353903545239,
+      "cooks_D": 0.07394191384617219,
+      "z_score_IC": -4.982816930013709
+    },
+    {
+      "filtered_row": 56,
+      "raw_row": 57,
+      "address": "1100 Clove Rd Unit 8f",
+      "zip": "10301",
+      "price_usd": 150000,
+      "Y_resid": -1.4591035292910384,
+      "T_resid": -1.51769255372878,
+      "IC": 3.289525735344701,
+      "IC2_share": 0.044386043589100636,
+      "h_leverage": 0.012205442452609402,
+      "cooks_D": 0.041435186194165106,
+      "z_score_IC": 3.890455097271181
+    },
+    {
+      "filtered_row": 308,
+      "raw_row": 313,
+      "address": "65 Morton St Unit 2N",
+      "zip": "10014",
+      "price_usd": 1275000,
+      "Y_resid": 0.5990911281339795,
+      "T_resid": -1.769491900443123,
+      "IC": -2.90472688814788,
+      "IC2_share": 0.03460911294885007,
+      "h_leverage": 0.01659140172049624,
+      "cooks_D": 0.03259707136868648,
+      "z_score_IC": -3.435361336971393
+    },
+    {
+      "filtered_row": 236,
+      "raw_row": 240,
+      "address": "150 E 22nd St",
+      "zip": "10010",
+      "price_usd": 11995000,
+      "Y_resid": 1.9825963725050357,
+      "T_resid": 0.8151138365225499,
+      "IC": 2.7199111909305835,
+      "IC2_share": 0.03034515123775608,
+      "h_leverage": 0.003520646748164521,
+      "cooks_D": 0.027836127328323818,
+      "z_score_IC": 3.2167835755727836
+    },
+    {
+      "filtered_row": 316,
+      "raw_row": 321,
+      "address": "2137 33rd St Unit 3C",
+      "zip": "11105",
+      "price_usd": 339000,
+      "Y_resid": -1.311058938794936,
+      "T_resid": -1.3445759345817039,
+      "IC": 2.626689830636792,
+      "IC2_share": 0.028300717348217083,
+      "h_leverage": 0.009579803226098579,
+      "cooks_D": 0.02627934796203915,
+      "z_score_IC": 3.1065325711703116
+    },
+    {
+      "filtered_row": 39,
+      "raw_row": 40,
+      "address": "70 Remsen St Unit 9E",
+      "zip": "11201",
+      "price_usd": 350000,
+      "Y_resid": -1.1706462154006498,
+      "T_resid": -1.5687762037231452,
+      "IC": 2.5549952135512988,
+      "IC2_share": 0.026776884188190544,
+      "h_leverage": 0.013040910272317545,
+      "cooks_D": 0.025039050456224846,
+      "z_score_IC": 3.021740807576483
+    },
+    {
+      "filtered_row": 260,
+      "raw_row": 265,
+      "address": "142-05 Roosevelt Ave #521",
+      "zip": "11354",
+      "price_usd": 238000,
+      "Y_resid": -1.239115981916207,
+      "T_resid": -1.0811709442877477,
+      "IC": 2.060619936828406,
+      "IC2_share": 0.017417092296020797,
+      "h_leverage": 0.006194049223784284,
+      "cooks_D": 0.016063071216744797,
+      "z_score_IC": 2.437053235557872
+    },
+    {
+      "filtered_row": 48,
+      "raw_row": 49,
+      "address": "7036 70th St",
+      "zip": "11385",
+      "price_usd": 1649000,
+      "Y_resid": 0.787063578881634,
+      "T_resid": -1.134009314335791,
+      "IC": -2.021458057973495,
+      "IC2_share": 0.016761362865026934,
+      "h_leverage": 0.006814267279433825,
+      "cooks_D": 0.015477631451851616,
+      "z_score_IC": -2.390737278952705
+    },
+    {
+      "filtered_row": 88,
+      "raw_row": 89,
+      "address": "304 Spring St",
+      "zip": "10013",
+      "price_usd": 10500000,
+      "Y_resid": 1.3824705531953025,
+      "T_resid": -0.7226767771359526,
+      "IC": -1.9746206977771121,
+      "IC2_share": 0.01599363676193101,
+      "h_leverage": 0.0027674139060560126,
+      "cooks_D": 0.014649082443715657,
+      "z_score_IC": -2.335343686873192
+    }
+  ],
+  "drop_topk_curve": {
+    "0": {
+      "theta": 0.1733462009730047,
+      "se_IF": 0.04572143243671163,
+      "salerno_se": 0.051787146082289126,
+      "n_kept": 342,
+      "denom_T2": 0.5518079755270666
+    },
+    "1": {
+      "theta": 0.20876665071314066,
+      "se_IF": 0.040922063254328137,
+      "salerno_se": 0.03518251203959027,
+      "n_kept": 341,
+      "denom_T2": 0.5825599459477534
+    },
+    "3": {
+      "theta": 0.198604487867499,
+      "se_IF": 0.04117829223852785,
+      "salerno_se": 0.02139505132754075,
+      "n_kept": 339,
+      "denom_T2": 0.5064647705000652
+    },
+    "5": {
+      "theta": 0.1951823214030816,
+      "se_IF": 0.041421520059039096,
+      "salerno_se": 0.035550734483557216,
+      "n_kept": 337,
+      "denom_T2": 0.47970124314562
+    },
+    "10": {
+      "theta": 0.19935642283853733,
+      "se_IF": 0.039897939805907695,
+      "salerno_se": 0.03903595961980124,
+      "n_kept": 332,
+      "denom_T2": 0.4621290668897457
+    }
+  },
+  "hampel_redescending": {
+    "a2.0_b4.0_c8.0": {
+      "theta": 0.19029528658806685,
+      "se": 0.04446813878539921,
+      "sigma_hat": 0.5768331767535038,
+      "iters": 7,
+      "n_zeroed": 0,
+      "abc": [
+        2.0,
+        4.0,
+        8.0
+      ]
+    },
+    "a1.5_b3.5_c8.0": {
+      "theta": 0.18874279548700867,
+      "se": 0.04422067912335886,
+      "sigma_hat": 0.5768331767535038,
+      "iters": 9,
+      "n_zeroed": 0,
+      "abc": [
+        1.5,
+        3.5,
+        8.0
+      ]
+    },
+    "a1.0_b3.0_c6.0": {
+      "theta": 0.18378537712125564,
+      "se": 0.04477979120768609,
+      "sigma_hat": 0.5768331767535038,
+      "iters": 12,
+      "n_zeroed": 0,
+      "abc": [
+        1.0,
+        3.0,
+        6.0
+      ]
+    }
+  },
+  "jackknife_top5": [
+    {
+      "filtered_row": 218,
+      "raw_row": 222,
+      "address": "520 Park Ave Ph 59",
+      "price": 40000000,
+      "theta": 0.20876665071314066,
+      "se_IF": 0.040922063254328137,
+      "salerno_se": 0.03518251203959027,
+      "n_kept": 341,
+      "denom_T2": 0.5825599459477534
+    },
+    {
+      "filtered_row": 318,
+      "raw_row": 323,
+      "address": "183 Arlington Pl",
+      "price": 549999,
+      "theta": 0.17277862895801924,
+      "se_IF": 0.0424407001931488,
+      "salerno_se": 0.0675094936328711,
+      "n_kept": 341,
+      "denom_T2": 0.5055832273258819
+    },
+    {
+      "filtered_row": 56,
+      "raw_row": 57,
+      "address": "1100 Clove Rd Unit 8f",
+      "price": 150000,
+      "theta": 0.18312617941748716,
+      "se_IF": 0.0461503797914374,
+      "salerno_se": 0.026599138078399743,
+      "n_kept": 341,
+      "denom_T2": 0.5362023948032336
+    },
+    {
+      "filtered_row": 308,
+      "raw_row": 313,
+      "address": "65 Morton St Unit 2N",
+      "price": 1275000,
+      "theta": 0.18979142145457711,
+      "se_IF": 0.041846381943166915,
+      "salerno_se": 0.06055646187500134,
+      "n_kept": 341,
+      "denom_T2": 0.5327836520806882
+    },
+    {
+      "filtered_row": 236,
+      "raw_row": 240,
+      "address": "150 E 22nd St",
+      "price": 11995000,
+      "theta": 0.17846413100932418,
+      "se_IF": 0.04060555970056397,
+      "salerno_se": 0.03660286403722249,
+      "n_kept": 341,
+      "denom_T2": 0.5687567504123151
+    }
+  ],
+  "leave_one_fold_out": {
+    "fold_dropped": 2,
+    "n_kept": 274,
+    "theta": 0.24689220824431157,
+    "se_IF": 0.04805898027639726,
+    "salerno_hac_se": 0.015169860771798598
+  },
+  "bonferroni": {
+    "alpha": 0.05,
+    "n_tests": 342,
+    "z_cut": 3.7974388436968467,
+    "flagged_count": 3,
+    "row218_z": -7.809512408352408,
+    "row218_flagged": true
+  },
+  "salerno_decomposition_full": {
+    "se": 0.051787146082289126,
+    "v_jk": 0.002681908499348354,
+    "v_off": 0.0003943433871715263,
+    "v_between": 0.002287565112176828,
+    "v_diag": 0.002057648187136647,
+    "theta_hat": 3.5059674461847047e-17,
+    "h_n": 0.03953713592522218
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "wall_sec": 1.34,
+  "rows": [
+    {
+      "city": "sf",
+      "n": 348,
+      "text_dim": 768,
+      "n_confounders": 34,
+      "has_rich_confounders": true,
+      "learner": "stacked",
+      "mode": "efron",
+      "drop_crime": false,
+      "B": 10,
+      "theta": -0.015324794326564967,
+      "se_if": 0.0372852717036776,
+      "se_cb": 0.04819819251282821,
+      "ci_low": -0.12271705965991145,
+      "ci_high": 0.0920674710067815,
+      "mde": 0.13495493903591899,
+      "t_pivot": 2.228138851986274,
+      "elapsed_sec": 1.34,
+      "load_sec": 0.22,
+      "boot_sec": 0.906,
+      "buffered_kfold": false,
+      "buffer_quantile": null,
+      "spatial_hac": null,
+      "ovb_block": null,
+      "tost_block": null,
+      "riesz_block": null,
+      "omnibus_block": null,
+      "stacked_meta_weights": {
+        "ridge": 0.0,
+        "lgbm": 1.0,
+        "krr_rbf": 0.0
+      },
+      "spatial_hac_se": null
+    }
+  ]
+}

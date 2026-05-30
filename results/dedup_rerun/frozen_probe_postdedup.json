@@ -1,0 +1,41 @@
+{
+  "boston": {
+    "n": 331,
+    "predictor_r2_deconfounded": 0.35465558616752024,
+    "live_zip_acc": 0.12999999523162842,
+    "live_zip_random": 0.03125,
+    "live_geo_r2": -0.019768257722556415,
+    "live_income_acc": 0.23999999463558197,
+    "frozen_zip_probe_acc": 0.49,
+    "frozen_zip_random": 0.03125,
+    "frozen_zip_ratio": 15.68,
+    "frozen_income_probe_acc": 0.39,
+    "frozen_geo_probe_r2": 0.2987573940856
+  },
+  "nyc": {
+    "n": 342,
+    "predictor_r2_deconfounded": 0.40098665701305913,
+    "live_zip_acc": 0.019417475908994675,
+    "live_zip_random": 0.007936507936507936,
+    "live_geo_r2": -0.19187360861282343,
+    "live_income_acc": 0.2330097109079361,
+    "frozen_zip_probe_acc": 0.13592233009708737,
+    "frozen_zip_random": 0.007936507936507936,
+    "frozen_zip_ratio": 17.12621359223301,
+    "frozen_income_probe_acc": 0.42718446601941745,
+    "frozen_geo_probe_r2": -0.11021319699136711
+  },
+  "sf": {
+    "n": 348,
+    "predictor_r2_deconfounded": 0.21065548702036685,
+    "live_zip_acc": 0.06666667014360428,
+    "live_zip_random": 0.041666666666666664,
+    "live_geo_r2": -0.014025546341017048,
+    "live_income_acc": 0.20000000298023224,
+    "frozen_zip_probe_acc": 0.3619047619047619,
+    "frozen_zip_random": 0.041666666666666664,
+    "frozen_zip_ratio": 8.685714285714287,
+    "frozen_income_probe_acc": 0.20952380952380953,
+    "frozen_geo_probe_r2": 0.28340239508055365
+  }
+}

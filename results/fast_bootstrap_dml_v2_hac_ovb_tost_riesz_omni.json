@@ -1,0 +1,290 @@
+{
+  "wall_sec": 8.18,
+  "rows": [
+    {
+      "city": "sf",
+      "n": 348,
+      "text_dim": 768,
+      "n_confounders": 34,
+      "has_rich_confounders": true,
+      "learner": "ridge",
+      "mode": "efron",
+      "drop_crime": false,
+      "B": 25,
+      "theta": -0.02108469639699206,
+      "se_if": 0.037783209983029226,
+      "se_cb": 0.04276005996826117,
+      "ci_low": -0.10915068841966889,
+      "ci_high": 0.06698129562568476,
+      "mde": 0.11972816791113126,
+      "t_pivot": 2.0595385527532977,
+      "elapsed_sec": 0.61,
+      "load_sec": 0.245,
+      "boot_sec": 0.326,
+      "buffered_kfold": false,
+      "buffer_quantile": null,
+      "spatial_hac": {
+        "conley_hac_se": 0.04282911255230687,
+        "salerno_jk_se": 0.048685145696401734,
+        "v_jk_decomposition": {
+          "v_jk": 0.0023702434114798642,
+          "v_off": 0.00037491327130197865,
+          "v_between": 0.001995330140177886,
+          "v_diag": 0.00140053026692865,
+          "theta_hat": -2.2970131543968756e-17,
+          "h_n": 0.015195537941110388
+        },
+        "bandwidth_sweep": {
+          "0.05": 0.04316576121255194,
+          "0.1": 0.048685145696401734,
+          "0.15": 0.0514518434166191,
+          "0.2": 0.05216417116236936,
+          "max": 0.05216417116236936
+        },
+        "bandwidth_quantile": 0.1,
+        "n_used": 348
+      },
+      "ovb_block": {
+        "S": 0.7029409862870472,
+        "RV_point": 0.17189676434279896,
+        "RVa_95ci": 0.0,
+        "alpha": 0.05,
+        "benchmarks_all": [
+          {
+            "covariate_index": 1,
+            "partial_r2_Y": 0.020839107730115325,
+            "partial_r2_T": 0.006684889296003971
+          },
+          {
+            "covariate_index": 0,
+            "partial_r2_Y": 0.0038730816957517344,
+            "partial_r2_T": 0.011344300328811951
+          },
+          {
+            "covariate_index": 7,
+            "partial_r2_Y": 0.007191149391898799,
+            "partial_r2_T": 0.0027095458935832983
+          },
+          {
+            "covariate_index": 15,
+            "partial_r2_Y": 0.004826672372470808,
+            "partial_r2_T": 0.001229612814059533
+          },
+          {
+            "covariate_index": 14,
+            "partial_r2_Y": 0.0018915672885280177,
+            "partial_r2_T": 0.0027139032918295225
+          },
+          {
+            "covariate_index": 25,
+            "partial_r2_Y": 0.0008941125259652738,
+            "partial_r2_T": 0.005259135506755275
+          },
+          {
+            "covariate_index": 23,
+            "partial_r2_Y": 0.002581209277873864,
+            "partial_r2_T": 0.001581049285181102
+          },
+          {
+            "covariate_index": 22,
+            "partial_r2_Y": 0.003324583355777677,
+            "partial_r2_T": 0.0010744287249978557
+          },
+          {
+            "covariate_index": 8,
+            "partial_r2_Y": 0.0009275005413669213,
+            "partial_r2_T": 0.003051594868417995
+          },
+          {
+            "covariate_index": 2,
+            "partial_r2_Y": 0.00041187394322206305,
+            "partial_r2_T": 0.0043257678726891235
+          },
+          {
+            "covariate_index": 17,
+            "partial_r2_Y": 0.0013192247585585015,
+            "partial_r2_T": 0.0012198932639745363
+          },
+          {
+            "covariate_index": 19,
+            "partial_r2_Y": 0.001553269486112785,
+            "partial_r2_T": 0.0007330432124993402
+          },
+          {
+            "covariate_index": 16,
+            "partial_r2_Y": 0.0014597102691215058,
+            "partial_r2_T": 0.0005631228274877165
+          },
+          {
+            "covariate_index": 30,
+            "partial_r2_Y": 0.000670596132809731,
+            "partial_r2_T": 0.0008682770946955021
+          },
+          {
+            "covariate_index": 21,
+            "partial_r2_Y": 0.0009347666906772689,
+            "partial_r2_T": 0.0005898840493029356
+          },
+          {
+            "covariate_index": 32,
+            "partial_r2_Y": 0.0007027693275983848,
+            "partial_r2_T": 0.0007699227258073371
+          },
+          {
+            "covariate_index": 27,
+            "partial_r2_Y": 0.0001317652439377648,
+            "partial_r2_T": 0.0039023029872523596
+          },
+          {
+            "covariate_index": 29,
+            "partial_r2_Y": 0.00013707955226438528,
+            "partial_r2_T": 0.0024627129556413774
+          },
+          {
+            "covariate_index": 31,
+            "partial_r2_Y": 0.0008455377608955761,
+            "partial_r2_T": 0.00031579512273260946
+          },
+          {
+            "covariate_index": 5,
+            "partial_r2_Y": 0.00013762518290294512,
+            "partial_r2_T": 0.0017204473606881043
+          },
+          {
+            "covariate_index": 28,
+            "partial_r2_Y": 5.133826555969723e-05,
+            "partial_r2_T": 0.004426861287305184
+          },
+          {
+            "covariate_index": 10,
+            "partial_r2_Y": 0.004848874517432766,
+            "partial_r2_T": 3.460005698097124e-05
+          },
+          {
+            "covariate_index": 24,
+            "partial_r2_Y": 0.00023407685266041423,
+            "partial_r2_T": 0.0006801072592848012
+          },
+          {
+            "covariate_index": 11,
+            "partial_r2_Y": 0.003519189909762077,
+            "partial_r2_T": 3.9435924902631037e-05
+          },
+          {
+            "covariate_index": 4,
+            "partial_r2_Y": 0.0030382575639715803,
+            "partial_r2_T": 3.721993507610488e-05
+          },
+          {
+            "covariate_index": 6,
+            "partial_r2_Y": 0.0003157728228021517,
+            "partial_r2_T": 0.00011252375293357986
+          },
+          {
+            "covariate_index": 12,
+            "partial_r2_Y": 5.169519549663715e-05,
+            "partial_r2_T": 0.0005547274164058313
+          },
+          {
+            "covariate_index": 3,
+            "partial_r2_Y": 3.2975047732586305e-05,
+            "partial_r2_T": 0.0007486086434953521
+          },
+          {
+            "covariate_index": 20,
+            "partial_r2_Y": 8.257352908547233e-06,
+            "partial_r2_T": 0.0010497250327429208
+          },
+          {
+            "covariate_index": 13,
+            "partial_r2_Y": 6.1536530967520875e-06,
+            "partial_r2_T": 0.001267232584957756
+          },
+          {
+            "covariate_index": 33,
+            "partial_r2_Y": 5.441947990458829e-06,
+            "partial_r2_T": 0.001345232514302186
+          },
+          {
+            "covariate_index": 26,
+            "partial_r2_Y": 1.6723557187958704e-06,
+            "partial_r2_T": 0.0013193285682302491
+          },
+          {
+            "covariate_index": 9,
+            "partial_r2_Y": 1.208428479615442e-06,
+            "partial_r2_T": 0.0009173242120742442
+          },
+          {
+            "covariate_index": 18,
+            "partial_r2_Y": 0.000769224522559786,
+            "partial_r2_T": 3.878581478211629e-07
+          }
+        ],
+        "max_eta2_Y_observed": 0.020839107730115325,
+        "max_eta2_T_observed": 0.011344300328811951,
+        "method": "Chernozhukov-Cinelli-Newey-Sharma-Syrgkanis 2022, PLM Cor. 1",
+        "wall_sec": 0.0013,
+        "se_used_for_RVa": 0.048685145696401734,
+        "se_used_label": "salerno_jk"
+      },
+      "tost_block": {
+        "theta_hat": -0.02108469639699206,
+        "se": 0.04276005996826117,
+        "delta": 0.01,
+        "alpha": 0.05,
+        "df": 25.0,
+        "p_lower": 0.6012098145073098,
+        "p_upper": 0.2370027515629624,
+        "tost_p_value": 0.6012098145073098,
+        "ci_equiv_90": [
+          -0.09412489778235454,
+          0.05195550498837041
+        ],
+        "ci_traditional_95": [
+          -0.10915068841966889,
+          0.06698129562568476
+        ],
+        "rejects_equivalence_null": false,
+        "wall_sec": 0.00092
+      },
+      "riesz_block": {
+        "theta_ape": -0.00036257063313656053,
+        "se": 0.0034895040420220053,
+        "ci": [
+          -0.007201872879406634,
+          0.006476731613133514
+        ],
+        "alpha_norm": 0.1186149247346604,
+        "alpha_norm_sq": 0.01406950036980915,
+        "n_eff": 347.9859310684315,
+        "overlap_warning": false,
+        "method": "kernel-ridge auto-DML APE, Nystrom-RBF representer",
+        "wall_sec": 0.094
+      },
+      "omnibus_block": {
+        "p_value": 0.001,
+        "statistic": 4.0897960716441615,
+        "K": 5,
+        "direction_pvalues": {
+          "PC1": 0.29117014489394255,
+          "PC2": 0.5081648464667798,
+          "PC3": 4.3175262453454266e-05,
+          "PC4": 0.013444433504703923,
+          "PC5": 0.5845348139087618
+        },
+        "direction_zstats": {
+          "PC1": -1.0555581160374625,
+          "PC2": 0.6616979068184194,
+          "PC3": 4.0897960716441615,
+          "PC4": -2.4717743837202866,
+          "PC5": -0.5467728265395523
+        },
+        "method": "sup-Wald on top-5 PCs of T, cross-fit GBM residualization, Gaussian multiplier bootstrap (Chernozhukov-Chetverikov-Kato)",
+        "wall_sec": 6.578
+      },
+      "stacked_meta_weights": null,
+      "spatial_hac_se": 0.048685145696401734
+    }
+  ]
+}

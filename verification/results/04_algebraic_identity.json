@@ -12,10 +12,10 @@
   "numerical_identity": {
     "claim": "V\u0302_\u03a6 computed two ways agrees",
     "H_C_nats": 0.6930751785400071,
-    "L_star_nats": 0.059397563338279724,
-    "V_via_H_minus_Lstar": 0.6336776152017274,
-    "V_via_direct_BA_at_argmax": 0.6336776077511468,
-    "absolute_difference": 7.450580596923828e-09,
+    "L_star_nats": 0.0611582025885582,
+    "V_via_H_minus_Lstar": 0.6319169759514489,
+    "V_via_direct_BA_at_argmax": 0.6319169759514489,
+    "absolute_difference": 0.0,
     "agree_to_tolerance": true
   }
 }

@@ -1,0 +1,68 @@
+{
+  "boston": {
+    "n_descriptions": 349,
+    "n_zips_unique": 33,
+    "stylometric_classifier": {
+      "accuracy": 0.16214452214452213,
+      "accuracy_sd": 0.021307758481433216,
+      "random_baseline_uniform": 0.043478260869565216,
+      "random_baseline_majority": 0.05793563953651488,
+      "ratio_uniform": 3.729324009324009,
+      "n_classes": 23,
+      "n_obs": 327
+    },
+    "full_embedding_classifier": {
+      "accuracy": 0.6147785547785547,
+      "accuracy_sd": 0.02470229060739331,
+      "random_baseline_uniform": 0.043478260869565216,
+      "random_baseline_majority": 0.05793563953651488,
+      "ratio_uniform": 14.139906759906758,
+      "n_classes": 23,
+      "n_obs": 327
+    }
+  },
+  "nyc": {
+    "n_descriptions": 347,
+    "n_zips_unique": 127,
+    "stylometric_classifier": {
+      "accuracy": 0.1751231527093596,
+      "accuracy_sd": 0.02426327163748719,
+      "random_baseline_uniform": 0.047619047619047616,
+      "random_baseline_majority": 0.05149396058486968,
+      "ratio_uniform": 3.6775862068965517,
+      "n_classes": 21,
+      "n_obs": 143
+    },
+    "full_embedding_classifier": {
+      "accuracy": 0.5115763546798029,
+      "accuracy_sd": 0.07254771303495344,
+      "random_baseline_uniform": 0.047619047619047616,
+      "random_baseline_majority": 0.05149396058486968,
+      "ratio_uniform": 10.74310344827586,
+      "n_classes": 21,
+      "n_obs": 143
+    }
+  },
+  "sf": {
+    "n_descriptions": 348,
+    "n_zips_unique": 24,
+    "stylometric_classifier": {
+      "accuracy": 0.13876207199297627,
+      "accuracy_sd": 0.03095719643340702,
+      "random_baseline_uniform": 0.047619047619047616,
+      "random_baseline_majority": 0.0619120961356062,
+      "ratio_uniform": 2.914003511852502,
+      "n_classes": 21,
+      "n_obs": 339
+    },
+    "full_embedding_classifier": {
+      "accuracy": 0.5337576821773486,
+      "accuracy_sd": 0.06673637330742306,
+      "random_baseline_uniform": 0.047619047619047616,
+      "random_baseline_majority": 0.0619120961356062,
+      "ratio_uniform": 11.208911325724323,
+      "n_classes": 21,
+      "n_obs": 339
+    }
+  }
+}

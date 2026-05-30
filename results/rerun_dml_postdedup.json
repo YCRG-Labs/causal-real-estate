@@ -1,0 +1,21 @@
+[
+  {
+    "city": "boston",
+    "n": 331,
+    "text_dim": 768,
+    "n_confounders": 32,
+    "has_rich_confounders": true,
+    "backdoor_delta_r2": 0.04177122894076213,
+    "dr_ate": -0.12473311955699096,
+    "dr_ci_low": -0.3249136393784724,
+    "dr_ci_high": 0.08652508192839703,
+    "dr_if_se": 0.10656310639099885,
+    "dml_theta": 0.018805997153695374,
+    "dml_se": 0.03820922161874527,
+    "dml_ci_low": -0.056084077219045354,
+    "dml_ci_high": 0.09369607152643611,
+    "dml_mde": 0.10698582053248676,
+    "ci_method": "if",
+    "elapsed_sec": 11.4
+  }
+]

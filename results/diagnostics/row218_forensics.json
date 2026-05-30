@@ -1,0 +1,250 @@
+{
+  "city": "nyc",
+  "n": 342,
+  "theta_hat_full": 0.1693472128680882,
+  "se_IF_full": 0.03932280794477762,
+  "denom_T_resid_sq": 0.6240277538417233,
+  "top10_IC_rows": [
+    218,
+    73,
+    56,
+    242,
+    129,
+    49,
+    318,
+    308,
+    39,
+    312
+  ],
+  "row_dump_top10_plus_218": [
+    {
+      "url": "/NY/New-York/250-E-40th-St-10016/unit-4A/home/45255622",
+      "address": "250 E 40th St Unit 4 A",
+      "zip": 10016,
+      "price": 829000,
+      "latitude": 40.748504,
+      "longitude": -73.973596,
+      "description": "Investor opportunity One bedroom Apt in a full service condo Tenants is in place until 10/30/2026Bike room, Building allows Flex , Pets - Dogs ok, Gym/Fitness, Laundry Room Key things to know One bedroom in a full-service condo with gym and laundry. Tenant in place through 10/30/2026 presenting an investor opportunity. Living room features a white couch, round table, and flat screen TV. Bedroom of",
+      "row_index": 218,
+      "Y_resid": 2.8080128467692838,
+      "T_resid": -1.2082792428548326,
+      "IC": -5.833234449393045,
+      "IC_share_pct": 18.86901955289684
+    },
+    {
+      "url": "/NY/Maspeth/5436-Nurge-Ave-11378/home/20906724",
+      "address": "5436 Nurge Ave",
+      "zip": 11378,
+      "price": 1088000,
+      "latitude": 40.7147645,
+      "longitude": -73.911139,
+      "description": "Beautifully maintained legal 2-family home situated on a 25x100 lot, featuring an approximately 2,160 sq ft building (18x60). This spacious property offers two well-designed units, each with 3 bedrooms and 1 full bath, providing comfortable and functional living space for both owners and tenants. The home also includes a full finished basement with a seperate entrance, ideal for recreation, storag",
+      "row_index": 73,
+      "Y_resid": -2.07776636380631,
+      "T_resid": -1.0352459974629407,
+      "IC": 3.1561161938995337,
+      "IC_share_pct": 5.52378082083389
+    },
+    {
+      "url": "/NY/New-York/420-E-55th-St-10022/unit-11U/home/45155889",
+      "address": "420 E 55th St Unit 11-U",
+      "zip": 10022,
+      "price": 475000,
+      "latitude": 40.756238,
+      "longitude": -73.9625,
+      "description": "One-bedroom living at a studio price \u2014 Nestled in one of Manhattan's most classic neighborhoods. This beautifully configured Junior One-Bedroom is a rare find in the heart of Sutton Place, and it's ready to feel like home. French Doors define the layout, creating a generous, light-filled living area alongside a genuinely private sleeping space \u2014 A thoughtful design that lives far larger than its f",
+      "row_index": 56,
+      "Y_resid": -1.4965485489878265,
+      "T_resid": -1.4681398249862714,
+      "IC": 2.9359682813457644,
+      "IC_share_pct": 4.780058254459493
+    },
+    {
+      "url": "/NY/New-York/401-E-74th-St-10021/unit-8A/home/115549260",
+      "address": "401 E 74th St Unit 8A",
+      "zip": 10021,
+      "price": 949000,
+      "latitude": 40.769199,
+      "longitude": -73.9544718,
+      "description": "RENOVATED SPACIOUS 2BR, 1 BATH APT FOR SALE: Beautifully designed and renovated, this bright, quiet two-bedroom, one bath apartment is for sale at the beloved AMHERST. With a wall of windows facing open northeastern city views , this spacious apartment has modern plank floors and abundant closets . As one walks in the front door, there is a coat closet and a walk-in closet. There is soffit lightin",
+      "row_index": 242,
+      "Y_resid": 1.038829159928465,
+      "T_resid": -1.2093508293966728,
+      "IC": -2.4101238756874395,
+      "IC_share_pct": 3.221137031643379
+    },
+    {
+      "url": "/NY/New-York/120-Riverside-Blvd-10069/unit-5L/home/45192004",
+      "address": "120 Riverside Blvd Unit 5L",
+      "zip": 10069,
+      "price": 1825000,
+      "latitude": 40.7762642,
+      "longitude": -73.9890563,
+      "description": "With 1,292 square feet of exceptional living space, this bright 2-bedroom, 2-bathroom apartment with high ceilings boasts new 5\" plank hardwood floors throughout, and offers breathtaking Hudson River views from every room providing an abundance of natural afternoon light and captivating sunset sky. The kitchen is a functional culinary space equipped with stainless steel appliances , granite counte",
+      "row_index": 129,
+      "Y_resid": -0.5654846420697002,
+      "T_resid": 1.6388764206636854,
+      "IC": -2.2140230351192844,
+      "IC_share_pct": 2.7182834484011082
+    },
+    {
+      "url": "/NY/Glendale/7036-70th-St-11385/home/192274566",
+      "address": "7036 70th St",
+      "zip": 11385,
+      "price": 1649000,
+      "latitude": 40.7047725,
+      "longitude": -73.8823888,
+      "description": "FOR SALE \u2013 RARE GEM IN GLENDALE, NY! DOUBLE DUPLEX APARTMENTS \u2013 BRAND NEW CONSTRUCTION ! A true masterpiece in the heart of Glendale! This fully detached , brand-new two-family home with a stunning brick facade sits on a peaceful, tree-lined block in one of Queens\u2019 most sought-after neighborhoods. With a generous 2,448 sq. ft. of living space on a 2,971 sq. ft. lot, this home delivers comfort, sty",
+      "row_index": 49,
+      "Y_resid": -0.30416484976712255,
+      "T_resid": 1.9830597070386036,
+      "IC": -2.033786693145846,
+      "IC_share_pct": 2.293724606171734
+    },
+    {
+      "url": "/NY/Brooklyn/415-9th-St-11215/unit-53/home/40665105",
+      "address": "415 9th St #53",
+      "zip": 11215,
+      "price": 1150000,
+      "latitude": 40.667566,
+      "longitude": -73.982385,
+      "description": "Filled with natural light, this top-floor three-bedroom home in a classic pre-war co-op feels bright and open. High ceilings and large windows create an airy ambiance, complemented by views of the Manhattan skyline. The open layout features a windowed eat-in kitchen with new high-end appliances and a sunny living area accented by elegant columns. The primary bedroom is situated at the rear of the ",
+      "row_index": 318,
+      "Y_resid": -0.27598003236453117,
+      "T_resid": 2.0199707780080356,
+      "IC": -2.000641747001827,
+      "IC_share_pct": 2.219571421932183
+    },
+    {
+      "url": "/NY/Staten-Island/457-Ogorman-Ave-10308/home/56067767",
+      "address": "457 O'gorman Ave",
+      "zip": 10308,
+      "price": 999999,
+      "latitude": 40.5516242,
+      "longitude": -74.1418543,
+      "description": "Beautifully maintained four-bedroom home with great space and flow. This home features a full roof raise completed in 2008, hardwood floors throughout, and a spacious eat-in kitchen with stainless steel appliances. A bright front sitting room offers additional living space, while the formal dining room and cozy living room with a gas fireplace are perfect for entertaining. Enjoy a charming front p",
+      "row_index": 308,
+      "Y_resid": 0.44981699599393643,
+      "T_resid": -1.6819838149837554,
+      "IC": -1.980168259050258,
+      "IC_share_pct": 2.1743760714969436
+    },
+    {
+      "url": "/NY/New-York-City/3520-Leverich-ST-11377/unit-C342/home/201411923",
+      "address": "35-20 Leverich St Unit C342",
+      "zip": 11377,
+      "price": 699000,
+      "latitude": 40.7500245,
+      "longitude": -73.8957169,
+      "description": "Welcome to this spacious Jackson Heights residence in a desirable full-service condominium with an outdoor swimming pool . Situated on the third floor, this home offers three generously sized bedrooms and two full bathrooms, including a primary bedroom with an en-suite bath. The living and dining areas provide excellent space for both entertaining and comfortable everyday living. Laundry is conven",
+      "row_index": 39,
+      "Y_resid": -1.0062168091930115,
+      "T_resid": -1.6118770990551488,
+      "IC": 1.8940002885570288,
+      "IC_share_pct": 1.989255430337859
+    },
+    {
+      "url": "/NY/Brooklyn/460-9th-St-11215/home/201107863",
+      "address": "460 9th St",
+      "zip": 11215,
+      "price": 4500000,
+      "latitude": 40.6663851,
+      "longitude": -73.981173,
+      "description": "DELIVERED VACANT! | 4-STORY BROWNSTONE | ORIGINAL DETAILS A rare ~3,270 SF canvas in one of Brooklyn's most desirable and resilient markets. Whether you envision a sprawling single-family masterpiece or an expansive owner's triplex with premium rental income, this charming brownstone offers endless potential. THE FINANCIAL ADVANTAGE * Massive Income Potential: The top two floors are newly renovate",
+      "row_index": 312,
+      "Y_resid": 1.4312023858219796,
+      "T_resid": 0.9246547326249702,
+      "IC": 1.8886635931908753,
+      "IC_share_pct": 1.978061035109075
+    }
+  ],
+  "leave_top_k_out": [
+    {
+      "k": 0,
+      "n_kept": 342,
+      "theta": 0.1693472128680882,
+      "se_IF": 0.03932280794477762,
+      "ci_low": 0.09227450929632408,
+      "ci_high": 0.24641991643985234
+    },
+    {
+      "k": 1,
+      "n_kept": 341,
+      "theta": 0.1839908656373496,
+      "se_IF": 0.03570668888072798,
+      "ci_low": 0.11400575543112276,
+      "ci_high": 0.25397597584357645
+    },
+    {
+      "k": 2,
+      "n_kept": 340,
+      "theta": 0.18148183651853253,
+      "se_IF": 0.03436913186158831,
+      "ci_low": 0.11411833806981944,
+      "ci_high": 0.24884533496724562
+    },
+    {
+      "k": 3,
+      "n_kept": 339,
+      "theta": 0.1664991250328846,
+      "se_IF": 0.03494340068911048,
+      "ci_low": 0.09801005968222806,
+      "ci_high": 0.23498819038354116
+    },
+    {
+      "k": 5,
+      "n_kept": 337,
+      "theta": 0.1788932335326165,
+      "se_IF": 0.03381684059254521,
+      "ci_low": 0.11261222597122789,
+      "ci_high": 0.2451742410940051
+    },
+    {
+      "k": 10,
+      "n_kept": 332,
+      "theta": 0.168459944295507,
+      "se_IF": 0.03228712669979377,
+      "ci_low": 0.10517717596391121,
+      "ci_high": 0.2317427126271028
+    },
+    {
+      "k": 20,
+      "n_kept": 322,
+      "theta": 0.17898128236747532,
+      "se_IF": 0.031164111592805917,
+      "ci_low": 0.11789962364557573,
+      "ci_high": 0.24006294108937493
+    },
+    {
+      "k": 30,
+      "n_kept": 312,
+      "theta": 0.18589569458750654,
+      "se_IF": 0.030172245351276085,
+      "ci_low": 0.12675809369900543,
+      "ci_high": 0.24503329547600766
+    }
+  ],
+  "leave_fold_of_218_out": {
+    "dropped_fold": 2,
+    "n_kept": 274,
+    "theta": 0.1767434716304288,
+    "se_IF": 0.04043415958498623
+  },
+  "hampel_redescending": {
+    "theta": 0.18019535416071192,
+    "se": 0.03556064648662004,
+    "n_clipped": 0,
+    "sigma_hat": 0.5811775791285869
+  },
+  "bonferroni_IC_trim": {
+    "cutoff": 2.4805620560561366,
+    "n_kept": 339,
+    "theta": 0.1664991250328846,
+    "se_IF": 0.03494340068911048
+  },
+  "notes": [
+    "Hampel breakdowns a=1.7, b=3.4, c=8.5 (Hampel-Ronchetti-Rousseeuw-Stahel 1986)",
+    "Bonferroni cutoff = sd(IC) * sqrt(2 log n)",
+    "leave_top_k_out shows how theta moves as the top-|IC| rows are dropped"
+  ]
+}

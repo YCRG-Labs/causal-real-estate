@@ -1,0 +1,173 @@
+{
+  "config": {
+    "raw_path": "results/simulation/davis_kahan_diag/dk_lab_raw.csv",
+    "rho_dir": "results/simulation/davis_kahan_diag/rho_sweep",
+    "tau_true": 0.1,
+    "n_reps_per_spike_headline": 500,
+    "n_spikes_headline": 15
+  },
+  "marginal_coverage_headline_rho_0.15": {
+    "classical": 0.42893333333333333,
+    "hc1": 0.4382666666666667,
+    "swm_v_off_only": 0.5042666666666666,
+    "swm_fix": 0.4896,
+    "swm_sweep": 0.5134666666666666,
+    "conley_lehner": 0.4786666666666667,
+    "bch_cluster": 0.5388,
+    "wcb": 0.3353333333333333,
+    "self_normalized": 0.7281333333333333,
+    "fixed_b": 0.94,
+    "block_boot": 0.5317333333333333
+  },
+  "v_jk_decomposition": {
+    "mean_v_off": 0.0026587470179135126,
+    "median_v_off": 0.00151210394616725,
+    "mean_v_between": 0.0054814294436062025,
+    "median_v_between": 0.0032481580963658,
+    "median_v_off_share": 0.3153744046917208,
+    "pct_v_between_is_dominant": 0.7610666666666667,
+    "ratio_se_swm_fix_to_v_off_only": 0.968469180659246
+  },
+  "fold_mean_variance_check": {
+    "theoretical_fold_sd": 0.015491433052407712,
+    "empirical_fold_sd": 0.0534555269948484,
+    "inflation": 3.4506508735510577
+  },
+  "rho_x_method_coverage": {
+    "0.05": {
+      "bch_cluster": 0.49,
+      "block_boot": 0.478,
+      "classical": 0.467,
+      "conley_lehner": 0.441,
+      "fixed_b": 0.78,
+      "hc1": 0.415,
+      "self_normalized": 0.748,
+      "swm_fix": 0.395,
+      "swm_sweep": 0.413,
+      "swm_v_off_only": 0.433,
+      "wcb": 0.315
+    },
+    "0.1": {
+      "bch_cluster": 0.548,
+      "block_boot": 0.493,
+      "classical": 0.456,
+      "conley_lehner": 0.506,
+      "fixed_b": 0.957,
+      "hc1": 0.452,
+      "self_normalized": 0.672,
+      "swm_fix": 0.508,
+      "swm_sweep": 0.556,
+      "swm_v_off_only": 0.521,
+      "wcb": 0.342
+    },
+    "0.15": {
+      "bch_cluster": 0.537,
+      "block_boot": 0.528,
+      "classical": 0.43,
+      "conley_lehner": 0.464,
+      "fixed_b": 0.927,
+      "hc1": 0.422,
+      "self_normalized": 0.711,
+      "swm_fix": 0.486,
+      "swm_sweep": 0.51,
+      "swm_v_off_only": 0.497,
+      "wcb": 0.321
+    },
+    "0.25": {
+      "bch_cluster": 0.501,
+      "block_boot": 0.561,
+      "classical": 0.432,
+      "conley_lehner": 0.424,
+      "fixed_b": 0.909,
+      "hc1": 0.396,
+      "self_normalized": 0.762,
+      "swm_fix": 0.414,
+      "swm_sweep": 0.436,
+      "swm_v_off_only": 0.432,
+      "wcb": 0.299
+    },
+    "0.4": {
+      "bch_cluster": 0.606,
+      "block_boot": 0.611,
+      "classical": 0.556,
+      "conley_lehner": 0.553,
+      "fixed_b": 0.929,
+      "hc1": 0.523,
+      "self_normalized": 0.792,
+      "swm_fix": 0.534,
+      "swm_sweep": 0.565,
+      "swm_v_off_only": 0.546,
+      "wcb": 0.401
+    },
+    "0.6": {
+      "bch_cluster": 0.693,
+      "block_boot": 0.636,
+      "classical": 0.616,
+      "conley_lehner": 0.602,
+      "fixed_b": 0.94,
+      "hc1": 0.567,
+      "self_normalized": 0.808,
+      "swm_fix": 0.568,
+      "swm_sweep": 0.629,
+      "swm_v_off_only": 0.597,
+      "wcb": 0.455
+    }
+  },
+  "methods_evaluated": [
+    {
+      "label": "classical",
+      "name": "Classical OLS",
+      "ci_type": "z"
+    },
+    {
+      "label": "hc1",
+      "name": "HC1 / White",
+      "ci_type": "z"
+    },
+    {
+      "label": "swm_v_off_only",
+      "name": "SWM JK (V_off only, current code)",
+      "ci_type": "z"
+    },
+    {
+      "label": "swm_fix",
+      "name": "SWM JK (V_off + V_between)",
+      "ci_type": "z"
+    },
+    {
+      "label": "swm_sweep",
+      "name": "SWM JK bandwidth-sweep max",
+      "ci_type": "z"
+    },
+    {
+      "label": "conley_lehner",
+      "name": "Conley HAC at Lehner 2026 BW",
+      "ci_type": "z"
+    },
+    {
+      "label": "bch_cluster",
+      "name": "BCH cluster (folds, t_{K-1})",
+      "ci_type": "t4"
+    },
+    {
+      "label": "wcb",
+      "name": "WCB (CGM 2008, folds as clusters)",
+      "ci_type": "stored"
+    },
+    {
+      "label": "self_normalized",
+      "name": "IM 2010 self-normalized t_{K-1}",
+      "ci_type": "stored"
+    },
+    {
+      "label": "fixed_b",
+      "name": "Fixed-b (b=0.5, KV 2005)",
+      "ci_type": "fb"
+    },
+    {
+      "label": "block_boot",
+      "name": "Spatial block bootstrap",
+      "ci_type": "stored"
+    }
+  ]
+}

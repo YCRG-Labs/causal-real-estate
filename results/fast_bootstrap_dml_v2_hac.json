@@ -1,0 +1,65 @@
+{
+  "wall_sec": 0.45,
+  "rows": [
+    {
+      "city": "sf",
+      "n": 348,
+      "text_dim": 768,
+      "n_confounders": 34,
+      "has_rich_confounders": true,
+      "learner": "ridge",
+      "mode": "efron",
+      "drop_crime": false,
+      "B": 10,
+      "theta": -0.026245121801289188,
+      "se_if": 0.037781923326557616,
+      "se_cb": 0.053707507295643386,
+      "ci_low": -0.14591290545004848,
+      "ci_high": 0.0934226618474701,
+      "mde": 0.15038102042780147,
+      "t_pivot": 2.228138851986274,
+      "elapsed_sec": 0.45,
+      "load_sec": 0.273,
+      "boot_sec": 0.138,
+      "buffered_kfold": false,
+      "buffer_quantile": null,
+      "spatial_hac": {
+        "headline_method": "ibragimov_muller_self_normalized",
+        "im2010_theta": -0.02614770066303688,
+        "im2010_se": 0.044783722316421366,
+        "im2010_ci_low": -0.15048724728100216,
+        "im2010_ci_high": 0.09819184595492841,
+        "im2010_t_critical": 2.7764451051977934,
+        "im2010_K_eff": 5,
+        "bch_robustness_margin_se": 0.04858822369282291,
+        "bch_robustness_margin_ci_low": -0.1349025358421936,
+        "bch_robustness_margin_ci_high": 0.1349025358421936,
+        "conley_hac_se": 0.0426025331665474,
+        "salerno_jk_se": 0.04858822369282291,
+        "v_jk_decomposition": {
+          "v_jk": 0.0023608154816237977,
+          "v_off": 0.0003561723843112897,
+          "v_between": 0.002004643097312508,
+          "v_diag": 0.0014003250908423291,
+          "theta_hat": -1.2761184191093753e-17,
+          "h_n": 0.015195537941110388
+        },
+        "bandwidth_sweep": {
+          "0.05": 0.04302343495911744,
+          "0.1": 0.04858822369282291,
+          "0.15": 0.05137419492377089,
+          "0.2": 0.05217091568653371,
+          "max": 0.05217091568653371
+        },
+        "bandwidth_quantile": 0.1,
+        "n_used": 348
+      },
+      "ovb_block": null,
+      "tost_block": null,
+      "riesz_block": null,
+      "omnibus_block": null,
+      "stacked_meta_weights": null,
+      "spatial_hac_se": 0.04858822369282291
+    }
+  ]
+}

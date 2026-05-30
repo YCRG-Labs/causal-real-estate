@@ -1,0 +1,87 @@
+{
+  "city": "nyc",
+  "variant": "leace",
+  "n_train": 235,
+  "n_test": 102,
+  "n_zips": 126,
+  "routing": "continuous_latlon",
+  "power_diagnostic": {
+    "n_test": 102,
+    "K": 126,
+    "chance_p": 0.007936507936507936,
+    "critical_acc": 0.029411764705882353,
+    "p_min_80pct": 0.049019607843137254,
+    "power_at_p_alt": null,
+    "detectable_gain_80pct": 0.04108309990662932,
+    "alpha": 0.05
+  },
+  "guardedness_residual": 4.286327977810406e-17,
+  "continuous": {
+    "raw": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -2.162445825052786,
+      "r2_per_target_test": [
+        -2.2905665588184783,
+        -2.0343250912870943
+      ],
+      "r2_per_target_train": [
+        0.9952248649880875,
+        0.9983231998763528
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 235,
+      "n_test": 102,
+      "max_coef": 0.21016755435421788
+    },
+    "erased": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -0.01456033804762158,
+      "r2_per_target_test": [
+        -0.013823752259493949,
+        -0.01529692383574921
+      ],
+      "r2_per_target_train": [
+        0.0,
+        -2.220446049250313e-16
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 235,
+      "n_test": 102,
+      "max_coef": 1.1352844069052616e-08
+    }
+  },
+  "mlp_continuous": {
+    "raw": {
+      "r2_avg_test": -1.363447738346082,
+      "r2_per_target_test": [
+        -1.2824794647022841,
+        -1.4444160119898797
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    },
+    "erased": {
+      "r2_avg_test": -0.28273765591976496,
+      "r2_per_target_test": [
+        -0.2671496220820646,
+        -0.2983256897574653
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    }
+  },
+  "categorical": {
+    "note": "categorical probe suppressed: per-class test count 0.81 below floor 5 (continuous lat/lon probe is the headline)."
+  },
+  "linear_guardedness_holds": true
+}

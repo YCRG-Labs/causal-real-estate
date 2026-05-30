@@ -1,0 +1,55 @@
+{
+  "wall_sec": 0.52,
+  "rows": [
+    {
+      "city": "sf",
+      "n": 348,
+      "text_dim": 768,
+      "n_confounders": 34,
+      "has_rich_confounders": true,
+      "learner": "ridge",
+      "mode": "efron",
+      "drop_crime": false,
+      "B": 10,
+      "theta": -0.02108469639699206,
+      "se_if": 0.037783209983029226,
+      "se_cb": 0.05525014154264182,
+      "ci_low": -0.14418968334589316,
+      "ci_high": 0.10202029055190903,
+      "mde": 0.15470039631939708,
+      "t_pivot": 2.228138851986274,
+      "elapsed_sec": 0.36,
+      "load_sec": 0.217,
+      "boot_sec": 0.131,
+      "buffered_kfold": false,
+      "buffer_quantile": null,
+      "spatial_hac": null,
+      "ovb_block": null,
+      "tost_block": null,
+      "riesz_block": null,
+      "omnibus_block": {
+        "p_value": 0.001,
+        "statistic": 4.4748400082376785,
+        "K": 5,
+        "direction_pvalues": {
+          "PC1": 0.43031945807952887,
+          "PC2": 0.14618274409377108,
+          "PC3": 7.64685506471352e-06,
+          "PC4": 0.024815729650170093,
+          "PC5": 0.942917576712941
+        },
+        "direction_zstats": {
+          "PC1": -0.7886451093658359,
+          "PC2": 1.453147719756641,
+          "PC3": 4.4748400082376785,
+          "PC4": -2.244259190274404,
+          "PC5": 0.07160334659952043
+        },
+        "method": "sup-Wald on top-5 PCs of T, cross-fit GBM residualization, Gaussian multiplier bootstrap (Chernozhukov-Chetverikov-Kato)",
+        "wall_sec": 0.042
+      },
+      "stacked_meta_weights": null,
+      "spatial_hac_se": null
+    }
+  ]
+}

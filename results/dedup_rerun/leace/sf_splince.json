@@ -1,0 +1,89 @@
+{
+  "city": "sf",
+  "variant": "splince",
+  "n_train": 243,
+  "n_test": 105,
+  "n_zips": 24,
+  "routing": "continuous_latlon",
+  "power_diagnostic": {
+    "n_test": 105,
+    "K": 24,
+    "chance_p": 0.041666666666666664,
+    "critical_acc": 0.08571428571428572,
+    "p_min_80pct": 0.11428571428571428,
+    "power_at_p_alt": null,
+    "detectable_gain_80pct": 0.07261904761904761,
+    "alpha": 0.05
+  },
+  "guardedness_residual": 3.3504305641294115e-16,
+  "splince_cov_preservation_max_err": 2.0339632755828063e-16,
+  "splince_variance_preserved": true,
+  "continuous": {
+    "raw": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -0.03145071321889753,
+      "r2_per_target_test": [
+        0.08711560127593165,
+        -0.1500170277137267
+      ],
+      "r2_per_target_train": [
+        0.9997722931118262,
+        0.9998538035648389
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 243,
+      "n_test": 105,
+      "max_coef": 0.14181064785944716
+    },
+    "erased": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -0.00632722028697752,
+      "r2_per_target_test": [
+        -0.011691901684660833,
+        -0.0009625388892942066
+      ],
+      "r2_per_target_train": [
+        1.1102230246251565e-16,
+        0.0
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 243,
+      "n_test": 105,
+      "max_coef": 1.3255118105198085e-12
+    }
+  },
+  "mlp_continuous": {
+    "raw": {
+      "r2_avg_test": 0.1242358230014205,
+      "r2_per_target_test": [
+        0.28467940910371936,
+        -0.036207763100878365
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    },
+    "erased": {
+      "r2_avg_test": 0.08720323916945993,
+      "r2_per_target_test": [
+        0.14405154300666778,
+        0.030354935332252087
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    }
+  },
+  "categorical": {
+    "note": "categorical probe suppressed: per-class test count 4.38 below floor 5 (continuous lat/lon probe is the headline)."
+  },
+  "linear_guardedness_holds": true
+}

@@ -1,0 +1,69 @@
+{
+  "rows": [
+    {
+      "train": "nyc",
+      "test": "sf",
+      "n_train": 347,
+      "n_test": 348,
+      "self_cv_r2": 0.35363910385902464,
+      "transfer_raw_r2": -0.06345792929377758,
+      "transfer_centered_r2": 0.07324795057170574,
+      "transfer_rank_rho": 0.3205452602172189
+    },
+    {
+      "train": "nyc",
+      "test": "boston",
+      "n_train": 347,
+      "n_test": 336,
+      "self_cv_r2": 0.35363910385902464,
+      "transfer_raw_r2": 0.07001724553126387,
+      "transfer_centered_r2": 0.06758452585829988,
+      "transfer_rank_rho": 0.38318569787253265
+    },
+    {
+      "train": "sf",
+      "test": "nyc",
+      "n_train": 348,
+      "n_test": 347,
+      "self_cv_r2": 0.18949552534111502,
+      "transfer_raw_r2": 0.014310296510112064,
+      "transfer_centered_r2": 0.07447626013018827,
+      "transfer_rank_rho": 0.33453146290406893
+    },
+    {
+      "train": "sf",
+      "test": "boston",
+      "n_train": 348,
+      "n_test": 336,
+      "self_cv_r2": 0.18949552534111502,
+      "transfer_raw_r2": -0.12137299358541442,
+      "transfer_centered_r2": 0.024675108997178063,
+      "transfer_rank_rho": 0.21625463644619033
+    },
+    {
+      "train": "boston",
+      "test": "nyc",
+      "n_train": 336,
+      "n_test": 347,
+      "self_cv_r2": 0.1068095242314745,
+      "transfer_raw_r2": 0.19260126159240665,
+      "transfer_centered_r2": 0.2000087840433299,
+      "transfer_rank_rho": 0.45243967363606896
+    },
+    {
+      "train": "boston",
+      "test": "sf",
+      "n_train": 336,
+      "n_test": 348,
+      "self_cv_r2": 0.1068095242314745,
+      "transfer_raw_r2": -0.1507521444694555,
+      "transfer_centered_r2": 0.02948009490805381,
+      "transfer_rank_rho": 0.21933490437001846
+    }
+  ],
+  "mean_transfer_raw_r2_all": -0.009775710619144154,
+  "mean_transfer_centered_r2_all": 0.07824545408479261,
+  "mean_transfer_rank_rho_all": 0.3210486059076831,
+  "mean_transfer_raw_r2_nyc_sf": -0.02457381639183276,
+  "mean_transfer_rank_rho_nyc_sf": 0.3275383615606439
+}
