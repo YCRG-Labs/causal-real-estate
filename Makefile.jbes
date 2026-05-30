@@ -1,0 +1,77 @@
+# Makefile.jbes: 12-city JBES expansion pipeline driver.
+#
+# Sits alongside the existing canonical pipeline. Targets here map to the
+# run_pipeline_jbes.py subcommands and add convenience aliases.
+#
+# On Brev, after `git pull`:
+#     make -f Makefile.jbes env       # one-time, ~5 min
+#     make -f Makefile.jbes smoke     # ~30 sec; must reproduce 95.1%
+#     make -f Makefile.jbes all       # ~90 min; full 9-city expansion
+#
+# Or run stages individually:
+#     make -f Makefile.jbes acquire
+#     make -f Makefile.jbes geocode
+#     make -f Makefile.jbes confounders
+#     make -f Makefile.jbes embeddings
+#     make -f Makefile.jbes dml
+#     make -f Makefile.jbes finalize
+#     make -f Makefile.jbes verify
+
+PY ?= python3
+CITIES ?= new9
+B ?= 1000
+MAX_LISTINGS ?= 350
+
+SCRIPTS := data/scripts
+RUNNER := $(PY) $(SCRIPTS)/run_pipeline_jbes.py
+
+.PHONY: help env smoke acquire geocode confounders embeddings dml finalize verify all clean-manifest
+
+help:
+	@echo "Targets:"
+	@echo "  env          - create the pinned conda env from environment_pin.yml"
+	@echo "  smoke        - verify 95.1% NYC shrinkage reproduces"
+	@echo "  acquire      - async scrape Redfin for $(CITIES)"
+	@echo "  geocode      - Census Bureau batch geocoder"
+	@echo "  confounders  - ACS + Overpass + crime + parcel match per city"
+	@echo "  embeddings   - sentence-BERT mpnet-base-v2 on CUDA"
+	@echo "  dml          - per-city DML + bootstrap (B=$(B))"
+	@echo "  finalize     - Shen replication + LEACE + IGBP + hash verify"
+	@echo "  all          - run smoke -> finalize end-to-end (~90 min)"
+	@echo "  verify       - rehash all artifacts and write run_hashes table"
+	@echo ""
+	@echo "Variables: CITIES=$(CITIES), B=$(B), MAX_LISTINGS=$(MAX_LISTINGS)"
+
+env:
+	conda env create -f $(SCRIPTS)/environment_pin.yml -n cre || conda env update -f $(SCRIPTS)/environment_pin.yml -n cre
+
+smoke:
+	$(RUNNER) smoke
+
+acquire:
+	$(RUNNER) acquire --cities $(CITIES) --max-listings $(MAX_LISTINGS)
+
+geocode:
+	$(RUNNER) geocode --cities $(CITIES)
+
+confounders:
+	$(RUNNER) confounders --cities $(CITIES)
+
+embeddings:
+	$(RUNNER) embeddings --cities $(CITIES)
+
+dml:
+	$(RUNNER) dml --cities $(CITIES) --B $(B)
+
+finalize:
+	$(RUNNER) finalize --cities $(CITIES)
+
+all:
+	$(RUNNER) all --cities $(CITIES) --max-listings $(MAX_LISTINGS) --B $(B)
+
+verify:
+	$(PY) verification/hash_run.py --out verification/run_hashes_$$(date +%Y%m%d_%H%M).txt
+
+clean-manifest:
+	rm -f data/processed/_manifest.json
+	@echo "Manifest cleared. Next run will redo every stage."
