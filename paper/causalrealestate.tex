@@ -848,25 +848,28 @@ The visual carrier of the shrinkage trajectory is Figure~\ref{fig:escalation}, w
 \centering
 \begin{tikzpicture}
 \begin{axis}[
-    causalre wide,
+    causalre body,
+    width=0.62\textwidth, height=5.6cm,
     xlabel={Cumulative confounder dimensions},
     ylabel={Binarized DR ATE on $\log$ price},
     xmin=-3, xmax=64,
-    ymin=-3.8, ymax=2.9,
-    xtick={0,30,32,43,47,55,61},
-    xticklabels={None, +Zip, +Coord, +Census, +Crime, +Amen, +Micro},
+    ymin=-0.32, ymax=0.10,
+    xtick={0,31,43,47,55,61},
+    xticklabels={None, +Zip{,}+Coord, +Census, +Crime, +Amen., +Micro},
     x tick label style={font=\scriptsize, rotate=30, anchor=north east},
+    ytick={-0.30,-0.20,-0.10,0,0.10},
     extra y ticks={0},
     extra y tick style={grid=major, grid style={black, dashed, thin}},
     extra y tick labels={},
+    clip=true,
 ]
-\draw[thin, gray] (axis cs:0,-3.613)   -- (axis cs:0,  2.664);
-\draw[thin, gray] (axis cs:30,-3.270)  -- (axis cs:30, 2.804);
-\draw[thin, gray] (axis cs:32,-1.179)  -- (axis cs:32, 0.972);
-\draw[thin, gray] (axis cs:43,-0.824)  -- (axis cs:43, 0.834);
-\draw[thin, gray] (axis cs:47,-0.750)  -- (axis cs:47, 0.866);
-\draw[thin, gray] (axis cs:55,-0.721)  -- (axis cs:55, 0.789);
-\draw[thin, gray] (axis cs:61,-0.646)  -- (axis cs:61, 0.836);
+\draw[thin, gray] (axis cs:32,-0.290)  -- (axis cs:32, 0.090);
+\draw[thin, gray] (axis cs:43,-0.290)  -- (axis cs:43, 0.090);
+\draw[thin, gray] (axis cs:47,-0.290)  -- (axis cs:47, 0.090);
+\draw[thin, gray] (axis cs:55,-0.290)  -- (axis cs:55, 0.090);
+\draw[thin, gray] (axis cs:61,-0.290)  -- (axis cs:61, 0.090);
+\draw[thin, gray, dotted] (axis cs:0, -0.290) -- (axis cs:0, 0.090);
+\draw[thin, gray, dotted] (axis cs:30,-0.290) -- (axis cs:30, 0.090);
 \addplot[color=cNYC, thick, mark=*, mark size=2pt] coordinates {
     (0,  -0.255)
     (30, -0.228)
@@ -878,7 +881,7 @@ The visual carrier of the shrinkage trajectory is Figure~\ref{fig:escalation}, w
 };
 \end{axis}
 \end{tikzpicture}
-\caption{Confounder escalation for New York. The horizontal axis is the cumulative dimensionality of the adjustment set, beginning at zero with no controls and rising through the seven canonical blocks to a full sixty-one-feature specification at the right edge. The vertical axis is the binarized doubly-robust ATE on log price for the leading sentence-BERT principal component, and the dashed horizontal line marks the null. Filled circles are point estimates and the thin gray segments are ninety-five percent bootstrap confidence intervals at $B = 500$ resamples. The coordinate block at $d = 32$ does almost all of the magnitude-shrinkage work, taking the point estimate from $-0.228$ to $-0.038$ and shrinking the confidence band by roughly a factor of three. The monotone-shrinkage pattern is the Cinelli--Hazlett signature of confounding bias being removed as the spatial adjustment set is enriched.}
+\caption{Confounder escalation for New York. The horizontal axis is the cumulative dimensionality of the adjustment set, rising from zero with no controls through six escalations to the full sixty-one-feature specification, and the vertical axis is the binarized doubly-robust ATE on log price for the leading sentence-BERT principal component, with the dashed horizontal line marking the null. Filled circles are point estimates and solid gray whiskers are ninety-five percent bootstrap intervals at $B = 500$ resamples. Two whiskers are clipped at the plot edges for legibility: the no-controls interval extends to $[-3.61, +2.66]$ and the zip-only interval to $[-3.27, +2.80]$, both shown as dotted segments at the axis limits. The coordinate block at $d = 32$ does almost all of the magnitude-shrinkage work, collapsing the point estimate from $-0.228$ to $-0.038$ and tightening the confidence band by roughly a factor of three. The monotone-shrinkage pattern is the Cinelli--Hazlett signature of confounding bias being removed as the spatial adjustment set is enriched.}
 \label{fig:escalation}
 \end{figure}
 \FloatBarrier
@@ -2028,8 +2031,10 @@ Figure~\ref{fig:dk_coverage} reads four of the eleven methods as coverage curves
     title={(a) Coverage vs spike strength, $\rho = 0.15$},
     xmin=0.4, xmax=4.1, ymin=0.28, ymax=1.02,
     ytick={0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0},
-    legend style={font=\scriptsize, at={(0.98,0.02)}, anchor=south east,
-                  draw=none, fill=none, row sep=1pt},
+    legend to name=dkleg,
+    legend columns=4,
+    legend style={font=\scriptsize, draw=none, fill=none,
+                  /tikz/every even column/.append style={column sep=12pt}},
     legend cell align=left,
 ]
 \addplot[black, dashed, thin, forget plot] coordinates {(0.4,0.95) (4.1,0.95)};
@@ -2069,28 +2074,22 @@ Figure~\ref{fig:dk_coverage} reads four of the eleven methods as coverage curves
     xticklabels={0.05,0.10,0.15,0.25,0.40,0.60},
     ytick={0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0},
     yticklabels={,,,,,,,},
-    legend style={font=\scriptsize, at={(0.98,0.02)}, anchor=south east,
-                  draw=none, fill=none, row sep=1pt},
-    legend cell align=left,
 ]
 \addplot[black, dashed, thin, forget plot] coordinates {(0.04,0.95) (0.75,0.95)};
-\addplot[color=cNYC, thick, mark=square*, mark size=1.4pt] coordinates {
+\addplot[color=cNYC, thick, mark=square*, mark size=1.4pt, forget plot] coordinates {
   (0.05,0.780) (0.10,0.957) (0.15,0.927) (0.25,0.909) (0.40,0.929) (0.60,0.940)
 };
-\addlegendentry{fixed-$b$, $b = 0.5$, $t_1$}
-\addplot[color=cSF, thick, mark=*, mark size=1.4pt] coordinates {
+\addplot[color=cSF, thick, mark=*, mark size=1.4pt, forget plot] coordinates {
   (0.05,0.748) (0.10,0.672) (0.15,0.711) (0.25,0.762) (0.40,0.792) (0.60,0.808)
 };
-\addlegendentry{IM self-normalised $t_{K - 1}$}
-\addplot[color=cBOS, thick, mark=triangle*, mark size=1.6pt] coordinates {
+\addplot[color=cBOS, thick, mark=triangle*, mark size=1.6pt, forget plot] coordinates {
   (0.05,0.395) (0.10,0.508) (0.15,0.486) (0.25,0.414) (0.40,0.534) (0.60,0.568)
 };
-\addlegendentry{SWM jackknife, $z = 1.96$}
-\addplot[color=cMUTE, thick, mark=diamond*, mark size=1.6pt] coordinates {
+\addplot[color=cMUTE, thick, mark=diamond*, mark size=1.6pt, forget plot] coordinates {
   (0.05,0.467) (0.10,0.456) (0.15,0.430) (0.25,0.432) (0.40,0.556) (0.60,0.616)
 };
-\addlegendentry{Classical, $z = 1.96$}
 \end{semilogxaxis}
+\node[anchor=north] at ($(dkA.south east)+(0.8cm,-1.0cm)$) {\ref{dkleg}};
 \end{tikzpicture}
 \caption{Empirical coverage of nominal $95\%$ confidence intervals across the Davis--Kahan stress simulation, with $1{,}000$ Monte Carlo replications per cell. The horizontal dashed line in each panel marks the nominal level. Panel (a) varies the leading-eigenvalue spike strength while holding the spatial length-scale at $\rho = 0.15$, and panel (b) varies the length-scale on a log axis while holding the spike strength at its central value. The Salerno--Wu--McCormick jackknife paired with the conventional $z = 1.96$ critical value sits near $0.49$ across both axes, the Ibragimov--M\"uller self-normalised $t_{K - 1}$ paired with the same fold-mean variance sits near $0.73$, and the fixed-$b$ envelope of \citet{sun2008optimal} at $b = 0.5$ reaches roughly $0.93$ at the cost of substantially wider intervals. The seven remaining inference rules reported in Table~\ref{tab:dk_coverage} bunch within the band traced by classical and SWM-with-$z$ and are omitted from the figure for legibility.}
 \label{fig:dk_coverage}
