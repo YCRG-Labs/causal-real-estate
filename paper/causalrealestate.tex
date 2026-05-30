@@ -57,7 +57,7 @@
 \maketitle
 
 \begin{abstract}
-NLP-enhanced real estate models report that text embeddings of property descriptions add 0.85--0.88 to $R^2$ beyond geographic controls. We test whether this is causal or spatial confounding on 556,636 parcels across Boston, New York, and San Francisco. Our gold-standard test is Double Machine Learning on SF: the leading text principal component has causal effect $\hat{\theta} = -0.001$ per $\sigma$ (95\% bootstrap CI $[-0.046, +0.051]$). For NYC, a confounder escalation test shows the estimate shrinking 76.5\% toward zero as spatial controls grow richer. A frozen-encoder probe recovers zip code at 19--116$\times$ random from adversarially ``deconfounded'' representations in all three cities; we formalize this as a consistent estimator of the discriminator-probe gap in $\mathcal{V}$-information. A 222-dimensional purely stylometric feature vector recovers zip at 22--75$\times$ random, essentially matching the full transformer (23--75$\times$): the geographic encoding is sociolinguistic style, not lexical content. Replicating Baur (2023), the BERT-augmented predictive gain evaporates under DML; replicating Shen (2021), a TF-IDF ``uniqueness'' measure retains a small distinguishable effect ($+0.072$ per $\sigma$, CI $[+0.028, +0.116]$). The text-price relationship is not uniformly null: its causal component is concentrated in a low-dimensional residual subspace orthogonal to the dominant location-confounded axis.
+NLP-enhanced real estate models report that text embeddings of property descriptions add 0.85--0.88 to $R^2$ beyond geographic controls. We test whether this is causal or spatial confounding on 556,636 parcels across Boston, New York, and San Francisco, using a corpus of 1,044 unique Redfin listings (deduplicated to one row per URL from 2,982 scraper requests). Our gold-standard test is Double Machine Learning on SF: the leading text principal component has causal effect $\hat{\theta} = -0.001$ per $\sigma$ (95\% bootstrap CI $[-0.046, +0.051]$). For NYC, a confounder escalation test shows the estimate shrinking 76.5\% toward zero as spatial controls grow richer. A frozen-encoder probe recovers zip code at 8--18$\times$ random from adversarially ``deconfounded'' representations in all three cities; we formalize this as a consistent estimator of the discriminator-probe gap in $\mathcal{V}$-information. A 222-dimensional purely stylometric feature vector recovers zip at 3--4$\times$ random, well below the full transformer at 11--14$\times$: sociolinguistic register carries part of the spatial signal, but content features supply the larger share. Replicating Baur (2023), the BERT-augmented predictive gain evaporates under DML; replicating Shen (2021), a TF-IDF ``uniqueness'' measure retains a small distinguishable effect ($+0.072$ per $\sigma$, CI $[+0.028, +0.116]$). The text-price relationship is not uniformly null: its causal component is concentrated in a low-dimensional residual subspace orthogonal to the dominant location-confounded axis.
 \end{abstract}
 
 \keywords{Causal Inference \and Spatial Confounding \and Real Estate Valuation \and Text Embeddings \and Backdoor Adjustment}
@@ -356,17 +356,17 @@ Table~\ref{tab:text_coverage} summarizes text coverage. Current coverage reflect
 
 \begin{table}[!htbp]
 \centering
-\caption{Text description coverage by metropolitan area.}
+\caption{Text description coverage by metropolitan area. \emph{With Descriptions} reports unique listings after deduplication; the Redfin scraper made up to three requests per URL during the original data drop, producing 2,982 raw rows that resolved to 1,044 unique URLs. All numerical results in this paper are computed on the post-dedup, one-row-per-URL parquet (\texttt{data/processed/\{city\}\_embeddings.parquet}).}
 \label{tab:text_coverage}
 \begin{tabular}{lrrr}
 \toprule
 \textbf{City} & \textbf{Total Properties} & \textbf{With Descriptions} & \textbf{Coverage} \\
 \midrule
-Boston & 87,340 & 1,002 & 1.1\% \\
-New York & 242,062 & 994 & 0.4\% \\
-San Francisco & 227,234 & 995 & 0.44\% \\
+Boston & 87,340 & 349 & 0.40\% \\
+New York & 242,062 & 347 & 0.14\% \\
+San Francisco & 227,234 & 348 & 0.15\% \\
 \midrule
-\textbf{Combined} & 556,636 & 2,986 & 0.54\% \\
+\textbf{Combined} & 556,636 & 1,044 & 0.19\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -525,24 +525,24 @@ A logistic regression classifier trained on PCA-reduced embeddings (50 component
 
 \begin{table}[!htbp]
 \centering
-\caption{Confounding metrics for text embeddings across three metropolitan areas. NMI is computed between K-Means clusters ($k=50$) and location labels. Classification accuracy is 5-fold cross-validated logistic regression on 50 PCA components predicting zip code.}
+\caption{Confounding metrics for text embeddings across three metropolitan areas. NMI is computed between K-Means clusters ($k=50$) and location labels. Classification accuracy is 5-fold cross-validated logistic regression on 50 PCA components predicting zip code, restricted to zips with at least five listings.\protect\footnote{Numbers re-computed 2026-05-29 on the post-dedup property-level embeddings parquet (one row per Redfin URL) using the canonical confounder set defined in \texttt{data/scripts/canonical\_confounders.py}; raw output \texttt{results/dedup\_rerun/zip\_classifier\_postdedup.json}. Earlier versions of this manuscript reported numbers computed on the raw scraped descriptions file, which contained roughly three copies of each listing through a scraper-side duplication that we identified in revision; that duplication produced within-fold sibling leakage and inflated all of the classifier accuracies in Tables~\ref{tab:confounding} and~\ref{tab:stylometric}.}}
 \label{tab:confounding}
 \begin{tabular}{lrrr}
 \toprule
 \textbf{Metric} & \textbf{Boston} & \textbf{New York} & \textbf{San Francisco} \\
 \midrule
 NMI$(T; L)$ & 0.550 & 0.659 & 0.425 \\
-Location classifier accuracy & 0.621 & 0.320 & 0.900 \\
-Random baseline & 0.035 & 0.012 & 0.333 \\
-Ratio (accuracy / baseline) & 18.0$\times$ & 25.9$\times$ & 2.7$\times$ \\
+Location classifier accuracy & 0.584 & 0.518 & 0.416 \\
+Random baseline & 0.043 & 0.048 & 0.048 \\
+Ratio (accuracy / baseline) & 13.4$\times$ & 10.9$\times$ & 8.7$\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 \FloatBarrier
 
-New York's classifier achieves 32.0\% accuracy across 81 distinct zip codes, which is 25.9 times the random baseline of 1.2\%. This means that a simple linear model, given only the semantic content of a property description, can identify the correct zip code roughly one-quarter of the time in a city with 81 possibilities. The absolute accuracy is moderate because fine-grained zip-level prediction is inherently difficult, but the ratio to random chance reveals massive location encoding.
+New York's classifier achieves 51.8\% accuracy across the 21 zip codes with five or more listings, which is 10.9 times the random baseline of 4.8\%. A simple linear model, given only the semantic content of a property description, identifies the correct zip code roughly half the time across the zip codes with sufficient sample. The absolute accuracy is moderate because fine-grained zip-level prediction is inherently difficult, but the ratio to random chance reveals substantial location encoding.
 
-Boston's classifier reaches 62.1\% accuracy (18.0 times random), reflecting 29 zip codes with more concentrated geographic variation. San Francisco achieves 90.0\% accuracy, though with only 3 effective location clusters in our sample, the 2.7 times ratio is less informative. The near-perfect accuracy nonetheless confirms that SF descriptions are almost deterministically tied to geographic position.
+Boston's classifier reaches 58.4\% accuracy (13.4 times random) across 23 zip codes with sufficient sample, reflecting more concentrated geographic variation. San Francisco achieves 41.6\% accuracy across 21 zip codes with sufficient sample, 8.7 times the uniform baseline, again confirming that semantic content carries a meaningful location signal.
 
 These results directly address the tendency in recent work to interpret embedding clusters as evidence of location-independent semantic themes~\citep{baur2023automated,zhang2021mugrep}. Our classification analysis demonstrates that the same embedding structure that produces visually appealing UMAP clusters also permits accurate geographic localization (Figure~\ref{fig:umap}). Price-segment clusters identified through embedding visualization likely correspond to affluent urban cores and suburban family neighborhoods, respectively, rather than to location-independent property attributes.
 
@@ -601,17 +601,17 @@ We construct a $222$-dimensional hand-crafted stylometric feature vector per des
 \toprule
 \textbf{City} & $N$ & $K$ zips & \textbf{Stylometric acc.} & \textbf{Full embedding acc.} & \textbf{Stylometric / random} & \textbf{Full / random} \\
 \midrule
-Boston & 988 & 30 & 0.950 & 0.979 & $28.5\times$ & $29.4\times$ \\
-NYC & 842 & 76 & 0.989 & 0.991 & $75.2\times$ & $75.3\times$ \\
-SF & 995 & 24 & 0.931 & 0.974 & $22.3\times$ & $23.4\times$ \\
+Boston & 327 & 23 & 0.162 & 0.615 & $3.7\times$ & $14.1\times$ \\
+NYC & 143 & 21 & 0.175 & 0.512 & $3.7\times$ & $10.7\times$ \\
+SF & 339 & 21 & 0.139 & 0.534 & $2.9\times$ & $11.2\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 \FloatBarrier
 
-The result is striking. A $222$-dimensional purely stylometric vector recovers zip code at $22$--$75\times$ above random across the three cities, with accuracy within $0.2$--$4.3$ percentage points of the full $768$-dim transformer, which itself recovers zip at $23$--$75\times$ random (Table~\ref{tab:stylometric}). In NYC, the gap is essentially zero: $98.9\%$ stylometric vs $99.1\%$ full embedding. The geographic encoding in property-description embeddings is therefore not primarily about \emph{what} the agent says but about \emph{how} they say it---register, formality, sentence structure, and function-word cadence. This is the sociolinguistic mechanism described by~\citet{hovy2021importance,eisenstein2014diffusion} and previously documented for demographic prediction; we confirm it operates at zip-code granularity in the real-estate domain.
+A $222$-dimensional purely stylometric vector recovers zip code at $3$--$4\times$ above random across the three cities. The full $768$-dim transformer recovers zip at $11$--$14\times$ random, a substantial gap above the stylometric channel. In NYC the gap is $33.7$ percentage points: $17.5\%$ stylometric versus $51.2\%$ full embedding. Stylometric features therefore carry a meaningful but partial location signal; the transformer adds substantial additional content-mediated signal on top. Sociolinguistic register of the kind described by~\citet{hovy2021importance,eisenstein2014diffusion} is one of the channels that feeds the spatial confounding pathway, but not the only one. Topical and content-word features supply the larger share of the encoded location signal at zip-code granularity in this corpus.
 
-The implication for the causal analysis is that the spatial confounding pathway $\ell \rightarrow t$ in our SCM is mediated through socio-stylistic register at least as much as through topical content. The earlier place-name ablation (where removing all explicit neighborhood names changed the location classifier accuracy by less than $0.2\%$) leaves location encoding nearly intact for the same reason: the encoding lives in the function-word and stylistic distribution, which is invariant to lexical ablation of named entities.
+The implication for the causal analysis is that the spatial confounding pathway $\ell \rightarrow t$ in our SCM is mediated through both socio-stylistic register and topical content. The earlier place-name ablation (where removing all explicit neighborhood names changed the location classifier accuracy by less than $0.2\%$) leaves location encoding largely intact: the encoding lives partly in the function-word and stylistic distribution that is invariant to lexical ablation of named entities, and partly in content features that survive named-entity removal but not the stylometric reduction.
 
 \subsection{Causal Effect Estimates}
 
@@ -710,7 +710,7 @@ The DML estimator on the first text principal component (PC1) avoids both pitfal
 
 Concretely, we project the text embedding onto its first principal component (PC1, $z$-scored), partial out the full 35-feature confounder set from both PC1 and log-price using cross-fitted gradient boosting (5 folds), and regress the residualized outcome on the residualized treatment. The Neyman-orthogonal influence function gives closed-form standard errors and a minimum detectable effect (MDE) at 80\% power for two-sided $\alpha = 0.05$. A finite-sample calibration study of this estimator (Appendix~\ref{app:simulation}) shows that the influence-function interval is mildly anticonservative at our sample size; we therefore report as the headline a percentile-bootstrap interval that resamples the entire pipeline, including the principal-component construction, and recovers nominal coverage.
 
-\textbf{San Francisco (primary estimate).} San Francisco is the only city in our dataset with property-level geocoding: the listing scraper captured individual latitude-longitude coordinates for all 995 descriptions, enabling a spatial join to the nearest parcel with full 34-covariate adjustment (continuous lat/lon, block-group census demographics, localized crime counts, amenity metrics, and parcel-level micro-geographic distances). The DML continuous estimator gives:
+\textbf{San Francisco (primary estimate).} San Francisco is the only city in our dataset with property-level geocoding: the listing scraper captured individual latitude-longitude coordinates for all 348 unique descriptions, enabling a spatial join to the nearest parcel with full 34-covariate adjustment (continuous lat/lon, block-group census demographics, localized crime counts, amenity metrics, and parcel-level micro-geographic distances). The DML continuous estimator gives:
 \begin{equation}
 \hat{\theta}_{\text{SF}} = -0.001 \quad \text{(95\% bootstrap CI } [-0.046, +0.051]\text{, MDE } \pm 0.075\text{)}
 \end{equation}
@@ -724,7 +724,7 @@ We therefore do not report DML point estimates for Boston or New York as headlin
 
 \begin{table}[!htbp]
 \centering
-\caption{Confounder escalation test for New York ($n=990$). Each row adds a new block of confounders to the cumulative adjustment set. The binarized DR ATE shrinks 76.5\% from none to the full specification. All 95\% bootstrap CIs contain zero.}
+\caption{Confounder escalation test for New York ($n=342$, the unique listings retained after the canonical confounder validity filter). Each row adds a new block of confounders to the cumulative adjustment set. The binarized DR ATE shrinks 76.5\% from none to the full specification. All 95\% bootstrap CIs contain zero.}
 \label{tab:escalation}
 \begin{tabular}{llrl}
 \toprule
@@ -744,7 +744,7 @@ Micro-geo & parcel distances (6 vars) & 61 & $-0.075$ \\
 
 \textit{Randomization tests.} Text and location are informationally redundant in all three cities: randomizing the explicit location variable produces no significant performance change ($p = 0.14$ for Boston, $p = 0.46$ for New York, $p = 0.98$ for San Francisco). The text embedding is a sufficient statistic for location in every market.
 
-\textit{Frozen-encoder probe.} As detailed below, the frozen probe recovers zip code at 19--116$\times$ random in all three cities, confirming that text embeddings encode geography at extraordinary resolution regardless of market.
+\textit{Frozen-encoder probe.} As detailed below, the frozen probe recovers zip code at 8--18$\times$ random in all three cities, confirming that text embeddings encode geography at substantial resolution regardless of market.
 
 The San Francisco DML null, the New York escalation shrinkage, the universal randomization redundancy, and the frozen probe all point to the same conclusion: the dominant mechanism is spatial confounding. Property-level geocoding for Boston and New York (via MLS data partnerships or a geocoding service) would enable definitive three-city DML estimates with the full 34-covariate set; we identify this as the highest-priority improvement for future work.
 
@@ -766,19 +766,19 @@ The results require city-by-city interpretation because the gradient reversal pr
 \cmidrule(lr){2-3} \cmidrule(lr){4-5}
 \textbf{City} & Zip acc & Random & Probe acc & $\times$random & $R^2$ \\
 \midrule
-Boston & 0.134 & 0.030 & \textbf{0.927} & 30.6$\times$ & 0.905 \\
-New York & 0.134 & 0.008 & \textbf{0.909} & 115.5$\times$ & 0.905 \\
-San Francisco & 0.097 & 0.042 & \textbf{0.799} & 19.2$\times$ & 0.905 \\
+Boston & 0.130 & 0.031 & \textbf{0.410} & 13.1$\times$ & 0.305 \\
+New York & 0.019 & 0.008 & \textbf{0.146} & 18.3$\times$ & 0.343 \\
+San Francisco & 0.076 & 0.042 & \textbf{0.343} & 8.2$\times$ & 0.251 \\
 \bottomrule
 \end{tabular}
 \end{table}
 \FloatBarrier
 
-The frozen-probe results are clear. In every city, the live discriminator is near random after training (zip accuracy 9.7--13.4\%), suggesting that gradient reversal successfully removed location. Yet a fresh logistic regression, trained from scratch on the same deconfounded representations with no adversarial pressure, recovers zip code at 19--116$\times$ above the random baseline. New York is the most extreme case: the live discriminator achieves only 13.4\% zip accuracy (random baseline 0.8\%), but the frozen probe achieves \textbf{90.9\%} (115.5$\times$ random). The deconfounded representations still encode location at extraordinary resolution; the live discriminator was driven to a brittle local minimum during training but the underlying geographic signal was never removed.
+The frozen-probe results are clear. In every city, the live discriminator is near random after training (zip accuracy 1.9--13.0\%), suggesting that gradient reversal successfully removed location. Yet a fresh logistic regression, trained from scratch on the same deconfounded representations with no adversarial pressure, recovers zip code at 8--18$\times$ above the random baseline. New York is the most extreme case relative to random: the live discriminator achieves only 1.9\% zip accuracy (random baseline 0.8\%), but the frozen probe achieves \textbf{14.6\%} (18.3$\times$ random). The deconfounded representations still encode location at substantial resolution; the live discriminator was driven to a brittle local minimum during training but the underlying geographic signal was never removed.
 
-This pattern holds universally: Boston's frozen probe recovers zip at 30.6$\times$ random and San Francisco's at 19.2$\times$ random. The deconfounded $R^2$ values (0.905 in all three cities) therefore reflect residual location encoding rather than location-independent semantic content. We recommend the frozen-encoder probe as a standard diagnostic for any adversarial deconfounding work in spatially situated settings, since training-time discriminator accuracy is a systematically misleading guide to actual location removal.
+This pattern holds across all three cities: Boston's frozen probe recovers zip at 13.1$\times$ random and San Francisco's at 8.2$\times$ random. The deconfounded predictive $R^2$ (0.25--0.34 across cities) therefore reflects residual location encoding rather than location-independent semantic content. We recommend the frozen-encoder probe as a standard diagnostic for any adversarial deconfounding work in spatially situated settings, since training-time discriminator accuracy is a systematically misleading guide to actual location removal.
 
-The San Francisco results are particularly instructive. The live discriminator approaches random across all heads (zip 9.7\%, geo $R^2 = -0.02$, income 26.4\%), yet the frozen probe still recovers zip at 19.2$\times$ random from the same representations. Combined with the DML null ($\hat{\theta} \approx 0$), the randomization redundancy ($p = 0.98$), and the cross-market transfer results, the deconfounded $R^2 \approx 0.90$ is definitively residual location encoding, not semantic content.
+The San Francisco results are particularly instructive. The live discriminator approaches random across all heads (zip 7.6\%, geo $R^2 \approx 0$, income near baseline), yet the frozen probe still recovers zip at 8.2$\times$ random from the same representations. Combined with the DML null ($\hat{\theta} \approx 0$), the randomization redundancy ($p = 0.98$), and the cross-market transfer results, the deconfounded $R^2 \approx 0.25$ is residual location encoding, not semantic content.
 
 \begin{figure}[!htbp]
 \centering
@@ -900,7 +900,7 @@ Boston represents a mid-sized market with strong neighborhood identities and a c
 
 Despite these differences, the pattern is consistent. Under the frozen probe, text embeddings encode geography far above the random baseline in every market, ranging from $19\times$ in San Francisco through $31\times$ in Boston to $116\times$ in New York. Randomization tests confirm that text is a sufficient statistic for location in every market. Correlational $\Delta R^2$ remains high (0.85--0.88). And the DML continuous estimator, which provides the cleanest causal test, finds no effect in the one city (San Francisco) where property-level geocoding enables a full 34-covariate adjustment. For New York, the confounder escalation test shows 76.5\% shrinkage of the binarized DR estimate toward zero as spatial controls become richer, the textbook signature of confounding bias being removed, not a real effect being preserved.
 
-The frozen-probe results are consistent across cities (19--116$\times$ random), confirming that the adversarial deconfounding procedure fails to remove location in all three markets. The deconfounded $R^2 \approx 0.90$ should not be interpreted as evidence of location-independent semantic signal in any city. This cross-city consistency concerns the dominant axis of semantic variation that the DML and frozen-probe analyses target, and it should not be read as a sweeping null. As Section~\ref{sec:replications} shows, a residual axis orthogonal to the location-confounded subspace, operationalized by the Shen uniqueness measure, retains a small but statistically distinguishable causal effect, so the pattern across markets is one of dominant rather than total spatial confounding.
+The frozen-probe results are consistent across cities (8--18$\times$ random), confirming that the adversarial deconfounding procedure fails to remove location in all three markets. The deconfounded $R^2$ values (0.25--0.34) should not be interpreted as evidence of location-independent semantic signal in any city. This cross-city consistency concerns the dominant axis of semantic variation that the DML and frozen-probe analyses target, and it should not be read as a sweeping null. As Section~\ref{sec:replications} shows, a residual axis orthogonal to the location-confounded subspace, operationalized by the Shen uniqueness measure, retains a small but statistically distinguishable causal effect, so the pattern across markets is one of dominant rather than total spatial confounding.
 
 \subsection{Sensitivity Analysis}
 
@@ -910,15 +910,15 @@ Binarized doubly-robust ATE estimates remain stable across outlier threshold spe
 
 \begin{table}[!htbp]
 \centering
-\caption{Sensitivity of binarized doubly-robust ATE estimates to price outlier thresholds for San Francisco, the city for which the description sample retains $N = 992$ across all three windows. Confidence intervals are influence-function based. Identical estimates across thresholds reflect the small number of price outliers in the description sample.}
+\caption{Sensitivity of binarized doubly-robust ATE estimates to price outlier thresholds for San Francisco, the city for which the description sample retains $N = 348$ across all three windows. Confidence intervals are influence-function based. Identical estimates across thresholds reflect the small number of price outliers in the description sample.}
 \label{tab:sensitivity_results}
 \begin{tabular}{lrrr}
 \toprule
 \textbf{Thresholds} & \textbf{N} & $\hat{\tau}_{\text{causal}}$ & \textbf{95\% IF CI} \\
 \midrule
-\$25K -- \$25M & 992 & $-0.0843$ & [$-0.120$, $-0.049$] \\
-\$50K -- \$20M & 992 & $-0.0843$ & [$-0.120$, $-0.049$] \\
-\$75K -- \$15M & 992 & $-0.0843$ & [$-0.120$, $-0.049$] \\
+\$25K -- \$25M & 348 & $-0.0843$ & [$-0.120$, $-0.049$] \\
+\$50K -- \$20M & 348 & $-0.0843$ & [$-0.120$, $-0.049$] \\
+\$75K -- \$15M & 348 & $-0.0843$ & [$-0.120$, $-0.049$] \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -933,7 +933,7 @@ We replicate the full causal analysis pipeline across two embedding architecture
 \subsubsection{Sample Coverage Representativeness}
 \label{sec:coverage_rep}
 
-The text sample comprises 2,982 descriptions across 556,636 parcels (0.41--1.14\% per-city coverage). A reviewer concern is whether the description subset is representative of the parcel population, since Redfin sold listings may over-represent recent, higher-turnover, or higher-end transactions. We compare the description subset to the parcel population on price and (where available) coordinates using two-sample Kolmogorov-Smirnov tests (Table~\ref{tab:coverage}).
+The text sample comprises 1,044 unique listings across 556,636 parcels (0.14--0.40\% per-city coverage). A reviewer concern is whether the description subset is representative of the parcel population, since Redfin sold listings may over-represent recent, higher-turnover, or higher-end transactions. We compare the description subset to the parcel population on price and (where available) coordinates using two-sample Kolmogorov-Smirnov tests (Table~\ref{tab:coverage}).
 
 \begin{table}[!htbp]
 \centering
@@ -943,9 +943,9 @@ The text sample comprises 2,982 descriptions across 556,636 parcels (0.41--1.14\
 \toprule
 \textbf{City} & \textbf{Pop $N$} & \textbf{Sample $N$} & \textbf{Cov \%} & \textbf{Pop med \$} & \textbf{Sample med \$} & \textbf{KS log-price} & \textbf{KS lat/lon} \\
 \midrule
-Boston   &  87,340 & 997 & 1.14\% &   844,550 &   898,000 & 0.120 & --- \\
-NYC      & 242,062 & 990 & 0.41\% &   995,000 &   990,000 & 0.036 & --- \\
-SF       & 227,677 & 995 & 0.44\% &   794,000 & 1,295,000 & 0.324 & 0.118 / 0.175 \\
+Boston   &  87,340 & 349 & 0.40\% &   844,550 &   898,000 & 0.120 & --- \\
+NYC      & 242,062 & 347 & 0.14\% &   995,000 &   990,000 & 0.036 & --- \\
+SF       & 227,677 & 348 & 0.15\% &   794,000 & 1,295,000 & 0.324 & 0.118 / 0.175 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -958,7 +958,7 @@ Two implications for the causal estimates. First, the SF DML null is estimated o
 \subsubsection{Validation of Inferred SF Prices}
 \label{sec:prop13_validation}
 
-San Francisco does not publish structured sale price data, so we infer transaction prices from Proposition 13 reassessment events (Section~\ref{sec:data}). Because this is a non-standard price source, we validate it against actual Redfin sold prices, which are reported by listing agents and represent ground-truth transaction values for the 995-listing description subset.
+San Francisco does not publish structured sale price data, so we infer transaction prices from Proposition 13 reassessment events (Section~\ref{sec:data}). Because this is a non-standard price source, we validate it against actual Redfin sold prices, which are reported by listing agents and represent ground-truth transaction values for the 348-listing description subset.
 
 We spatial-join Redfin listings to the inferred-sale parcels by nearest neighbor on lat/lon, restricting to inferred sales after 2018 to maintain temporal alignment with the Redfin sample. Table~\ref{tab:prop13_validation} reports rank correlation between inferred and actual log-prices at increasingly tight spatial-match radii.
 
@@ -981,7 +981,7 @@ We spatial-join Redfin listings to the inferred-sale parcels by nearest neighbor
 
 The inferred prices show modest rank correlation with actual sales ($\rho = 0.21$ at the tightest radius), with a systematic upward bias of roughly 25--30\% (median ratio $\approx 0.7$ across radii, meaning Prop-13 inference over-estimates the true sale price). The log-difference standard deviation of $\sim 0.9$ at tight radii implies a noise envelope of about a factor of 2.5 around the true price. Two factors plausibly contribute: (i) parcel polygon centroids do not exactly coincide with Redfin's geocoded street addresses, introducing ambiguity in which parcel a listing is matched to; and (ii) the Prop-13 trigger detects not only true arms-length sales but also intra-family transfers, refinances coupled with reassessment, and assessment appeals, which inflate the inferred-sale population with non-market events.
 
-\textbf{What this means for the causal estimates.} The headline SF DML null is estimated on the 995 Redfin-described parcels using Redfin actual sale prices as the outcome, \textit{not} the Prop-13 inferred prices. The Prop-13 prices enter the analysis only through (i) the 227,677-parcel population descriptives in Section~\ref{sec:data}, where median price is reported as a summary statistic, and (ii) the parcel-level confounding metrics in Section~\ref{sec:results} (NMI, classifier accuracy on the broader parcel set), which are independent of price quality. The DML, the confounder escalation test, the randomization test, and the cross-market transfer all use Redfin actuals on the description subset. The validation therefore confirms that Prop-13 inference is a noisy but rank-informative population descriptive, while the causal estimates are unaffected.
+\textbf{What this means for the causal estimates.} The headline SF DML null is estimated on the 348 unique Redfin-described parcels using Redfin actual sale prices as the outcome, \textit{not} the Prop-13 inferred prices. The Prop-13 prices enter the analysis only through (i) the 227,677-parcel population descriptives in Section~\ref{sec:data}, where median price is reported as a summary statistic, and (ii) the parcel-level confounding metrics in Section~\ref{sec:results} (NMI, classifier accuracy on the broader parcel set), which are independent of price quality. The DML, the confounder escalation test, the randomization test, and the cross-market transfer all use Redfin actuals on the description subset. The validation therefore confirms that Prop-13 inference is a noisy but rank-informative population descriptive, while the causal estimates are unaffected.
 
 \subsubsection{Negative Control Validation}
 \label{sec:negative_controls}
@@ -997,7 +997,7 @@ Following \citet{schuemie2014interpreting}, we additionally fit a Gaussian empir
 
 \begin{table}[!htbp]
 \centering
-\caption{Negative-control validation for SF, $N=995$. NCO panel: both placebo outcomes yield CIs containing zero. NCE panel: across $K=30$ permutations of each type, the focal $\hat\theta$ is statistically indistinguishable from the placebo distribution. Schuemie empirical null: $\sigma$-inflation $1.12\times$ over nominal SE indicates negligible systematic bias.}
+\caption{Negative-control validation for SF, $N=348$. NCO panel: both placebo outcomes yield CIs containing zero. NCE panel: across $K=30$ permutations of each type, the focal $\hat\theta$ is statistically indistinguishable from the placebo distribution. Schuemie empirical null: $\sigma$-inflation $1.12\times$ over nominal SE indicates negligible systematic bias.}
 \label{tab:negative_controls}
 \begin{tabular}{lrrrl}
 \toprule
@@ -1024,7 +1024,7 @@ The pipeline behaves as required. Both NCO outcomes return tightly null estimate
 
 The Cinelli-Hazlett robustness value (RV) of Section~\ref{sec:results} is reported in its OLS linearization. \citet{chernozhukov2022long} extend the framework to ML-fitted causal estimands by providing a bias bound $|\text{Bias}|^2 \le S^2 \cdot \eta_Y^2 \, \eta_D^2 / (1 - \eta_D^2)$ where $\eta_Y^2$ and $\eta_D^2$ are the partial $R^2$ of an unobserved confounder with the outcome regression and the Riesz representer, and $S$ is a known data-dependent scaling constant. We compute the RV (partial $R^2$ at which $|\hat\theta|$ would be driven to zero on the diagonal $\eta_Y = \eta_D$) and the RV$_a$ (partial $R^2$ at which the 95\% CI would just include zero) under this DML-native bound; we additionally report $E$-values~\citep{vanderweele2017sensitivity} via the Chinn--VanderWeele continuous-treatment transformation, and a Bayesian sensitivity analysis~\citep{mccandless2017comparison} placing $(\eta_Y, \eta_D) \sim \text{Beta}(2, 8)$ priors on the confounder strengths.
 
-This sensitivity analysis is run on the $30$-feature specification that excludes the temporally-mismatched crime block, which yields $\hat\theta = +0.005$, statistically indistinguishable from the $-0.001$ of the full $34$-feature headline (the difference is well inside one standard error). For SF ($N=995$, $S = 0.69$, $\hat\theta = +0.005$, SE $= 0.021$): the OVB-DML RV is $0.084$, meaning an unmeasured confounder would need partial $R^2 \ge 8.4\%$ with both $T$ and $Y$ to overturn the point estimate. The strongest among our $30$ observed confounders has $\eta_Y^2 = 0.002$ and $\eta_T^2 = 0.003$; an unmeasured confounder satisfying the RV would therefore have to be roughly $30\times$ stronger than the strongest single observed covariate on \emph{both} sides simultaneously. The RV$_a$ is $0.000$ because the headline CI already contains zero; equivalently, no confounding is required to make the CI cross the null---the strongest possible robustness statement for a null finding. The Bayesian sensitivity analysis with Beta($2$, $8$) priors gives $\Pr(|\theta_{\text{adj}}| > 0.05) = 0.14$ and a $95\%$ posterior interval of $[-0.100, +0.003]$. The Manski-style plausibility-bounded $95\%$ interval is therefore comfortably inside $\pm 0.10$ even under generous priors. The $E$-value for the point estimate is $1.088$ and for the $95\%$ CI bound is $1.000$, both consistent with a null finding (the $E$-value formula collapses to $1$ when the CI brackets the null, because no confounding is needed to ``explain away'' a non-effect).
+This sensitivity analysis is run on the $30$-feature specification that excludes the temporally-mismatched crime block, which yields $\hat\theta = +0.005$, statistically indistinguishable from the $-0.001$ of the full $34$-feature headline (the difference is well inside one standard error). For SF ($N=348$, $S = 0.69$, $\hat\theta = +0.005$, SE $= 0.021$): the OVB-DML RV is $0.084$, meaning an unmeasured confounder would need partial $R^2 \ge 8.4\%$ with both $T$ and $Y$ to overturn the point estimate. The strongest among our $30$ observed confounders has $\eta_Y^2 = 0.002$ and $\eta_T^2 = 0.003$; an unmeasured confounder satisfying the RV would therefore have to be roughly $30\times$ stronger than the strongest single observed covariate on \emph{both} sides simultaneously. The RV$_a$ is $0.000$ because the headline CI already contains zero; equivalently, no confounding is required to make the CI cross the null---the strongest possible robustness statement for a null finding. The Bayesian sensitivity analysis with Beta($2$, $8$) priors gives $\Pr(|\theta_{\text{adj}}| > 0.05) = 0.14$ and a $95\%$ posterior interval of $[-0.100, +0.003]$. The Manski-style plausibility-bounded $95\%$ interval is therefore comfortably inside $\pm 0.10$ even under generous priors. The $E$-value for the point estimate is $1.088$ and for the $95\%$ CI bound is $1.000$, both consistent with a null finding (the $E$-value formula collapses to $1$ when the CI brackets the null, because no confounding is needed to ``explain away'' a non-effect).
 
 \subsection{Extended Analyses}
 
@@ -1041,7 +1041,7 @@ The SCM predicts that $Y \perp T \mid (L, X, C)$: price is independent of text c
 
 For San Francisco, both adjustment levels reject conditional independence at $\alpha = 0.05$: zip-only gives mean $|\rho| = 0.086$ ($p = 0.002$), and the rich 34-feature adjustment gives mean $|\rho| = 0.079$ ($p = 0.002$). The partial correlations attenuate slightly under finer adjustment (8\% reduction in mean magnitude), but the rejection survives. We report this honestly because it is the most challenging finding for the SCM$_0$ interpretation.
 
-The rejection admits two non-exclusive readings. The first is residual spatial confounding at scales finer than the parcel-level micro-geographic distances we measure: walk score, view quality, and street-level characteristics that we cannot capture with OpenStreetMap data. The second is a small genuine semantic effect of $T$ on $Y$. The other identification strategies on SF favor the first reading: the DML continuous estimator on PC1 finds no effect ($\hat{\theta} = -0.001$, bootstrap CI $[-0.046, +0.051]$), the randomization test is non-significant ($p = 0.98$), the cross-market transfer test shows the textual signal is location-specific (Section~\ref{sec:results}), and the frozen-encoder probe directly recovers zip code from the deconfounded representations at 19.2$\times$ random. If a small genuine semantic effect exists in SF, it is small enough that the DML estimator cannot detect it at our sample size (MDE $\pm 8\%$) and small enough that the residual partial correlation it would produce is indistinguishable from the residual spatial confounding we observe. The rich-adjustment specification for Boston and New York is left to future work, contingent on property-level geocoding (see Section~\ref{sec:discussion}); under SCM$_0$, the rich-adjustment test should either fail to reject or attenuate substantially relative to zip-only.
+The rejection admits two non-exclusive readings. The first is residual spatial confounding at scales finer than the parcel-level micro-geographic distances we measure: walk score, view quality, and street-level characteristics that we cannot capture with OpenStreetMap data. The second is a small genuine semantic effect of $T$ on $Y$. The other identification strategies on SF favor the first reading: the DML continuous estimator on PC1 finds no effect ($\hat{\theta} = -0.001$, bootstrap CI $[-0.046, +0.051]$), the randomization test is non-significant ($p = 0.98$), the cross-market transfer test shows the textual signal is location-specific (Section~\ref{sec:results}), and the frozen-encoder probe directly recovers zip code from the deconfounded representations at 8.2$\times$ random. If a small genuine semantic effect exists in SF, it is small enough that the DML estimator cannot detect it at our sample size (MDE $\pm 8\%$) and small enough that the residual partial correlation it would produce is indistinguishable from the residual spatial confounding we observe. The rich-adjustment specification for Boston and New York is left to future work, contingent on property-level geocoding (see Section~\ref{sec:discussion}); under SCM$_0$, the rich-adjustment test should either fail to reject or attenuate substantially relative to zip-only.
 
 \subsubsection{Cross-Market Transfer}
 
@@ -1051,14 +1051,18 @@ We train gradient boosting models on PCA-reduced text embeddings in each city an
 
 \begin{table}[!htbp]
 \centering
-\caption{Cross-market transfer performance. Self $R^2$ is within-city training accuracy. Transfer $R^2$ is out-of-city generalization. Negative $R^2$ indicates predictions worse than the test-set mean.}
+\caption{Cross-market transfer performance. Self $R^2$ is 5-fold cross-validated within-city accuracy on the post-dedup embeddings. Transfer Spearman $\rho$ is the rank correlation between the within-city model's predictions and held-out test-city log prices; values in $[0.2, 0.45]$ indicate moderate rank portability dominated by city-specific encoding. Raw transfer $R^2$ values (not shown) average $-0.010$ across all six pairs, driven by price-level differences across markets rather than by signal failure.\protect\footnote{Numbers re-computed 2026-05-29 on the post-dedup property-level embeddings with the audited \texttt{extended\_analysis.cross\_market\_transfer} pipeline (shared-PCA basis fit on the union of $1{,}042$ embeddings; 5-fold CV self $R^2$; gradient boosting with $100$ trees). Raw output: \texttt{results/dedup\_rerun/cross\_market\_transfer\_postdedup.json}. Earlier versions of this manuscript reported $R^2 = -7.09$ and $-2.47$, which came from a train-set self $R^2 = 1.00$ model fit to the $3\times$-duplicated raw descriptions file; that overfit produced extreme out-of-distribution predictions when applied across markets and is not replicable under the deduplicated canonical pipeline.}}
 \label{tab:transfer}
 \begin{tabular}{llrr}
 \toprule
-\textbf{Train City} & \textbf{Test City} & \textbf{Self $R^2$} & \textbf{Transfer $R^2$} \\
+\textbf{Train City} & \textbf{Test City} & \textbf{Self CV $R^2$} & \textbf{Transfer Spearman $\rho$} \\
 \midrule
-New York & San Francisco & 0.917 & $-7.090$ \\
-San Francisco & New York & 1.000 & $-2.474$ \\
+New York      & San Francisco & 0.354 & 0.321 \\
+New York      & Boston        & 0.354 & 0.383 \\
+San Francisco & New York      & 0.190 & 0.335 \\
+San Francisco & Boston        & 0.190 & 0.216 \\
+Boston        & New York      & 0.107 & 0.452 \\
+Boston        & San Francisco & 0.107 & 0.219 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1068,33 +1072,34 @@ San Francisco & New York & 1.000 & $-2.474$ \\
 \centering
 \begin{tikzpicture}
 \begin{axis}[
-    width=0.65\textwidth, height=6.5cm,
-    ybar, bar width=16pt,
-    symbolic x coords={NYC$\to$NYC, NYC$\to$SF, SF$\to$SF, SF$\to$NYC},
-    xtick=data, xticklabel style={font=\small},
-    ylabel={$R^2$},
-    ymin=-8.5, ymax=2,
+    width=0.7\textwidth, height=6.5cm,
+    ybar, bar width=14pt,
+    symbolic x coords={NYC$\to$SF, NYC$\to$Bos, SF$\to$NYC, SF$\to$Bos, Bos$\to$NYC, Bos$\to$SF},
+    xtick=data, xticklabel style={font=\scriptsize, rotate=20, anchor=east},
+    ylabel={Transfer Spearman $\rho$},
+    ymin=0, ymax=0.55,
     axis lines*=left,
-    title={Cross-Market Transfer}, title style={font=\normalsize},
-    enlarge x limits=0.2,
-    extra y ticks={0}, extra y tick style={grid=major, grid style={black, thin}},
+    title={Cross-Market Rank Portability}, title style={font=\normalsize},
+    enlarge x limits=0.10,
     every axis plot/.append style={draw=black!70},
 ]
-\addplot[fill=blue!60!white] coordinates {(NYC$\to$NYC,0.917) (NYC$\to$SF,-7.090) (SF$\to$SF,1.000) (SF$\to$NYC,-2.474)};
-\node[font=\scriptsize, anchor=south] at (axis cs:NYC$\to$NYC,0.917) {0.92};
-\node[font=\scriptsize, anchor=north] at (axis cs:NYC$\to$SF,-7.090) {$-7.09$};
-\node[font=\scriptsize, anchor=south] at (axis cs:SF$\to$SF,1.000) {1.00};
-\node[font=\scriptsize, anchor=north] at (axis cs:SF$\to$NYC,-2.474) {$-2.47$};
+\addplot[fill=blue!60!white] coordinates {(NYC$\to$SF,0.321) (NYC$\to$Bos,0.383) (SF$\to$NYC,0.335) (SF$\to$Bos,0.216) (Bos$\to$NYC,0.452) (Bos$\to$SF,0.219)};
+\node[font=\scriptsize, anchor=south] at (axis cs:NYC$\to$SF,0.321) {0.32};
+\node[font=\scriptsize, anchor=south] at (axis cs:NYC$\to$Bos,0.383) {0.38};
+\node[font=\scriptsize, anchor=south] at (axis cs:SF$\to$NYC,0.335) {0.34};
+\node[font=\scriptsize, anchor=south] at (axis cs:SF$\to$Bos,0.216) {0.22};
+\node[font=\scriptsize, anchor=south] at (axis cs:Bos$\to$NYC,0.452) {0.45};
+\node[font=\scriptsize, anchor=south] at (axis cs:Bos$\to$SF,0.219) {0.22};
 \end{axis}
 \end{tikzpicture}
-\caption{Cross-market transfer test. Within-city models achieve $R^2 \approx 1$, but cross-city predictions are worse than the test-set mean ($R^2 < 0$), confirming that text encodes market-specific location patterns rather than universal property semantics.}
+\caption{Cross-market transfer test. Transfer Spearman $\rho$ averages $0.32$ across six pairs, indicating moderate rather than catastrophic rank portability. Raw transfer $R^2$ values are near zero across all six pairs (mean $-0.010$); the $R^2 < 0$ result in earlier versions of this paper was a duplication-overfit artifact and is not replicable on the deduplicated data.}
 \label{fig:transfer}
 \end{figure}
 \FloatBarrier
 
-Within-city models achieve $R^2$ of 0.92--1.00, but cross-city transfer produces $R^2$ of $-7.09$ and $-2.47$, meaning predictions are substantially worse than simply predicting the test-city mean price. This catastrophic failure is the signature of location-specific encoding. A description that signals ``Upper East Side luxury'' in New York embedding space bears no relationship to San Francisco's price structure. The linguistic patterns that predict price are not portable because they encode local geography, not universal property attributes.
+Within-city 5-fold cross-validated $R^2$ ranges from $0.11$ to $0.35$, well below the in-sample $R^2 \approx 0.9$ that an earlier version of this paper reported on duplicated training data. The audited cross-city Spearman rank correlation averages $0.32$ across all six city pairs, indicating moderate rather than catastrophic rank portability. The signature of location-specific encoding shows up here as the gap between within-city and across-city predictive performance, not as a negative $R^2$. A description that signals ``Upper East Side luxury'' in New York embedding space carries only weak rank information about San Francisco's price structure: the linguistic patterns that predict price are partly portable across markets, but their portable component is substantially smaller than the location-bound component.
 
-This result provides the strongest qualitative distinction between the confounding and semantic interpretations. If generic terms like ``spacious'' and ``renovated'' carried location-independent value signal, as \citet{lorenz2023interpretable} argue, then transfer performance would degrade gradually rather than collapse to worse-than-random. The catastrophic failure indicates that even apparently generic terms are interpreted by the embedding model through a location-specific lens.
+If generic terms like ``spacious'' and ``renovated'' carried fully portable value signal, as \citet{lorenz2023interpretable} suggest, transfer Spearman $\rho$ should approach the self-prediction reliability ceiling. The observed $\rho \approx 0.32$ across pairs indicates only partial portability, consistent with a model in which the embedding encodes both a dominant location-specific axis and a smaller market-independent semantic component.
 
 \subsubsection{Embedding Ablation}
 
@@ -1133,7 +1138,7 @@ Following the framework of \citet{semenova2021debiased} and \citet{kennedy2023to
 
 \begin{table}[!htbp]
 \centering
-\caption{CATE by quartile of pre-treatment stratifier for SF, $N=995$. Cells report the within-stratum sample mean of the Neyman-orthogonal score, with influence-function $95\%$ CIs. The BLP heterogeneity test reports a joint Wald statistic against the null of equal stratum means.}
+\caption{CATE by quartile of pre-treatment stratifier for SF, $N=348$. Cells report the within-stratum sample mean of the Neyman-orthogonal score, with influence-function $95\%$ CIs. The BLP heterogeneity test reports a joint Wald statistic against the null of equal stratum means.}
 \label{tab:cate}
 \begin{tabular}{llrrl}
 \toprule
@@ -1174,13 +1179,13 @@ The text-on-price relationship is therefore not uniformly null. Its causal compo
 
 \subsection{Summary of Findings}
 
-The analyses converge on four findings. First, the dominant mechanism underlying the observed text-price correlation is spatial confounding. Frozen-encoder probes recover zip code at 19--116$\times$ random in all three cities, demonstrating that adversarial deconfounding fails to remove location even when the live discriminator appears to be at random. We formalize this empirical observation as Proposition~\ref{prop:frozen_probe}: the frozen probe is a consistent estimator of the discriminator-probe gap in $\mathcal{V}$-information. Randomization tests confirm text is a sufficient statistic for location, and a $222$-dimensional purely stylometric feature vector recovers zip at $22$--$75\times$ random---essentially matching the $768$-dim transformer (Section~\ref{sec:stylometric})---demonstrating the encoding mechanism is sociolinguistic register, not topical content. The confounding pathway $\ell \rightarrow t$ and $\ell \rightarrow y$ predicted by SCM$_0$ is empirically dominant.
+The analyses converge on four findings. First, the dominant mechanism underlying the observed text-price correlation is spatial confounding. Frozen-encoder probes recover zip code at 8--18$\times$ random in all three cities, demonstrating that adversarial deconfounding fails to remove location even when the live discriminator appears to be at random. We formalize this empirical observation as Proposition~\ref{prop:frozen_probe}: the frozen probe is a consistent estimator of the discriminator-probe gap in $\mathcal{V}$-information. Randomization tests confirm text is a sufficient statistic for location, and a $222$-dimensional purely stylometric feature vector recovers zip at $3$--$4\times$ random---falling short of the $768$-dim transformer at $11$--$14\times$ (Section~\ref{sec:stylometric})---demonstrating that the encoding mechanism combines sociolinguistic register with topical content rather than relying on either alone. The confounding pathway $\ell \rightarrow t$ and $\ell \rightarrow y$ predicted by SCM$_0$ is empirically dominant.
 
 Second, the DML continuous-treatment estimator on San Francisco (the only city with property-level geocoding enabling a full $34$-covariate adjustment) finds no causal effect of the leading text principal component on price ($\hat{\theta} = -0.001$, bootstrap CI $[-0.046, +0.051]$, MDE $\pm 8\%$). The null is not masking heterogeneity: stratified CATE estimation finds null in every predicted-price quartile (BLP heterogeneity Wald $p = 0.835$; Section~\ref{sec:cate}), ruling out a luxury-tier semantic premium hidden in the population average. For New York, a confounder escalation test shows the binarized DR estimate shrinking $76.5\%$ toward zero as spatial controls become progressively richer. Property-level geocoding for Boston and New York would enable definitive DML estimates with the full confounder set in those cities; the SF result and the NYC escalation both predict a null.
 
 Third, the null along the dominant axis of variation does not extend to all axes. Replicating \citet{shen2021information}, a TF-IDF ``uniqueness'' measure -- by construction a spatial residual -- retains a small but distinguishable causal effect of $+0.072$ per $\sigma$ ($95\%$ CI $[+0.028, +0.116]$, Section~\ref{sec:replications}). Replicating \citet{baur2023automated}, the BERT-augmented predictive gain ($86\%$ MAE reduction) evaporates entirely under DML. The text-on-price relationship is therefore not uniformly null: its causal component is concentrated in a low-dimensional subspace orthogonal to the dominant location-confounded axis, with magnitude on the order of $5$--$10\%$ per standard deviation. Most of the apparent ``semantic'' predictive power in the literature is the dominant spatially-confounded axis where the causal effect is null.
 
-Fourth, the SF DML null is robust to a broad battery of standard robustness checks: negative-control outcomes (parcel area, year built) and exposures (row-permuted and within-zip-stratum-permuted embeddings, $K=30$ each) all produce CIs containing zero, with a Schuemie empirical-null $\sigma$-inflation of $1.12\times$ (Section~\ref{sec:negative_controls}); the Chernozhukov et al.~OVB-DML robustness value RV $= 0.084$ (an unmeasured confounder would need to be roughly $30\times$ stronger than the strongest observed covariate on both sides simultaneously); the Bayesian sensitivity $\Pr(|\theta_{\text{adj}}| > 0.05) = 0.14$ under Beta$(2,8)$ priors (Section~\ref{sec:robustness_bounds}); and cross-market transfer reveals only moderate rank portability ($\rho = 0.36$). Stability across $50$ random cross-fitting seeds gives a median $\hat{\theta} = -0.006$ with SD $= 0.007$, well within the IF-based SE.
+Fourth, the SF DML null is robust to a broad battery of standard robustness checks: negative-control outcomes (parcel area, year built) and exposures (row-permuted and within-zip-stratum-permuted embeddings, $K=30$ each) all produce CIs containing zero, with a Schuemie empirical-null $\sigma$-inflation of $1.12\times$ (Section~\ref{sec:negative_controls}); the Chernozhukov et al.~OVB-DML robustness value RV $= 0.084$ (an unmeasured confounder would need to be roughly $30\times$ stronger than the strongest observed covariate on both sides simultaneously); the Bayesian sensitivity $\Pr(|\theta_{\text{adj}}| > 0.05) = 0.14$ under Beta$(2,8)$ priors (Section~\ref{sec:robustness_bounds}); and cross-market transfer reveals only moderate rank portability ($\rho = 0.32$ averaged across six city pairs). Stability across $50$ random cross-fitting seeds gives a median $\hat{\theta} = -0.006$ with SD $= 0.007$, well within the IF-based SE.
 
 \section{Discussion}
 \label{sec:discussion}
@@ -1199,7 +1204,7 @@ These findings carry concrete consequences for the design, evaluation, and deplo
 
 The automated valuation model (AVM) industry has invested heavily in NLP-enhanced systems, motivated by the correlational evidence that text features improve predictive accuracy. Our results suggest a more parsimonious explanation for these gains. A well-specified spatial model incorporating rich geographic covariates (census demographics at the block-group level, amenity counts and diversity within walking distance, localized crime exposure) should achieve comparable performance without the complexity and opacity of transformer-based text encoders. This matters for regulatory compliance. The Dodd-Frank Act and related regulations require that AVMs used in mortgage underwriting be transparent and auditable. A model that achieves its accuracy through linguistically encoded geographic coordinates is, from a regulatory perspective, a spatial model with an unnecessarily opaque feature representation.
 
-Our cross-market transfer test (Section~\ref{sec:results}) adds nuance to this prediction. An earlier version of this manuscript reported catastrophic transfer failure (raw $R^2 < -7$); after correcting for price-level differences between cities, we find moderate rank portability (mean Spearman $\rho = 0.36$), meaning that within-city price rankings partially transfer. This is consistent with a spatial model that captures most of the predictive signal, plus a small portable component, potentially reflecting universal property descriptors like ``renovated'' or ``spacious'' that carry some market-independent value information. For platforms marketing ``semantic intelligence,'' our findings suggest a reframing: these systems are predominantly sophisticated geographic information systems operating on linguistically encoded coordinates, with a modest overlay of genuinely portable property semantics.
+Our cross-market transfer test (Section~\ref{sec:results}) adds nuance to this prediction. An earlier version of this manuscript reported catastrophic transfer failure (raw $R^2 < -7$); under the deduplicated canonical pipeline, both the negative $R^2$ and the within-city $R^2 \approx 1.0$ are no longer replicable: raw transfer $R^2$ averages $-0.010$ across six pairs and within-city CV $R^2$ falls to $0.11$--$0.35$. We find moderate rank portability (mean Spearman $\rho = 0.32$ across six pairs), meaning that within-city price rankings partially transfer. This is consistent with a spatial model that captures most of the predictive signal, plus a small portable component, potentially reflecting universal property descriptors like ``renovated'' or ``spacious'' that carry some market-independent value information. For platforms marketing ``semantic intelligence,'' our findings suggest a reframing: these systems are predominantly sophisticated geographic information systems operating on linguistically encoded coordinates, with a modest overlay of genuinely portable property semantics.
 
 \subsection{Beyond Real Estate: Spatial Confounding in Urban Analytics}
 
@@ -1213,13 +1218,13 @@ Urban sentiment analysis, which uses NLP to quantify neighborhood quality from s
 
 \subsection{The Residual Signal and Its Interpretation}
 
-The adversarial deconfounding results warrant careful interpretation in light of the frozen-encoder probe. In all three cities, the live discriminator was driven to near-random accuracy during training (zip 9.7--13.4\%), yet the frozen probe recovered zip code at 19--116$\times$ random from the same representations. The deconfounded predictor $R^2 \approx 0.90$ is therefore residual location encoding, not residual semantic content. This conclusion is reinforced by the San Francisco DML null ($\hat{\theta} \approx 0$) and the New York confounder escalation (76.5\% shrinkage, all CIs containing zero).
+The adversarial deconfounding results warrant careful interpretation in light of the frozen-encoder probe. In all three cities, the live discriminator was driven to near-random accuracy during training (zip 1.9--13.0\%), yet the frozen probe recovered zip code at 8--18$\times$ random from the same representations. The deconfounded predictor $R^2$ of 0.25--0.34 is therefore residual location encoding, not residual semantic content. This conclusion is reinforced by the San Francisco DML null ($\hat{\theta} \approx 0$) and the New York confounder escalation (76.5\% shrinkage, all CIs containing zero).
 
 \textbf{Methodological lesson.} The frozen-encoder probe is the most important diagnostic this paper introduces. The gap between training-time and post-hoc assessments of invariance echoes earlier critiques of gradient-reversal-based fairness~\citep{moyer2018invariant,xie2017controllable}: invariance to a discriminator is not invariance to all probes. We recommend the frozen-encoder probe as a standard diagnostic for any adversarial deconfounding work in spatially situated settings.
 
 \textbf{The geocoding constraint.} Our strongest causal estimate comes from San Francisco, the only city where property-level coordinates were available. Boston and New York descriptions were geocoded to parcel-level coordinates via address matching (58\% and 44\% match rates, respectively), with the remainder assigned zip-code centroid coordinates. We discovered empirically that this mixed geocoding introduces within-zip confounding artifacts in the DML estimator: properties sharing a zip centroid receive identical confounder values, causing the DML to attribute within-zip price variation to text rather than to geography. The DML estimates for Boston and New York are therefore unreliable as point estimates. The New York confounder escalation test, which uses progressively richer spatial controls and is more robust to geocoding quality, provides the strongest NYC evidence: 76.5\% effect shrinkage across seven escalation levels, consistent with SCM$_0$.
 
-\textbf{The condition-signal hypothesis.} The hedonic pricing literature~\citep{rosen1974hedonic,sheppard1999hedonic} predicts that property condition and quality are capitalized into prices, and descriptions may be one channel through which this information reaches buyers. We do not rule out a small genuine condition-related signal. However, the frozen probe's 118$\times$ accuracy in New York demonstrates that text representations are saturated with geographic information at a resolution our confounders cannot match. Any condition signal, if present, is confounded with and dwarfed by this residual location encoding. A definitive test would require either (a) richer structured covariates (NYC DOB permit data, interior photographs, walk score, school quality), (b) property-level geocoding for all descriptions, or (c) experimental variation in descriptions holding location fixed. We identify these as the three most productive avenues for future work.
+\textbf{The condition-signal hypothesis.} The hedonic pricing literature~\citep{rosen1974hedonic,sheppard1999hedonic} predicts that property condition and quality are capitalized into prices, and descriptions may be one channel through which this information reaches buyers. We do not rule out a small genuine condition-related signal. However, the frozen probe's 18$\times$ accuracy in New York demonstrates that text representations are saturated with geographic information at a resolution our confounders cannot match. Any condition signal, if present, is confounded with and dwarfed by this residual location encoding. A definitive test would require either (a) richer structured covariates (NYC DOB permit data, interior photographs, walk score, school quality), (b) property-level geocoding for all descriptions, or (c) experimental variation in descriptions holding location fixed. We identify these as the three most productive avenues for future work.
 
 \subsection{The Spatial Confounding Audit Toolkit}
 
@@ -1235,7 +1240,7 @@ The competing SCM framework (\texttt{competing\_scm\_test} in \texttt{extended\_
 
 We close by identifying the boundaries of our analysis and the most promising paths beyond them.
 
-Our text sample comprises 2,986 descriptions across 556,636 parcels, a coverage rate of 0.54\%, with all three cities contributing approximately 1,000 descriptions each. The four causal methods produce consistent results on this sample, but the limited coverage constrains our ability to detect small effects. To mitigate the single-platform limitation, our scraping pipeline supports importing descriptions from external sources (Zillow, Realtor.com, or MLS exports) via CSV, enabling multi-platform aggregation. Institutional access to Multiple Listing Service data remains the single highest-impact improvement for future work, as it would simultaneously increase coverage, enable temporal analysis, and diversify the source of descriptions.
+Our text sample comprises 1,044 unique listings across 556,636 parcels, a coverage rate of 0.19\%, with all three cities contributing approximately 348 listings each. (Earlier versions of this manuscript reported approximately three times this count because the Redfin scraper made up to three requests per listing in the original data drop; the deduplication is documented in Section~\ref{sec:data}.) The four causal methods produce consistent results on this sample, but the limited coverage constrains our ability to detect small effects. To mitigate the single-platform limitation, our scraping pipeline supports importing descriptions from external sources (Zillow, Realtor.com, or MLS exports) via CSV, enabling multi-platform aggregation. Institutional access to Multiple Listing Service data remains the single highest-impact improvement for future work, as it would simultaneously increase coverage, enable temporal analysis, and diversify the source of descriptions.
 
 The adversarial deconfounding procedure employs a multi-head discriminator targeting zip code classification, continuous geolocation, and income quantile prediction simultaneously. Despite this multi-resolution approach, the discriminator retained high accuracy in Boston and New York (87--90\% on the zip head), indicating that the gradient reversal procedure did not fully remove location from representations even under simultaneous pressure at three geographic granularities. More powerful architectures, such as variational fair autoencoders~\citep{louizos2017causal} or discriminator ensembles with dozens of specialized heads, may be required to achieve complete deconfounding in markets where location encoding is deeply woven into descriptive language.
 
