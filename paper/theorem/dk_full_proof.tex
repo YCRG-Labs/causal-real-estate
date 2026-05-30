@@ -1,0 +1,132 @@
+% Full proof of the continuous-spatial Davis-Kahan causal-bias theorem.
+% Drafted 2026-05-29. Lemma 6 corrects the eigengap exponent in the original
+% theorem statement: at the BBP cutoff, delta_r asymp lambda^{d/(2nu+d)},
+% not lambda^{2nu/(2nu+d)}. The latter is the integrated bias scale used in
+% the bias bound (iii), not the eigengap that drives sin-Theta in (ii).
+% The sim should test the corrected ~0.286 slope (d=2, nu=2.5), not 0.714.
+
+\section{Appendix A. Proof of Theorem 1 (Eigengap-Identification-HAC chain)}
+
+We collect notation. Let $D\subset\mathbb{R}^d$ be a bounded open set with
+Lipschitz boundary and Lebesgue volume $|D|<\infty$; let $\mu$ be Lebesgue
+measure restricted to $D$. The locations $s_1,\dots,s_n\in D$ are deterministic
+in the conditional argument below (we condition on $\{s_i\}$ throughout, as
+in Gilbert--Ogburn--Datta 2024, Section 3.2). The Matern kernel of smoothness
+$\nu>0$ and range $\rho>0$ is
+\[
+K_{\nu,\rho}(s,s') \;=\; \frac{1}{\Gamma(\nu)2^{\nu-1}}
+   \!\Bigl(\tfrac{\sqrt{2\nu}\,\|s-s'\|}{\rho}\Bigr)^{\!\nu}
+   \mathcal{K}_\nu\!\Bigl(\tfrac{\sqrt{2\nu}\,\|s-s'\|}{\rho}\Bigr),
+\]
+with $\mathcal{K}_\nu$ the modified Bessel function of the second kind. Its
+spectral density on $\mathbb{R}^d$ satisfies
+\begin{equation}\label{eq:matern-specdens}
+\widehat{K}_{\nu,\rho}(\omega) \;=\;
+   C_{\nu,\rho,d}\bigl(2\nu/\rho^2 + \|\omega\|^2\bigr)^{-(\nu+d/2)},
+\qquad
+C_{\nu,\rho,d}=\frac{\Gamma(\nu+d/2)(2\nu)^{\nu}}{\pi^{d/2}\Gamma(\nu)\,\rho^{2\nu}},
+\end{equation}
+(Stein 1999, eq.~(2.10); Rasmussen and Williams 2006, eq.~(4.15)). In
+particular $\widehat{K}_{\nu,\rho}(\omega)\asymp\|\omega\|^{-(2\nu+d)}$ as
+$\|\omega\|\to\infty$. We write $a_k\asymp b_k$ for ``$0<\liminf a_k/b_k\le
+\limsup a_k/b_k<\infty$''.
+
+We let $K_n=[K_{\nu,\rho}(s_i,s_j)]_{i,j=1}^n$ and $S_n=K_n(K_n+\lambda I_n)^{-1}$,
+with $\lambda>0$ the smoothing parameter. The continuum integral operator
+$\mathcal{T}_K:L^2(D,\mu)\to L^2(D,\mu)$ is
+$(\mathcal{T}_K f)(s)=\int_D K_{\nu,\rho}(s,t)f(t)\,d\mu(t)$.
+
+\medskip
+%================================================================
+\begin{theorem}\label{thm:main}
+Under assumptions (A1)--(A4) the following five conclusions hold simultaneously,
+with constants made explicit in their respective lemmas.
+\begin{enumerate}
+\item[\emph{(i)}] $\lambda_k(S_n)=\omega_k/(\omega_k+\lambda)$ where
+   $\omega_k=\lambda_k(K_n)$; the bulk continuum eigenvalues satisfy
+   $\omega_k\asymp k^{-(2\nu+d)/d}$, and \emph{provided} the BBP cutoff lies
+   in the Widom polynomial tail, i.e.\ $\lambda\ll\rho^{2\nu+d}$ (equivalently
+   $r=\lfloor\lambda^{-d/(2\nu+d)}\rfloor\gg\rho^{-d}$; see Lemma~\ref{lem:eigengap}),
+   the eigengap of $S_n$ at the cutoff satisfies
+   $\delta_r\asymp\lambda^{d/(2\nu+d)}$, and the integrated tail-bias of the
+   smoother satisfies $\sum_{k>r}\lambda_k(S_n)\asymp\lambda^{2\nu/(2\nu+d)}$.
+   When the cutoff falls in the pre-asymptotic plateau ($r\lesssim\rho^{-d}$),
+   $\delta_r\asymp\lambda^{1/a_{\mathrm{eff}}(r)}$ with $a_{\mathrm{eff}}(r)$
+   the local log-log slope of $\omega_k$ at $k\!\approx\!r$; this slower rate
+   propagates into the constants of (ii)--(iii) but does not change the rates.
+\item[\emph{(ii)}] With $\widehat\Sigma_T=n^{-1}T^\top T$ and $\widehat v_1$ its
+   leading unit eigenvector, with probability at least $1-2\exp(-cn)$,
+\[
+\|\sin\Theta(\widehat v_1,v_1)\|_{\mathrm{op}}
+   \le \frac{2^{3/2}\,\|\widehat\Sigma_T-\Sigma_T\|_{\mathrm{op}}}{\delta_{\mathrm{eff}}}
+   \le \frac{C_1\sqrt{(p+\log(2/\eta))/n}}{\delta_{\mathrm{eff}}},
+\]
+where $\delta_{\mathrm{eff}}=\lambda_1(\Sigma_T)-\lambda_2(\Sigma_T)=
+\mathrm{Var}(S_n U)$ and $C_1=c_0(\sigma_E^2+\mathrm{Var}(S_n U))$ with $c_0$
+absolute (from Vershynin 2018, Thm.~4.7.1).
+\item[\emph{(iii)}] The PC1--OLS estimator $\widehat\theta_{\mathrm{PC1}}=
+   (\widehat v_1^\top T^\top T\widehat v_1)^{-1}\widehat v_1^\top T^\top Y$ has
+\[
+\bigl|\mathbb{E}[\widehat\theta_{\mathrm{PC1}}\mid T,S_nU]-\langle\beta,v_1\rangle\bigr|
+   \;\le\; C_2\,\|\sin\Theta(\widehat v_1,v_1)\|_{\mathrm{op}}\,
+   \bigl(\|\beta_\perp\|+\|g(s)\|_{2,n}\bigr)\,
+   \sqrt{\mathrm{Var}(S_nU)/\sigma_E^2},
+\]
+with $C_2=2(1+o_p(1))$, where $\|g\|_{2,n}^2:=n^{-1}\sum_i g(s_i)^2$.
+\item[\emph{(iv)}] Let $\theta_0=\langle\beta_\perp,v_\perp\rangle$ for any fixed
+   unit $v_\perp\in\mathrm{range}(P_\perp)$. The cross-fitted DML partialling-out
+   estimator $\widehat\theta_\perp$ satisfies
+\[
+\sqrt n\,(\widehat\theta_\perp-\theta_0)\;\xrightarrow{d}\;\mathcal N(0,\sigma_\perp^2),
+\qquad
+\sigma_\perp^2 = \frac{\mathbb{E}\bigl[\psi(W;\theta_0,\eta_0)^2\bigr]}
+                {\bigl(\mathbb{E}[(P_\perp T v_\perp-\mathbb E[P_\perp T v_\perp\mid s])^2]\bigr)^{2}},
+\]
+provided the product nuisance rate $\|\widehat f-f_0\|_{L^2}\cdot\|\widehat g-g_0\|_{L^2}=o_p(n^{-1/2})$
+holds (Chernozhukov et al.\ 2018, Thm.~4.1, eq.~(4.5)).
+\item[\emph{(v)}] The fold-centered jackknife $\widehat V_{\rm JK}$ of
+   Salerno--Wu--McCormick 2026, Thm.~1, satisfies $n\widehat V_{\rm JK}\xrightarrow{p}\sigma_\perp^2$.
+\end{enumerate}
+\end{theorem}
+
+% Lemma statements and proofs (1 through 9) follow. See accompanying file
+% dk_full_proof_lemmas.tex for the full lemma block; the abridged main proof
+% chain (i)->(ii)->(iii)->(iv)->(v) is in the main paper appendix.
+
+% Main proof: chaining (i)-(v)
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+\textbf{(i)} Apply Lemma~\ref{lem:smoother-eig} to $K_n$ to get
+$\lambda_k(S_n)=\omega_k/(\omega_k+\lambda)$. By Lemma~\ref{lem:matern-mercer}
+the empirical $\omega_k$ inherit the continuum rate $\omega_k\asymp k^{-(2\nu+d)/d}$
+up to constants that depend on $n$ via the discrete-continuum convergence
+(absorbed). Lemma~\ref{lem:eigengap} gives the eigengap rate at the cutoff
+$r=\lfloor\lambda^{-d/(2\nu+d)}\rfloor$ as $\delta_r\asymp\lambda^{d/(2\nu+d)}$,
+and the bias-direction (tail) rate $\sum_{k>r}\lambda_k(S_n)\asymp\lambda^{2\nu/(2\nu+d)}$
+that drives (iii).
+
+\textbf{(ii)} Apply Lemma~\ref{lem:vershynin} to the rows of $T/\sqrt{n}$, which
+are sub-Gaussian by (A4) and the sub-Gaussianity verification at the end of
+Lemma~\ref{lem:vershynin}. With probability $\ge 1-2e^{-cn}$,
+$\|\widehat\Sigma_T-\Sigma_T\|_{\mathrm{op}}\le C_1\sqrt{(p+\log(2/\eta))/n}$.
+Plug into Lemma~\ref{lem:yws} with $r=1$ and $\delta_{\mathrm{eff}}=\mathrm{Var}(S_nU)$
+to get the displayed sin-$\Theta$ bound. The bound is informative whenever
+$\lambda\ll\omega_1$ (super-critical BBP).
+
+\textbf{(iii)} Lemma~\ref{lem:pc1-bias} delivers the bias decomposition; the
+dominant term is $\langle\beta_\perp,\widehat v_1-v_1\rangle$, bounded by
+$\|\beta_\perp\|\sqrt 2\|\sin\Theta(\widehat v_1,v_1)\|_{\mathrm{op}}$. Adding
+the $g$-bias and SNR-amplification $\sqrt{\mathrm{Var}(S_nU)/\sigma_E^2}$
+gives Theorem~\ref{thm:main}(iii).
+
+\textbf{(iv)} Apply Lemma~\ref{lem:god} to $P_\perp T$: the residual satisfies
+GOD-2024 (A3.7), so $\beta_\perp$ is identified. Apply Lemma~\ref{lem:dml} with
+$D=(P_\perp T)v_\perp$ to get the $\sqrt n$-CLT. The product rate
+$\|\widehat m-m_0\|_{L^2}\cdot\|\widehat g-g_0\|_{L^2}=o_p(n^{-1/2})$ holds for
+kernel-ridge nuisances at Matern-$\nu$ smoothness: the minimax rate is
+$n^{-(2\nu+d)/(4\nu+2d)}$ (Tsybakov 2009 Cor.~2.3); for $\nu=2.5,d=2$ that is
+$n^{-1/2}$, so the product is $o(n^{-1/2})$ comfortably.
+
+\textbf{(v)} Apply Lemma~\ref{lem:swm}: $n\widehat V_{\mathrm{JK}}\to_p\sigma_\perp^2$,
+giving asymptotically valid Wald intervals.
+\end{proof}
