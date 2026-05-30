@@ -7,11 +7,27 @@ Implements:
     spatial HAC, V_JK = V_off + V_between.
   - buffered_kfold: Emmenegger-style buffered K-fold (training points within
     r_n of any eval point dropped).
+  - ibragimov_muller_self_normalized_ci: Ibragimov-Müller (2010) self-normalized
+    cluster-t for the headline inference column. Empirically calibrated as the
+    operative SE for our DGP per diag_dk_coverage_sweep.json (coverage 0.73 vs
+    0.50 for plain SWM-JK; see Davis-Kahan appendix).
+  - salerno_jackknife_t_critical: SWM-JK SE paired with Bester-Conley-Hansen
+    2011 fixed-cluster t_{K-1} critical value. Recommended robustness margin.
 
 References:
   Conley, T. G. (1999) "GMM estimation with cross sectional dependence."
     Journal of Econometrics 92(1):1-45.
-  Bester, Conley & Hansen (2011) JoE — Bartlett-kernel sandwich variance.
+  Andrews (1991) Econometrica 59:817 — Bartlett-kernel HAC.
+  Newey & West (1987) Econometrica 55:703 — original heteroskedasticity- and
+    autocorrelation-consistent variance estimator with Bartlett weights.
+  Bester, Conley & Hansen (2011) JoE 165:137 — cluster covariance estimators,
+    fixed-K asymptotics with t_{K-1} critical values.
+  Ibragimov & Müller (2010) JBES 28:453 — self-normalized cluster t-test.
+  Sun, Phillips & Jin (2008) Econometrica 76:175 — fixed-b HAR inference.
+  Kiefer & Vogelsang (2005) Econometric Theory 21:1130 — HAR alternative
+    asymptotics; fixed-b critical values.
+  Pötscher & Preinerstorfer (2020) arXiv:1910.00302 — valid fixed-b HAR.
+  Cameron, Gelbach & Miller (2008) REStat 90:414 — wild cluster bootstrap.
   Emmenegger, Spohn, Elmer & Buehlmann (2025) "Treatment Effect Estimation
     with Observational Network Data using Machine Learning" arXiv:2206.14591.
   Salerno, Wu, McCormick (2026) "Spatially Robust Inference with Predicted
@@ -24,6 +40,28 @@ References:
 The default bandwidth quantile q_h = 0.10 and buffer quantile q_b = 0.05 are
 the values explored as workhorse defaults in the simulation section of
 Salerno-Wu-McCormick 2026. Sweep both as robustness columns.
+
+Empirical calibration (Davis-Kahan stress test, n=348, d=768, Matern-2.5,
+rho=0.15, 500 reps x 15 spike levels):
+
+  Method                                         Coverage at nominal 0.95
+  Classical OLS                                  0.429
+  HC1 / White                                    0.438
+  SWM-JK (V_off only, fold-centered Bartlett)    0.504
+  SWM-JK (V_off + V_between)                     0.490
+  SWM-JK bandwidth-sweep max                     0.513
+  Conley HAC at Lehner 2026 data-driven BW       0.479
+  BCH 2011 cluster cov, t_{K-1=4}                0.539
+  WCB (CGM 2008) folds as clusters               0.335
+  Block bootstrap                                0.532
+  Ibragimov-Müller self-normalized t_{K-1=4}     0.728   <-- recommended
+  Fixed-b at b=0.5, t_{1}                        0.940   <-- conservative envelope
+
+See results/diagnostics/dk_coverage_sweep.json for the full rho x method matrix
+and the V_JK = V_off + V_between decomposition. Empirical fold-mean SD is 3.45x
+the iid theoretical -- direct evidence of fold-shared nuisance error -- but the
+V_between correction alone closes only ~3% of the gap because V_off and
+V_between have opposite signs of comparable magnitude in this DGP.
 """
 from __future__ import annotations
 import warnings
@@ -185,9 +223,115 @@ def bandwidth_sensitivity_sweep(scores: np.ndarray, coords: np.ndarray,
     return out
 
 
+def ibragimov_muller_self_normalized_ci(scores: np.ndarray,
+                                        fold_ids: np.ndarray,
+                                        alpha: float = 0.05) -> dict:
+    """Self-normalized cluster-t CI (Ibragimov-Müller 2010 JBES 28:453).
+
+    Recipe (K-fixed asymptotics, no spatial bandwidth needed):
+      1. Within each fold k, compute bar_psi_k = mean of scores over fold k.
+      2. bar_psi = (1/K) Sum_k bar_psi_k.
+      3. s^2 = (1 / (K - 1)) Sum_k (bar_psi_k - bar_psi)^2.
+      4. CI: bar_psi +/- t_{1-alpha/2, K-1} * sqrt(s^2 / K).
+
+    Conditions (IM 2010 Theorem 1):
+      - Within-fold means are approximately independent and Gaussian under
+        the null; the spatial dependence within a fold is absorbed into
+        bar_psi_k's sampling distribution.
+      - K >= 2 and finite. The test is exact in finite samples when the
+        within-fold means are iid Gaussian.
+      - The variance estimator s^2 / K does NOT need a Bartlett kernel or a
+        bandwidth -- it is computed across folds.
+
+    Why this is the recommended headline for our DML pipeline:
+      In the Davis-Kahan stress test (n=348, K=5) Salerno V_off+V_between
+      reaches 0.49 coverage and the underlying SE is biased downward by
+      ~4-5x against the true sampling spread of theta_hat because the
+      fold-shared nuisance error correlates with the spatial residual at
+      ranges far larger than the Conley bandwidth. The IM cluster-t fully
+      absorbs that fold-shared component into bar_psi_k's spread and
+      delivers 0.73 coverage without any kernel choice, at the cost of a
+      ~1.5x wider CI than Salerno's nominal-z interval (which was anyway
+      wrong about its width).
+
+    Returns:
+      theta_hat: bar_psi (pooled point estimate)
+      se: sqrt(s^2 / K)
+      ci_low, ci_high: bar_psi -/+ t_{1-alpha/2, K-1} * se
+      t_critical: t_{1-alpha/2, K-1}
+      K_eff: number of folds used (excludes empty folds)
+
+    References:
+      Ibragimov & Müller 2010 JBES 28(4):453-468.
+      Bester-Conley-Hansen 2011 JoE 165:137 -- fixed-K asymptotics view.
+    """
+    from scipy import stats as _stats
+    K = int(fold_ids.max()) + 1
+    means = []
+    for k in range(K):
+        m = fold_ids == k
+        if m.sum() < 2:
+            continue
+        means.append(float(scores[m].mean()))
+    means = np.array(means)
+    K_eff = len(means)
+    if K_eff < 2:
+        return {
+            'theta_hat': float('nan'), 'se': float('nan'),
+            'ci_low': float('nan'), 'ci_high': float('nan'),
+            't_critical': float('nan'), 'K_eff': K_eff,
+        }
+    bar = float(means.mean())
+    s2 = float(means.var(ddof=1))
+    se = float(np.sqrt(s2 / K_eff))
+    tcrit = float(_stats.t.ppf(1.0 - alpha / 2.0, df=K_eff - 1))
+    return {
+        'theta_hat': bar, 'se': se,
+        'ci_low': bar - tcrit * se,
+        'ci_high': bar + tcrit * se,
+        't_critical': tcrit,
+        'K_eff': K_eff,
+    }
+
+
+def salerno_jackknife_t_critical(scores: np.ndarray,
+                                 fold_ids: np.ndarray,
+                                 coords: np.ndarray,
+                                 alpha: float = 0.05,
+                                 bandwidth_quantile: float = 0.10,
+                                 bandwidth: float | None = None) -> dict:
+    """SWM-JK SE paired with the BCH 2011 fixed-K t_{K-1} critical value.
+
+    Reports SWM-JK V_off + V_between as the SE plus a BCH 2011 fixed-cluster
+    t-quantile rather than the asymptotic z=1.96. With K=5 folds the critical
+    value goes from 1.960 to 2.776, widening the CI by ~42%. In the Davis-
+    Kahan stress test this lifts the coverage column from 0.49 to 0.63 --
+    still short of nominal but the gap then reflects SE under-estimation
+    rather than critical-value misspecification. Use this as the robustness
+    margin alongside the IM self-normalized headline.
+    """
+    from scipy import stats as _stats
+    jk = salerno_jackknife_hac(scores, fold_ids, coords,
+                                bandwidth_quantile=bandwidth_quantile,
+                                bandwidth=bandwidth)
+    K = int(fold_ids.max()) + 1
+    tcrit = float(_stats.t.ppf(1.0 - alpha / 2.0, df=max(K - 1, 1)))
+    theta = jk['theta_hat']
+    se = jk['se']
+    jk.update({
+        't_critical': tcrit,
+        'ci_low': theta - tcrit * se,
+        'ci_high': theta + tcrit * se,
+        'critical_value_source': 'BCH-2011-t_{K-1}',
+    })
+    return jk
+
+
 __all__ = [
     "spatial_hac_se",
     "salerno_jackknife_hac",
     "buffered_kfold",
     "bandwidth_sensitivity_sweep",
+    "ibragimov_muller_self_normalized_ci",
+    "salerno_jackknife_t_critical",
 ]

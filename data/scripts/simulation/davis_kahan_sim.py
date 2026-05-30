@@ -62,6 +62,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed, parallel_config
+from scipy import stats
 from sklearn.gaussian_process.kernels import Matern
 
 _NCORES = os.cpu_count() or 4
@@ -410,23 +411,26 @@ def iid_bootstrap_se(
 ) -> tuple[float, float, float]:
     """Lam-2022 cheap bootstrap SE for an estimator returning {theta, ...}.
 
-    Returns (se_boot, ci_low, ci_high) with a Lam-2022 t-pivot using the
-    boot SD and the B-resampling distribution. Resamples rows iid with
-    replacement -- the IID bootstrap that breaks under spatial dependence
-    (Politis-Romano block bootstrap would be the right answer; iid is the
-    foil this simulation is designed to indict).
+    Returns (se_cb, ci_low, ci_high) with a Lam-2022 t-pivot. The SE is the
+    cheap-bootstrap form sqrt(mean((boots - theta_hat)^2)) centered at the
+    ORIGINAL-sample estimate (Lam 2022 eq. (1)-(2)), not the bootstrap mean;
+    centering at the bootstrap mean would substitute the bias-correcting
+    Efron pivot. The t-quantile uses df = B exactly. Resamples rows iid
+    with replacement -- the iid bootstrap that breaks under spatial
+    dependence (Politis-Romano block bootstrap would be the right answer;
+    iid is the foil this simulation is designed to indict).
     """
     n = T.shape[0]
+    # Original-sample point estimate for centering (Lam 2022 eq. 1).
+    theta_hat_orig = float(estimator_fn(T, Y, coords)["theta"])
     thetas = np.empty(B)
     for b in range(B):
         idx = rng.integers(0, n, size=n)
         out = estimator_fn(T[idx], Y[idx], coords[idx])
         thetas[b] = out["theta"]
-    se_boot = float(np.std(thetas, ddof=1))
-    # Cheap-bootstrap t-pivot quantiles (Lam 2022 JASA).
-    t_quant = 2.009 if B == 50 else 1.96
-    base_theta = float(np.mean(thetas))
-    return se_boot, base_theta - t_quant * se_boot, base_theta + t_quant * se_boot
+    se_cb = float(np.sqrt(np.mean((thetas - theta_hat_orig) ** 2)))
+    t_quant = float(stats.t.ppf(0.975, df=B))
+    return se_cb, theta_hat_orig - t_quant * se_cb, theta_hat_orig + t_quant * se_cb
 
 
 # ---------------------------------------------------------------------------

@@ -126,8 +126,16 @@ def short_stack_oof(
                 est_j.fit(X[tr], y[tr])
             Z[te, j] = est_j.predict(X[te])
 
-    w = _solve_nnls1(Z, y if sample_weight is None
-                     else np.sqrt(sample_weight) * y)
+    # WLS for the NNLS-1 meta-step under sample weights w_i: minimize
+    # sum_i w_i (y_i - sum_j w*_j Z_{ij})^2 subject to w* >= 0, sum w* = 1.
+    # Equivalent OLS form scales BOTH the rows of Z and y by sqrt(w_i).
+    # Earlier versions only scaled y, which left the design matrix unweighted
+    # and produced biased meta-weights under Dirichlet bootstrap.
+    if sample_weight is None:
+        w = _solve_nnls1(Z, y)
+    else:
+        sw = np.sqrt(sample_weight)
+        w = _solve_nnls1(Z * sw[:, None], sw * y)
     oof = Z @ w
     return oof, w
 

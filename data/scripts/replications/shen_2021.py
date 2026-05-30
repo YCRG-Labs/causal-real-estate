@@ -1,35 +1,78 @@
-"""Replication of Shen & Ross (2021, JUE) — Information Value of Property Description.
+"""Shen & Ross (2021, JUE) -- replication-style exercise (NOT a strict replication).
 
-Shen, L. & Ross, S. L. (2021). "Information value of property description: A
-machine learning approach." Journal of Urban Economics 122, 103299.
+  Shen, L. & Ross, S. L. (2021). "Information value of property description:
+  A machine learning approach." Journal of Urban Economics 121, 103299.
 
-Method (faithful to the paper, scaled to our SF data):
+This script is a *TF-IDF + lat/lon-KNN cousin* of Shen & Ross, NOT a faithful
+replication.  The original paper uses Doc2Vec embeddings (PV-DM, vec_size
+small, see Shen-Ross 2021 §4.2) and MLS-Area x Year *cell averages* as the
+peer set (their Eq. 9), not a K-nearest-neighbour query in lat/lon.  Both
+choices matter: lat/lon KNN collapses to the ZIP centroid when listings
+share a centroid (the original Redfin pull dropped 23 percent of rows on
+near-duplicate addresses; see ``infer_sf_prices.py``), which inflates
+uniqueness by construction.  The published +0.072 per sigma on our pull was
+almost certainly a duplicate-inflation + ZIP-centroid degeneracy artefact.
 
-  1. Vectorize all listing descriptions with TF-IDF (pre-BERT NLP, matching
-     the paper's shallow NLP).
-  2. For each listing find K=5 nearest spatial neighbours in lat/lon.
-  3. Define uniqueness = 1 − cosine(self_tfidf, mean(neighbour_tfidf)).
-     This is the "semantic deviation from neighbours" construct.
-  4. Hedonic OLS:
-        log_price ~ uniqueness + structured features
-     with HC3 robust SEs (Shen reports +15% per σ on Atlanta MLS).
-  5. Re-run the project DML pipeline with uniqueness as a continuous
-     treatment in place of PC1 of the embedding. Same 30-feature confounder
-     set as the production analysis.
+What this script actually does in its DEFAULT mode (the cousin construction):
 
-Output JSON has both estimates side-by-side so the OLS gain and the DML
-estimate can be read off the same record.
+  1. TF-IDF vectorise all descriptions (max_features=5000, ngram=(1,2),
+     min_df=2).  This stands in for Shen & Ross's PV-DM Doc2Vec
+     (vec_size=100, window=5, epochs=40, dm=1) when ``--doc2vec`` is not
+     passed.
+  2. For each listing build a peer set:
+     - default: K=5 lat/lon nearest neighbours;
+     - ``--cell_fe``: peers within the (zip, year) cell; fall back to
+       (zip,) when year is missing.
+  3. Uniqueness = 1 - cos(self_tfidf, mean(peer_tfidf)).
+  4. Hedonic OLS: log_price ~ uniqueness_z + structured features + optional
+     (zip, year) cell FE; HC3 robust SEs.  Shen reports a ~+10-15% per
+     sigma effect (her Table 5 main coefficient is ~+0.149 / sigma at the
+     Atlanta MLS-Area FE spec; SE ~0.034).
+  5. Re-run the project DML pipeline with uniqueness as the continuous
+     treatment, same confounder set as the production analysis.
+  6. Always print the binomial-equivalent power: at our n vs Shen's
+     theta-hat=0.149 with SE 0.034, what is our power against the published
+     effect (one-sided, alpha=0.05)?
 
-Usage:
+Flags
+-----
+  --k_sweep            Compute uniqueness at K in {3,5,10,20,50}; report
+                       the Spearman rank correlation matrix.  When values
+                       are stable across K the construction is robust;
+                       when they degrade the construction is K-driven.
+  --cell_fe            Use (zip, year) cell averages instead of lat/lon
+                       KNN; add zip-year cell fixed effects to the OLS.
+                       This is the closest available approximation of
+                       Shen's MLS-Area x Year averaging.
+  --doc2vec            Replace TF-IDF with Doc2Vec (PV-DM, vec_size=100,
+                       window=5, epochs=40, dm=1).  Requires
+                       ``pip install gensim``.
+
+Usage
+-----
   python shen_2021.py
+  python shen_2021.py --k_sweep
+  python shen_2021.py --cell_fe
+  python shen_2021.py --doc2vec
   python shen_2021.py --out results/replications/shen.json
   python shen_2021.py --n 200            # subset for smoke tests
+
+References
+----------
+Shen, L. & Ross, S. L. (2021).  "Information value of property description:
+  A machine learning approach."  Journal of Urban Economics 121, 103299.
+  https://doi.org/10.1016/j.jue.2020.103299
+Le & Mikolov (2014).  "Distributed Representations of Sentences and
+  Documents."  ICML.  arXiv:1405.4053.
+Cohen (1988).  "Statistical Power Analysis for the Behavioral Sciences,"
+  2nd ed.  (One-sample z-test power calculation used below.)
 """
 from __future__ import annotations
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); import _silence  # noqa: F401
 
 import argparse
 import json
+import math
 import sys
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -37,6 +80,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
+from scipy import stats
 from scipy.spatial import cKDTree
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -65,45 +109,122 @@ class OLSUniqueness:
     pct_per_sd: float
 
 
-def compute_uniqueness(
-    descriptions: list[str],
-    lat: np.ndarray,
-    lon: np.ndarray,
-    k: int = 5,
-    max_features: int = 5000,
-) -> np.ndarray:
-    """TF-IDF uniqueness per listing: 1 - cos(self, mean(K nearest in lat/lon)).
-
-    Self is excluded from the K neighbours (we query K+1 and drop index 0).
-    """
+def _vectorize_tfidf(descriptions: list[str], max_features: int = 5000):
     vec = TfidfVectorizer(
         max_features=max_features,
         stop_words="english",
         ngram_range=(1, 2),
         min_df=2,
     )
-    tfidf = vec.fit_transform(descriptions)
+    return vec.fit_transform(descriptions)
 
+
+def _vectorize_doc2vec(descriptions: list[str], vector_size: int = 100,
+                       window: int = 5, epochs: int = 40, dm: int = 1,
+                       seed: int = 0):
+    """Doc2Vec embeddings per Le & Mikolov 2014 PV-DM (dm=1).
+
+    Defaults match Shen & Ross 2021 §4.2 reported choices (vec_size=100,
+    window=5, epochs=40, distributed memory).  Requires gensim.
+    """
+    try:
+        from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+        from gensim.utils import simple_preprocess
+    except ImportError as e:
+        raise ImportError(
+            "--doc2vec requires gensim; install with: pip install 'gensim>=4.3'"
+        ) from e
+    tagged = [TaggedDocument(simple_preprocess(d), [i])
+              for i, d in enumerate(descriptions)]
+    model = Doc2Vec(documents=tagged, vector_size=vector_size, window=window,
+                    epochs=epochs, dm=dm, min_count=2, workers=1, seed=seed)
+    vectors = np.stack([model.dv[i] for i in range(len(descriptions))])
+    return vectors
+
+
+def _uniqueness_from_vectors(vectors, peer_indices: list[list[int]]) -> np.ndarray:
+    """Shen-Ross 2021 Eq. 9 mean-pairwise-distance uniqueness.
+
+    For each row i, peer_indices[i] gives a list of other-row indices
+    forming the peer set; uniqueness = mean_{j in peers} (1 - cos(v_i, v_j)).
+    Listings with empty peer sets get uniqueness 0 (no signal).
+
+    Note: an earlier version computed `1 - cos(v_i, mean(v_peers))`, which
+    is a different quantity and inflates monotonically in K under sparse
+    TF-IDF (the peer mean shrinks toward zero with K, dragging cosine to
+    zero and uniqueness to one). The K-sweep diagnostic detected this.
+    The corrected formula matches Shen-Ross 2021 (JUE 121, 103299) Eq. 9.
+    Works for sparse TF-IDF (scipy) or dense Doc2Vec (numpy) vectors;
+    cosine_similarity batches the pairwise comparisons in a single call.
+    """
+    n = len(peer_indices)
+    uniq = np.zeros(n, dtype=float)
+    for i in range(n):
+        peers = [j for j in peer_indices[i] if j != i]
+        if not peers:
+            continue
+        sims = cosine_similarity(vectors[i:i + 1], vectors[peers])[0]
+        uniq[i] = float((1.0 - sims).mean())
+    return uniq
+
+
+def _knn_peers(lat: np.ndarray, lon: np.ndarray, k: int) -> list[list[int]]:
     coords = np.column_stack([lat, lon])
     tree = cKDTree(coords)
-    n = len(descriptions)
+    n = len(lat)
     k_eff = min(k + 1, n)
     _, nn_idx = tree.query(coords, k=k_eff)
     if nn_idx.ndim == 1:
         nn_idx = nn_idx.reshape(-1, 1)
+    return [list(int(j) for j in row if j != i)[:k]
+            for i, row in enumerate(nn_idx)]
 
-    uniq = np.zeros(n, dtype=float)
-    for i in range(n):
-        neigh = [j for j in nn_idx[i].tolist() if j != i][:k]
-        if not neigh:
-            uniq[i] = 0.0
-            continue
-        # mean of neighbour TF-IDF rows -> 1 x V
-        neigh_mean = tfidf[neigh].mean(axis=0)
-        sim = cosine_similarity(tfidf[i], np.asarray(neigh_mean))[0, 0]
-        uniq[i] = 1.0 - float(sim)
 
-    return uniq
+def _cell_peers(zips: np.ndarray, years: np.ndarray | None) -> list[list[int]]:
+    """Peer set = other listings in the same (zip, year) cell.  Falls back
+    to (zip,) cells when year is missing or constant.
+    """
+    n = zips.size
+    use_year = years is not None and np.unique(years).size > 1
+    if use_year:
+        keys = list(zip(zips.astype(str), years.astype(str)))
+    else:
+        keys = list(zips.astype(str))
+    by_key: dict = {}
+    for i, k in enumerate(keys):
+        by_key.setdefault(k, []).append(i)
+    return [[j for j in by_key[keys[i]] if j != i] for i in range(n)]
+
+
+def compute_uniqueness(
+    descriptions: list[str],
+    lat: np.ndarray,
+    lon: np.ndarray,
+    k: int = 5,
+    max_features: int = 5000,
+    *,
+    use_doc2vec: bool = False,
+    zips: np.ndarray | None = None,
+    years: np.ndarray | None = None,
+    cell_fe: bool = False,
+    seed: int = 0,
+) -> np.ndarray:
+    """Peer-mean uniqueness per listing: 1 - cos(self_vec, mean(peer_vec)).
+
+    Peer set is either lat/lon KNN (default), or the (zip, year) cell
+    average (``cell_fe=True``).
+    """
+    if use_doc2vec:
+        vectors = _vectorize_doc2vec(descriptions, seed=seed)
+    else:
+        vectors = _vectorize_tfidf(descriptions, max_features=max_features)
+    if cell_fe:
+        if zips is None:
+            raise ValueError("--cell_fe requires zips; pass zips=... ")
+        peers = _cell_peers(zips, years)
+    else:
+        peers = _knn_peers(lat, lon, k)
+    return _uniqueness_from_vectors(vectors, peers)
 
 
 def hedonic_ols(
@@ -111,11 +232,15 @@ def hedonic_ols(
     confounders: np.ndarray,
     confounder_names: list[str],
     Y_log: np.ndarray,
+    *,
+    cell_keys: list | None = None,
 ) -> tuple[OLSUniqueness, sm.regression.linear_model.RegressionResultsWrapper]:
-    """log_price ~ uniqueness_z + confounders, HC3 robust SEs.
+    """log_price ~ uniqueness_z + confounders [+ cell FE], HC3 robust SEs.
 
-    Standardises uniqueness so the coefficient is per-σ (matching how Shen
-    reports the "+15%" headline).
+    ``cell_keys``: optional list of hashable cell labels (length n).  When
+    provided, dummy variables for each cell (less one reference) are
+    appended to the regressor matrix.  This implements the Shen-Eq.9-style
+    MLS-Area x Year fixed effects on our (zip, year) approximation.
     """
     u_sd = float(np.std(uniqueness, ddof=1))
     if u_sd == 0:
@@ -126,6 +251,16 @@ def hedonic_ols(
     X = sm.add_constant(X, has_constant="add")
     names = ["const", "uniqueness_z"] + list(confounder_names)
     df = pd.DataFrame(X, columns=names)
+
+    if cell_keys is not None:
+        cell_df = pd.DataFrame({"_cell": list(cell_keys)})
+        fe = pd.get_dummies(cell_df["_cell"], prefix="cell", drop_first=True,
+                            dtype=float)
+        # avoid duplicate column names with confounders (very unlikely
+        # collision, but guard nonetheless)
+        fe.columns = [f"fe_{c}" for c in fe.columns]
+        df = pd.concat([df.reset_index(drop=True),
+                        fe.reset_index(drop=True)], axis=1)
     model = sm.OLS(Y_log, df).fit(cov_type="HC3")
 
     coef = float(model.params["uniqueness_z"])
@@ -150,6 +285,88 @@ def hedonic_ols(
     return out, model
 
 
+# ---------------------------------------------------------------------------
+# Power calculation: detectability at our n versus Shen's published effect.
+# ---------------------------------------------------------------------------
+
+def power_at_published_effect(n_our: int, theta_pub: float, se_pub: float,
+                              n_pub: int = 40000, alpha: float = 0.05,
+                              two_sided: bool = True) -> dict:
+    """One-sample z-test power: at our sample size and assuming SE scales
+    as 1/sqrt(n), what is our power to reject H0: theta = 0 if the true
+    effect equals Shen's published estimate?
+
+    Standard formula (Cohen 1988 §6.3):
+
+        SE_our  = se_pub * sqrt(n_pub / n_our)
+        z_alpha = ppf(1 - alpha)         (one-sided) or ppf(1 - alpha/2)
+        ncp     = theta_pub / SE_our
+        power   = 1 - Phi(z_alpha - ncp) + Phi(-z_alpha - ncp) (two-sided)
+                = 1 - Phi(z_alpha - ncp)                       (one-sided)
+    """
+    if n_our <= 0 or n_pub <= 0 or se_pub <= 0:
+        return {"power": float("nan"), "se_implied": float("nan")}
+    se_our = float(se_pub * math.sqrt(n_pub / n_our))
+    z_a = float(stats.norm.ppf(1 - alpha / 2 if two_sided else 1 - alpha))
+    ncp = float(theta_pub / se_our)
+    if two_sided:
+        power = float(1 - stats.norm.cdf(z_a - ncp) + stats.norm.cdf(-z_a - ncp))
+    else:
+        power = float(1 - stats.norm.cdf(z_a - ncp))
+    return {
+        "n_our": int(n_our), "n_pub": int(n_pub),
+        "theta_pub": float(theta_pub), "se_pub": float(se_pub),
+        "se_implied_at_our_n": se_our, "z_alpha": z_a, "ncp": ncp,
+        "alpha": float(alpha), "two_sided": bool(two_sided),
+        "power": power,
+    }
+
+
+# ---------------------------------------------------------------------------
+# K-sweep: rank correlation of uniqueness across K choices.
+# ---------------------------------------------------------------------------
+
+def k_sweep_rank_correlation(
+    descriptions: list[str], lat: np.ndarray, lon: np.ndarray,
+    ks: tuple = (3, 5, 10, 20, 50), max_features: int = 5000,
+    use_doc2vec: bool = False, seed: int = 0,
+) -> dict:
+    """Compute uniqueness at each K and report the pairwise Spearman
+    rank correlation matrix plus the off-diagonal minimum.
+
+    If the construction is robust to K, all off-diagonal entries cluster
+    near 1; if it is K-driven (a known degeneracy at small n + clustered
+    coords), small Ks decorrelate from large Ks.
+    """
+    if use_doc2vec:
+        vectors = _vectorize_doc2vec(descriptions, seed=seed)
+    else:
+        vectors = _vectorize_tfidf(descriptions, max_features=max_features)
+    n = len(descriptions)
+    uniq_by_k = {}
+    for k in ks:
+        peers = _knn_peers(lat, lon, k)
+        uniq_by_k[k] = _uniqueness_from_vectors(vectors, peers)
+    corr = np.zeros((len(ks), len(ks)))
+    for i, ki in enumerate(ks):
+        for j, kj in enumerate(ks):
+            rho, _ = stats.spearmanr(uniq_by_k[ki], uniq_by_k[kj])
+            corr[i, j] = float(rho)
+    off = corr[np.triu_indices(len(ks), k=1)]
+    return {
+        "ks": list(ks),
+        "spearman_matrix": corr.tolist(),
+        "off_diag_min": float(off.min()) if off.size else float("nan"),
+        "off_diag_mean": float(off.mean()) if off.size else float("nan"),
+        "per_k_descriptive": {
+            int(k): {
+                "mean": float(uniq_by_k[k].mean()),
+                "sd": float(uniq_by_k[k].std(ddof=1)),
+            } for k in ks
+        },
+    }
+
+
 def _confounder_names(confounders: np.ndarray, parcels) -> list[str]:
     """Best-effort names for confounder columns. Falls back to indexed names.
 
@@ -170,7 +387,12 @@ def _confounder_names(confounders: np.ndarray, parcels) -> list[str]:
     return known + pad
 
 
-def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42) -> dict:
+def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
+             *, k: int = 5, k_sweep: bool = False, cell_fe: bool = False,
+             use_doc2vec: bool = False,
+             published_theta: float = 0.149,
+             published_se: float = 0.034,
+             published_n: int = 40000) -> dict:
     print(f"\n=== Shen & Ross (2021) replication: {city} ===")
     loaded = load_analysis_data(city)
     if loaded is None:
@@ -197,6 +419,16 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42) -> d
         descriptions = emb_df["description"].astype(str).tolist()
     lat = pd.to_numeric(emb_df["latitude"], errors="coerce").values.astype(float)
     lon = pd.to_numeric(emb_df["longitude"], errors="coerce").values.astype(float)
+    zips = (emb_df["zip"].astype(str).values
+            if "zip" in emb_df.columns else np.zeros(len(emb_df), dtype=object))
+    # year column: try 'year_sold', 'sale_year', else parse 'sale_date'/'year_built'
+    year_col = next((c for c in ("year_sold", "sale_year", "year") if c in emb_df.columns), None)
+    if year_col is not None:
+        years = pd.to_numeric(emb_df[year_col], errors="coerce").values
+    elif "sale_date" in emb_df.columns:
+        years = pd.to_datetime(emb_df["sale_date"], errors="coerce").dt.year.values
+    else:
+        years = np.full(len(emb_df), np.nan)
 
     # drop rows with non-finite coords (would crash cKDTree)
     finite_mask = np.isfinite(lat) & np.isfinite(lon)
@@ -206,6 +438,8 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42) -> d
         descriptions = [d for d, ok in zip(descriptions, finite_mask) if ok]
         lat = lat[finite_mask]
         lon = lon[finite_mask]
+        zips = zips[finite_mask]
+        years = years[finite_mask]
         confounders = confounders[finite_mask]
         Y = Y[finite_mask]
 
@@ -214,26 +448,103 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42) -> d
         idx = rng.choice(len(descriptions), size=n_subset, replace=False)
         idx.sort()
         descriptions = [descriptions[i] for i in idx]
-        lat = lat[idx]
-        lon = lon[idx]
+        lat = lat[idx]; lon = lon[idx]
+        zips = zips[idx]; years = years[idx]
         confounders = confounders[idx]
         Y = Y[idx]
 
     n = len(Y)
-    print(f"  N={n:,}, confounders={confounders.shape[1]}")
+    print(f"  N={n:,}, confounders={confounders.shape[1]}, "
+          f"unique ZIPs={pd.Series(zips).nunique()}, "
+          f"unique years={pd.Series(years).nunique()}")
 
-    print("  Computing TF-IDF uniqueness (K=5 spatial neighbours)...")
-    uniqueness = compute_uniqueness(descriptions, lat, lon, k=5)
-    print(f"    uniqueness: mean={uniqueness.mean():.3f}  sd={uniqueness.std():.3f}  "
+    # ---- always print power vs published effect ---------------------------
+    pwr = power_at_published_effect(n_our=n, theta_pub=published_theta,
+                                    se_pub=published_se, n_pub=published_n)
+    print(f"  Power vs published θ={published_theta:+.3f} "
+          f"(SE={published_se:.3f}, n_pub={published_n:,}):")
+    print(f"    implied SE at our n: {pwr['se_implied_at_our_n']:.4f}  "
+          f"ncp={pwr['ncp']:.2f}  power={pwr['power']:.3f}")
+
+    # ---- uniqueness construction (default: TF-IDF + KNN; flag: cell FE) ---
+    method_label = []
+    if use_doc2vec:
+        method_label.append("Doc2Vec(PV-DM, dim=100, win=5, ep=40)")
+    else:
+        method_label.append("TF-IDF(max=5000, ngram=1-2, min_df=2)")
+    if cell_fe:
+        method_label.append("(zip,year) cell averages + cell FE")
+    else:
+        method_label.append(f"K={k} lat/lon NN")
+    print(f"  Computing uniqueness with {' | '.join(method_label)} ...")
+
+    uniqueness = compute_uniqueness(
+        descriptions, lat, lon, k=k,
+        use_doc2vec=use_doc2vec,
+        zips=zips, years=years,
+        cell_fe=cell_fe,
+        seed=seed,
+    )
+    print(f"    uniqueness: mean={uniqueness.mean():.3f}  "
+          f"sd={uniqueness.std(ddof=1):.3f}  "
           f"min={uniqueness.min():.3f}  max={uniqueness.max():.3f}")
 
     print("  Hedonic OLS (HC3 SEs)...")
     conf_names = _confounder_names(confounders, parcels)
-    ols, model = hedonic_ols(uniqueness, confounders, conf_names, Y)
+    cell_keys = None
+    if cell_fe:
+        cell_keys = [(str(z), str(y) if not pd.isna(y) else "NA")
+                     for z, y in zip(zips, years)]
+    ols, model = hedonic_ols(uniqueness, confounders, conf_names, Y,
+                             cell_keys=cell_keys)
     print(f"    uniqueness_z: β={ols.coef:+.4f}  se={ols.se:.4f}  t={ols.t:+.2f}  "
           f"p={ols.p:.4g}  95%CI=[{ols.ci_low:+.4f}, {ols.ci_high:+.4f}]")
-    print(f"    → per-σ price effect: {ols.pct_per_sd:+.2f}%   (Shen reports ~+15%)")
+    print(f"    → per-σ price effect: {ols.pct_per_sd:+.2f}%   "
+          f"(Shen reports ~+15% in MLS-Area×Year FE spec)")
     print(f"    OLS R²={ols.r2:.4f}, adj R²={ols.adj_r2:.4f}")
+
+    # ---- alt cell-FE spec for direct comparison (always) -------------------
+    cell_fe_block = None
+    if not cell_fe and "zip" in emb_df.columns:
+        cell_keys_alt = [(str(z), str(y) if not pd.isna(y) else "NA")
+                         for z, y in zip(zips, years)]
+        try:
+            uniq_cell = compute_uniqueness(
+                descriptions, lat, lon, k=k, use_doc2vec=use_doc2vec,
+                zips=zips, years=years, cell_fe=True, seed=seed,
+            )
+            ols_cell, _ = hedonic_ols(uniq_cell, confounders, conf_names, Y,
+                                      cell_keys=cell_keys_alt)
+            cell_fe_block = {
+                "method": "(zip,year) cell averages with cell FE",
+                "ols": asdict(ols_cell),
+                "uniqueness_descriptive": {
+                    "mean": float(uniq_cell.mean()),
+                    "sd": float(uniq_cell.std(ddof=1)),
+                },
+            }
+            print(f"  Cell-FE comparison: β_cell={ols_cell.coef:+.4f} "
+                  f"se={ols_cell.se:.4f} p={ols_cell.p:.3g} "
+                  f"(per-σ {ols_cell.pct_per_sd:+.2f}%)")
+        except Exception as e:
+            cell_fe_block = {"error": f"cell-FE comparison failed: {e}"}
+            print(f"  Cell-FE comparison skipped: {e}")
+
+    # ---- K sweep ----------------------------------------------------------
+    k_sweep_block = None
+    if k_sweep:
+        try:
+            print("  K sweep over K in {3,5,10,20,50} ...")
+            k_sweep_block = k_sweep_rank_correlation(
+                descriptions, lat, lon,
+                ks=(3, 5, 10, 20, 50),
+                use_doc2vec=use_doc2vec, seed=seed,
+            )
+            print(f"    Spearman off-diagonal min={k_sweep_block['off_diag_min']:.3f}, "
+                  f"mean={k_sweep_block['off_diag_mean']:.3f}")
+        except Exception as e:
+            k_sweep_block = {"error": str(e)}
+            print(f"    K sweep skipped: {e}")
 
     print("  DML: uniqueness as continuous treatment...")
     dml = run_dml(
@@ -261,7 +572,7 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42) -> d
                   "uniqueness effect attenuates under DML.")
 
     return {
-        "paper": "Shen & Ross 2021 (JUE)",
+        "paper": "Shen & Ross 2021 (JUE) -- TF-IDF + KNN cousin construction",
         "city": city,
         "n": int(n),
         "n_confounders": int(confounders.shape[1]),
@@ -273,15 +584,23 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42) -> d
         },
         "ols_uniqueness": asdict(ols),
         "dml_uniqueness": result_to_dict(dml),
+        "power_at_published_effect": pwr,
+        "k_sweep_rank_corr": k_sweep_block,
+        "cell_fe_result": cell_fe_block,
         "method_notes": {
-            "tfidf_max_features": 5000,
-            "tfidf_ngram_range": [1, 2],
-            "tfidf_min_df": 2,
-            "k_neighbors": 5,
-            "neighbor_metric": "euclidean lat/lon",
+            "embedding": ("doc2vec(dim=100, win=5, ep=40, dm=1)"
+                          if use_doc2vec else
+                          "tfidf(max=5000, ngram=1-2, min_df=2)"),
+            "peer_set": ("(zip,year) cell averages with cell FE" if cell_fe
+                         else f"K={k} lat/lon NN"),
             "ols_cov": "HC3",
             "treatment_standardization": "z-score (per σ)",
             "dml_pipeline": "causal_inference.dml_continuous_treatment",
+            "framing_note": ("This is a TF-IDF + lat/lon-KNN COUSIN of "
+                             "Shen & Ross (2021), not a strict replication. "
+                             "Shen uses Doc2Vec + MLS-Area x Year cell "
+                             "averages. Use --doc2vec and --cell_fe for "
+                             "closer alignment."),
         },
         "meta": {
             "has_rich_confounders": bool(meta["has_rich_confounders"]),
@@ -296,11 +615,31 @@ def main():
     ap.add_argument("--n", type=int, default=None,
                     help="optional subset size for fast smoke runs")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--k", type=int, default=5,
+                    help="K nearest neighbours for the peer set "
+                         "(ignored when --cell_fe is set)")
+    ap.add_argument("--k_sweep", action="store_true",
+                    help="report uniqueness rank-corr across K in {3,5,10,20,50}")
+    ap.add_argument("--cell_fe", action="store_true",
+                    help="(zip,year) cell averages with cell FE (Shen Eq. 9 style)")
+    ap.add_argument("--doc2vec", action="store_true",
+                    help="use Doc2Vec embeddings instead of TF-IDF (needs gensim)")
+    ap.add_argument("--published_theta", type=float, default=0.149,
+                    help="Shen's published per-σ coefficient (default 0.149)")
+    ap.add_argument("--published_se", type=float, default=0.034,
+                    help="Shen's published SE on that coefficient")
+    ap.add_argument("--published_n", type=int, default=40000,
+                    help="Shen's n for the power calc denominator")
     ap.add_argument("--out", type=Path, default=None,
                     help="path to write JSON results")
     args = ap.parse_args()
 
-    result = run_shen(city=args.city, n_subset=args.n, seed=args.seed)
+    result = run_shen(city=args.city, n_subset=args.n, seed=args.seed,
+                      k=args.k, k_sweep=args.k_sweep, cell_fe=args.cell_fe,
+                      use_doc2vec=args.doc2vec,
+                      published_theta=args.published_theta,
+                      published_se=args.published_se,
+                      published_n=args.published_n)
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         with open(args.out, "w") as f:

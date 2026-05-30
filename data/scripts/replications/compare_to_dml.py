@@ -56,8 +56,14 @@ def run_dml(
 
     n_pca = min(n_pca, T.shape[1], T.shape[0] - 1)
 
+    # Cheap bootstrap CI (Lam 2022 JASA) rather than the influence-function SE,
+    # which undercovers at n ~ 1000 in this regime (project memo:
+    # project_causal_real_estate). dml_continuous_treatment supports the
+    # bootstrap path natively via ci_method='bootstrap'.
     with contextlib.redirect_stdout(io.StringIO()):
-        raw = dml_continuous_treatment(T, confounders, Y, n_pca=n_pca, k_folds=k_folds)
+        raw = dml_continuous_treatment(T, confounders, Y, n_pca=n_pca,
+                                       k_folds=k_folds,
+                                       ci_method="bootstrap", n_boot=500)
     if raw is None:
         return None
     lo, hi = raw["ci"]

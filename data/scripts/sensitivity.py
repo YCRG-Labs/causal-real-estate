@@ -218,6 +218,41 @@ def benchmark_against_observed(
     return out[:k_top]
 
 
+def ovb_block_from_residuals(
+    theta_hat: float, se: float, Y_resid: np.ndarray, T_resid: np.ndarray,
+    conf_s: np.ndarray, alpha: float = 0.05,
+) -> dict:
+    """CINS 2022 "Long Story Short" OVB block from already-fitted DML residuals.
+
+    Inputs are exactly what fast_bootstrap_dml_v2._dml_core returns when
+    return_residuals=True, so no nuisance re-fit is needed. Closed-form RV /
+    RVa under the partially linear model (CINS 2022 Cor. 1) matches the
+    numerical optimum the R `dml.sensemakr::robustness_value` would produce
+    to machine precision. Benchmarks against ALL observed confounders (not
+    just top-k) so the paper appendix can report the full table.
+
+    Returns dict with S, RV_point, RVa_95ci, benchmarks_all,
+    max_eta2_Y_observed, max_eta2_T_observed.
+    """
+    S = ovb_dml_scaling(Y_resid, T_resid, theta_hat)
+    rv = robustness_value_point(theta_hat, S)
+    rva = robustness_value_alpha(theta_hat, se, S, alpha=alpha)
+    bench = benchmark_against_observed(Y_resid, T_resid, conf_s,
+                                       k_top=conf_s.shape[1])
+    return {
+        "S": float(S),
+        "RV_point": float(rv),
+        "RVa_95ci": float(rva),
+        "alpha": float(alpha),
+        "benchmarks_all": bench,
+        "max_eta2_Y_observed": float(max((b["partial_r2_Y"] for b in bench),
+                                          default=0.0)),
+        "max_eta2_T_observed": float(max((b["partial_r2_T"] for b in bench),
+                                          default=0.0)),
+        "method": "Chernozhukov-Cinelli-Newey-Sharma-Syrgkanis 2022, PLM Cor. 1",
+    }
+
+
 def run_sensitivity(city: str, n_mc: int = 50000, threshold: float = 0.05) -> dict:
     print(f"\n=== Sensitivity analysis: {city} ===")
     loaded = load_analysis_data(city)
