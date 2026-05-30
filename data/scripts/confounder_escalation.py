@@ -8,29 +8,19 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.decomposition import PCA
 from scipy.stats import bootstrap
 from config import PROCESSED_DIR, CITIES, EMBEDDING_DIM
+from canonical_confounders import (
+    CENSUS, CRIME, AMENITY, MICRO_GEO,
+)
 
 
 ESCALATION_LEVELS = [
     ("none", []),
     ("zip", ["zip_onehot"]),
     ("coordinates", ["latitude", "longitude"]),
-    ("census", [
-        "median_household_income", "pct_bachelors", "pct_white", "pct_black",
-        "pct_asian", "pct_hispanic", "median_home_value", "median_gross_rent",
-        "labor_force_participation", "pct_under_25", "pct_over_60",
-    ]),
-    ("crime", [
-        "crime_violent", "crime_property", "crime_quality_of_life", "crime_total",
-    ]),
-    ("amenity", [
-        "amenity_food_dining", "amenity_retail", "amenity_services",
-        "amenity_recreation", "amenity_transportation", "amenity_education",
-        "amenity_total", "amenity_diversity",
-    ]),
-    ("micro_geo", [
-        "dist_park_m", "dist_transit_m", "dist_school_m",
-        "dist_restaurant_m", "dist_retail_m", "dist_medical_m",
-    ]),
+    ("census", list(CENSUS)),
+    ("crime", list(CRIME)),
+    ("amenity", list(AMENITY)),
+    ("micro_geo", list(MICRO_GEO)),
 ]
 
 

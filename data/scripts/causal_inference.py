@@ -13,24 +13,14 @@ from sklearn.decomposition import PCA
 from scipy.spatial import cKDTree
 from scipy.stats import bootstrap
 from config import PROCESSED_DIR, CITIES, EMBEDDING_DIM
-
-CENSUS_COLS = [
-    "median_household_income", "pct_bachelors", "pct_white", "pct_black",
-    "pct_asian", "pct_hispanic", "median_home_value", "median_gross_rent",
-    "labor_force_participation", "pct_under_25", "pct_over_60",
-]
-CRIME_COLS = ["crime_violent", "crime_property", "crime_quality_of_life", "crime_total"]
-AMENITY_COLS = [
-    "amenity_food_dining", "amenity_retail", "amenity_services",
-    "amenity_recreation", "amenity_transportation", "amenity_education",
-    "amenity_total", "amenity_diversity",
-]
-MICRO_GEO_COLS = [
-    "dist_park_m", "dist_transit_m", "dist_school_m",
-    "dist_restaurant_m", "dist_retail_m", "dist_medical_m",
-]
-PROPERTY_COLS = ["bedrooms", "bldg_area_sqft", "lot_area_sqft", "year_built"]
-CONTEXTUAL_COLS = CENSUS_COLS + CRIME_COLS + AMENITY_COLS + MICRO_GEO_COLS
+from canonical_confounders import (
+    CENSUS as CENSUS_COLS,
+    CRIME as CRIME_COLS,
+    AMENITY as AMENITY_COLS,
+    MICRO_GEO as MICRO_GEO_COLS,
+    PROPERTY as PROPERTY_COLS,
+    CONTEXTUAL as CONTEXTUAL_COLS,
+)
 
 
 def load_analysis_data(city, embedding_model=None):
