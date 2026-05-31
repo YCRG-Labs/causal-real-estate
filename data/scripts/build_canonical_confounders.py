@@ -25,6 +25,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import asyncio
+import functools
 import os
 import sys
 import time
@@ -34,6 +36,17 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import requests
+
+print = functools.partial(print, flush=True)
+
+SESSION = requests.Session()
+SESSION.headers.update({"User-Agent": "YCRG-Labs JBES-2026 research (jacobcrainic@icloud.com)"})
+
+try:
+    import geopandas as _gpd
+    _gpd.options.io_engine = "pyogrio"
+except Exception:
+    pass
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
@@ -108,7 +121,7 @@ def fetch_census_tract_table(state_fips: str, county_fips: list[str], var_list: 
         }
         if api_key:
             params["key"] = api_key
-        r = requests.get(CENSUS_API_BASE, params=params, timeout=120)
+        r = SESSION.get(CENSUS_API_BASE, params=params, timeout=120)
         r.raise_for_status()
         data = r.json()
         cols = data[0]
@@ -258,14 +271,29 @@ OVERPASS_HEADERS = {
 }
 
 
+def _overpass_cache_path(slug: str, query_body: str) -> Path:
+    return CACHE_DIR / f"overpass_{slug}_{hash(query_body) & 0xffffffff:x}.parquet"
+
+
+def _overpass_parse(payload: dict) -> pd.DataFrame:
+    rows = []
+    for el in payload.get("elements", []):
+        lat = el.get("lat") or el.get("center", {}).get("lat")
+        lon = el.get("lon") or el.get("center", {}).get("lon")
+        if lat is None or lon is None:
+            continue
+        rows.append({"id": el.get("id"), "lat": float(lat), "lon": float(lon)})
+    return pd.DataFrame(rows)
+
+
 def overpass_query(slug: str, query_body: str) -> dict:
-    cache_path = CACHE_DIR / f"overpass_{slug}_{hash(query_body) & 0xffffffff:x}.parquet"
+    cache_path = _overpass_cache_path(slug, query_body)
     if cache_path.exists():
         return pd.read_parquet(cache_path).to_dict(orient="list")
     data = f"[out:json][timeout:120];{query_body}out center;"
     for attempt in range(3):
         try:
-            r = requests.post(OVERPASS_URL, data={"data": data}, headers=OVERPASS_HEADERS, timeout=180)
+            r = SESSION.post(OVERPASS_URL, data={"data": data}, headers=OVERPASS_HEADERS, timeout=180)
             r.raise_for_status()
             payload = r.json()
             break
@@ -275,16 +303,51 @@ def overpass_query(slug: str, query_body: str) -> dict:
             wait = 5 * (attempt + 1)
             print(f"    overpass retry {attempt+1}/3 after {wait}s: {e}", file=sys.stderr)
             time.sleep(wait)
-    rows = []
-    for el in payload.get("elements", []):
-        lat = el.get("lat") or el.get("center", {}).get("lat")
-        lon = el.get("lon") or el.get("center", {}).get("lon")
-        if lat is None or lon is None:
-            continue
-        rows.append({"id": el.get("id"), "lat": float(lat), "lon": float(lon)})
-    df = pd.DataFrame(rows)
+    df = _overpass_parse(payload)
     df.to_parquet(cache_path, index=False)
     return df.to_dict(orient="list")
+
+
+async def _overpass_async_one(session, sem, slug, qkey, query_body):
+    cache_path = _overpass_cache_path(slug, query_body)
+    if cache_path.exists():
+        return qkey, pd.read_parquet(cache_path)
+    data = f"[out:json][timeout:120];{query_body}out center;"
+    async with sem:
+        last_err = None
+        for attempt in range(3):
+            try:
+                async with session.post(OVERPASS_URL, data={"data": data}, headers=OVERPASS_HEADERS, timeout=180) as r:
+                    r.raise_for_status()
+                    payload = await r.json()
+                df = _overpass_parse(payload)
+                df.to_parquet(cache_path, index=False)
+                return qkey, df
+            except Exception as e:
+                last_err = e
+                wait = 5 * (attempt + 1)
+                print(f"    overpass[{qkey}] retry {attempt+1}/3 after {wait}s: {e}", file=sys.stderr)
+                await asyncio.sleep(wait)
+        raise last_err
+
+
+async def _overpass_async_many(slug: str, queries: dict[str, str]) -> dict[str, pd.DataFrame]:
+    try:
+        import aiohttp
+    except ImportError:
+        out = {}
+        for qkey, qbody in queries.items():
+            out[qkey] = pd.DataFrame(overpass_query(f"{slug}_{qkey}", qbody))
+        return out
+    sem = asyncio.Semaphore(2)
+    async with aiohttp.ClientSession() as session:
+        tasks = [_overpass_async_one(session, sem, slug, k, q) for k, q in queries.items()]
+        results = await asyncio.gather(*tasks)
+    return dict(results)
+
+
+def overpass_batch(slug: str, queries: dict[str, str]) -> dict[str, pd.DataFrame]:
+    return asyncio.run(_overpass_async_many(slug, queries))
 
 
 def amenity_filter_clause(tag_spec: str) -> str:
@@ -294,28 +357,36 @@ def amenity_filter_clause(tag_spec: str) -> str:
     return f'[{key}={val!r}]'
 
 
+def _build_overpass_queries(slug: str, bbox: tuple, tag_dict: dict, prefix: str = "") -> dict[str, str]:
+    bbox_str = f"({bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]})"
+    queries = {}
+    for cat, tags in tag_dict.items():
+        parts = []
+        for tag in tags:
+            clause = amenity_filter_clause(tag)
+            parts.append(f'node{clause}{bbox_str};way{clause}{bbox_str};')
+        queries[prefix + cat] = "(" + "".join(parts) + ");"
+    return queries
+
+
 def attach_amenities(listings: pd.DataFrame, slug: str) -> pd.DataFrame:
     listings = listings.copy()
     bbox = CITY_BBOXES[slug]
-    bbox_str = f"({bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]})"
-    counts = {cat: np.zeros(len(listings)) for cat in OSM_AMENITY_TAGS}
     lats = listings["lat_centroid"].to_numpy()
     lons = listings["lon_centroid"].to_numpy()
-    for cat, tags in OSM_AMENITY_TAGS.items():
-        query_parts = []
-        for tag in tags:
-            clause = amenity_filter_clause(tag)
-            query_parts.append(f'node{clause}{bbox_str};way{clause}{bbox_str};')
-        query_body = "(" + "".join(query_parts) + ");"
-        print(f"  [{slug}] overpass: {cat}...")
-        poi = overpass_query(slug + "_" + cat, query_body)
-        plats = np.array(poi.get("lat", []), dtype=float)
-        plons = np.array(poi.get("lon", []), dtype=float)
-        if len(plats) == 0:
+    print(f"  [{slug}] overpass batch: {len(OSM_AMENITY_TAGS)} amenity categories async (sem=2)...")
+    queries = _build_overpass_queries(slug, bbox, OSM_AMENITY_TAGS)
+    poi_dfs = overpass_batch(slug + "_amenity", queries)
+    counts = {}
+    for cat in OSM_AMENITY_TAGS:
+        df = poi_dfs.get(cat, pd.DataFrame())
+        if df.empty:
+            counts[cat] = np.zeros(len(listings))
             continue
+        plats = df["lat"].to_numpy(dtype=float)
+        plons = df["lon"].to_numpy(dtype=float)
         per_listing = _balltree_radius_indices(lats, lons, plats, plons, BUFFER_M)
         counts[cat] = np.array([len(ix) for ix in per_listing], dtype=float)
-        time.sleep(1.0)
     for cat in OSM_AMENITY_TAGS:
         listings[cat] = counts[cat]
     listings["amenity_total"] = sum(listings[cat] for cat in OSM_AMENITY_TAGS)
@@ -327,21 +398,19 @@ def attach_amenities(listings: pd.DataFrame, slug: str) -> pd.DataFrame:
 def attach_micro_geo(listings: pd.DataFrame, slug: str) -> pd.DataFrame:
     listings = listings.copy()
     bbox = CITY_BBOXES[slug]
-    bbox_str = f"({bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]})"
     lats = listings["lat_centroid"].to_numpy()
     lons = listings["lon_centroid"].to_numpy()
-    for col, tags in OSM_MICRO_TAGS.items():
-        query_parts = []
-        for tag in tags:
-            clause = amenity_filter_clause(tag)
-            query_parts.append(f'node{clause}{bbox_str};way{clause}{bbox_str};')
-        query_body = "(" + "".join(query_parts) + ");"
-        print(f"  [{slug}] overpass: {col}...")
-        poi = overpass_query(slug + "_micro_" + col, query_body)
-        plats = np.array(poi.get("lat", []), dtype=float)
-        plons = np.array(poi.get("lon", []), dtype=float)
+    print(f"  [{slug}] overpass batch: {len(OSM_MICRO_TAGS)} micro-geo categories async (sem=2)...")
+    queries = _build_overpass_queries(slug, bbox, OSM_MICRO_TAGS, prefix="micro_")
+    poi_dfs = overpass_batch(slug + "_micro", queries)
+    for col in OSM_MICRO_TAGS:
+        df = poi_dfs.get("micro_" + col, pd.DataFrame())
+        if df.empty:
+            listings[col] = np.nan
+            continue
+        plats = df["lat"].to_numpy(dtype=float)
+        plons = df["lon"].to_numpy(dtype=float)
         listings[col] = _balltree_nearest_distance(lats, lons, plats, plons)
-        time.sleep(1.0)
     return listings
 
 
