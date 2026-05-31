@@ -132,26 +132,58 @@ def generate_embeddings_modern(
     return embeddings
 
 
-def run_city(city: str, model_tag: str, matryoshka_dim: int | None = None) -> dict:
+def _auto_device() -> str:
+    try:
+        import torch
+        if torch.cuda.is_available():
+            return "cuda"
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return "mps"
+    except ImportError:
+        pass
+    return "cpu"
+
+
+def run_city(city: str, model_tag: str, matryoshka_dim: int | None = None,
+             device: str | None = None, batch_size: int = 128) -> dict:
     desc_path = DESC_DIR / f"{city}_descriptions.csv"
-    if not desc_path.exists():
-        print(f"{city}: no descriptions file at {desc_path}, skipping")
+    listings_path = PROCESSED_DIR / f"{city}_listings.parquet"
+    if desc_path.exists():
+        df = pd.read_csv(desc_path)
+        source = "descriptions_csv"
+    elif listings_path.exists():
+        live = pd.read_parquet(listings_path)
+        df = live.rename(columns={"address": "address", "description": "description"}).copy()
+        if "zip" not in df.columns:
+            df["zip"] = ""
+        if "url" not in df.columns:
+            df["url"] = ""
+        source = "listings_parquet"
+    else:
+        print(f"{city}: no descriptions csv and no listings parquet, skipping")
         return {}
 
-    df = pd.read_csv(desc_path)
     print(f"\n=== {city} / {model_tag} ===")
-    print(f"  Loaded {len(df)} descriptions")
+    print(f"  Loaded {len(df)} descriptions from {source}")
 
-    df = geocode_from_zip(df, city)
-    df["clean_description"] = df["description"].apply(clean_description)
+    if source == "descriptions_csv":
+        df = geocode_from_zip(df, city)
+    df["clean_description"] = df["description"].fillna("").apply(clean_description)
     df = df[df["clean_description"].str.len() > 20].reset_index(drop=True)
     print(f"  {len(df)} after cleaning")
+    if len(df) == 0:
+        print(f"  {city}: no clean descriptions, skipping")
+        return {}
 
     texts = df["clean_description"].tolist()
+    if device is None:
+        device = _auto_device()
+    print(f"  encoding on device={device}, batch_size={batch_size}")
 
     t0 = time.time()
     embeddings = generate_embeddings_modern(
-        texts, model_tag, batch_size=32, matryoshka_dim=matryoshka_dim
+        texts, model_tag, batch_size=batch_size, matryoshka_dim=matryoshka_dim,
+        device=device,
     )
     elapsed = time.time() - t0
 
@@ -171,8 +203,8 @@ def run_city(city: str, model_tag: str, matryoshka_dim: int | None = None) -> di
         "embedding_dim": int(out_dim),
         "matryoshka_dim": matryoshka_dim,
         "n_listings": int(len(result)),
-        "batch_size": 32,
-        "device": "cpu",
+        "batch_size": batch_size,
+        "device": device,
         "normalize_embeddings": True,
         "doc_prefix": MODEL_REGISTRY.get(model_tag, {}).get("doc_prefix", ""),
         "encode_seconds": round(elapsed, 2),
@@ -191,11 +223,7 @@ def run_city(city: str, model_tag: str, matryoshka_dim: int | None = None) -> di
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--city",
-        choices=list(CITIES.keys()) + ["all"],
-        default="all",
-    )
+    parser.add_argument("--city", default="all", help="city slug or 'all' or comma-separated")
     parser.add_argument(
         "--model",
         choices=list(MODEL_REGISTRY.keys()) + ["all"],
@@ -207,17 +235,29 @@ def main():
         default=None,
         help="Only valid with --model modernbert_embed_large (supports 256)",
     )
+    parser.add_argument("--device", default=None, help="cpu|cuda|mps|auto (default auto)")
+    parser.add_argument("--batch-size", type=int, default=128)
     args = parser.parse_args()
 
     ensure_dirs()
-    cities = list(CITIES.keys()) if args.city == "all" else [args.city]
+    if args.city == "all":
+        cities = list(CITIES.keys()) + ["dc", "philadelphia", "chicago", "seattle", "denver", "atlanta", "portland", "phoenix", "dallas"]
+    elif "," in args.city:
+        cities = [c.strip() for c in args.city.split(",") if c.strip()]
+    else:
+        cities = [args.city]
     models = list(MODEL_REGISTRY.keys()) if args.model == "all" else [args.model]
+    device = args.device if args.device and args.device != "auto" else None
 
     runs = []
     total_t0 = time.time()
     for model_tag in models:
         for city in cities:
-            meta = run_city(city, model_tag, matryoshka_dim=args.matryoshka_dim)
+            meta = run_city(
+                city, model_tag,
+                matryoshka_dim=args.matryoshka_dim,
+                device=device, batch_size=args.batch_size,
+            )
             if meta:
                 runs.append(meta)
     total_elapsed = time.time() - total_t0
