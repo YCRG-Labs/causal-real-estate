@@ -34,7 +34,7 @@ def _dcad_session() -> requests.Session:
 
 
 def _download_zip(session: requests.Session, url: str, out_path: Path) -> Path:
-    if out_path.exists():
+    if out_path.exists() and out_path.stat().st_size > 1_000_000:
         return out_path
     print(f"  downloading {url[-60:]}...")
     with session.get(url, stream=True, timeout=600) as r:
@@ -42,6 +42,13 @@ def _download_zip(session: requests.Session, url: str, out_path: Path) -> Path:
         with out_path.open("wb") as f:
             for chunk in r.iter_content(chunk_size=1 << 16):
                 f.write(chunk)
+    size = out_path.stat().st_size
+    with out_path.open("rb") as f:
+        head = f.read(4)
+    if head[:2] != b"PK":
+        preview = out_path.read_bytes()[:500].decode("utf-8", errors="replace")
+        raise ValueError(f"Downloaded {out_path.name} is not a ZIP (size={size}, magic={head!r}). First 500 chars:\n{preview}")
+    print(f"    -> {out_path.name} {size/1e6:.1f}MB")
     return out_path
 
 
@@ -59,9 +66,10 @@ def download_parcels(out_dir: Path) -> Path:
     with zipfile.ZipFile(data_zip) as zf:
         zf.extractall(txt_dir)
     import geopandas as gpd
-    shp_files = list(shp_dir.glob("*.shp"))
+    shp_files = list(shp_dir.rglob("*.shp"))
     if not shp_files:
-        raise FileNotFoundError(f"no .shp in {shp_dir}")
+        listing = "\n  ".join(str(p.relative_to(shp_dir)) for p in shp_dir.rglob("*"))
+        raise FileNotFoundError(f"no .shp anywhere under {shp_dir}. Contents:\n  {listing}")
     gdf = gpd.read_file(shp_files[0])
     if gdf.crs and gdf.crs.to_epsg() != 4326:
         gdf = gdf.to_crs(4326)

@@ -67,7 +67,7 @@ def download_crime(out_dir: Path, token: str | None = None) -> Path:
     print(f"  [{SLUG}] downloading crime CSV (block-level addresses, no lat/lon)...")
     r = requests.get(CRIME_URL, headers=DEFAULT_HEADERS, timeout=300)
     r.raise_for_status()
-    df = pd.read_csv(io.StringIO(r.text))
+    df = pd.read_csv(io.StringIO(r.text), dtype=str, low_memory=False)
     df.columns = [c.strip() for c in df.columns]
     df = canonicalize_crime(df, SLUG, "UCR CRIME CATEGORY")
     if "100 BLOCK ADDR" in df.columns:
