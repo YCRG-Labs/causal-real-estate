@@ -134,6 +134,37 @@ def census_table_to_canonical(raw: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _load_tract_polygons(state_fips: str) -> "object":
+    """Download (cached) the TIGER tract shapefile for a state and return a GeoDataFrame."""
+    import geopandas as gpd
+    tiger_url = f"https://www2.census.gov/geo/tiger/TIGER2024/TRACT/tl_2024_{state_fips}_tract.zip"
+    cache_path = CACHE_DIR / f"tiger_{state_fips}_tract.parquet"
+    if cache_path.exists():
+        return gpd.read_parquet(cache_path)
+    print(f"  downloading TIGER tracts for state FIPS {state_fips}...")
+    gdf = gpd.read_file(tiger_url)
+    gdf = gdf[["GEOID", "geometry"]].to_crs(4326)
+    gdf.to_parquet(cache_path, index=False)
+    return gdf
+
+
+def _listings_to_tract_geoid(listings: pd.DataFrame, state_fips: str, cnty_fips: list[str]) -> pd.Series:
+    import geopandas as gpd
+    from shapely.geometry import Point
+    tracts = _load_tract_polygons(state_fips)
+    if cnty_fips:
+        tracts = tracts[tracts["GEOID"].str[:5].isin([state_fips + c for c in cnty_fips])].copy()
+    pts = gpd.GeoDataFrame(
+        listings.index.to_frame(name="_idx"),
+        geometry=[Point(lon, lat) if not (pd.isna(lon) or pd.isna(lat)) else None
+                  for lat, lon in zip(listings["lat_centroid"], listings["lon_centroid"])],
+        crs=4326,
+    )
+    joined = gpd.sjoin(pts, tracts, how="left", predicate="within")
+    out = pd.Series(joined["GEOID"].values, index=listings.index, name="geoid")
+    return out
+
+
 def attach_census(listings: pd.DataFrame, slug: str, api_key: Optional[str]) -> pd.DataFrame:
     state_fips = STATE_FIPS[slug]
     cnty_fips = COUNTY_FIPS[slug]
@@ -146,44 +177,41 @@ def attach_census(listings: pd.DataFrame, slug: str, api_key: Optional[str]) -> 
             all_vars.add(spec[1])
     raw = fetch_census_tract_table(state_fips, cnty_fips, sorted(all_vars), api_key)
     can = census_table_to_canonical(raw)
-    try:
-        from census import Census  # noqa: F401
-    except ImportError:
-        pass
     tract_geoid = _listings_to_tract_geoid(listings, state_fips, cnty_fips)
     listings = listings.copy()
     listings["geoid"] = tract_geoid
     return listings.merge(can, on="geoid", how="left")
 
 
-def _listings_to_tract_geoid(listings: pd.DataFrame, state_fips: str, cnty_fips: list[str]) -> pd.Series:
-    geoids = []
-    for _, row in listings[["lat_centroid", "lon_centroid"]].iterrows():
-        lat = row["lat_centroid"]; lon = row["lon_centroid"]
-        if pd.isna(lat) or pd.isna(lon):
-            geoids.append(None); continue
-        params = {
-            "x": lon, "y": lat,
-            "benchmark": "Public_AR_Current",
-            "vintage": "Current_Current",
-            "layers": "Census Tracts",
-            "format": "json",
-        }
-        try:
-            r = requests.get(
-                "https://geocoding.geo.census.gov/geocoder/geographies/coordinates",
-                params=params, timeout=30,
-            )
-            r.raise_for_status()
-            tracts = r.json().get("result", {}).get("geographies", {}).get("Census Tracts", [])
-            if tracts:
-                t = tracts[0]
-                geoids.append(t.get("GEOID"))
-                continue
-        except Exception:
-            pass
-        geoids.append(None)
-    return pd.Series(geoids, index=listings.index)
+def _balltree_radius_indices(lats: np.ndarray, lons: np.ndarray, plats: np.ndarray, plons: np.ndarray, radius_m: float) -> list[np.ndarray]:
+    """Return per-listing array of POI indices within radius_m. Uses BallTree(haversine)."""
+    from sklearn.neighbors import BallTree
+    if len(plats) == 0:
+        return [np.array([], dtype=int) for _ in range(len(lats))]
+    poi_rad = np.radians(np.column_stack([plats, plons]))
+    listing_rad = np.radians(np.column_stack([np.nan_to_num(lats), np.nan_to_num(lons)]))
+    tree = BallTree(poi_rad, metric="haversine")
+    radius_rad = radius_m / HAVERSINE_R
+    indices = tree.query_radius(listing_rad, r=radius_rad)
+    nan_mask = np.isnan(lats) | np.isnan(lons)
+    for i in np.where(nan_mask)[0]:
+        indices[i] = np.array([], dtype=int)
+    return list(indices)
+
+
+def _balltree_nearest_distance(lats: np.ndarray, lons: np.ndarray, plats: np.ndarray, plons: np.ndarray) -> np.ndarray:
+    """Return per-listing nearest-POI distance in meters via BallTree(haversine)."""
+    from sklearn.neighbors import BallTree
+    if len(plats) == 0:
+        return np.full(len(lats), np.nan)
+    poi_rad = np.radians(np.column_stack([plats, plons]))
+    listing_rad = np.radians(np.column_stack([np.nan_to_num(lats), np.nan_to_num(lons)]))
+    tree = BallTree(poi_rad, metric="haversine")
+    d_rad, _ = tree.query(listing_rad, k=1)
+    d_m = d_rad[:, 0] * HAVERSINE_R
+    nan_mask = np.isnan(lats) | np.isnan(lons)
+    d_m[nan_mask] = np.nan
+    return d_m
 
 
 def attach_crime(listings: pd.DataFrame, slug: str) -> pd.DataFrame:
@@ -201,26 +229,24 @@ def attach_crime(listings: pd.DataFrame, slug: str) -> pd.DataFrame:
         return listings
     crime[lat_col] = pd.to_numeric(crime[lat_col], errors="coerce")
     crime[lon_col] = pd.to_numeric(crime[lon_col], errors="coerce")
-    crime = crime.dropna(subset=[lat_col, lon_col])
+    crime = crime.dropna(subset=[lat_col, lon_col]).reset_index(drop=True)
     if "crime_category" not in crime.columns:
         crime["crime_category"] = None
-    print(f"  [{slug}] {len(crime):,} crime incidents; computing 500m buffer counts...")
+    print(f"  [{slug}] {len(crime):,} crime incidents; balltree 500m buffer...")
     lats = listings["lat_centroid"].to_numpy()
     lons = listings["lon_centroid"].to_numpy()
     clats = crime[lat_col].to_numpy()
     clons = crime[lon_col].to_numpy()
     ccats = crime["crime_category"].to_numpy()
-    cat_indices = {cat: ccats == cat for cat in ("violent", "property", "quality_of_life")}
-    n = len(listings)
-    counts = {cat: np.zeros(n) for cat in ("violent", "property", "quality_of_life")}
-    for i in range(n):
-        if np.isnan(lats[i]) or np.isnan(lons[i]):
+    per_listing_indices = _balltree_radius_indices(lats, lons, clats, clons, BUFFER_M)
+    counts = {cat: np.zeros(len(listings)) for cat in ("violent", "property", "quality_of_life")}
+    for i, idx in enumerate(per_listing_indices):
+        if len(idx) == 0:
             continue
-        d = haversine_m(lats[i], lons[i], clats, clons)
-        within = d < BUFFER_M
-        for cat, mask in cat_indices.items():
-            counts[cat][i] = float((within & mask).sum())
-    for cat in ("violent", "property", "quality_of_life"):
+        sub = ccats[idx]
+        for cat in counts:
+            counts[cat][i] = float((sub == cat).sum())
+    for cat in counts:
         listings[f"crime_{cat}"] = counts[cat]
     listings["crime_total"] = listings["crime_violent"] + listings["crime_property"] + listings["crime_quality_of_life"]
     return listings
@@ -283,15 +309,12 @@ def attach_amenities(listings: pd.DataFrame, slug: str) -> pd.DataFrame:
         query_body = "(" + "".join(query_parts) + ");"
         print(f"  [{slug}] overpass: {cat}...")
         poi = overpass_query(slug + "_" + cat, query_body)
-        plats = np.array(poi.get("lat", []))
-        plons = np.array(poi.get("lon", []))
+        plats = np.array(poi.get("lat", []), dtype=float)
+        plons = np.array(poi.get("lon", []), dtype=float)
         if len(plats) == 0:
             continue
-        for i in range(len(listings)):
-            if np.isnan(lats[i]) or np.isnan(lons[i]):
-                continue
-            d = haversine_m(lats[i], lons[i], plats, plons)
-            counts[cat][i] = float((d < BUFFER_M).sum())
+        per_listing = _balltree_radius_indices(lats, lons, plats, plons, BUFFER_M)
+        counts[cat] = np.array([len(ix) for ix in per_listing], dtype=float)
         time.sleep(1.0)
     for cat in OSM_AMENITY_TAGS:
         listings[cat] = counts[cat]
@@ -315,16 +338,9 @@ def attach_micro_geo(listings: pd.DataFrame, slug: str) -> pd.DataFrame:
         query_body = "(" + "".join(query_parts) + ");"
         print(f"  [{slug}] overpass: {col}...")
         poi = overpass_query(slug + "_micro_" + col, query_body)
-        plats = np.array(poi.get("lat", []))
-        plons = np.array(poi.get("lon", []))
-        dists = np.full(len(listings), np.nan)
-        if len(plats) > 0:
-            for i in range(len(listings)):
-                if np.isnan(lats[i]) or np.isnan(lons[i]):
-                    continue
-                d = haversine_m(lats[i], lons[i], plats, plons)
-                dists[i] = float(d.min())
-        listings[col] = dists
+        plats = np.array(poi.get("lat", []), dtype=float)
+        plons = np.array(poi.get("lon", []), dtype=float)
+        listings[col] = _balltree_nearest_distance(lats, lons, plats, plons)
         time.sleep(1.0)
     return listings
 
