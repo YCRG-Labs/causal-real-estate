@@ -36,17 +36,14 @@ ALL_12 = ["boston", "nyc", "sf", "dc", "philadelphia", "chicago",
           "seattle", "denver", "atlanta", "portland", "phoenix", "dallas"]
 
 KEYWORD_PATTERN = re.compile(
-    r"\b("
-    r"duplex|triplex|fourplex|four-plex|fiveplex|sixplex|"
+    r"\b(?:"
+    r"duplex|triplex|fourplex|four-plex|fiveplex|five-plex|sixplex|six-plex|"
     r"multi[-\s]?family|multifamily|multi[-\s]?unit|multiunit|"
-    r"portfolio|sealed[-\s]?bid|auction|"
-    r"investment\s+opportunity|investment\s+property|"
-    r"\d+[-\s]?unit\s+(community|building|portfolio|complex|property|investment)|"
-    r"\d+\s+units\b|"
-    r"leased|fully\s+leased|cap\s+rate|pro\s+forma|rent\s+roll|"
-    r"\bnoi\b|\bgross\s+rents?\b|\bcommercial\b|\bmixed[-\s]?use\b|"
-    r"value[-\s]?add\b|opportunity\s+zone|"
-    r"development\s+opportunity|tear[-\s]?down|land\s+value"
+    r"sealed[-\s]?bid|"
+    r"\d+[-\s]?unit\s+(?:community|building|portfolio|complex|multifamily)|"
+    r"\d+\s+units\s+(?:in|leased|stabilized)|"
+    r"fully\s+leased|cap\s+rate|pro\s+forma|rent\s+roll|"
+    r"\bnoi\b|\bgross\s+rents?\b"
     r")\b",
     flags=re.IGNORECASE,
 )
@@ -123,24 +120,12 @@ def filter_one(city: str, dry_run: bool = False, backup: bool = True) -> dict:
             shutil.copy2(emb_path, backup_path)
     emb_filtered.to_parquet(emb_path, index=False)
 
-    if gpkg_path.exists():
-        import geopandas as gpd
-        gdf = gpd.read_file(gpkg_path, layer=city) if (gpkg_path.exists()) else None
-        if gdf is not None:
-            if "url" in gdf.columns and "url" in emb_filtered.columns:
-                keep_urls = set(emb_filtered["url"].tolist())
-                gdf_filt = gdf[gdf["url"].isin(keep_urls)].reset_index(drop=True)
-            else:
-                lat_keep = emb_filtered["latitude"].round(6).astype(str) + "_" + emb_filtered["longitude"].round(6).astype(str)
-                lat_all = gdf["latitude"].round(6).astype(str) + "_" + gdf["longitude"].round(6).astype(str) if "latitude" in gdf.columns else gdf.geometry.y.round(6).astype(str) + "_" + gdf.geometry.x.round(6).astype(str)
-                gdf_filt = gdf[lat_all.isin(set(lat_keep))].reset_index(drop=True)
-            if backup:
-                gpkg_backup = PROCESSED_DIR / f"{city}_parcels_micro_geo_prefilter.gpkg"
-                if not gpkg_backup.exists():
-                    shutil.copy2(gpkg_path, gpkg_backup)
-            gpkg_path.unlink()
-            gdf_filt.to_file(gpkg_path, layer=city, driver="GPKG")
-            print(f"    gpkg: {len(gdf)} -> {len(gdf_filt)} parcels")
+    # NOTE: we deliberately do NOT modify {city}_parcels_micro_geo.gpkg. Legacy
+    # 3-city gpkgs are 100k-row parcel reference databases; the DML script's
+    # cKDTree joins each filtered listing to its nearest parcel automatically,
+    # and restricting the parcel set to only the colocated points destroys
+    # confounder coverage (the SF n_confounders=2 bug). The 9-city listing-point
+    # gpkgs are fine to leave alone too: extra rows there just don't get queried.
 
     return report
 
