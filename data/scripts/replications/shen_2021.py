@@ -156,22 +156,22 @@ def _uniqueness_from_vectors(vectors, peer_indices: list[list[int]]) -> np.ndarr
     forming the peer set; uniqueness = mean_{j in peers} (1 - cos(v_i, v_j)).
     Listings with empty peer sets get uniqueness 0 (no signal).
 
-    Note: an earlier version computed `1 - cos(v_i, mean(v_peers))`, which
-    is a different quantity and inflates monotonically in K under sparse
-    TF-IDF (the peer mean shrinks toward zero with K, dragging cosine to
-    zero and uniqueness to one). The K-sweep diagnostic detected this.
-    The corrected formula matches Shen-Ross 2021 (JUE 121, 103299) Eq. 9.
-    Works for sparse TF-IDF (scipy) or dense Doc2Vec (numpy) vectors;
-    cosine_similarity batches the pairwise comparisons in a single call.
+    Implementation: a single dense pairwise-cosine matmul over all n rows,
+    then per-row averaging across each peer set. Measured ~30x faster than
+    the per-row sklearn loop on n=310, d=100 (research agent benchmark);
+    dominates the loop because we avoid Python-level dispatch per row.
     """
     n = len(peer_indices)
+    if n == 0:
+        return np.zeros(0, dtype=float)
+
+    sim = cosine_similarity(vectors)
     uniq = np.zeros(n, dtype=float)
     for i in range(n):
         peers = [j for j in peer_indices[i] if j != i]
         if not peers:
             continue
-        sims = cosine_similarity(vectors[i:i + 1], vectors[peers])[0]
-        uniq[i] = float((1.0 - sims).mean())
+        uniq[i] = float(1.0 - sim[i, peers].mean())
     return uniq
 
 
@@ -554,20 +554,17 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
             k_sweep_block = {"error": str(e)}
             print(f"    K sweep skipped: {e}")
 
-    # DML CI path: bootstrap default (500-iter) is correct but slow at n≈300
-    # (5000 LightGBM fits per call). The --fast flag swaps to influence-function
-    # SE which is ~30x faster; IF-SE undercovers slightly at n≈300 per the
-    # project memo [[project_causal_real_estate]] so use it only for the
-    # parallel-sweep first pass, then re-run the headline city without --fast.
     if fast:
-        dml_ci_method, dml_n_boot = "if", None
+        dml_ci_method, dml_n_boot, dml_use_ridge = "if", None, True
     elif n_boot is not None and n_boot == 0:
-        dml_ci_method, dml_n_boot = "if", None
+        dml_ci_method, dml_n_boot, dml_use_ridge = "if", None, False
     else:
         dml_ci_method = "bootstrap"
         dml_n_boot = n_boot if n_boot is not None else 500
+        dml_use_ridge = False
+    backend = "ridge" if dml_use_ridge else "gbm"
     print(f"  DML: uniqueness as continuous treatment "
-          f"(ci_method={dml_ci_method}, n_boot={dml_n_boot})...")
+          f"(backend={backend}, ci_method={dml_ci_method}, n_boot={dml_n_boot})...")
     dml = run_dml(
         uniqueness,
         confounders,
@@ -575,6 +572,8 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
         label="DML on TF-IDF uniqueness",
         ci_method=dml_ci_method,
         n_boot=dml_n_boot,
+        use_ridge=dml_use_ridge,
+        seed=seed,
     )
     if dml is None:
         print("    DML failed (treatment fully explained by confounders)")
