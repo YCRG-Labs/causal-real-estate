@@ -226,6 +226,12 @@ def attach_crime(listings: pd.DataFrame, slug: str) -> pd.DataFrame:
     return listings
 
 
+OVERPASS_HEADERS = {
+    "User-Agent": "YCRG-Labs JBES-2026 research (jacobcrainic@icloud.com)",
+    "Accept": "application/json",
+}
+
+
 def overpass_query(slug: str, query_body: str) -> dict:
     cache_path = CACHE_DIR / f"overpass_{slug}_{hash(query_body) & 0xffffffff:x}.parquet"
     if cache_path.exists():
@@ -233,7 +239,7 @@ def overpass_query(slug: str, query_body: str) -> dict:
     data = f"[out:json][timeout:120];{query_body}out center;"
     for attempt in range(3):
         try:
-            r = requests.post(OVERPASS_URL, data={"data": data}, timeout=180)
+            r = requests.post(OVERPASS_URL, data={"data": data}, headers=OVERPASS_HEADERS, timeout=180)
             r.raise_for_status()
             payload = r.json()
             break
