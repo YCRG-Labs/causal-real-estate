@@ -44,11 +44,17 @@ def run_dml(
     label: str,
     n_pca: int = 50,
     k_folds: int = 5,
+    ci_method: str = "bootstrap",
+    n_boot: int | None = 500,
 ) -> DMLResult | None:
     """Run dml_continuous_treatment and box the output as a DMLResult.
 
     T may be 1-D (scalar treatment) or 2-D (vector treatment).  If 1-D it is
     reshaped to (n, 1) so the underlying PCA degenerates to a standardisation.
+
+    The default ci_method='bootstrap', n_boot=500 matches the previously hard-
+    coded behavior; callers (e.g. shen_2021 --fast) can pass ci_method='if' for
+    a ~30x speedup at the cost of slightly anti-conservative CIs at n≈300.
     """
     T = np.asarray(T)
     if T.ndim == 1:
@@ -56,14 +62,15 @@ def run_dml(
 
     n_pca = min(n_pca, T.shape[1], T.shape[0] - 1)
 
-    # Cheap bootstrap CI (Lam 2022 JASA) rather than the influence-function SE,
-    # which undercovers at n ~ 1000 in this regime (project memo:
-    # project_causal_real_estate). dml_continuous_treatment supports the
-    # bootstrap path natively via ci_method='bootstrap'.
+    # Cheap bootstrap CI (Lam 2022 JASA) is the default; IF-SE is opt-in via
+    # ci_method='if'. The choice is exposed to the caller per the JBES
+    # 12-city sweep where bootstrap × 5000 LightGBM fits per city × 12 cities
+    # is the dominant cost.
+    dml_kwargs = dict(n_pca=n_pca, k_folds=k_folds, ci_method=ci_method)
+    if ci_method == "bootstrap" and n_boot is not None:
+        dml_kwargs["n_boot"] = n_boot
     with contextlib.redirect_stdout(io.StringIO()):
-        raw = dml_continuous_treatment(T, confounders, Y, n_pca=n_pca,
-                                       k_folds=k_folds,
-                                       ci_method="bootstrap", n_boot=500)
+        raw = dml_continuous_treatment(T, confounders, Y, **dml_kwargs)
     if raw is None:
         return None
     lo, hi = raw["ci"]

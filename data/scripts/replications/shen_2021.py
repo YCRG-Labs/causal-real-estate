@@ -71,11 +71,18 @@ from __future__ import annotations
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); import _silence  # noqa: F401
 
 import argparse
+import functools
 import json
 import math
 import sys
 from dataclasses import dataclass, asdict
 from pathlib import Path
+
+# Force flush on every print so progress is visible when stdout is redirected
+# to a file under parallel orchestration (gnu parallel / xargs -P / background
+# subshell). Without this, 4 KB of phase-marker prints sit in the buffer until
+# the process exits.
+print = functools.partial(print, flush=True)
 
 import numpy as np
 import pandas as pd
@@ -389,7 +396,8 @@ def _confounder_names(confounders: np.ndarray, parcels) -> list[str]:
 
 def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
              *, k: int = 5, k_sweep: bool = False, cell_fe: bool = False,
-             use_doc2vec: bool = False,
+             use_doc2vec: bool = False, fast: bool = False,
+             n_boot: int | None = None,
              published_theta: float = 0.149,
              published_se: float = 0.034,
              published_n: int = 40000) -> dict:
@@ -546,12 +554,27 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
             k_sweep_block = {"error": str(e)}
             print(f"    K sweep skipped: {e}")
 
-    print("  DML: uniqueness as continuous treatment...")
+    # DML CI path: bootstrap default (500-iter) is correct but slow at n≈300
+    # (5000 LightGBM fits per call). The --fast flag swaps to influence-function
+    # SE which is ~30x faster; IF-SE undercovers slightly at n≈300 per the
+    # project memo [[project_causal_real_estate]] so use it only for the
+    # parallel-sweep first pass, then re-run the headline city without --fast.
+    if fast:
+        dml_ci_method, dml_n_boot = "if", None
+    elif n_boot is not None and n_boot == 0:
+        dml_ci_method, dml_n_boot = "if", None
+    else:
+        dml_ci_method = "bootstrap"
+        dml_n_boot = n_boot if n_boot is not None else 500
+    print(f"  DML: uniqueness as continuous treatment "
+          f"(ci_method={dml_ci_method}, n_boot={dml_n_boot})...")
     dml = run_dml(
         uniqueness,
         confounders,
         Y,
         label="DML on TF-IDF uniqueness",
+        ci_method=dml_ci_method,
+        n_boot=dml_n_boot,
     )
     if dml is None:
         print("    DML failed (treatment fully explained by confounders)")
@@ -624,6 +647,13 @@ def main():
                     help="(zip,year) cell averages with cell FE (Shen Eq. 9 style)")
     ap.add_argument("--doc2vec", action="store_true",
                     help="use Doc2Vec embeddings instead of TF-IDF (needs gensim)")
+    ap.add_argument("--fast", action="store_true",
+                    help="lean mode: use influence-function SE for DML CI "
+                         "instead of 500-iter bootstrap (~30x faster; IF-SE "
+                         "is slightly anti-conservative at n≈300)")
+    ap.add_argument("--n_boot", type=int, default=None,
+                    help="override DML bootstrap iterations (default 500; "
+                         "0 forces IF-SE)")
     ap.add_argument("--published_theta", type=float, default=0.149,
                     help="Shen's published per-σ coefficient (default 0.149)")
     ap.add_argument("--published_se", type=float, default=0.034,
@@ -636,7 +666,8 @@ def main():
 
     result = run_shen(city=args.city, n_subset=args.n, seed=args.seed,
                       k=args.k, k_sweep=args.k_sweep, cell_fe=args.cell_fe,
-                      use_doc2vec=args.doc2vec,
+                      use_doc2vec=args.doc2vec, fast=args.fast,
+                      n_boot=args.n_boot,
                       published_theta=args.published_theta,
                       published_se=args.published_se,
                       published_n=args.published_n)
