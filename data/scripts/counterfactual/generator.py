@@ -321,7 +321,9 @@ class VLLMGenerator:
         gpu_memory_utilization: float = 0.90,
         quantization: str | None = "awq",
         enable_prefix_caching: bool = True,
+        structured_outputs: bool = False,
     ):
+        self._structured_outputs_enabled = structured_outputs
         try:
             from vllm import LLM, SamplingParams  # type: ignore
         except ImportError as e:
@@ -400,18 +402,17 @@ class VLLMGenerator:
         }
 
     def _sampling_params(self, slot_dict: Optional[dict]):
-        schema = self._slot_schema(slot_dict)
-        guided = None
-        if schema is not None and self._GuidedDecodingParams is not None:
-            guided = self._GuidedDecodingParams(json=schema)
         kw = dict(
             temperature=self.temperature,
             top_p=1.0,
             max_tokens=self.max_tokens,
             seed=self.seed,
         )
-        if guided is not None and self._structured_kwarg is not None:
-            kw[self._structured_kwarg] = guided
+        if self._structured_outputs_enabled:
+            schema = self._slot_schema(slot_dict)
+            if (schema is not None and self._GuidedDecodingParams is not None
+                    and self._structured_kwarg is not None):
+                kw[self._structured_kwarg] = self._GuidedDecodingParams(json=schema)
         return self._SamplingParams(**kw)
 
     def _apply_chat_template(self, system: Optional[str], user: str) -> str:
