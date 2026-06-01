@@ -599,20 +599,28 @@ class AsyncAnthropicGenerator:
 class AsyncVLLMGenerator:
     """Async wrapper around VLLMGenerator using asyncio.to_thread.
 
-    vLLM offline LLM is a sync API and serializes calls per-process. The
-    wrapper preserves the existing async pipeline so the 4 arms per listing
-    still gang up under asyncio.gather, but the underlying execution is
-    serial through vLLM's internal continuous batcher. For real throughput
-    at 24k generations, prefer driving generate_batch directly on the sync
-    VLLMGenerator (see notes in generator.py:VLLMGenerator).
+    vLLM offline LLM is NOT thread-safe — concurrent calls into
+    llm.generate() from different threads deadlock on its internal
+    scheduler queue. We hold a threading.Lock around each sync call so
+    multiple asyncio.gather'd arms serialize through vLLM safely. The
+    pipeline still benefits from concurrency at the asyncio level
+    (validator + DML postprocess overlap with generation), but the GPU
+    work itself is serial per generator instance.
+
+    For real throughput at 24k generations, drive
+    VLLMGenerator.generate_batch directly on the sync generator with all
+    4 arms per listing as a single batch; vLLM's internal continuous
+    batcher runs them concurrently on the GPU.
     """
 
     used_mock = False
 
     def __init__(self, model: str | None = None, **vllm_kwargs):
+        import threading
         self._sync = VLLMGenerator(
             model=model or "Qwen/Qwen2.5-32B-Instruct-AWQ", **vllm_kwargs
         )
+        self._lock = threading.Lock()
         self.usage = self._sync.usage
 
     async def generate_blocks(self, system: str, user: str,
@@ -620,10 +628,13 @@ class AsyncVLLMGenerator:
                               original_text: Optional[str] = None,
                               **_: object) -> GenerationResult:
         import asyncio
-        return await asyncio.to_thread(
-            self._sync.generate_blocks,
-            system, user, slot_dict=slot_dict, original_text=original_text,
-        )
+        def _call():
+            with self._lock:
+                return self._sync.generate_blocks(
+                    system, user,
+                    slot_dict=slot_dict, original_text=original_text,
+                )
+        return await asyncio.to_thread(_call)
 
 
 def make_async_generator(force_mock: bool = False,
