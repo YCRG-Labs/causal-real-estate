@@ -230,50 +230,78 @@ def bootstrap_mean_ci(values: np.ndarray, n_boot: int = 2000, seed: int = 42,
 
 # ---------- pipeline orchestration -------------------------------------------
 
-def _load_sf_descriptions() -> pd.DataFrame:
-    path = RAW_DIR / "descriptions" / "sf_descriptions.csv"
-    df = pd.read_csv(path)
+def _load_city_descriptions(city: str, emb_df: pd.DataFrame) -> pd.DataFrame:
+    """Pull (description, zip, address) from the city's embeddings parquet.
+
+    For SF the original sf_descriptions.csv exists at RAW_DIR / 'descriptions';
+    we prefer that to preserve the SF replication numbers. For the other 11
+    cities we read description columns directly from emb_df (already loaded
+    by run_pipeline). All paths return a DataFrame with at least 'description'
+    and 'zip' columns; descriptions shorter than 50 chars are dropped.
+    """
+    if city == "sf":
+        path = RAW_DIR / "descriptions" / "sf_descriptions.csv"
+        if path.exists():
+            df = pd.read_csv(path)
+            df = df[df["description"].astype(str).str.len() > 50].reset_index(drop=True)
+            return df
+    desc_col = ("clean_description" if "clean_description" in emb_df.columns
+                else "description" if "description" in emb_df.columns else None)
+    if desc_col is None:
+        raise FileNotFoundError(f"no description column on emb_df for city={city}")
+    cols = [desc_col]
+    if "zip" in emb_df.columns:
+        cols.append("zip")
+    if "address" in emb_df.columns:
+        cols.append("address")
+    df = emb_df[cols].copy()
+    df = df.rename(columns={desc_col: "description"})
+    if "zip" not in df.columns:
+        df["zip"] = 0
+    df["zip"] = pd.to_numeric(df["zip"], errors="coerce").fillna(0).astype(int)
     df = df[df["description"].astype(str).str.len() > 50].reset_index(drop=True)
     return df
 
 
-def _zip_to_target_submarket(zip_int: int) -> str:
-    """Crude zip→submarket map for the SF dataset. Used to (a) seed an attribute
-    classifier label, (b) implicitly map a target submarket to a target zip
-    label for the validator."""
-    z = int(zip_int)
-    return {
-        94110: "Mission District",
-        94103: "SoMa",
-        94114: "Castro",
-        94131: "Noe Valley",
-        94121: "Richmond",
-        94122: "Sunset",
-        94123: "Marina",
-        94115: "Pacific Heights",
-        94109: "Pacific Heights",
-        94107: "SoMa",
-        94105: "SoMa",
-    }.get(z, "Mission District")
+# SF-specific zip→submarket map preserved from the 3-city pilot. For the 11
+# new cities we have submarket vocabularies (prompts.SUBMARKET_HINTS[city])
+# but no curated zip-to-submarket mapping; the new-city style-swap arm picks
+# k=3 alternative submarkets at random from the city's pool, losing the
+# "originally was X" precision but retaining the validator's discriminator
+# check on the target submarket. Defensible scope choice given the JBES
+# revision timeline; can be tightened in a v2 with hand-curated mappings.
+_SF_ZIP_TO_SUBMARKET = {
+    94110: "Mission District", 94103: "SoMa", 94114: "Castro",
+    94131: "Noe Valley", 94121: "Richmond", 94122: "Sunset",
+    94123: "Marina", 94115: "Pacific Heights", 94109: "Pacific Heights",
+    94107: "SoMa", 94105: "SoMa",
+}
+
+_SF_SUBMARKET_TO_ZIP = {
+    "Mission District": 94110, "SoMa": 94103, "Castro": 94114,
+    "Noe Valley": 94131, "Richmond": 94121, "Sunset": 94122,
+    "Marina": 94123, "Pacific Heights": 94115,
+}
 
 
-def _submarket_to_target_zip(submarket: str) -> Optional[int]:
-    rev = {
-        "Mission District": 94110,
-        "SoMa": 94103,
-        "Castro": 94114,
-        "Noe Valley": 94131,
-        "Richmond": 94121,
-        "Sunset": 94122,
-        "Marina": 94123,
-        "Pacific Heights": 94115,
-    }
-    return rev.get(submarket)
+def _zip_to_target_submarket(city: str, zip_int: int) -> str:
+    if city == "sf":
+        return _SF_ZIP_TO_SUBMARKET.get(int(zip_int), "Mission District")
+    city_subs = list(SUBMARKET_HINTS.get(city, {}).keys())
+    if not city_subs:
+        return "Unknown"
+    return city_subs[int(zip_int) % len(city_subs)]
 
 
-def _pick_swap_targets(orig_submarket: str, k: int = 3) -> list[str]:
+def _submarket_to_target_zip(city: str, submarket: str) -> Optional[int]:
+    if city == "sf":
+        return _SF_SUBMARKET_TO_ZIP.get(submarket)
+    return None
+
+
+def _pick_swap_targets(city: str, orig_submarket: str, k: int = 3) -> list[str]:
     """Pick k alternative submarkets, deterministically, for the swap arms."""
-    pool = [s for s in SUBMARKET_HINTS.keys() if s != orig_submarket]
+    pool = [s for s in SUBMARKET_HINTS.get(city, {}).keys() if s != orig_submarket]
     return pool[:k]
 
 
@@ -285,6 +313,8 @@ async def run_pipeline(
     skip_perplexity: bool = False,
     n_pca: int = 50,
     seed: int = 42,
+    use_vllm: bool = False,
+    vllm_model: str | None = None,
 ) -> dict:
     """Top-level orchestration. Returns the result dict written to disk.
 
@@ -309,25 +339,24 @@ async def run_pipeline(
     print(f"  Fitted DML θ = {art.theta:+.4f} (SE {art.se:.4f}, n_pca={art.pca.n_components_})")
 
     # 3. attribute classifier on raw description text
-    sf_desc = _load_sf_descriptions()
-    print(f"  Raw SF descriptions: {len(sf_desc)}")
+    city_desc = _load_city_descriptions(city, emb_df)
+    print(f"  Raw {city} descriptions: {len(city_desc)}")
     fit_zip_classifier(
-        sf_desc["description"].astype(str).tolist(),
-        sf_desc["zip"].astype(int).tolist(),
+        city_desc["description"].astype(str).tolist(),
+        city_desc["zip"].astype(int).tolist(),
     )
     print(f"  Fitted zip-as-label TF-IDF + LogisticRegressionCV classifier")
 
     # 4. select listings for the experiment
     rng = np.random.default_rng(seed)
-    n_pick = min(n_listings, len(sf_desc))
-    pick_idx = rng.choice(len(sf_desc), size=n_pick, replace=False)
+    n_pick = min(n_listings, len(city_desc))
+    pick_idx = rng.choice(len(city_desc), size=n_pick, replace=False)
     pick_idx.sort()
 
     # 5. align listings to confounder rows (best-effort; missing → use mean conf)
     conf_s_full = art.conf_scaler.transform(confounders)
     mean_conf_s = conf_s_full.mean(axis=0)
 
-    # join sf_desc to emb_df by address+zip to map a listing to its conf row
     addr_zip_to_row: dict[tuple[str, int], int] = {}
     if "address" in emb_df.columns and "zip" in emb_df.columns:
         for i, row in emb_df.reset_index(drop=True).iterrows():
@@ -336,27 +365,26 @@ async def run_pipeline(
             except Exception:
                 pass
 
-    generator = make_async_generator(force_mock=force_mock)
+    generator = make_async_generator(force_mock=force_mock,
+                                     use_vllm=use_vllm, vllm_model=vllm_model)
     print(f"  Generator: {type(generator).__name__}")
 
-    # 6. main loop
     listings_out: list[ListingRecord] = []
     print(f"\n  Generating + validating {n_pick} listings × 4 variants ...")
     for n_done, li in enumerate(pick_idx):
-        row = sf_desc.iloc[li]
+        row = city_desc.iloc[li]
         original_text = str(row["description"])
         zip_int = int(row["zip"])
         addr = str(row.get("address", ""))
         slots = extract_slots(original_text)
 
-        orig_submarket = _zip_to_target_submarket(zip_int)
-        swap_targets = _pick_swap_targets(orig_submarket, k=3)
-        # (arm_name, target_sub, blocks) where blocks = {"system": ..., "user": ...}
+        orig_submarket = _zip_to_target_submarket(city, zip_int)
+        swap_targets = _pick_swap_targets(city, orig_submarket, k=3)
         arms: list[tuple[str, Optional[str], dict]] = []
         for tgt in swap_targets:
             arms.append((
                 f"style_swap:{tgt}", tgt,
-                style_swap_blocks(tgt, original_text, slots),
+                style_swap_blocks(tgt, original_text, slots, city=city),
             ))
         arms.append((
             "style_stripped", None,
@@ -401,7 +429,7 @@ async def run_pipeline(
         rewrite_embs = encode_texts(rewrite_texts)
 
         for (arm_name, target_sub, gres), emb in zip(gen_results, rewrite_embs):
-            target_zip = _submarket_to_target_zip(target_sub) if target_sub else None
+            target_zip = _submarket_to_target_zip(city, target_sub) if target_sub else None
             v = validate_rewrite(
                 original_text=original_text,
                 rewritten_text=gres.rewritten_text,
@@ -511,30 +539,55 @@ async def run_pipeline(
     return out
 
 
+ALL_12 = ["boston", "nyc", "sf", "dc", "philadelphia", "chicago",
+          "seattle", "denver", "atlanta", "portland", "phoenix", "dallas"]
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--city", default="sf", choices=["sf"], help="only sf supported initially")
+    ap.add_argument("--city")
+    ap.add_argument("--all_12", action="store_true",
+                    help="run the pipeline once per city across the 12-metro set")
     ap.add_argument("--n_listings", type=int, default=25)
-    ap.add_argument("--out", type=Path, default=Path("results/counterfactual/sf.json"))
+    ap.add_argument("--out_dir", type=Path,
+                    default=Path("results/counterfactual"),
+                    help="output directory; per-city files written as {city}.json")
     ap.add_argument("--force_mock", action="store_true",
                     help="ignore ANTHROPIC_API_KEY and use MockGenerator")
+    ap.add_argument("--use_vllm", action="store_true",
+                    help="route generation through VLLMGenerator (Qwen 2.5 32B "
+                         "Instruct AWQ by default); requires CUDA + vllm + outlines")
+    ap.add_argument("--vllm_model", type=str, default=None,
+                    help="override the default vLLM model id")
     ap.add_argument("--skip_perplexity", action="store_true",
                     help="skip GPT-2 perplexity check (faster smoke runs)")
     ap.add_argument("--n_pca", type=int, default=50)
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
+    if args.all_12:
+        cities = list(ALL_12)
+    elif args.city is not None:
+        cities = [args.city]
+    else:
+        ap.error("specify --city or --all_12")
+
     import asyncio
-    reset_caches()
-    asyncio.run(run_pipeline(
-        city=args.city,
-        n_listings=args.n_listings,
-        out_path=args.out,
-        force_mock=args.force_mock,
-        skip_perplexity=args.skip_perplexity,
-        n_pca=args.n_pca,
-        seed=args.seed,
-    ))
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    for c in cities:
+        reset_caches()
+        out_path = args.out_dir / f"{c}.json"
+        asyncio.run(run_pipeline(
+            city=c,
+            n_listings=args.n_listings,
+            out_path=out_path,
+            force_mock=args.force_mock,
+            skip_perplexity=args.skip_perplexity,
+            n_pca=args.n_pca,
+            seed=args.seed,
+            use_vllm=args.use_vllm,
+            vllm_model=args.vllm_model,
+        ))
 
 
 if __name__ == "__main__":
