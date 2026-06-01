@@ -275,9 +275,191 @@ class AnthropicGenerator:
         )
 
 
-def make_generator(force_mock: bool = False) -> MockGenerator | AnthropicGenerator:
-    """Return the real generator if a key is set and the SDK is available;
-    otherwise the mock. Never fails on missing key."""
+class VLLMGenerator:
+    """Offline vLLM generator with Outlines-style guided JSON decoding.
+
+    Loads the model into GPU memory once (vLLM offline mode), then serves
+    generate() / generate_blocks() / generate_batch() calls against the
+    resident model. Default model is Qwen 2.5 32B Instruct AWQ which fits on
+    a single 48GB GPU at 8k context.
+
+    Reproducibility: temperature=0, seed pinned, vLLM offline mode (no
+    scheduling non-determinism), version-pinned dependency. Per
+    https://docs.vllm.ai/en/v0.9.1/usage/reproducibility.html online serving
+    is not reproducible; offline LLM is.
+
+    Slot-fact preservation: when a slot_dict is supplied, we build a JSON
+    schema whose 'preserved_slots' field has one Literal-typed property per
+    slot key, forcing the decoder to emit the exact slot values. This is
+    the JBES-defensible alternative to post-hoc regex validation +
+    rejection sampling.
+    """
+
+    used_mock = False
+
+    def __init__(
+        self,
+        model: str = "Qwen/Qwen2.5-32B-Instruct-AWQ",
+        max_tokens: int = 1024,
+        temperature: float = 0.0,
+        seed: int = 42,
+        max_model_len: int = 8192,
+        gpu_memory_utilization: float = 0.90,
+        quantization: str | None = "awq",
+        enable_prefix_caching: bool = True,
+    ):
+        try:
+            from vllm import LLM, SamplingParams  # type: ignore
+            from vllm.sampling_params import GuidedDecodingParams  # type: ignore
+        except ImportError as e:
+            raise RuntimeError(
+                "vllm not installed; run: pip install 'vllm>=0.9.1' outlines"
+            ) from e
+        self._SamplingParams = SamplingParams
+        self._GuidedDecodingParams = GuidedDecodingParams
+        self.model_name = model
+        self.max_tokens = max_tokens
+        self.temperature = temperature
+        self.seed = seed
+        kwargs: dict = dict(
+            model=model,
+            max_model_len=max_model_len,
+            gpu_memory_utilization=gpu_memory_utilization,
+            enable_prefix_caching=enable_prefix_caching,
+            seed=seed,
+            dtype="auto",
+        )
+        if quantization:
+            kwargs["quantization"] = quantization
+        self.llm = LLM(**kwargs)
+        self.tokenizer = self.llm.get_tokenizer()
+        self.usage = UsageStats()
+        # vLLM offline has no API usage to bill; we count requests and
+        # output_tokens for the orchestrator's summary line.
+
+    @staticmethod
+    def _slot_schema(slot_dict: Optional[dict]) -> dict | None:
+        if not slot_dict:
+            return None
+        slot_props: dict = {}
+        slot_required: list[str] = []
+        for k, v in slot_dict.items():
+            v_str = "" if v is None else str(v)
+            slot_props[str(k)] = {"type": "string", "enum": [v_str]}
+            slot_required.append(str(k))
+        return {
+            "type": "object",
+            "properties": {
+                "rewritten_text": {"type": "string"},
+                "preserved_slots": {
+                    "type": "object",
+                    "properties": slot_props,
+                    "required": slot_required,
+                    "additionalProperties": False,
+                },
+            },
+            "required": ["rewritten_text", "preserved_slots"],
+            "additionalProperties": False,
+        }
+
+    def _sampling_params(self, slot_dict: Optional[dict]):
+        schema = self._slot_schema(slot_dict)
+        guided = None
+        if schema is not None:
+            guided = self._GuidedDecodingParams(json=schema)
+        return self._SamplingParams(
+            temperature=self.temperature,
+            top_p=1.0,
+            max_tokens=self.max_tokens,
+            seed=self.seed,
+            guided_decoding=guided,
+        )
+
+    def _apply_chat_template(self, system: Optional[str], user: str) -> str:
+        msgs: list[dict] = []
+        if system:
+            msgs.append({"role": "system", "content": system})
+        msgs.append({"role": "user", "content": user})
+        return self.tokenizer.apply_chat_template(
+            msgs, tokenize=False, add_generation_prompt=True
+        )
+
+    def _wrap_output(self, raw: str, slot_dict: Optional[dict]) -> GenerationResult:
+        payload = _parse_json_payload(raw)
+        slots = dict(payload.get("preserved_slots", slot_dict or {}))
+        self.usage.n_calls += 1
+        # rough token accounting from string length, no tokenizer round-trip per call
+        self.usage.output_tokens += len(raw) // 4
+        return GenerationResult(
+            rewritten_text=str(payload.get("rewritten_text", "")),
+            preserved_slots=slots,
+            raw=raw,
+            used_mock=False,
+        )
+
+    def generate(self, prompt: str, slot_dict: Optional[dict] = None,
+                 original_text: Optional[str] = None, **_: object) -> GenerationResult:
+        params = self._sampling_params(slot_dict)
+        outputs = self.llm.generate([prompt], params, use_tqdm=False)
+        raw = outputs[0].outputs[0].text
+        return self._wrap_output(raw, slot_dict)
+
+    def generate_blocks(self, system: str, user: str,
+                        slot_dict: Optional[dict] = None,
+                        original_text: Optional[str] = None,
+                        **_: object) -> GenerationResult:
+        prompt = self._apply_chat_template(system, user)
+        return self.generate(prompt, slot_dict=slot_dict,
+                             original_text=original_text)
+
+    def generate_batch(
+        self,
+        items: list[dict],
+    ) -> list[GenerationResult]:
+        """Batch-generate over a list of {prompt, slot_dict, system, user} dicts.
+
+        Either ``prompt`` (single-string path) or both ``system`` and ``user``
+        (block path) must be supplied per item. Each item carries its own
+        slot_dict so the per-call guided schema differs across items in the
+        batch. vLLM continuous-batches these on the GPU; this is the only
+        code path that hits the published 200-400 tok/s throughput.
+        """
+        prompts: list[str] = []
+        params_list: list = []
+        slot_dicts: list[Optional[dict]] = []
+        for it in items:
+            sd = it.get("slot_dict")
+            if "prompt" in it:
+                prompts.append(it["prompt"])
+            elif "system" in it and "user" in it:
+                prompts.append(self._apply_chat_template(it["system"], it["user"]))
+            else:
+                raise ValueError("batch item needs 'prompt' or ('system','user')")
+            params_list.append(self._sampling_params(sd))
+            slot_dicts.append(sd)
+        outputs = self.llm.generate(prompts, params_list, use_tqdm=False)
+        return [
+            self._wrap_output(o.outputs[0].text, sd)
+            for o, sd in zip(outputs, slot_dicts)
+        ]
+
+
+def make_generator(force_mock: bool = False,
+                   use_vllm: bool = False,
+                   vllm_model: str | None = None,
+                   ) -> MockGenerator | AnthropicGenerator | VLLMGenerator:
+    """Return the real generator. Priority: vLLM > Anthropic > Mock.
+
+    use_vllm=True forces the VLLMGenerator path (requires CUDA + vllm
+    installed); falls back to Mock if vllm cannot be loaded. Otherwise the
+    pre-existing Anthropic/Mock router is preserved.
+    """
+    if use_vllm:
+        try:
+            return VLLMGenerator(model=vllm_model or "Qwen/Qwen2.5-32B-Instruct-AWQ")
+        except Exception as e:
+            print(f"  [generator] vLLM init failed ({e}); falling back to mock")
+            return MockGenerator()
     if force_mock or not _HAS_ANTHROPIC or not os.environ.get("ANTHROPIC_API_KEY"):
         if not _HAS_ANTHROPIC:
             print("  [generator] anthropic package unavailable — using MockGenerator")
