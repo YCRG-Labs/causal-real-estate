@@ -312,25 +312,34 @@ class VLLMGenerator:
             from vllm import LLM, SamplingParams  # type: ignore
         except ImportError as e:
             raise RuntimeError(f"vllm import failed: {e!r}") from e
-        GuidedDecodingParams = None
-        for path in (
-            "vllm.sampling_params",
-            "vllm",
-            "vllm.entrypoints.openai.protocol",
-        ):
+        StructuredCls = None
+        structured_kwarg = None
+        candidates = [
+            ("vllm.sampling_params", "StructuredOutputsParams", "structured_outputs"),
+            ("vllm", "StructuredOutputsParams", "structured_outputs"),
+            ("vllm.sampling_params", "GuidedDecodingParams", "guided_decoding"),
+            ("vllm", "GuidedDecodingParams", "guided_decoding"),
+        ]
+        for path, name, kwarg in candidates:
             try:
-                mod = __import__(path, fromlist=["GuidedDecodingParams"])
-                GuidedDecodingParams = getattr(mod, "GuidedDecodingParams", None)
-                if GuidedDecodingParams is not None:
+                mod = __import__(path, fromlist=[name])
+                cls = getattr(mod, name, None)
+                if cls is not None:
+                    StructuredCls = cls
+                    structured_kwarg = kwarg
                     break
             except Exception:
                 continue
-        if GuidedDecodingParams is None:
-            print("  [VLLMGenerator] GuidedDecodingParams not found in this vllm "
-                  "release; guided JSON will be disabled, slot preservation falls "
+        if StructuredCls is None:
+            print("  [VLLMGenerator] no structured-outputs class found in this "
+                  "vllm release; guided JSON disabled, slot preservation falls "
                   "back to post-hoc regex validation")
+        else:
+            print(f"  [VLLMGenerator] using {StructuredCls.__name__} via "
+                  f"SamplingParams({structured_kwarg}=...)")
         self._SamplingParams = SamplingParams
-        self._GuidedDecodingParams = GuidedDecodingParams
+        self._GuidedDecodingParams = StructuredCls
+        self._structured_kwarg = structured_kwarg
         self.model_name = model
         self.max_tokens = max_tokens
         self.temperature = temperature
@@ -387,8 +396,8 @@ class VLLMGenerator:
             max_tokens=self.max_tokens,
             seed=self.seed,
         )
-        if guided is not None:
-            kw["guided_decoding"] = guided
+        if guided is not None and self._structured_kwarg is not None:
+            kw[self._structured_kwarg] = guided
         return self._SamplingParams(**kw)
 
     def _apply_chat_template(self, system: Optional[str], user: str) -> str:
