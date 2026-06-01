@@ -319,7 +319,7 @@ class VLLMGenerator:
         seed: int = 42,
         max_model_len: int = 8192,
         gpu_memory_utilization: float = 0.90,
-        quantization: str | None = "awq",
+        quantization: str | None = "awq_marlin",
         enable_prefix_caching: bool = True,
         structured_outputs: bool = False,
     ):
@@ -634,6 +634,20 @@ class AsyncVLLMGenerator:
                     system, user,
                     slot_dict=slot_dict, original_text=original_text,
                 )
+        return await asyncio.to_thread(_call)
+
+    async def generate_blocks_batch(self, items: list[dict]) -> list[GenerationResult]:
+        """Batch-generate over a list of {system, user, slot_dict} dicts.
+
+        This is the fast path: vLLM's continuous batcher runs all N prompts
+        in parallel on the GPU. For 4 arms per listing, expect roughly
+        max(4 prefills, parallel decode) ≈ 10-15 sec total vs 4 × 50 sec
+        through the lock-serialized one-at-a-time path.
+        """
+        import asyncio
+        def _call():
+            with self._lock:
+                return self._sync.generate_batch(items)
         return await asyncio.to_thread(_call)
 
 

@@ -414,16 +414,24 @@ async def run_pipeline(
         # Fire all 4 arms concurrently via asyncio.gather (~4x speedup on
         # API-bound time vs sequential loop; cache_control on the shared system
         # prompt still fires correctly across concurrent requests).
-        async_calls = [
-            generator.generate_blocks(
-                system=blocks["system"],
-                user=blocks["user"],
-                slot_dict=slots,
-                original_text=original_text,
-            )
-            for _arm_name, _target_sub, blocks in arms
-        ]
-        arm_results = await asyncio.gather(*async_calls, return_exceptions=False)
+        if hasattr(generator, "generate_blocks_batch"):
+            batch_items = [
+                {"system": blocks["system"], "user": blocks["user"],
+                 "slot_dict": slots}
+                for _arm_name, _target_sub, blocks in arms
+            ]
+            arm_results = await generator.generate_blocks_batch(batch_items)
+        else:
+            async_calls = [
+                generator.generate_blocks(
+                    system=blocks["system"],
+                    user=blocks["user"],
+                    slot_dict=slots,
+                    original_text=original_text,
+                )
+                for _arm_name, _target_sub, blocks in arms
+            ]
+            arm_results = await asyncio.gather(*async_calls, return_exceptions=False)
         gen_results: list[tuple[str, Optional[str], GenerationResult]] = [
             (arm_name, target_sub, res)
             for (arm_name, target_sub, _), res in zip(arms, arm_results)
