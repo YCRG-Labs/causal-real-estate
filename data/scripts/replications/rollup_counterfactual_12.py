@@ -80,17 +80,18 @@ def main():
         if not p.exists():
             missing.append(city); continue
         d = json.loads(p.read_text())
-        nde = _pull(d, "nde") or _pull(d, "NDE") or {}
-        te = _pull(d, "te") or _pull(d, "TE") or {}
+        nde = _pull(d, "natural_direct_effect_style_stripped") or {}
+        te = _pull(d, "total_effect_style_swap") or {}
         pass_rates = _pull(d, "validation_pass_rates") or {}
-        if not nde and "summary" in d:
-            nde = _pull(d, "summary", "nde") or {}
-            te = _pull(d, "summary", "te") or {}
-            pass_rates = _pull(d, "summary", "validation_pass_rates") or {}
-        n_listings = _pull(d, "n_listings") or len(d.get("listings", []))
+        dml = _pull(d, "dml") or {}
+        n_listings = (d.get("n_listings_processed")
+                      or d.get("n_listings_requested")
+                      or len(d.get("listings", [])))
         rows.append({
             "city": city,
             "n_listings": int(n_listings) if n_listings else 0,
+            "dml_theta": dml.get("theta"),
+            "dml_se": dml.get("se"),
             "nde_mean": nde.get("mean_delta_logprice"),
             "nde_ci_low": nde.get("ci_low"),
             "nde_ci_high": nde.get("ci_high"),
@@ -159,7 +160,7 @@ def main():
           f"{len(rows)-n_te_neg-n_te_pos} contain zero")
 
     csv_path = results_dir / "counterfactual_12city_table.csv"
-    cols = ["city", "n_listings",
+    cols = ["city", "n_listings", "dml_theta", "dml_se",
             "nde_mean", "nde_ci_low", "nde_ci_high", "nde_n_valid", "nde_pct",
             "te_mean", "te_ci_low", "te_ci_high", "te_n_valid", "te_pct",
             "slot_preserved", "classifier_flipped", "overall_pass"]
