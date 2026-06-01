@@ -34,6 +34,20 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
+# Disable FlashInfer at the process and subprocess level BEFORE vllm is
+# imported anywhere in this module. vLLM 0.21 uses FlashInfer in two
+# places (top-k/top-p sampling AND prefill attention); a single env var
+# only disables one of them, leaving the other to crash with a JIT
+# compile error on hosts without nvcc + the right cc1plus. The three-var
+# combination below is the documented workaround on the vLLM issue
+# tracker (vllm-project/vllm#19810) and the HF gpt-oss-120b discussion
+# thread. Setting them here via setdefault means they propagate to the
+# multiprocessing workers vLLM spawns for EngineCore. Override at the
+# shell level if you actually want FlashInfer back later.
+os.environ.setdefault("VLLM_USE_FLASHINFER_SAMPLER", "0")
+os.environ.setdefault("VLLM_ATTENTION_BACKEND", "FLASH_ATTN")
+os.environ.setdefault("VLLM_DISABLE_FLASHINFER_PREFILL", "1")
+
 try:
     import anthropic  # type: ignore
     _HAS_ANTHROPIC = True
