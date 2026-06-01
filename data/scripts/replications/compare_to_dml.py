@@ -150,14 +150,21 @@ def run_dml(
     """
     T_in = np.asarray(T)
     if use_ridge:
-        if T_in.ndim == 2 and T_in.shape[1] != 1:
-            raise ValueError("use_ridge=True requires a scalar treatment "
-                             "(T must be 1-D or shape (n,1))")
-        T_1d_raw = np.asarray(T_in, dtype=np.float64).ravel()
-        t_sd = float(np.std(T_1d_raw, ddof=1))
-        if t_sd < 1e-12:
-            return None
-        T_1d = (T_1d_raw - float(np.mean(T_1d_raw))) / t_sd
+        if T_in.ndim == 2 and T_in.shape[1] > 1:
+            T_mat_std = StandardScaler().fit_transform(np.asarray(T_in, dtype=np.float64))
+            from numpy.linalg import svd
+            u, s, vt = svd(T_mat_std, full_matrices=False)
+            pc1 = (T_mat_std @ vt[0]).astype(np.float64)
+            t_sd = float(np.std(pc1, ddof=1))
+            if t_sd < 1e-12:
+                return None
+            T_1d = (pc1 - float(np.mean(pc1))) / t_sd
+        else:
+            T_1d_raw = np.asarray(T_in, dtype=np.float64).ravel()
+            t_sd = float(np.std(T_1d_raw, ddof=1))
+            if t_sd < 1e-12:
+                return None
+            T_1d = (T_1d_raw - float(np.mean(T_1d_raw))) / t_sd
         n_obs = int(len(Y))
         do_boot = ci_method == "bootstrap" and n_boot is not None and n_boot > 0
         if do_boot:
