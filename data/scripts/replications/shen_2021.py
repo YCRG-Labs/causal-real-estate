@@ -555,7 +555,11 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
             print(f"    K sweep skipped: {e}")
 
     if fast:
-        dml_ci_method, dml_n_boot, dml_use_ridge = "if", None, True
+        dml_use_ridge = True
+        if n_boot is not None and n_boot > 0:
+            dml_ci_method, dml_n_boot = "bootstrap", n_boot
+        else:
+            dml_ci_method, dml_n_boot = "if", None
     elif n_boot is not None and n_boot == 0:
         dml_ci_method, dml_n_boot, dml_use_ridge = "if", None, False
     else:

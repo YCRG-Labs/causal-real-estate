@@ -81,6 +81,8 @@ def main():
             "cell_fe_p": cell.get("p"),
             "dml_theta": dml.get("theta"),
             "dml_se": dml.get("se"),
+            "dml_se_if": dml.get("se_if"),
+            "dml_n_boot": dml.get("n_boot"),
             "dml_ci_low": dml.get("ci_low"),
             "dml_ci_high": dml.get("ci_high"),
             "dml_excludes_zero": (dml.get("contains_zero") is False),
@@ -93,25 +95,31 @@ def main():
     if not rows:
         print("no JSONs read; aborting", file=sys.stderr); return 1
 
+    any_boot = any((r.get("dml_n_boot") or 0) > 0 for r in rows)
     print()
+    se_header = "se_b/se_if" if any_boot else "(se)"
     print(f"{'city':<14}{'n':>5}  "
           f"{'OLS β':>9}{'(se)':>8}  "
           f"{'%/σ':>6}  "
           f"{'cellFE β':>10}{'(se)':>8}  "
-          f"{'DML θ':>9}{'(se)':>8}  "
+          f"{'DML θ':>9}{se_header:>14}  "
           f"{'95% CI':>22}  "
           f"{'≠0':>3}  "
           f"{'pwr':>5}")
-    print("-" * 122)
+    print("-" * 128)
     for r in rows:
         ci = f"[{r['dml_ci_low']:+.3f}, {r['dml_ci_high']:+.3f}]" \
             if r["dml_ci_low"] is not None else "—"
         excl = "Y" if r["dml_excludes_zero"] else "n"
+        if any_boot:
+            se_str = f"{(r['dml_se'] or 0):>5.3f}/{(r['dml_se_if'] or 0):.3f}"
+        else:
+            se_str = f"({(r['dml_se'] or 0):>5.3f})"
         print(f"{DISPLAY[r['city']]:<14}{r['n']:>5}  "
               f"{(r['ols_beta'] or 0):>+9.4f}({(r['ols_se'] or 0):>5.3f})  "
               f"{(r['ols_pct_per_sd'] or 0):>+5.1f}  "
               f"{(r['cell_fe_beta'] or 0):>+10.4f}({(r['cell_fe_se'] or 0):>5.3f})  "
-              f"{(r['dml_theta'] or 0):>+9.4f}({(r['dml_se'] or 0):>5.3f})  "
+              f"{(r['dml_theta'] or 0):>+9.4f}{se_str:>14}  "
               f"{ci:>22}  "
               f"{excl:>3}  "
               f"{(r['power_vs_pub'] or 0):>5.3f}")

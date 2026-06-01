@@ -61,6 +61,47 @@ def _ridge_dml_core(T_1d, confounders, Y, k_folds=5, seed=42):
     return theta, se_if
 
 
+def _ridge_dml_bootstrap(T_1d, confounders, Y, n_boot=500, k_folds=5, seed=42):
+    """Nonparametric pairs bootstrap on the ridge-DML estimator.
+
+    Resamples (T_i, conf_i, Y_i) triples with replacement, refits the K-fold
+    cross-fitted ridge nuisances on the resampled set, and recovers theta_b.
+    Returns (theta_hat, se_if, se_boot, ci_perc_low, ci_perc_high, thetas_b).
+
+    At n=300, p=30, k_folds=5, n_boot=500 this is ~5,000 RidgeCV fits per
+    city, ~5-10 s wall-clock on a single core. Pairs bootstrap is the
+    cleanest finite-sample variance estimate for IF-SE undercoverage at
+    moderate n; matches the project's spatial-confounding bootstrap protocol
+    [[project_causal_real_estate]].
+    """
+    n = len(Y)
+    T_1d = np.asarray(T_1d, dtype=np.float64).ravel()
+    Y_arr = np.asarray(Y, dtype=np.float64).ravel()
+    conf_arr = np.asarray(confounders)
+
+    base = _ridge_dml_core(T_1d, conf_arr, Y_arr, k_folds=k_folds, seed=seed)
+    if base is None:
+        return None
+    theta_hat, se_if = base
+
+    rng = np.random.default_rng(seed)
+    thetas = np.full(n_boot, np.nan, dtype=np.float64)
+    for b in range(n_boot):
+        idx = rng.integers(0, n, n)
+        out = _ridge_dml_core(T_1d[idx], conf_arr[idx], Y_arr[idx],
+                              k_folds=k_folds, seed=seed + b + 1)
+        if out is None:
+            continue
+        thetas[b] = out[0]
+    valid = thetas[~np.isnan(thetas)]
+    if valid.size < max(20, n_boot // 10):
+        return theta_hat, se_if, float("nan"), float("nan"), float("nan"), thetas
+    se_boot = float(np.std(valid, ddof=1))
+    ci_lo = float(np.percentile(valid, 2.5))
+    ci_hi = float(np.percentile(valid, 97.5))
+    return theta_hat, se_if, se_boot, ci_lo, ci_hi, thetas
+
+
 @dataclass
 class DMLResult:
     label: str
@@ -71,6 +112,8 @@ class DMLResult:
     ci_high: float
     mde: float
     contains_zero: bool
+    se_if: float | None = None
+    n_boot: int | None = None
 
 
 def run_dml(
@@ -107,11 +150,29 @@ def run_dml(
             raise ValueError("use_ridge=True requires a scalar treatment "
                              "(T must be 1-D or shape (n,1))")
         T_1d = T_in.ravel()
+        n_obs = int(len(Y))
+        do_boot = ci_method == "bootstrap" and n_boot is not None and n_boot > 0
+        if do_boot:
+            res = _ridge_dml_bootstrap(T_1d, confounders, Y,
+                                       n_boot=n_boot, k_folds=k_folds, seed=seed)
+            if res is None:
+                return None
+            theta, se_if, se_boot, lo, hi, _ = res
+            se = float(se_boot) if not np.isnan(se_boot) else float(se_if)
+            mde = 2.802 * se
+            return DMLResult(
+                label=label, n=n_obs, theta=float(theta), se=se,
+                ci_low=float(lo) if not np.isnan(lo) else float(theta - 1.96 * se),
+                ci_high=float(hi) if not np.isnan(hi) else float(theta + 1.96 * se),
+                mde=float(mde),
+                contains_zero=bool((lo if not np.isnan(lo) else theta - 1.96 * se) <= 0
+                                    <= (hi if not np.isnan(hi) else theta + 1.96 * se)),
+                se_if=float(se_if), n_boot=int(n_boot),
+            )
         out = _ridge_dml_core(T_1d, confounders, Y, k_folds=k_folds, seed=seed)
         if out is None:
             return None
         theta, se = out
-        n_obs = int(len(Y))
         lo = theta - 1.96 * se
         hi = theta + 1.96 * se
         mde = 2.802 * se
@@ -119,6 +180,7 @@ def run_dml(
             label=label, n=n_obs, theta=float(theta), se=float(se),
             ci_low=float(lo), ci_high=float(hi), mde=float(mde),
             contains_zero=bool(lo <= 0 <= hi),
+            se_if=float(se), n_boot=None,
         )
 
     T_mat = T_in.reshape(-1, 1) if T_in.ndim == 1 else T_in
