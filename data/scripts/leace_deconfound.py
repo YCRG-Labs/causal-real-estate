@@ -617,11 +617,7 @@ def igbp_polish(T_tr, T_te, Z_concept_tr, n_outer: int = 5,
         Y_t = torch.from_numpy(Z)
         pred = adv(T_tr_t)
         loss_per_row = ((pred - Y_t) ** 2).mean(dim=1)
-        grads = torch.zeros_like(T_tr_t)
-        for i in range(T_tr_t.shape[0]):
-            g = torch.autograd.grad(loss_per_row[i], T_tr_t,
-                                    retain_graph=True)[0][i]
-            grads[i] = g
+        grads = torch.autograd.grad(loss_per_row.sum(), T_tr_t)[0]
         G = grads.detach().cpu().numpy().astype(np.float64)
         _, _, Vt = np.linalg.svd(G, full_matrices=False)
         v = Vt[0]
@@ -1086,10 +1082,17 @@ def _self_test(seed: int = 0) -> None:
     print("== self-test PASS ==")
 
 
+ALL_12 = ["boston", "nyc", "sf", "dc", "philadelphia", "chicago",
+          "seattle", "denver", "atlanta", "portland", "phoenix", "dallas"]
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--city", choices=["sf", "nyc", "boston"])
-    ap.add_argument("--all", action="store_true")
+    ap.add_argument("--city")
+    ap.add_argument("--all", action="store_true",
+                    help="legacy 3-city set: sf, nyc, boston")
+    ap.add_argument("--all_12", action="store_true",
+                    help="full 12-city JBES set")
     ap.add_argument("--variant", default="leace", choices=["leace", "splince"])
     ap.add_argument("--all_variants", action="store_true",
                     help="run LEACE and SPLINCE side-by-side on each city")
@@ -1112,9 +1115,14 @@ def main():
     if args.self_test:
         _self_test(); return
 
-    cities = ["sf", "nyc", "boston"] if args.all else [args.city]
+    if args.all_12:
+        cities = list(ALL_12)
+    elif args.all:
+        cities = ["sf", "nyc", "boston"]
+    else:
+        cities = [args.city]
     if any(c is None for c in cities):
-        raise SystemExit("specify --city or --all")
+        raise SystemExit("specify --city, --all, or --all_12")
     variants = ["leace", "splince"] if args.all_variants else [args.variant]
     args.out_dir.mkdir(parents=True, exist_ok=True)
     for c in cities:
