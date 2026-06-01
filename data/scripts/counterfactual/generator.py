@@ -310,11 +310,25 @@ class VLLMGenerator:
     ):
         try:
             from vllm import LLM, SamplingParams  # type: ignore
-            from vllm.sampling_params import GuidedDecodingParams  # type: ignore
         except ImportError as e:
-            raise RuntimeError(
-                "vllm not installed; run: pip install 'vllm>=0.9.1' outlines"
-            ) from e
+            raise RuntimeError(f"vllm import failed: {e!r}") from e
+        GuidedDecodingParams = None
+        for path in (
+            "vllm.sampling_params",
+            "vllm",
+            "vllm.entrypoints.openai.protocol",
+        ):
+            try:
+                mod = __import__(path, fromlist=["GuidedDecodingParams"])
+                GuidedDecodingParams = getattr(mod, "GuidedDecodingParams", None)
+                if GuidedDecodingParams is not None:
+                    break
+            except Exception:
+                continue
+        if GuidedDecodingParams is None:
+            print("  [VLLMGenerator] GuidedDecodingParams not found in this vllm "
+                  "release; guided JSON will be disabled, slot preservation falls "
+                  "back to post-hoc regex validation")
         self._SamplingParams = SamplingParams
         self._GuidedDecodingParams = GuidedDecodingParams
         self.model_name = model
@@ -365,15 +379,17 @@ class VLLMGenerator:
     def _sampling_params(self, slot_dict: Optional[dict]):
         schema = self._slot_schema(slot_dict)
         guided = None
-        if schema is not None:
+        if schema is not None and self._GuidedDecodingParams is not None:
             guided = self._GuidedDecodingParams(json=schema)
-        return self._SamplingParams(
+        kw = dict(
             temperature=self.temperature,
             top_p=1.0,
             max_tokens=self.max_tokens,
             seed=self.seed,
-            guided_decoding=guided,
         )
+        if guided is not None:
+            kw["guided_decoding"] = guided
+        return self._SamplingParams(**kw)
 
     def _apply_chat_template(self, system: Optional[str], user: str) -> str:
         msgs: list[dict] = []
