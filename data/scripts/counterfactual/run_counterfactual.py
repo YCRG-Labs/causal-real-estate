@@ -573,6 +573,9 @@ def main():
                     help="override the default vLLM model id")
     ap.add_argument("--skip_perplexity", action="store_true",
                     help="skip GPT-2 perplexity check (faster smoke runs)")
+    ap.add_argument("--force_redo", action="store_true",
+                    help="re-run cities that already have an output JSON "
+                         "(default: skip cities with results, resume-friendly)")
     ap.add_argument("--n_pca", type=int, default=50)
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
@@ -587,8 +590,11 @@ def main():
     import asyncio
     args.out_dir.mkdir(parents=True, exist_ok=True)
     for c in cities:
-        reset_caches()
         out_path = args.out_dir / f"{c}.json"
+        if out_path.exists() and not args.force_redo:
+            print(f"=== {c}: existing {out_path} found, skipping (use --force_redo to re-run) ===")
+            continue
+        reset_caches()
         asyncio.run(run_pipeline(
             city=c,
             n_listings=args.n_listings,

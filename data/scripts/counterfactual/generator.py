@@ -314,7 +314,7 @@ class VLLMGenerator:
     def __init__(
         self,
         model: str = "Qwen/Qwen2.5-32B-Instruct-AWQ",
-        max_tokens: int = 1024,
+        max_tokens: int = 2048,
         temperature: float = 0.0,
         seed: int = 42,
         max_model_len: int = 8192,
@@ -425,11 +425,30 @@ class VLLMGenerator:
         )
 
     def _wrap_output(self, raw: str, slot_dict: Optional[dict]) -> GenerationResult:
-        payload = _parse_json_payload(raw)
-        slots = dict(payload.get("preserved_slots", slot_dict or {}))
         self.usage.n_calls += 1
-        # rough token accounting from string length, no tokenizer round-trip per call
         self.usage.output_tokens += len(raw) // 4
+        try:
+            payload = _parse_json_payload(raw)
+        except (ValueError, KeyError) as e:
+            # Recover from truncated / malformed JSON. Pull whatever text we
+            # can salvage from the `rewritten_text` field with a non-greedy
+            # regex; if that also fails, mark the rewrite as empty. The
+            # downstream validator (validator.py) will fail this generation
+            # on slot_preserved and the pipeline records it as a rejected
+            # rewrite rather than crashing the entire 24k-listing run.
+            import re
+            print(f"  [VLLMGenerator] WARN: JSON parse failed ({e}); salvaging text",
+                  flush=True)
+            m = re.search(r'"rewritten_text"\s*:\s*"(.*?)(?:"\s*,\s*"preserved_slots"|"\s*\})',
+                          raw, flags=re.DOTALL)
+            salvaged = m.group(1) if m else ""
+            return GenerationResult(
+                rewritten_text=salvaged,
+                preserved_slots=dict(slot_dict or {}),
+                raw=raw,
+                used_mock=False,
+            )
+        slots = dict(payload.get("preserved_slots", slot_dict or {}))
         return GenerationResult(
             rewritten_text=str(payload.get("rewritten_text", "")),
             preserved_slots=slots,
