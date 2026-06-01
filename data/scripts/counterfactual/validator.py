@@ -85,15 +85,41 @@ def perplexity(text: str, max_tokens: int = 512) -> float:
 _CLF_CACHE: dict = {}
 
 
-def fit_zip_classifier(texts: list[str], zip_labels: list[int], random_state: int = 42):
-    """One-shot fit of a TfidfVectorizer + LogisticRegressionCV pipeline that
+def fit_zip_classifier(texts: list[str], zip_labels: list[int], random_state: int = 42,
+                       min_per_class: int = 5):
+    """One-shot fit of a TfidfVectorizer + Logistic-Regression pipeline that
     predicts the listing's zip. Cached at the module level so we fit once for
-    the whole pipeline run."""
+    the whole pipeline run.
+
+    Robustness: collapses ZIPs with < ``min_per_class`` listings into an
+    "OTHER" pseudo-class so CV folds always have at least one example per
+    class. LogisticRegressionCV with cv=3 needs >=3 samples per class to
+    not raise the (3,5)+inhomogeneous-shape array error we hit on smaller
+    cities. Also falls back to plain LogisticRegression with fixed C=1.0
+    when even the collapsed label set has classes below cv=3.
+    """
     if "pipe" in _CLF_CACHE:
         return _CLF_CACHE["pipe"], _CLF_CACHE["labels"]
+    import collections
     from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.linear_model import LogisticRegressionCV
+    from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
     from sklearn.pipeline import Pipeline
+
+    counts = collections.Counter(zip_labels)
+    OTHER = -1
+    remapped = [z if counts[z] >= min_per_class else OTHER for z in zip_labels]
+    new_counts = collections.Counter(remapped)
+    min_class_count = min(new_counts.values())
+    use_cv = min_class_count >= 3
+
+    if use_cv:
+        clf = LogisticRegressionCV(
+            Cs=5, cv=3, max_iter=1000, n_jobs=1, random_state=random_state,
+        )
+    else:
+        clf = LogisticRegression(
+            C=1.0, max_iter=1000, n_jobs=1, random_state=random_state,
+        )
 
     pipe = Pipeline([
         ("tfidf", TfidfVectorizer(
@@ -103,17 +129,11 @@ def fit_zip_classifier(texts: list[str], zip_labels: list[int], random_state: in
             stop_words="english",
             max_features=20_000,
         )),
-        ("clf", LogisticRegressionCV(
-            Cs=5,
-            cv=3,
-            max_iter=1000,
-            n_jobs=1,
-            random_state=random_state,
-        )),
+        ("clf", clf),
     ])
-    pipe.fit(texts, zip_labels)
+    pipe.fit(texts, remapped)
     _CLF_CACHE["pipe"] = pipe
-    _CLF_CACHE["labels"] = sorted(set(zip_labels))
+    _CLF_CACHE["labels"] = sorted(set(remapped))
     return pipe, _CLF_CACHE["labels"]
 
 
