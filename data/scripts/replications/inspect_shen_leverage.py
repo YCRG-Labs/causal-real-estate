@@ -176,11 +176,21 @@ def diagnose_one(city, k=5, k_folds=5, seed=42):
     }
 
 
+ALL_12 = ["boston", "nyc", "sf", "dc", "philadelphia", "chicago",
+          "seattle", "denver", "atlanta", "portland", "phoenix", "dallas"]
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cities", nargs="*", default=["atlanta", "dallas"])
+    ap.add_argument("cities", nargs="*")
+    ap.add_argument("--all_12", action="store_true",
+                    help="run all 12 cities (default: atlanta + dallas pilot pair)")
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
+    if args.all_12:
+        args.cities = list(ALL_12)
+    elif not args.cities:
+        args.cities = ["atlanta", "dallas"]
     rows = []
     for c in args.cities:
         try:

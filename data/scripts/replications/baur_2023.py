@@ -149,6 +149,7 @@ def run_baur(
     k_folds: int = 5,
     fast: bool = False,
     n_boot: int | None = None,
+    n_pca: int = 50,
 ) -> dict:
     print(f"\n=== Baur, Rosenfelder & Lutz (2023) replication: {city} ===")
     loaded = load_analysis_data(city)
@@ -214,7 +215,7 @@ def run_baur(
           f"(backend={backend}, ci_method={dml_ci_method}, n_boot={dml_n_boot}, PC1 inside)...")
     dml = run_dml(T_emb, confounders, Y_log, label="DML on BERT PC1",
                   ci_method=dml_ci_method, n_boot=dml_n_boot,
-                  use_ridge=dml_use_ridge, seed=seed)
+                  use_ridge=dml_use_ridge, seed=seed, n_pca=n_pca)
     if dml is None:
         print("    DML failed (treatment fully explained by confounders)")
     else:
@@ -285,13 +286,16 @@ def main():
     ap.add_argument("--n_boot", type=int, default=None,
                     help="bootstrap iterations (default 500 in legacy GBM "
                          "path; with --fast: 0 = IF SE only, >0 = pairs boot)")
+    ap.add_argument("--n_pca", type=int, default=50,
+                    help="PC dimension to extract from 768-dim BERT for DML "
+                         "(default 50; sweep {10, 25, 50, 100} for sensitivity)")
     ap.add_argument("--out", type=Path, default=None,
                     help="path to write JSON results")
     args = ap.parse_args()
 
     result = run_baur(
         city=args.city, n_subset=args.n, seed=args.seed, k_folds=args.k_folds,
-        fast=args.fast, n_boot=args.n_boot,
+        fast=args.fast, n_boot=args.n_boot, n_pca=args.n_pca,
     )
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
