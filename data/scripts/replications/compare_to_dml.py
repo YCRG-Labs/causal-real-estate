@@ -37,6 +37,10 @@ def _ridge_dml_core(T_1d, confounders, Y, k_folds=5, seed=42):
     LightGBM's per-fit overhead in this regime, ridge produces equivalent
     cross-fitted residuals roughly 100× faster than gradient boosting.
 
+    T is operated on as supplied; callers should z-score T outside the
+    function when per-SD scaling is desired (so the same scale is used by
+    the base estimate and every bootstrap iteration).
+
     Returns (theta, se_if) or None if the score denominator collapses.
     """
     n = len(Y)
@@ -149,7 +153,11 @@ def run_dml(
         if T_in.ndim == 2 and T_in.shape[1] != 1:
             raise ValueError("use_ridge=True requires a scalar treatment "
                              "(T must be 1-D or shape (n,1))")
-        T_1d = T_in.ravel()
+        T_1d_raw = np.asarray(T_in, dtype=np.float64).ravel()
+        t_sd = float(np.std(T_1d_raw, ddof=1))
+        if t_sd < 1e-12:
+            return None
+        T_1d = (T_1d_raw - float(np.mean(T_1d_raw))) / t_sd
         n_obs = int(len(Y))
         do_boot = ci_method == "bootstrap" and n_boot is not None and n_boot > 0
         if do_boot:
