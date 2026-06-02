@@ -111,44 +111,48 @@ def _rv(theta, se, n, k_x, q_alpha=1.96):
 
 
 def _partial_r2_block(block_cols, others_cols, X_df, y_array):
-    """Partial R² of y on the block given the other columns.
-
-    Step 1: residualise y on others_cols via RidgeCV (10-fold-like splits
-    not needed at this aggregation level; one ridge fit suffices because
-    we are computing a benchmark, not a causal estimate).
-    Step 2: residualise the block on others_cols, take canonical
-    correlations / overall partial R² as the ratio of explained variance
-    when adding the block back.
-
-    Returns partial R² ∈ [0, 1].
+    """Partial R² of y on the block given the other columns. Robust to
+    empty columns and 0-feature StandardScaler edge cases; returns 0.0
+    on any internal failure so the per-city loop does not crash on one
+    pathological city.
     """
-    block_cols = [c for c in block_cols if c in X_df.columns]
-    others_cols = [c for c in others_cols if c in X_df.columns]
-    if not block_cols:
+    try:
+        block_cols = [c for c in block_cols if c in X_df.columns]
+        others_cols = [c for c in others_cols if c in X_df.columns]
+        if not block_cols:
+            return 0.0
+        X_oth = (X_df[others_cols].to_numpy(dtype=np.float64) if others_cols
+                 else np.zeros((len(y_array), 0)))
+        X_blk = X_df[block_cols].to_numpy(dtype=np.float64)
+        if X_blk.ndim == 1:
+            X_blk = X_blk.reshape(-1, 1)
+        if X_blk.shape[1] == 0:
+            return 0.0
+        alphas = (0.01, 0.1, 1.0, 10.0, 100.0, 1000.0)
+        if X_oth.shape[1] > 0:
+            scaler_oth = StandardScaler().fit(X_oth)
+            X_oth_s = scaler_oth.transform(X_oth)
+            m = RidgeCV(alphas=alphas).fit(X_oth_s, y_array)
+            y_res = y_array - m.predict(X_oth_s)
+            m_b = RidgeCV(alphas=alphas).fit(X_oth_s, X_blk)
+            X_blk_res = X_blk - m_b.predict(X_oth_s)
+        else:
+            y_res = y_array - y_array.mean()
+            X_blk_res = X_blk - X_blk.mean(axis=0)
+        if X_blk_res.shape[1] == 0 or np.allclose(X_blk_res.std(axis=0), 0):
+            return 0.0
+        scaler_b = StandardScaler().fit(X_blk_res)
+        X_blk_res_s = scaler_b.transform(X_blk_res)
+        m_y_on_blk = RidgeCV(alphas=alphas).fit(X_blk_res_s, y_res)
+        y_hat = m_y_on_blk.predict(X_blk_res_s)
+        ss_explained = float(np.sum(y_hat ** 2))
+        ss_total = float(np.sum(y_res ** 2))
+        if ss_total <= 0:
+            return 0.0
+        r2 = ss_explained / ss_total
+        return float(max(0.0, min(1.0, r2)))
+    except Exception:
         return 0.0
-    X_oth = X_df[others_cols].to_numpy(dtype=np.float64) if others_cols else np.zeros((len(y_array), 0))
-    X_blk = X_df[block_cols].to_numpy(dtype=np.float64)
-    alphas = (0.01, 0.1, 1.0, 10.0, 100.0, 1000.0)
-    if X_oth.shape[1] > 0:
-        scaler_oth = StandardScaler().fit(X_oth)
-        X_oth_s = scaler_oth.transform(X_oth)
-        m = RidgeCV(alphas=alphas).fit(X_oth_s, y_array)
-        y_res = y_array - m.predict(X_oth_s)
-        m_b = RidgeCV(alphas=alphas).fit(X_oth_s, X_blk)
-        X_blk_res = X_blk - m_b.predict(X_oth_s)
-    else:
-        y_res = y_array - y_array.mean()
-        X_blk_res = X_blk - X_blk.mean(axis=0)
-    scaler_b = StandardScaler().fit(X_blk_res)
-    X_blk_res_s = scaler_b.transform(X_blk_res)
-    m_y_on_blk = RidgeCV(alphas=alphas).fit(X_blk_res_s, y_res)
-    y_hat = m_y_on_blk.predict(X_blk_res_s)
-    ss_explained = float(np.sum(y_hat ** 2))
-    ss_total = float(np.sum(y_res ** 2))
-    if ss_total <= 0:
-        return 0.0
-    r2 = ss_explained / ss_total
-    return float(max(0.0, min(1.0, r2)))
 
 
 def diagnose_one(city, seed=42, k_folds=5):
@@ -187,30 +191,38 @@ def diagnose_one(city, seed=42, k_folds=5):
         print(f"  [{city}] uniqueness SD ~ 0; skip"); return None
     T_z = (uniqueness - float(np.mean(uniqueness))) / t_sd
 
-    # Build a column-aware confounder dataframe so we can name each block.
-    # canonical_confounders.ALL is the master list; get_features_and_target
-    # may return a subset in a fixed [lat, lon, property..., contextual...]
-    # order. We reconstruct that ordering from the parcels-attached emb_df.
-    cand_cols = ["latitude", "longitude"] + [c for c in ALL if c not in {"lat", "lon"}]
-    # Dedupe while preserving order; drop columns the parcels-join has
-    # produced more than once (a known cause of pd.to_numeric receiving a
-    # DataFrame rather than a Series).
-    seen: set[str] = set()
-    avail_cols = []
-    for c in cand_cols:
-        if c in emb_df.columns and c not in seen:
-            avail_cols.append(c)
-            seen.add(c)
-    X_df = emb_df.loc[:, ~emb_df.columns.duplicated()][avail_cols].copy()
-    X_df = X_df.rename(columns={"latitude": "lat", "longitude": "lon"})
-    # If rename produced a duplicate (e.g. emb_df already had both "lat"
-    # and "latitude"), drop the duplicate.
-    X_df = X_df.loc[:, ~X_df.columns.duplicated()]
-    for c in list(X_df.columns):
-        col = X_df[c]
-        if isinstance(col, pd.DataFrame):
-            col = col.iloc[:, 0]
-        X_df[c] = pd.to_numeric(col, errors="coerce")
+    # Build the confounder dataframe by canonical name, drawing each column
+    # from whichever alias the city's emb_df happens to use. The 3-city
+    # pre-expansion parquets (boston, nyc, sf) use shorter aliases like
+    # "beds" / "sqft" / "year"; the 9-city pull uses the canonical names
+    # from canonical_confounders.py. This loop unifies them.
+    src_no_dup = emb_df.loc[:, ~emb_df.columns.duplicated()]
+
+    def _get(*aliases):
+        for a in aliases:
+            if a in src_no_dup.columns:
+                col = src_no_dup[a]
+                if isinstance(col, pd.DataFrame):
+                    col = col.iloc[:, 0]
+                return pd.to_numeric(col, errors="coerce")
+        return None
+
+    aliases = {
+        "lat": ["lat", "latitude"],
+        "lon": ["lon", "longitude"],
+        "bedrooms": ["bedrooms", "beds"],
+        "bldg_area_sqft": ["bldg_area_sqft", "sqft", "building_area_sqft"],
+        "lot_area_sqft": ["lot_area_sqft", "lot_sqft", "lot_size_sqft"],
+        "year_built": ["year_built", "year"],
+    }
+    X_dict: dict[str, pd.Series] = {}
+    for canonical in ["lat", "lon"] + list(PROPERTY) + [c for c in ALL
+                                                          if c not in {"lat", "lon"}
+                                                          and c not in PROPERTY]:
+        s = _get(*aliases.get(canonical, [canonical]))
+        if s is not None:
+            X_dict[canonical] = s.values
+    X_df = pd.DataFrame(X_dict, index=src_no_dup.index)
     X_df = X_df.ffill().bfill().fillna(0.0)
 
     blocks_present = {bn: [c for c in cols if c in X_df.columns]
