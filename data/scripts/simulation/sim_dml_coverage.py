@@ -42,7 +42,9 @@ import numpy as np
 import pandas as pd
 from scipy.linalg import cho_factor, cho_solve
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.linear_model import RidgeCV, LinearRegression
+from sklearn.linear_model import (
+    LogisticRegressionCV, RidgeCV, LinearRegression,
+)
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 
@@ -95,6 +97,131 @@ def make_plr_weak_overlap(n: int, dim_x: int = 20, alpha: float = 0.5,
         g0 = sig(X[:, 0]) + 0.25 * X[:, 2]
     Y = alpha * D + g0 + 1.0 * zeta
     return Y, D, X
+
+
+def make_irm_dgp4(n: int, dim_x: int = 20, theta: float = 0.5,
+                   rho: float = 0.7,
+                   rng: np.random.Generator = None):
+    """IRM-style DGP modelled on Ballinari & Bearth (2024) arXiv 2409.04874
+    DGP4: difficult outcome + difficult propensity. Binary treatment D
+    drawn from a propensity score that puts mass near 0 and 1 (extreme
+    overlap violation), nonlinear outcome g_0 with interactions.
+    Ridge cannot capture the nonlinearity, the AIPW score's
+    propensity-weight blows up, IF-SE under-covers.
+
+    Y = theta * D + g_0(X) + zeta, zeta ~ N(0, 1)
+    D ~ Bernoulli(p(X))
+    p(X) = sigmoid(2.5 * (X[:,0] + sin(2*X[:,2]) - 0.5*X[:,1]*X[:,4]))
+    g_0(X) = sin(X[:,0]) + sig(X[:,1]) * X[:,3] + 0.3*X[:,0]*X[:,4]
+             + 0.5*(X[:,2]**2 - 1)
+
+    Truth: theta_0 = theta (analytic).
+    """
+    rng = rng or np.random.default_rng()
+    idx = np.arange(dim_x)
+    Sigma = rho ** np.abs(idx[:, None] - idx[None, :])
+    L = np.linalg.cholesky(Sigma)
+    X = rng.standard_normal((n, dim_x)) @ L.T
+    sig = lambda x: 1.0 / (1.0 + np.exp(-x))
+    # Propensity with extreme PS near 0 and 1.
+    logit_p = 2.5 * (X[:, 0] + np.sin(2 * X[:, 2]) - 0.5 * X[:, 1] * X[:, 4])
+    p = sig(logit_p)
+    p = np.clip(p, 1e-4, 1 - 1e-4)
+    D = (rng.uniform(size=n) < p).astype(np.float64)
+    g0 = (np.sin(X[:, 0]) + sig(X[:, 1]) * X[:, 3]
+          + 0.3 * X[:, 0] * X[:, 4]
+          + 0.5 * (X[:, 2] ** 2 - 1))
+    Y = theta * D + g0 + rng.standard_normal(n)
+    return Y, D, X
+
+
+def _aipw_cross_fit(Y, D, X, k_folds=5, seed=42):
+    """Cross-fit AIPW nuisances: g0(X) = E[Y|X,D=0], g1(X) = E[Y|X,D=1],
+    p(X) = P(D=1|X). Uses RidgeCV for the outcome regressions and
+    LogisticRegressionCV for the propensity. Returns the AIPW score:
+
+        psi_i = g1_i - g0_i + D_i (Y_i - g1_i) / p_i
+                              - (1 - D_i)(Y_i - g0_i)/(1 - p_i)
+
+    plus the per-fold predictions for diagnostics.
+    """
+    n = len(Y)
+    Xs = StandardScaler().fit_transform(X)
+    kf = KFold(n_splits=k_folds, shuffle=True, random_state=seed)
+    g0_hat = np.empty(n); g1_hat = np.empty(n); p_hat = np.empty(n)
+    for tr, te in kf.split(np.arange(n)):
+        D_tr = D[tr].astype(int)
+        # Propensity. CV across C grid; cap PS away from 0/1.
+        try:
+            m_p = LogisticRegressionCV(
+                Cs=5, cv=3, max_iter=2000, n_jobs=1,
+            ).fit(Xs[tr], D_tr)
+            p_te = m_p.predict_proba(Xs[te])[:, 1]
+        except Exception:
+            # Degenerate fold (one class). Fall back to mean.
+            p_te = np.full(len(te), float(D_tr.mean()))
+        p_te = np.clip(p_te, 1e-3, 1 - 1e-3)
+        # Outcome under D=0 and D=1 separately.
+        mask0 = D_tr == 0
+        mask1 = D_tr == 1
+        if mask0.sum() >= 5:
+            m_g0 = RidgeCV(alphas=RIDGE_ALPHAS).fit(Xs[tr][mask0], Y[tr][mask0])
+            g0_te = m_g0.predict(Xs[te])
+        else:
+            g0_te = np.full(len(te), float(Y[tr][mask0].mean()) if mask0.sum() else 0.0)
+        if mask1.sum() >= 5:
+            m_g1 = RidgeCV(alphas=RIDGE_ALPHAS).fit(Xs[tr][mask1], Y[tr][mask1])
+            g1_te = m_g1.predict(Xs[te])
+        else:
+            g1_te = np.full(len(te), float(Y[tr][mask1].mean()) if mask1.sum() else 0.0)
+        g0_hat[te] = g0_te
+        g1_hat[te] = g1_te
+        p_hat[te] = p_te
+    psi = (g1_hat - g0_hat
+           + D * (Y - g1_hat) / p_hat
+           - (1.0 - D) * (Y - g0_hat) / (1.0 - p_hat))
+    return psi, g0_hat, g1_hat, p_hat
+
+
+def aipw_if(Y, D, X, k_folds=5, seed=42):
+    psi, _, _, _ = _aipw_cross_fit(Y, D, X, k_folds=k_folds, seed=seed)
+    theta = float(np.mean(psi))
+    se = float(np.sqrt(np.var(psi, ddof=1) / len(Y)))
+    return theta, se, psi
+
+
+def aipw_mult_boot(theta_hat, psi, n_boot=500, seed=42):
+    n = len(psi)
+    rng = np.random.default_rng(seed)
+    eps = rng.choice([-1.0, 1.0], size=(n_boot, n))
+    thetas = theta_hat + (eps * (psi - theta_hat)).mean(axis=1)
+    se = float(np.std(thetas, ddof=1))
+    lo, hi = float(np.percentile(thetas, 2.5)), float(np.percentile(thetas, 97.5))
+    return theta_hat, se, lo, hi
+
+
+def aipw_pairs_boot(Y, D, X, n_boot=100, k_folds=5, seed=42):
+    n = len(Y)
+    theta_hat, se_hat, _ = aipw_if(Y, D, X, k_folds=k_folds, seed=seed)
+    if np.isnan(theta_hat):
+        return theta_hat, float("nan"), float("nan"), float("nan")
+    rng = np.random.default_rng(seed)
+    thetas = np.full(n_boot, np.nan)
+    for b in range(n_boot):
+        idx = rng.integers(0, n, n)
+        try:
+            psi_b, _, _, _ = _aipw_cross_fit(
+                Y[idx], D[idx], X[idx], k_folds=k_folds, seed=seed + b + 1,
+            )
+            thetas[b] = float(np.mean(psi_b))
+        except Exception:
+            continue
+    valid = thetas[~np.isnan(thetas)]
+    if valid.size < max(20, n_boot // 5):
+        return theta_hat, float("nan"), float("nan"), float("nan")
+    se = float(np.std(valid, ddof=1))
+    lo, hi = float(np.percentile(valid, 2.5)), float(np.percentile(valid, 97.5))
+    return theta_hat, se, lo, hi
 
 
 def make_plr_ccddhnr_2018(n: int, dim_x: int = 20, alpha: float = 0.5,
@@ -307,6 +434,30 @@ def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs,
         Y, D, X = make_plr_ccddhnr_2018(n=n, alpha=theta_true, rng=rng)
     elif dgp == "weak_overlap":
         Y, D, X = make_plr_weak_overlap(n=n, alpha=theta_true, rng=rng)
+    elif dgp == "irm_dgp4":
+        Y, D, X = make_irm_dgp4(n=n, theta=theta_true, rng=rng)
+        # IRM uses the AIPW (ATE) score, not the PLR partialling-out.
+        rows = []
+        theta_if, se_if, psi = aipw_if(Y, D, X, k_folds=k_folds, seed=seed)
+        lo_if, hi_if = theta_if - 1.96 * se_if, theta_if + 1.96 * se_if
+        rows.append(RepResult(n, theta_true, rep, "dml_if", theta_if, se_if,
+                              lo_if, hi_if, lo_if <= theta_true <= hi_if))
+        if n_boot_mult > 0:
+            _, se_mb, lo_mb, hi_mb = aipw_mult_boot(theta_if, psi,
+                                                     n_boot=n_boot_mult,
+                                                     seed=seed + 7919)
+            rows.append(RepResult(n, theta_true, rep, "dml_mult_boot",
+                                  theta_if, se_mb, lo_mb, hi_mb,
+                                  lo_mb <= theta_true <= hi_mb))
+        if n_boot_pairs > 0:
+            _, se_pb, lo_pb, hi_pb = aipw_pairs_boot(Y, D, X,
+                                                      n_boot=n_boot_pairs,
+                                                      k_folds=k_folds,
+                                                      seed=seed + 31337)
+            rows.append(RepResult(n, theta_true, rep, "dml_pairs_boot",
+                                  theta_if, se_pb, lo_pb, hi_pb,
+                                  lo_pb <= theta_true <= hi_pb))
+        return rows
     else:
         raise ValueError(f"unknown dgp: {dgp}")
     rows = []
@@ -389,10 +540,13 @@ def main():
     ap.add_argument("--use_ridge_cv_for_point", action="store_true",
                     help="use RidgeCV (slow) only for the headline dml_if "
                          "point estimate; bootstrap loops always use fixed-α")
-    ap.add_argument("--dgp", choices=["ccddhnr", "weak_overlap"],
+    ap.add_argument("--dgp", choices=["ccddhnr", "weak_overlap", "irm_dgp4"],
                     default="ccddhnr",
-                    help="DGP family. weak_overlap targets R²(D|X)≈0.90 "
-                         "with nonlinear g_0 (Bach/Schacht DGP4 analog).")
+                    help="DGP family. weak_overlap is a PLR with R²(D|X)≈0.90; "
+                         "irm_dgp4 mirrors Ballinari & Bearth 2024 (arXiv "
+                         "2409.04874) DGP4 — binary treatment + extreme PS + "
+                         "nonlinear outcome → published IF-SE coverage 0.28 "
+                         "with lasso, 0.81 with RF.")
     ap.add_argument("--k_folds", type=int, default=5)
     ap.add_argument("--seed", type=int, default=20260601)
     ap.add_argument("--out_dir", type=Path,
