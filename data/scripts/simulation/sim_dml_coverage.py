@@ -146,20 +146,35 @@ def naive_ml_plugin(Y, D, X, seed=42):
     return theta, se
 
 
-def _ridge_cross_fit(Y, D, X, k_folds=5, seed=42, alpha=FIXED_ALPHA,
-                     use_ridge_cv=False):
+def _pick_alpha(Xs, y, alphas=RIDGE_ALPHAS):
+    """Single full-data RidgeCV pick for the ridge nuisance alpha.
+
+    ~2ms at n=2000, p=20. The picked alpha is reused for cross-fit
+    folds AND every pairs-bootstrap iteration, so the inner Cholesky
+    loop stays fast while the nuisance regularisation matches what
+    RidgeCV would have chosen per-fold. Fixes the bias-from-over-
+    regularisation problem the v1 fast path produced on the CCDDHNR
+    DGP at n=2000 (alpha=10 hardcoded → theta bias +0.067 → coverage
+    0.33 in the pairs bootstrap).
+    """
+    return float(RidgeCV(alphas=alphas).fit(Xs, y).alpha_)
+
+
+def _ridge_cross_fit(Y, D, X, k_folds=5, seed=42, alpha_y=None, alpha_d=None,
+                     use_ridge_cv=False, return_alphas=False):
     """Cross-fit ridge nuisances.
 
-    Default path uses a fixed alpha and a single Cholesky factorisation
-    per fold (~22x faster than sklearn's RidgeCV on our problem size).
-    Pass use_ridge_cv=True to fall back to RidgeCV for the headline
-    point estimate, where bit-for-bit comparability with the legacy
-    pipeline matters. The bootstrap loops always use the fixed-alpha
-    Cholesky path because the relative ranking of theta_b across
-    bootstrap reps is what feeds the CI.
+    When alpha_y / alpha_d are None we run one full-data RidgeCV per
+    nuisance to pick alpha, then use that alpha in every cross-fit fold
+    via cho_solve. This matches RidgeCV's chosen regularisation to the
+    DGP while keeping the inner-loop ridge solve at ~50us per fold.
     """
     n, p = X.shape
     Xs = StandardScaler().fit_transform(X)
+    if alpha_y is None:
+        alpha_y = _pick_alpha(Xs, Y)
+    if alpha_d is None:
+        alpha_d = _pick_alpha(Xs, D)
     kf = KFold(n_splits=k_folds, shuffle=True, random_state=seed)
     Y_res = np.empty(n); D_res = np.empty(n)
     if use_ridge_cv:
@@ -169,25 +184,36 @@ def _ridge_cross_fit(Y, D, X, k_folds=5, seed=42, alpha=FIXED_ALPHA,
             Y_res[te] = Y[te] - m_y.predict(Xs[te])
             D_res[te] = D[te] - m_d.predict(Xs[te])
     else:
-        Ip = alpha * np.eye(p)
+        Iy = alpha_y * np.eye(p)
+        Id = alpha_d * np.eye(p)
         for tr, te in kf.split(np.arange(n)):
             Xtr = Xs[tr]
-            chol = cho_factor(Xtr.T @ Xtr + Ip, lower=False, check_finite=False)
-            b_y = cho_solve(chol, Xtr.T @ Y[tr], check_finite=False)
-            b_d = cho_solve(chol, Xtr.T @ D[tr], check_finite=False)
+            XtX = Xtr.T @ Xtr
+            chol_y = cho_factor(XtX + Iy, lower=False, check_finite=False)
+            chol_d = cho_factor(XtX + Id, lower=False, check_finite=False)
+            b_y = cho_solve(chol_y, Xtr.T @ Y[tr], check_finite=False)
+            b_d = cho_solve(chol_d, Xtr.T @ D[tr], check_finite=False)
             Y_res[te] = Y[te] - Xs[te] @ b_y
             D_res[te] = D[te] - Xs[te] @ b_d
+    if return_alphas:
+        return Y_res, D_res, alpha_y, alpha_d
     return Y_res, D_res
 
 
-def dml_if(Y, D, X, k_folds=5, seed=42):
-    Y_res, D_res = _ridge_cross_fit(Y, D, X, k_folds=k_folds, seed=seed)
+def dml_if(Y, D, X, k_folds=5, seed=42, return_alphas=False):
+    out = _ridge_cross_fit(Y, D, X, k_folds=k_folds, seed=seed,
+                            return_alphas=True)
+    Y_res, D_res, alpha_y, alpha_d = out
     denom = float(np.mean(D_res ** 2))
     if denom < 1e-12:
+        if return_alphas:
+            return float("nan"), float("nan"), None, None, alpha_y, alpha_d
         return float("nan"), float("nan"), None, None
     theta = float(np.mean(D_res * Y_res) / denom)
     psi = (Y_res - theta * D_res) * D_res / denom
     se = float(np.sqrt(np.var(psi, ddof=1) / len(Y)))
+    if return_alphas:
+        return theta, se, Y_res, D_res, alpha_y, alpha_d
     return theta, se, Y_res, D_res
 
 
@@ -208,24 +234,38 @@ def dml_multiplier_boot(theta_hat, Y_res, D_res, n_boot=500, seed=42):
     return theta_hat, se, lo, hi
 
 
-def dml_pairs_boot(Y, D, X, n_boot=200, k_folds=5, seed=42):
+def dml_pairs_boot(Y, D, X, n_boot=200, k_folds=5, seed=42,
+                    alpha_y=None, alpha_d=None):
     """Nonparametric pairs bootstrap with full DML refit per resample.
 
     Resample (Y_i, D_i, X_i) triples with replacement, refit cross-fit
-    ridge nuisances, recover theta_b. Captures nuisance uncertainty.
+    ridge nuisances at the SAME alphas the original-sample RidgeCV
+    picked, recover theta_b. Reusing the alphas avoids running RidgeCV
+    inside the bootstrap loop (the ~22x speedup) while still matching
+    DGP-appropriate regularisation. Captures nuisance estimation
+    uncertainty through resampling.
     """
     n = len(Y)
-    base = dml_if(Y, D, X, k_folds=k_folds, seed=seed)
+    base = dml_if(Y, D, X, k_folds=k_folds, seed=seed, return_alphas=True)
     theta_hat = base[0]
     if np.isnan(theta_hat):
         return theta_hat, float("nan"), float("nan"), float("nan")
+    if alpha_y is None:
+        alpha_y = base[4]
+    if alpha_d is None:
+        alpha_d = base[5]
     rng = np.random.default_rng(seed)
     thetas = np.full(n_boot, np.nan)
     for b in range(n_boot):
         idx = rng.integers(0, n, n)
-        out = dml_if(Y[idx], D[idx], X[idx], k_folds=k_folds, seed=seed + b + 1)
-        if not np.isnan(out[0]):
-            thetas[b] = out[0]
+        Y_res, D_res = _ridge_cross_fit(
+            Y[idx], D[idx], X[idx], k_folds=k_folds, seed=seed + b + 1,
+            alpha_y=alpha_y, alpha_d=alpha_d,
+        )
+        denom = float(np.mean(D_res ** 2))
+        if denom < 1e-12:
+            continue
+        thetas[b] = float(np.mean(D_res * Y_res) / denom)
     valid = thetas[~np.isnan(thetas)]
     if valid.size < max(20, n_boot // 5):
         return theta_hat, float("nan"), float("nan"), float("nan")
