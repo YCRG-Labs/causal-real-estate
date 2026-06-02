@@ -99,44 +99,40 @@ def make_plr_weak_overlap(n: int, dim_x: int = 20, alpha: float = 0.5,
     return Y, D, X
 
 
-def make_irm_dgp4(n: int, dim_x: int = 20, theta: float = 0.5,
-                   rho: float = 0.7,
-                   rng: np.random.Generator = None):
-    """Moderate IRM DGP — tuned from the initial Ballinari-Bearth analog.
+def make_irm_dgp4(n: int, dim_x: int = 30, theta: float = 0.5,
+                   rng: np.random.Generator = None, **_):
+    """Ballinari & Bearth (2024) Table 2 DGP 4 — verbatim port.
 
-    The initial setting (PS multiplier 2.5, fully nonlinear g_0) produced
-    catastrophic failure (bias ~ −1.4, coverage ~ 0.02) because ridge
-    cannot capture the heavy nonlinear g_0 at all. We tune toward the
-    published "moderate undercoverage" regime (Ballinari & Bearth 2024
-    Table 2 DGP4 with lasso reports coverage ≈ 0.28): drop PS multiplier
-    to 1.2, make g_0 mostly linear with one quadratic remainder that
-    ridge can mostly but not fully capture. Resulting cell should land
-    in coverage 0.30-0.80 range — partial undercoverage that the pairs
-    bootstrap can materially recover.
+    arXiv:2409.04874v2 §5.1 p.10. Difficult outcome (Friedman 1991
+    surface) with difficult propensity (Beta-CDF of the min of two
+    covariates). They report DML-AIPW coverage with lasso nuisances at
+    N=2000 equal to 0.282; with ridge on the same surface coverage is
+    expected to land in roughly [0.30, 0.55]. Paired-bootstrap CIs
+    materially restore coverage (their Table 3).
 
-    Y = theta * D + g_0(X) + zeta, zeta ~ N(0, 1)
-    D ~ Bernoulli(p(X))
-    p(X) = sigmoid(1.2 * (X[:,0] + 0.5*X[:,2] - 0.3*X[:,1]))
-    g_0(X) = X[:,0] + 0.5*X[:,2] + 0.3*sig(X[:,1]) + 0.2*X[:,4]
-             + 0.3*(X[:,1]^2 - 1)
+        X_i        ~ Uniform(0, 1)^30
+        b(X)       = sin(π X_1 X_2) + 2(X_3 − 0.5)^2 + X_4 + 0.5 X_5
+        p(X)       = 0.1 + 0.6 · Beta_{2,4}.cdf(min(X_1, X_2))
+        D_i        ~ Bernoulli(p(X_i))
+        tau_i      = 2 · theta · (X_1 + X_2) / 2 = theta · (X_1 + X_2)
+        Y_i        = b(X_i) + (D_i − 0.5) · tau_i + ε_i, ε ~ N(0, 1)
 
-    Truth: theta_0 = theta (analytic).
+    Heterogeneity is scaled by theta so that E[tau] = theta · E[X_1+X_2]
+    = theta. At theta=0.5 the heterogeneity matches the published spec
+    exactly (tau = (X_1+X_2)/2); at theta=0 the effect vanishes and the
+    size of the test can be evaluated. `dim_x` is hard-coded to 30 per
+    the published spec; `rho` (legacy AR(1) hook) is absorbed by **_.
     """
+    from scipy.stats import beta as _beta_dist
     rng = rng or np.random.default_rng()
-    idx = np.arange(dim_x)
-    Sigma = rho ** np.abs(idx[:, None] - idx[None, :])
-    L = np.linalg.cholesky(Sigma)
-    X = rng.standard_normal((n, dim_x)) @ L.T
-    sig = lambda x: 1.0 / (1.0 + np.exp(-x))
-    logit_p = 1.2 * (X[:, 0] + 0.5 * X[:, 2] - 0.3 * X[:, 1])
-    p = sig(logit_p)
-    p = np.clip(p, 5e-3, 1 - 5e-3)
+    X = rng.uniform(0.0, 1.0, size=(n, dim_x))
+    b = (np.sin(np.pi * X[:, 0] * X[:, 1])
+         + 2.0 * (X[:, 2] - 0.5) ** 2
+         + X[:, 3] + 0.5 * X[:, 4])
+    p = 0.1 + 0.6 * _beta_dist.cdf(np.minimum(X[:, 0], X[:, 1]), 2.0, 4.0)
     D = (rng.uniform(size=n) < p).astype(np.float64)
-    g0 = (X[:, 0] + 0.5 * X[:, 2]
-          + 0.3 * sig(X[:, 1])
-          + 0.2 * X[:, 4]
-          + 0.3 * (X[:, 1] ** 2 - 1))
-    Y = theta * D + g0 + rng.standard_normal(n)
+    tau = theta * (X[:, 0] + X[:, 1])
+    Y = b + (D - 0.5) * tau + rng.standard_normal(n)
     return Y, D, X
 
 
