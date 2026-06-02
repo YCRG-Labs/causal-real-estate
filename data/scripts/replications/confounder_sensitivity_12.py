@@ -192,11 +192,25 @@ def diagnose_one(city, seed=42, k_folds=5):
     # may return a subset in a fixed [lat, lon, property..., contextual...]
     # order. We reconstruct that ordering from the parcels-attached emb_df.
     cand_cols = ["latitude", "longitude"] + [c for c in ALL if c not in {"lat", "lon"}]
-    avail_cols = [c for c in cand_cols if c in emb_df.columns]
-    X_df = emb_df[avail_cols].copy()
+    # Dedupe while preserving order; drop columns the parcels-join has
+    # produced more than once (a known cause of pd.to_numeric receiving a
+    # DataFrame rather than a Series).
+    seen: set[str] = set()
+    avail_cols = []
+    for c in cand_cols:
+        if c in emb_df.columns and c not in seen:
+            avail_cols.append(c)
+            seen.add(c)
+    X_df = emb_df.loc[:, ~emb_df.columns.duplicated()][avail_cols].copy()
     X_df = X_df.rename(columns={"latitude": "lat", "longitude": "lon"})
-    for c in X_df.columns:
-        X_df[c] = pd.to_numeric(X_df[c], errors="coerce")
+    # If rename produced a duplicate (e.g. emb_df already had both "lat"
+    # and "latitude"), drop the duplicate.
+    X_df = X_df.loc[:, ~X_df.columns.duplicated()]
+    for c in list(X_df.columns):
+        col = X_df[c]
+        if isinstance(col, pd.DataFrame):
+            col = col.iloc[:, 0]
+        X_df[c] = pd.to_numeric(col, errors="coerce")
     X_df = X_df.ffill().bfill().fillna(0.0)
 
     blocks_present = {bn: [c for c in cols if c in X_df.columns]
