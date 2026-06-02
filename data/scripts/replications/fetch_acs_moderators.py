@@ -93,20 +93,30 @@ def diversity_gini_simpson(row) -> float:
     return float(1.0 - np.sum(p ** 2))
 
 
-def fetch_gazetteer_landarea(year: int = 2022) -> pd.DataFrame:
-    url = f"https://www2.census.gov/geo/docs/maps-data/data/gazetteer/{year}_Gazetteer/{year}_Gaz_cbsa_national.zip"
-    print(f"GET gazetteer {year} land area")
+def fetch_gazetteer_landarea(year: int = 2024) -> pd.DataFrame:
+    """Pull CBSA land area from the Census Gazetteer. The Census reorganises
+    these annually; try a small list of recent years until one returns 200.
+    """
     import io, zipfile
-    r = requests.get(url, timeout=60)
-    r.raise_for_status()
-    z = zipfile.ZipFile(io.BytesIO(r.content))
-    name = [n for n in z.namelist() if n.endswith(".txt")][0]
-    raw = z.read(name).decode("latin-1")
-    df = pd.read_csv(io.StringIO(raw), sep="\t")
-    df.columns = [c.strip() for c in df.columns]
-    df = df.rename(columns={"GEOID": "cbsa"})
-    df["cbsa"] = df["cbsa"].astype(str)
-    return df[["cbsa", "ALAND_SQMI"]]
+    for y in (year, 2024, 2023, 2021, 2020):
+        url = f"https://www2.census.gov/geo/docs/maps-data/data/gazetteer/{y}_Gazetteer/{y}_Gaz_cbsa_national.zip"
+        print(f"GET gazetteer {y} land area")
+        try:
+            r = requests.get(url, timeout=60)
+            r.raise_for_status()
+        except Exception as e:
+            print(f"  {y} failed: {e}")
+            continue
+        z = zipfile.ZipFile(io.BytesIO(r.content))
+        name = [n for n in z.namelist() if n.endswith(".txt")][0]
+        raw = z.read(name).decode("latin-1")
+        df = pd.read_csv(io.StringIO(raw), sep="\t")
+        df.columns = [c.strip() for c in df.columns]
+        df = df.rename(columns={"GEOID": "cbsa"})
+        df["cbsa"] = df["cbsa"].astype(str)
+        return df[["cbsa", "ALAND_SQMI"]]
+    print("All gazetteer years failed; returning empty (density moderator will be NaN)")
+    return pd.DataFrame({"cbsa": [], "ALAND_SQMI": []})
 
 
 def main():
