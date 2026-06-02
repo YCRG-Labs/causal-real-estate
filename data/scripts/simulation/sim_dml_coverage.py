@@ -549,6 +549,15 @@ def main():
                          "nonlinear outcome → published IF-SE coverage 0.28 "
                          "with lasso, 0.81 with RF.")
     ap.add_argument("--k_folds", type=int, default=5)
+    ap.add_argument("--backend", choices=["loky", "threading", "sequential"],
+                    default="loky",
+                    help="joblib backend. Default 'loky' (process pool). "
+                         "Use 'threading' when loky deadlocks at worker "
+                         "spawn (Brev-style containers with fork+OpenMP "
+                         "issues); RidgeCV/LogisticRegressionCV release "
+                         "GIL during inner BLAS, so threading is "
+                         "~30% slower but never hangs. Use 'sequential' "
+                         "for single-threaded debugging.")
     ap.add_argument("--seed", type=int, default=20260601)
     ap.add_argument("--out_dir", type=Path,
                     default=REPO / "results" / "simulation_jbes2026")
@@ -562,7 +571,8 @@ def main():
     print(f"DGP={args.dgp}  Grid: n in {args.n_grid}, theta in {args.theta_grid}, "
           f"reps={args.n_reps}, mult_boot={args.n_boot_mult}, "
           f"pairs_boot={args.n_boot_pairs}, fixed_nuis_boot={args.n_boot_fixed}, "
-          f"joblib_n_jobs={args.joblib_n_jobs}, chunk={args.chunk}")
+          f"joblib_n_jobs={args.joblib_n_jobs}, chunk={args.chunk}, "
+          f"backend={args.backend}")
     from joblib import Parallel, delayed
 
     def _rep_chunk(seeds_with_reps, n, theta):
@@ -584,11 +594,15 @@ def main():
             chunks = [seeds[i:i + args.chunk]
                       for i in range(0, len(seeds), args.chunk)]
             print(f"  [n={n}, theta={theta}] launching {len(chunks)} chunks "
-                  f"of {args.chunk} reps each across n_jobs={args.joblib_n_jobs}")
-            chunk_outputs = Parallel(n_jobs=args.joblib_n_jobs,
-                                     backend="loky", verbose=0)(
-                delayed(_rep_chunk)(c, n, theta) for c in chunks
-            )
+                  f"of {args.chunk} reps each across n_jobs={args.joblib_n_jobs} "
+                  f"(backend={args.backend})", flush=True)
+            if args.backend == "sequential":
+                chunk_outputs = [_rep_chunk(c, n, theta) for c in chunks]
+            else:
+                chunk_outputs = Parallel(n_jobs=args.joblib_n_jobs,
+                                         backend=args.backend, verbose=5)(
+                    delayed(_rep_chunk)(c, n, theta) for c in chunks
+                )
             cell_rows = [r for chunk in chunk_outputs for r in chunk]
             all_rows.extend(cell_rows)
             print(f"  cell n={n} theta={theta} done in {time.time()-cell_t:.1f}s "
