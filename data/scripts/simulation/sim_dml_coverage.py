@@ -49,6 +49,47 @@ REPO = Path(__file__).resolve().parents[3]
 RIDGE_ALPHAS = (0.01, 0.1, 1.0, 10.0, 100.0, 1000.0)
 
 
+def make_plr_weak_overlap(n: int, dim_x: int = 20, alpha: float = 0.5,
+                          rho: float = 0.7,
+                          target_R2_DX: float = 0.90,
+                          nonlinear_g: bool = True,
+                          rng: np.random.Generator = None):
+    """Weak-overlap PLR DGP. Targets R²(D|X) ≈ 0.90 to put the
+    estimator in the ill-conditioned regime documented in Saco (2025,
+    arXiv 2512.07083) Table A.5 and Bach/Schacht (2024, arXiv 2409.04874)
+    DGP4. In this regime the orthogonal score's denominator E[T_resid²]
+    shrinks toward zero and small biases in the nuisance estimate
+    amplify into large coverage errors. Nonlinear g_0 makes ridge a
+    misspecified outcome learner.
+
+    Truth: theta_0 = alpha (analytic).
+    """
+    rng = rng or np.random.default_rng()
+    idx = np.arange(dim_x)
+    Sigma = rho ** np.abs(idx[:, None] - idx[None, :])
+    L = np.linalg.cholesky(Sigma)
+    X = rng.standard_normal((n, dim_x)) @ L.T
+    v = rng.standard_normal(n)
+    zeta = rng.standard_normal(n)
+    sig = lambda x: 1.0 / (1.0 + np.exp(-x))
+    # Push R²(D|X) to target by scaling m_0 against unit-variance noise.
+    # m_0 = c (x1 + 0.5 sig(x3)) → Var(m_0) ≈ c² (1 + 0.0625) ≈ 1.06 c².
+    # R²(D|X) = Var(m_0) / (Var(m_0) + 1) = target → c² = target / (1 - target) / 1.06.
+    c = float(np.sqrt(target_R2_DX / (1 - target_R2_DX) / 1.06))
+    m0 = c * (X[:, 0] + 0.5 * sig(X[:, 2]))
+    D = m0 + 1.0 * v
+    if nonlinear_g:
+        # Nonlinear g_0 with interactions; ridge cannot learn this from
+        # a small sample. Mirrors Bach/Schacht DGP4 "difficult outcome".
+        g0 = (sig(X[:, 0]) + 0.5 * np.sin(X[:, 2])
+              + 0.3 * X[:, 0] * X[:, 4]
+              + 0.5 * (X[:, 1] ** 2 - 1))
+    else:
+        g0 = sig(X[:, 0]) + 0.25 * X[:, 2]
+    Y = alpha * D + g0 + 1.0 * zeta
+    return Y, D, X
+
+
 def make_plr_ccddhnr_2018(n: int, dim_x: int = 20, alpha: float = 0.5,
                           rho: float = 0.7, s1: float = 1.0, s2: float = 1.0,
                           a0: float = 1.0, a1: float = 0.25,
@@ -166,6 +207,36 @@ def dml_pairs_boot(Y, D, X, n_boot=200, k_folds=5, seed=42):
     return theta_hat, se, lo, hi
 
 
+def dml_fixed_nuisance_boot(Y_res, D_res, theta_hat, n_boot=500, seed=42):
+    """Fixed-nuisance bootstrap (Luedtke & Chambaz 2024 arXiv 2404.03064).
+
+    Holds the cross-fit nuisance estimates at their original-sample
+    values; resamples (Y_res_i, D_res_i) pairs with replacement and
+    recomputes theta_b from the orthogonal score. Avoids cross-fit
+    re-estimation on duplicated bootstrap rows (their footnote warns
+    that empirical bootstrap with cross-validated nuisance produces
+    biased CIs because duplicates appear in train and test folds).
+    Asymptotically valid for the partially-linear score per their
+    Theorem 1; computationally ~10x cheaper than full-refit pairs
+    bootstrap because the ridge fits are not redone.
+    """
+    n = len(Y_res)
+    rng = np.random.default_rng(seed)
+    thetas = np.empty(n_boot)
+    for b in range(n_boot):
+        idx = rng.integers(0, n, n)
+        Yr, Dr = Y_res[idx], D_res[idx]
+        denom = float(np.mean(Dr ** 2))
+        thetas[b] = float(np.mean(Dr * Yr) / denom) if denom > 1e-12 else np.nan
+    valid = thetas[~np.isnan(thetas)]
+    if valid.size < max(20, n_boot // 10):
+        return theta_hat, float("nan"), float("nan"), float("nan")
+    se = float(np.std(valid, ddof=1))
+    lo = float(np.percentile(valid, 2.5))
+    hi = float(np.percentile(valid, 97.5))
+    return theta_hat, se, lo, hi
+
+
 @dataclass
 class RepResult:
     n: int
@@ -179,9 +250,15 @@ class RepResult:
     covers: bool
 
 
-def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs, k_folds):
+def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs,
+                n_boot_fixed, k_folds, dgp="ccddhnr"):
     rng = np.random.default_rng(seed)
-    Y, D, X = make_plr_ccddhnr_2018(n=n, alpha=theta_true, rng=rng)
+    if dgp == "ccddhnr":
+        Y, D, X = make_plr_ccddhnr_2018(n=n, alpha=theta_true, rng=rng)
+    elif dgp == "weak_overlap":
+        Y, D, X = make_plr_weak_overlap(n=n, alpha=theta_true, rng=rng)
+    else:
+        raise ValueError(f"unknown dgp: {dgp}")
     rows = []
     th_n, se_n = naive_ml_plugin(Y, D, X, seed=seed)
     lo_n, hi_n = th_n - 1.96 * se_n, th_n + 1.96 * se_n
@@ -193,16 +270,26 @@ def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs, k_folds):
     rows.append(RepResult(n, theta_true, rep, "dml_if", theta_if, se_if,
                           lo_if, hi_if, lo_if <= theta_true <= hi_if))
 
-    _, se_mb, lo_mb, hi_mb = dml_multiplier_boot(theta_if, Y_res, D_res,
-                                                  n_boot=n_boot_mult,
-                                                  seed=seed + 7919)
-    rows.append(RepResult(n, theta_true, rep, "dml_mult_boot", theta_if,
-                          se_mb, lo_mb, hi_mb, lo_mb <= theta_true <= hi_mb))
+    if n_boot_mult > 0:
+        _, se_mb, lo_mb, hi_mb = dml_multiplier_boot(theta_if, Y_res, D_res,
+                                                      n_boot=n_boot_mult,
+                                                      seed=seed + 7919)
+        rows.append(RepResult(n, theta_true, rep, "dml_mult_boot", theta_if,
+                              se_mb, lo_mb, hi_mb, lo_mb <= theta_true <= hi_mb))
 
-    _, se_pb, lo_pb, hi_pb = dml_pairs_boot(Y, D, X, n_boot=n_boot_pairs,
-                                             k_folds=k_folds, seed=seed + 31337)
-    rows.append(RepResult(n, theta_true, rep, "dml_pairs_boot", theta_if,
-                          se_pb, lo_pb, hi_pb, lo_pb <= theta_true <= hi_pb))
+    if n_boot_fixed > 0:
+        _, se_fn, lo_fn, hi_fn = dml_fixed_nuisance_boot(Y_res, D_res, theta_if,
+                                                          n_boot=n_boot_fixed,
+                                                          seed=seed + 50021)
+        rows.append(RepResult(n, theta_true, rep, "dml_fixed_nuis_boot",
+                              theta_if, se_fn, lo_fn, hi_fn,
+                              lo_fn <= theta_true <= hi_fn))
+
+    if n_boot_pairs > 0:
+        _, se_pb, lo_pb, hi_pb = dml_pairs_boot(Y, D, X, n_boot=n_boot_pairs,
+                                                 k_folds=k_folds, seed=seed + 31337)
+        rows.append(RepResult(n, theta_true, rep, "dml_pairs_boot", theta_if,
+                              se_pb, lo_pb, hi_pb, lo_pb <= theta_true <= hi_pb))
     return rows
 
 
@@ -238,7 +325,14 @@ def main():
     ap.add_argument("--n_boot_mult", type=int, default=500)
     ap.add_argument("--n_boot_pairs", type=int, default=100,
                     help="pairs-bootstrap iterations; expensive (full DML "
-                         "refit each), default 100, paper-grade 200-500")
+                         "refit each); set 0 to skip")
+    ap.add_argument("--n_boot_fixed", type=int, default=500,
+                    help="fixed-nuisance bootstrap iterations (Luedtke & "
+                         "Chambaz 2024 arXiv 2404.03064); cheap, set 0 to skip")
+    ap.add_argument("--dgp", choices=["ccddhnr", "weak_overlap"],
+                    default="ccddhnr",
+                    help="DGP family. weak_overlap targets R²(D|X)≈0.90 "
+                         "with nonlinear g_0 (Bach/Schacht DGP4 analog).")
     ap.add_argument("--k_folds", type=int, default=5)
     ap.add_argument("--seed", type=int, default=20260601)
     ap.add_argument("--out_dir", type=Path,
@@ -246,12 +340,13 @@ def main():
     args = ap.parse_args()
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    out_csv = args.out_dir / "coverage_raw.csv"
-    summary_csv = args.out_dir / "coverage_summary.csv"
+    suffix = f"_{args.dgp}" if args.dgp != "ccddhnr" else ""
+    out_csv = args.out_dir / f"coverage_raw{suffix}.csv"
+    summary_csv = args.out_dir / f"coverage_summary{suffix}.csv"
 
-    print(f"Grid: n in {args.n_grid}, theta in {args.theta_grid}, "
+    print(f"DGP={args.dgp}  Grid: n in {args.n_grid}, theta in {args.theta_grid}, "
           f"reps={args.n_reps}, mult_boot={args.n_boot_mult}, "
-          f"pairs_boot={args.n_boot_pairs}")
+          f"pairs_boot={args.n_boot_pairs}, fixed_nuis_boot={args.n_boot_fixed}")
     t0 = time.time()
     all_rows = []
     for n in args.n_grid:
@@ -262,7 +357,8 @@ def main():
                 seed = args.seed + 1009 * rep + 41 * int(n) + 13 * int(theta * 100)
                 rows = run_one_rep(n, theta, rep, seed,
                                     args.n_boot_mult, args.n_boot_pairs,
-                                    args.k_folds)
+                                    args.n_boot_fixed, args.k_folds,
+                                    dgp=args.dgp)
                 cell_rows.extend(rows)
                 if (rep + 1) % max(1, args.n_reps // 10) == 0:
                     elapsed = time.time() - cell_t
