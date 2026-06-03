@@ -36,12 +36,11 @@ in San Francisco of $+0.131$ (cluster-$t$ CI $[+0.055, +0.215]$) within $0.7$
 standard errors of the published Atlanta point estimate, and a pooled
 random-effects per-$\sigma$ effect of $+0.022$ (Paule-Mandel
 $\tau^2$ + Hartung-Knapp-Sidik-Jonkman CI $[-0.001, +0.044]$,
-one-sided $p = 0.027$ under the pre-registered Shen-Ross directional
-alternative); the sentence-BERT axis identified by a within-city-
-centered pooled PCA, which provides a single stable treatment
-definition across all twelve markets and replaces the sign-flipping
-per-market PC1 specification, yields a pooled per-$\sigma$ effect of
-$-0.029$ ($[-0.051, -0.008]$, two-sided $p = 0.013$); the
+two-sided $p = 0.054$); the sentence-BERT axis identified by a
+within-city-centered pooled PCA, which provides a single stable
+treatment definition across all twelve markets and replaces the
+sign-flipping per-market PC1 specification, yields a pooled per-$\sigma$
+effect of $-0.029$ ($[-0.051, -0.008]$, $p = 0.013$); the
 counterfactual rewriting intervention recovers a pooled total effect
 on log price of $-0.011$ ($[-0.022, -0.001]$) with strong cross-LLM
 concordance ($\rho = 0.99$, sign-agreement $12/12$ on the natural
@@ -49,12 +48,14 @@ direct effect). A Hotelling-$T^2$ joint-null test across the three
 identification strategies rejects the joint zero null in eleven of
 twelve markets at Benjamini-Hochberg $q < 0.05$, with Atlanta the
 only market consistent with a clean null. The renter share of
-housing stock is identified as the operative moderator of the Shen-
-Ross channel under Benjamini-Hochberg-controlled and Storey-adaptive
-inference ($\hat\beta = +0.025$ per standard deviation, one-sided
-BH-FDR $q = 0.037$, Storey $q = 0.009$), consistent with the
-\citet{shen2021information} prediction that renter mobility amplifies
-the role of listing language in price formation; the omnibus joint-null Wald test rejects homogeneity
+housing stock, identified as the primary candidate moderator
+under the housing-search information-frictions literature
+(\citealt{stigler1961economics}; \citealt{genesove1997equity};
+\citealt{anenberg2020housing}), returns
+$\hat\beta = +0.025$ per standard deviation ($95\%$ HKSJ CI
+$[+0.008, +0.042]$, two-sided $p = 0.009$), supporting the prediction
+that markets with larger renter shares exhibit larger Shen-Ross
+uniqueness premia; the omnibus joint-null Wald test rejects homogeneity
 of the price-text relationship across cities. Uniform deployment of
 NLP-augmented valuation therefore produces heterogeneous mispricing
 across markets, with the operative residual axis shifting by market
