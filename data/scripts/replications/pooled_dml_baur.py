@@ -92,8 +92,9 @@ def pooled_dml(df: pd.DataFrame, y: str, t: str, x_cols: list[str],
                 seed: int = 42):
     """DoubleMLPLR with city dummies in X and city-cluster SE.  Uses
     Chiang-Kato-Ma-Sasaki (2022) cluster-robust variance via
-    DoubleML's cluster_cols API.  Returns (theta_hat, se_ckms, ci_low,
-    ci_high, n_clusters, n_total).
+    DoubleML's cluster_cols API.  Returns the fitted DML object along
+    with the headline (theta, se_ckms, ci, G, n) so the caller can
+    extract residuals for the influence-function bootstrap.
     """
     from doubleml import DoubleMLData, DoubleMLPLR
     city_dum = pd.get_dummies(df[cluster], prefix="city", drop_first=True,
@@ -110,7 +111,50 @@ def pooled_dml(df: pd.DataFrame, y: str, t: str, x_cols: list[str],
     se = float(dml.se[0])
     G = df[cluster].nunique()
     tcrit = stats.t.ppf(0.975, df=G - 1)
-    return theta, se, theta - tcrit * se, theta + tcrit * se, G, len(df)
+    return dml, theta, se, theta - tcrit * se, theta + tcrit * se, G, len(df)
+
+
+def bayesian_cluster_boot_if(dml, df: pd.DataFrame, y: str, t: str,
+                              cluster: str, B: int = 2000, seed: int = 42):
+    """Bayesian (Dirichlet-weighted) cluster bootstrap on the partially-
+    linear DML influence function, conditioning on the original fitted
+    nuisances.  This is Tang-Westling (2024, arXiv:2404.03064)-style
+    fixed-nuisance inference adapted to the cluster setting: each
+    city draws an exponential(1) score, the scores are normalised to
+    sum to G, then propagated to listings as observation weights.  No
+    refitting, no city duplication leverage.
+
+    Returns (ci_low, ci_high, boot_theta_array).
+    """
+    # Pull the fitted nuisance predictions: ml_l = E[Y|X], ml_m = E[T|X].
+    preds = dml.predictions
+    # Predictions are shape (n, n_rep, 1); average across reps for stable
+    # nuisance estimate, then compute the cross-fit residuals.
+    Y_obs = df[y].to_numpy()
+    T_obs = df[t].to_numpy()
+    yhat = preds["ml_l"][:, :, 0].mean(axis=1)
+    that = preds["ml_m"][:, :, 0].mean(axis=1)
+    Y_res = Y_obs - yhat
+    T_res = T_obs - that
+    cluster_vec = df[cluster].to_numpy()
+    cities = np.unique(cluster_vec)
+    G = len(cities)
+    cluster_to_idx = {c: i for i, c in enumerate(cities)}
+    obs_cluster_idx = np.array([cluster_to_idx[c] for c in cluster_vec])
+
+    rng = np.random.default_rng(seed)
+    boot_theta = np.empty(B)
+    for b in range(B):
+        u = rng.exponential(scale=1.0, size=G)
+        w_cluster = G * u / u.sum()             # mean 1, no duplicates
+        w_obs = w_cluster[obs_cluster_idx]       # propagate to listings
+        num = float(np.sum(w_obs * Y_res * T_res))
+        den = float(np.sum(w_obs * T_res ** 2))
+        boot_theta[b] = num / den if den > 1e-12 else np.nan
+    valid = boot_theta[~np.isnan(boot_theta)]
+    return (float(np.percentile(valid, 2.5)),
+            float(np.percentile(valid, 97.5)),
+            valid.tolist())
 
 
 def pairs_cluster_boot(df: pd.DataFrame, y: str, t: str, x_cols: list[str],
@@ -206,7 +250,7 @@ def main():
     print(f"  pooled n={len(df_all)}, G={df_all['city'].nunique()}")
 
     print(f"\n=== Pooled DML (DoubleMLPLR, cluster_cols='city') ===")
-    theta, se, ci_lo, ci_hi, G, n = pooled_dml(
+    dml, theta, se, ci_lo, ci_hi, G, n = pooled_dml(
         df_all, y="log_price", t="treatment", x_cols=common_x,
         cluster="city", n_folds=args.n_folds, n_rep=args.n_rep,
         seed=args.seed,
@@ -218,11 +262,11 @@ def main():
     print(f"  95% CKMS CI = [{ci_lo:+.4f}, {ci_hi:+.4f}]")
     print(f"  excludes zero: {(ci_lo > 0 or ci_hi < 0)}")
 
-    print(f"\n=== Pairs-cluster bootstrap (B={args.n_boot}) ===")
-    bci_lo, bci_hi, boot_theta = pairs_cluster_boot(
-        df_all, y="log_price", t="treatment", x_cols=common_x,
-        cluster="city", B=args.n_boot, n_folds=args.n_folds,
-        seed=args.seed,
+    print(f"\n=== Bayesian (Dirichlet) cluster bootstrap on IF "
+          f"(B={args.n_boot}) ===")
+    bci_lo, bci_hi, boot_theta = bayesian_cluster_boot_if(
+        dml, df_all, y="log_price", t="treatment",
+        cluster="city", B=args.n_boot, seed=args.seed,
     )
     print(f"  bootstrap 95% CI = [{bci_lo:+.4f}, {bci_hi:+.4f}]")
     if boot_theta:
@@ -234,7 +278,8 @@ def main():
         "method": "DoubleMLPLR with cluster_cols='city', ridge nuisances",
         "treatment": "pooled_within_city_centered_pca_pc1",
         "cluster_method": "CKMS (Chiang-Kato-Ma-Sasaki 2022)",
-        "boot_method": "Pairs-cluster (Cameron-Gelbach-Miller 2008)",
+        "boot_method": "Bayesian (Dirichlet) cluster bootstrap on IF "
+                        "(fixed-nuisance, Tang-Westling 2024 style)",
         "theta_pooled": theta, "ckms_se": se,
         "ckms_ci_low": ci_lo, "ckms_ci_high": ci_hi,
         "ckms_t_critical": tcrit, "t_stat": theta / se if se > 0 else float("nan"),
