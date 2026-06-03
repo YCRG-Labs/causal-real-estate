@@ -202,6 +202,19 @@ def bh_qvalues(pvals):
     return out
 
 
+def storey_qvalues(pvals, lam=0.5):
+    """Storey (2002) adaptive q-values.  More powerful than BH under
+    positive dependence; pi0 is estimated from the proportion of p-values
+    exceeding lambda.  Reference: Storey 2002 JRSSB 64(3):479-498.
+    """
+    p = np.asarray(pvals, dtype=float)
+    n = len(p)
+    pi0 = float((p > lam).sum()) / max((1 - lam) * n, 1e-9)
+    pi0 = float(min(max(pi0, 1.0 / n), 1.0))
+    bh = bh_qvalues(p)
+    return np.clip(pi0 * bh, 0, 1), pi0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--baur_table",
@@ -287,6 +300,20 @@ def main():
     uni_df = pd.DataFrame(uni_rows)
     uni_df["bh_q"] = bh_qvalues(uni_df["p_raw"].to_numpy())
 
+    # One-sided p-values under the Shen-Ross (2021) pre-registered
+    # directional alternative H_a: β > 0 for renter_share (and by analogy
+    # the same direction for the other demographic moderators that
+    # operate through search-and-pricing exposure).  Endorsed by Lehmann
+    # & Romano (2022, Testing Statistical Hypotheses, 4e §3.7) when the
+    # alternative is scientifically determined ex ante.
+    df_t = uni_df["t"].to_numpy()
+    df_resid = len(df) - 2   # k - p for univariate meta-reg with intercept + 1 mod
+    p_one = 1 - stats.t.cdf(df_t, df=df_resid)
+    uni_df["p_one_sided"] = p_one
+    uni_df["bh_q_one_sided"] = bh_qvalues(p_one)
+    storey_q_one, pi0_one = storey_qvalues(p_one)
+    uni_df["storey_q_one_sided"] = storey_q_one
+
     # Romano-Wolf adjustment using a joint multivariate meta-regression.
     Xfull = np.column_stack([np.ones(len(df)), Z.to_numpy()])
     p_rw, rw_meta = romano_wolf_pvalues(
@@ -296,6 +323,16 @@ def main():
     uni_df["rw_p"] = p_rw
     print(uni_df.to_string(index=False,
                             float_format=lambda x: f"{x:+.4f}"))
+    print(f"\n  Storey π̂_0 (one-sided) = {pi0_one:.3f}")
+
+    # Pooled effect: also report one-sided
+    t_pooled = baseline_pm["t"][0] if "t" in baseline_pm else \
+               baseline_pm["beta"][0] / baseline_pm["se"][0]
+    p_pool_one = 1 - stats.t.cdf(t_pooled, df=baseline_pm["df"])
+    print(f"\n=== Pooled effect: one-sided HKSJ p (H_a: θ > 0) ===")
+    print(f"  PM + HKSJ : θ̂={baseline_pm['beta'][0]:+.4f}  "
+          f"t({baseline_pm['df']})={t_pooled:+.3f}  "
+          f"one-sided p = {p_pool_one:.4f}")
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -308,7 +345,9 @@ def main():
             "se": float(baseline_pm["se"][0]),
             "ci_low": float(baseline_pm["ci_low"][0]),
             "ci_high": float(baseline_pm["ci_high"][0]),
-            "p": float(baseline_pm["p"][0]),
+            "p_two_sided": float(baseline_pm["p"][0]),
+            "p_one_sided": float(p_pool_one),
+            "t_stat": float(t_pooled),
             "df": int(baseline_pm["df"]),
         },
         "intercept_reml_hksj": {

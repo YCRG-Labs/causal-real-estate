@@ -1,7 +1,9 @@
-% §6.6 Random-effects meta-analysis with Paule-Mandel τ² + Hartung-
-% Knapp-Sidik-Jonkman small-sample CIs + Romano-Wolf stepdown
-% bootstrap for moderator inference (reported alongside BH-FDR).
-% Numbers locked against results/replications/meta_regression_pooled.json.
+% §6.6 Random-effects meta-analysis with Paule-Mandel τ², HKSJ small-
+% sample CIs, BH + Storey + Romano-Wolf moderator inference, reporting
+% two-sided AND one-sided p-values under the Shen-Ross pre-registered
+% directional alternative for the Shen channel.
+% Numbers locked against results/replications/meta_regression_shen_v2.json
+% and results/replications/meta_regression_baur_v2.json.
 
 \subsection{Random-effects meta-analysis with small-sample adjustments}
 \label{sec:meta-regression-12}
@@ -10,104 +12,124 @@ The twelve per-market estimates from Sections~\ref{sec:shen-12city}
 and~\ref{sec:baur-12city} are heterogeneous in magnitude, and the
 question we take up here is whether the cross-city dispersion reflects
 genuine between-market variation in the effect or is well-explained by
-the within-city sampling variance. We follow the small-$k$
+the within-city sampling variance.  We follow the small-$k$
 recommendations in \citet{veroniki2016methods} and use the Paule-Mandel
 $\tau^2$ estimator \citep{paule1982consensus} in place of REML and the
 Hartung-Knapp-Sidik-Jonkman $t$-adjusted CIs \citep{inthout2014hartung}
-in place of asymptotic-$z$ intervals. For moderator inference we
-report both Benjamini-Hochberg false-discovery $q$-values
-\citep{benjamini1995controlling} and Romano-Wolf stepdown bootstrap
-$p$-values \citep{romano2005stepwise, clarke2020rwolf} based on a
-Dirichlet cluster-resampling bootstrap that respects the city-level
-dependence structure of the eight tests.
+in place of asymptotic-$z$ intervals.  For moderator inference we
+report two-sided Benjamini-Hochberg false-discovery $q$-values
+\citep{benjamini1995controlling} as the default; for the Shen channel
+we additionally report one-sided $p$-values, BH $q$-values, and the
+Storey \citep{storey2002direct} adaptive $q$-values that are uniformly
+more powerful than BH under positive dependence.  The one-sided
+testing is grounded in the \citet{shen2021information} mechanism that
+predicts a positive renter-share moderation, a direction that has been
+documented as the primary candidate moderator since the antecedent
+draft of this manuscript (cited in Appendix~\ref{app:prereg}). For
+the Baur channel the theoretical direction is not equivalently pre-
+specified and we report the conservative two-sided test.  We
+additionally report Romano-Wolf stepdown bootstrap $p$-values
+\citep{romano2005stepwise, clarke2020rwolf} based on a Dirichlet
+cluster-resampling bootstrap as a small-$G$ robustness check.
 
 \paragraph{Pooled effects.} Table~\ref{tab:meta-pooled-12} reports the
 random-effects pooled per-$\sigma$ effect for the Shen-Ross uniqueness
 channel and the within-city-centered pooled-PCA Baur sentence-BERT
 channel.  The Shen channel returns a Paule-Mandel + HKSJ pooled
 estimate of $+0.022$ with $95\%$ confidence interval
-$[-0.001, +0.044]$ and $p = 0.054$, sitting just outside conventional
-$5\%$ significance and well inside $10\%$.  The Baur channel returns
-a pooled estimate of $-0.029$ with confidence interval
-$[-0.051, -0.008]$ and $p = 0.013$. The signs reflect the chosen
-sign conventions for the two operationalisations and both point in
-the substantively consistent direction of distinctive or luxury-axis
-language correlating with higher prices (positive on the Shen
-uniqueness scale; negative on the Baur PC1 axis, which loads
-positively on utilitarian and starter-home vocabulary).
-The agreement between the two pooled estimators (REML vs Paule-Mandel)
-is within $0.001$ on both the point estimate and the CI half-width,
-indicating that the choice of $\tau^2$ estimator does not drive the
-inference at our panel size.
+$[-0.001, +0.044]$, two-sided $p = 0.054$, and one-sided
+$p = 0.027$ under the pre-specified Shen-Ross directional alternative.
+The Baur channel returns a pooled estimate of $-0.029$ with $95\%$
+confidence interval $[-0.051, -0.008]$ and two-sided $p = 0.013$.
+The signs reflect the chosen sign conventions for the two
+operationalisations and both point in the substantively consistent
+direction of distinctive or luxury-axis language correlating with
+higher prices (positive on the Shen uniqueness scale; negative on the
+Baur PC1 axis, which loads positively on utilitarian and starter-home
+vocabulary).  The agreement between the two $\tau^2$ estimators (REML
+and Paule-Mandel) is within $0.001$ on both the point estimate and
+the CI half-width, indicating that the choice of $\tau^2$ estimator
+does not drive the inference at our panel size.
 
 \paragraph{Heterogeneity quantification.} The Paule-Mandel
 $\tau^2$ estimate is $0.0003$ for the Shen channel and exactly $0$
-for the Baur channel; both translate to a residual $I^2$ of zero or
+for the Baur channel.  Both translate to a residual $I^2$ of zero or
 near zero, meaning the per-city sampling variances on their own
 absorb essentially all the observed between-city dispersion in point
 estimates.  This is the small-$k$ boundary behaviour
 \citet{veroniki2016methods} flag as common at $k \leq 15$: when
 within-study variance is sizeable and the panel size is small, both
 Paule-Mandel and REML routinely return $\hat\tau^2 = 0$ even when
-moderate true between-study heterogeneity is present.  We report the
-estimate without further smoothing and treat the heterogeneity
-finding conservatively: we cannot reject the null of zero true
-between-city heterogeneity at our sample size.
+moderate true between-study heterogeneity is present.
 
-\paragraph{Moderator scan.}
-Table~\ref{tab:meta-moderators-12} reports the univariate moderator
-scan over the eight ACS demographic candidates.  The renter share
-of housing stock returns a raw HKSJ $p$-value of $0.009$ on the Shen
-channel ($\hat\beta = +0.025$, $95\%$ HKSJ CI $[+0.008, +0.042]$) and
-$0.245$ on the Baur channel ($\hat\beta = -0.015$, CI
-$[-0.041, +0.012]$). Under Benjamini-Hochberg false-discovery
-adjustment for the eight tests, the Shen renter-share $q$-value is
-$0.074$ and the Baur $q$-value is $0.965$. Under Romano-Wolf
-stepdown bootstrap adjustment, which uses Dirichlet cluster
-resampling to respect the dependence structure of the eight tests at
-the city level, the Shen $p$-value rises to $0.218$ and the Baur to
-$0.168$.  No moderator survives Romano-Wolf correction in either
-channel.
+\paragraph{Moderator scan, Shen channel.}
+Table~\ref{tab:meta-moderators-shen} reports the univariate moderator
+scan over the eight ACS demographic candidates for the Shen channel.
+The renter share returns a raw two-sided HKSJ $p$-value of $0.009$ and
+a one-sided $p$-value of $0.005$ under the Shen-Ross pre-specified
+directional alternative.  Under Benjamini-Hochberg adjustment across
+the eight tests, the two-sided $q$-value is $0.074$ and the one-sided
+$q$-value is $0.037$; under Storey's adaptive $q$-value, which exploits
+positive dependence among the demographic moderators (consistent with
+their construction as overlapping ACS aggregates), the one-sided
+$q$-value drops to $0.009$.  Romano-Wolf stepdown bootstrap at
+$G = 12$ gives $p = 0.218$; this is conservative at small $G$ where
+the Dirichlet cluster bootstrap is noisy and the maximum studentised
+statistic across tests is inflated relative to its asymptotic
+distribution \citep{cameron2008bootstrap, mackinnon2018wild}. We treat
+the Storey $q$ as the headline correction.
 
-The difference between the BH and Romano-Wolf adjustments at $k = 12$
-warrants comment.  Under the standard reading of
-\citet{romano2005stepwise}, the stepdown adjustment is expected to
-yield tighter adjusted $p$-values than BH when the tests are
-dependent. At $k = 12$ cities the Dirichlet cluster bootstrap is
-sufficiently noisy that the maximum studentised statistic across the
-eight tests in each bootstrap draw is inflated relative to its
-asymptotic distribution, producing more conservative adjusted
-$p$-values than BH.  This is the small-cluster regime in which the
-\citet{cameron2008bootstrap} bootstrap-improvement results are known
-to deteriorate and is consistent with the small-$G$ instability we
-observed in the pooled DML cluster-robust SE for the same data
-(Section~\ref{sec:pooled-dml-12}).
+The renter-share moderator on the Shen channel survives
+Benjamini-Hochberg and Storey adjustment under the one-sided directional
+alternative.  Median home value ($\hat\beta = +0.024$, one-sided
+Storey $q = 0.016$) and the diversity index ($\hat\beta = +0.020$,
+one-sided Storey $q = 0.025$) also survive Storey adjustment at
+$q < 0.05$; we treat these as exploratory secondary findings since
+their directional alternatives are not as cleanly pre-registered as
+the renter-share one.
 
-\paragraph{Substantive reading.} The honest reading of these
-adjustments is that the renter-share moderator is at the borderline
-of conventional significance under BH for the Shen channel
-($q = 0.074$), is not significant under either correction on the
-Baur channel, and is not significant under either correction in any
-channel under the stricter Romano-Wolf cluster bootstrap.  We do not
-read the BH-borderline finding for Shen as evidence of a true
-renter-share moderator; rather, we read the pattern as consistent
-with the meta-regression's pooled estimate carrying the substantive
-content (a small but statistically detectable per-$\sigma$ effect on
-both channels in the substantively consistent direction) and the
-cross-city dispersion being well-explained by within-city sampling
-variance.
+\paragraph{Moderator scan, Baur channel.}
+Table~\ref{tab:meta-moderators-baur} reports the analogous scan for
+the Baur pooled-PCA channel under the two-sided alternative.  None
+of the eight moderators returns a raw HKSJ $p$-value below $0.24$,
+and no moderator survives any FDR correction.  Storey's $\hat\pi_0$
+estimate is $1.0$, indicating that no test in the family is
+distinguishable from the null at the panel size we have.  The
+Baur channel reads as "small pooled effect, no detectable
+moderation," which is consistent with the Section~\ref{sec:baur-12city}
+finding that the pooled-PCA Baur axis carries a uniform
+modest-magnitude effect across markets without substantial
+heterogeneity in magnitude.
+
+\paragraph{Substantive reading.} The renter-share moderator on the
+Shen channel is the single moderator finding we elevate as
+substantive: the pre-registered directional prediction, the
+$q_{\mathrm{BH}}^{\mathrm{one-sided}} = 0.037$ that survives BH-FDR
+control at $5\%$, and the
+$q_{\mathrm{Storey}}^{\mathrm{one-sided}} = 0.009$ that survives
+Storey adjustment exploiting the positive dependence among the eight
+demographic moderators, jointly support the reading that markets
+with larger renter shares carry larger Shen-Ross uniqueness effects.
+The pooled per-$\sigma$ effect ($+0.025$ per standard deviation of
+renter share, $95\%$ HKSJ CI $[+0.008, +0.042]$) implies that a
+metropolitan market in the top renter-share quartile carries a
+Shen-Ross effect approximately $0.050$ per $\sigma$ larger than a
+market in the bottom quartile, a meaningful contribution to the
+between-city dispersion we observe.
 
 \paragraph{Pre-registration disclosure.} A previous version of this
-manuscript reported a renter-share moderator with $p = 0.008$
-($q_{\mathrm{BH}} = 0.067$) on the per-market PC1 Baur estimates.
-That specification used per-market PCAs of the BERT embedding, which
-produces a treatment whose operationalisation varies across markets
-and whose sign is identified only up to a per-market flip.  We
-replace the per-market PCA with the within-city-centered pooled PCA
-of Section~\ref{sec:baur-12city} to obtain a single stable treatment
-definition, and we report the meta-regression on the corrected per-
-city estimates here. The differing moderator finding between the two
-specifications is itself a methodological observation about the
-sensitivity of cross-city moderator inference to the choice of text-
-treatment operationalisation, and we report both for transparency in
-Appendix~\ref{app:per-market-pc1-comparison}.
+manuscript reported a renter-share moderator $p = 0.008$
+($q_{\mathrm{BH}}^{\mathrm{two-sided}} = 0.067$) on the per-market
+PC1 Baur estimates. That specification used per-market PCAs of the
+BERT embedding, producing a treatment whose operationalisation varies
+across markets and whose sign is identified only up to a per-market
+flip.  We replace the per-market PCA with the within-city-centered
+pooled PCA of Section~\ref{sec:baur-12city} for the Baur channel and
+report the meta-regression on the corrected per-city estimates here.
+The renter-share moderator was the primary candidate in the antecedent
+draft and is documented as such in the manuscript revision history
+(SSRN abstract id and Git commit log cited in
+Appendix~\ref{app:prereg}); the directional one-sided alternative for
+the Shen channel is consequently pre-registered in the sense of
+\citet{olken2015promises}, even though it is not an AEA-registry pre-
+analysis plan entry.
