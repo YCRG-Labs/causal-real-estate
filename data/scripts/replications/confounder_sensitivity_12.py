@@ -254,6 +254,21 @@ def diagnose_one(city, seed=42, k_folds=5):
         cf_d = _partial_r2_block(cols, [c for c in full_cols if c not in cols],
                                   X_df, T_z)
         short_cols = [c for c in full_cols if c not in cols]
+        if not short_cols:
+            # Pre-expansion 3-city parquet has only one block present.
+            # Dropping it leaves 0 features and StandardScaler crashes.
+            # Report the ablation row with no short-DML estimate; the
+            # baseline RV row above still carries the per-city headline.
+            print(f"    drop {bn:<10}  (skipped: 0 features remain)")
+            rows.append({
+                "city": city, "block_dropped": bn,
+                "n": int(n), "n_x": 0,
+                "theta": float("nan"), "se": float("nan"),
+                "rv": rv, "rv_alpha": rv_a, "f2": f2,
+                "cf_y": cf_y, "cf_d": cf_d,
+                "delta_theta_short_long": float("nan"),
+            })
+            continue
         Y_res_s, T_res_s = _ridge_resid(T_z, X_df[short_cols].to_numpy(),
                                          Y, k_folds, seed)
         theta_short, se_short = _theta_se_from_resids(Y_res_s, T_res_s)
