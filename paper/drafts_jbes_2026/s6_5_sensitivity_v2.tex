@@ -1,0 +1,110 @@
+% §6.5 Confounder sensitivity, 9-city panel (Boston/NYC/SF analyzed
+% separately in the original 3-city paper version).
+% Numbers locked against results/replications/confounder_sensitivity_12.csv.
+
+\subsection{Sensitivity to unobserved confounding and confounder-block ablation}
+\label{sec:sensitivity-12}
+
+The Shen-Ross DML estimates in Section~\ref{sec:shen-12city} rest on
+the conditional ignorability assumption that, after partialling out
+the structured property covariates and the location indicators we
+observe, residual variation in the listing language is exogenous to
+residual variation in the log sale price. This assumption is not
+directly testable. We follow \citet{cinelli2020making} and bound the
+strength of any unobserved confounder that would be needed to
+overturn the per-market findings, and we run a leave-one-block-out
+ablation that identifies which of the observed covariate groups is
+doing the heavy lifting in each market.
+
+\paragraph{Robustness Value.} The Robustness Value (RV) of
+\citeauthor{cinelli2020making} quantifies the minimum strength of an
+unobserved confounder, measured as its partial $R^2$ on both the
+outcome and the treatment, that would suffice to overturn the
+estimate.  Higher RV means more robust to unobserved confounding.
+For each of the nine markets in which we have the post-deduplication
+sensitivity machinery, Table~\ref{tab:confounder-sensitivity-12}
+reports the RV alongside the DML point estimate and the Cinelli-Hazlett
+$f^2$ measure of the strongest observed covariate's partial $R^2$.
+
+Three markets exhibit RV values above $0.10$, indicating that an
+unobserved confounder would need to explain more than $10\%$ of
+residual variance in both the listing-uniqueness score and the log
+sale price to overturn the estimate. Dallas has the highest RV at
+$0.158$, followed by Phoenix at $0.110$ and Seattle at $0.100$.
+The remaining six markets have RV values below $0.04$, indicating
+that comparatively modest unobserved confounding could overturn the
+per-market estimate. The pattern is consistent with the Section
+\ref{sec:shen-12city} reading that Dallas is the second market in
+which we can identify a Shen-Ross effect at the $95\%$ level: not
+only is the point estimate large in absolute terms, the inference is
+substantially more robust to confounders than in the markets where
+the point estimate clusters near zero.
+
+The $f^2$ values, which give the strength of the most influential
+\emph{observed} covariate in each market on a comparable
+partial-$R^2$ scale, sit between $1\text{e-}5$ and $0.030$ across the
+nine markets. These observed-covariate benchmarks are between two
+and four orders of magnitude below the RV thresholds in the
+high-robustness markets, which means an unobserved confounder would
+need to be substantially stronger than any covariate we observe in
+order to flip the inference. This is reassuring in the high-RV
+markets and uninformative in the low-RV markets, where neither the
+observed nor the hypothetical-unobserved benchmarks are large.
+
+\paragraph{Leave-one-block-out ablation.}
+We partition the observed covariates into five blocks: census
+demographics, crime and safety, points-of-interest amenities, spatial
+controls (lat-lon and ZIP indicators), and micro-geographic features
+(within-block parcel attributes). For each of the nine markets we
+drop each block in turn and recompute the DML estimate, reporting the
+maximum absolute change in $\hat\theta$ across the five
+ablations. The block that produces the largest change is the
+operative confounder block in that market.
+
+The leave-one-block-out structure reveals striking cross-city
+heterogeneity in which covariate block matters most.  In Seattle,
+dropping the crime block moves the DML estimate from $+0.030$ to
+$+0.511$, a change of $+0.48$ in $\hat\theta$ at the
+per-$\sigma$ scale, by far the largest single-block sensitivity in
+the panel.  This is consistent with the well-documented role of
+crime indicators in Seattle's listing language and structured
+price-formation process. In Dallas the operative block is census
+demographics, dropping which moves $\hat\theta$ by $+0.015$.
+Portland, Phoenix, Denver, and Washington DC are most sensitive to
+the amenities block, with maximum block changes between $+0.004$ and
+$-0.013$.  Atlanta and Chicago are most sensitive to spatial
+controls (with changes of $+0.011$ and $+0.003$ respectively), and
+Philadelphia is most sensitive to census demographics with a change
+of $-0.011$.
+
+\paragraph{Substantive interpretation.} Two readings of the ablation
+pattern are worth distinguishing. The first attributes the
+heterogeneity to local economic structure. Markets in which crime is
+a salient price-relevant attribute (Seattle being the clearest case)
+show the largest single-block sensitivity to dropping crime
+indicators; markets in which amenity density is doing the relevant
+price-formation work (Portland, Phoenix, Denver, DC) show the largest
+sensitivity to dropping amenity controls. Under this reading the
+appropriate confounder set for a per-market DML deployment is not a
+single national specification but a market-specific specification
+that prioritizes the locally-operative confounder block.
+
+The second reading attributes the heterogeneity to noise. With $n =
+290$--$334$ listings per market and $24$--$35$ covariates per block
+within the partial-out regression, the relative contributions of the
+five blocks are estimated with substantial noise, and the
+``most-influential block'' identification may shift if we re-sample
+the per-market panel. We cannot adjudicate cleanly between the two
+readings at our current sample size. Both pre-registered guidance
+and the meta-regression in Section~\ref{sec:meta-regression-12} would
+favor the first reading at scale, and we report the per-market
+ablations as suggestive rather than definitive.
+
+\paragraph{Limitations.} The sensitivity analysis above is computed
+on the nine cities of the post-deduplication panel. Boston, New York,
+and San Francisco were analyzed under a different sensitivity
+protocol in the three-city pilot reported in the original draft of
+this manuscript and are not directly comparable to the nine-city
+table above; we report the original three-city sensitivity in
+Appendix~\ref{app:original-sensitivity} and note that a unified
+twelve-city sensitivity protocol is a candidate for future work.
