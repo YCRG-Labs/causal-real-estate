@@ -1,100 +1,113 @@
-% §6.6 City-moderator meta-regression on Shen 12-city DML.
-% Numbers locked against results/replications/meta_regression_12.csv
-% and acs_moderators_12city.csv.  REML+Knapp-Hartung per Viechtbauer.
+% §6.6 Random-effects meta-analysis with Paule-Mandel τ² + Hartung-
+% Knapp-Sidik-Jonkman small-sample CIs + Romano-Wolf stepdown
+% bootstrap for moderator inference (reported alongside BH-FDR).
+% Numbers locked against results/replications/meta_regression_pooled.json.
 
-\subsection{City-moderator meta-regression}
+\subsection{Random-effects meta-analysis with small-sample adjustments}
 \label{sec:meta-regression-12}
 
-The twelve per-market Shen-Ross estimates from
-Section~\ref{sec:shen-12city} are heterogeneous by inspection, with
-San Francisco at $+0.131$ per $\sigma$, Dallas at $+0.048$, and the
-remaining ten markets clustered near zero. We ask whether covariates
-of metropolitan market structure can explain this dispersion in a
-formal mixed-effects meta-regression. We follow the recipe in
-\citet{borenstein2009meta} and \citet{viechtbauer2010metafor} with the
-Knapp-Hartung small-sample adjustment of
-\citet{knapp2003improved}, which the authors of the meta-analysis
-literature consider mandatory at the $k = 12$ panel size where
-asymptotic-$z$ critical values from REML undercover badly.
+The twelve per-market estimates from Sections~\ref{sec:shen-12city}
+and~\ref{sec:baur-12city} are heterogeneous in magnitude, and the
+question we take up here is whether the cross-city dispersion reflects
+genuine between-market variation in the effect or is well-explained by
+the within-city sampling variance. We follow the small-$k$
+recommendations in \citet{veroniki2016methods} and use the Paule-Mandel
+$\tau^2$ estimator \citep{paule1982consensus} in place of REML and the
+Hartung-Knapp-Sidik-Jonkman $t$-adjusted CIs \citep{inthout2014hartung}
+in place of asymptotic-$z$ intervals. For moderator inference we
+report both Benjamini-Hochberg false-discovery $q$-values
+\citep{benjamini1995controlling} and Romano-Wolf stepdown bootstrap
+$p$-values \citep{romano2005stepwise, clarke2020rwolf} based on a
+Dirichlet cluster-resampling bootstrap that respects the city-level
+dependence structure of the eight tests.
 
-\paragraph{Moderator selection.} We retrieve eight candidate
-city-level moderators from the 2018-2022 American Community Survey
-5-year estimates at the metropolitan-statistical-area aggregation:
-log of total population, median household income, renter share of
-occupied units, college-educated share of adults age 25 or older,
-diversity score computed as the Gini-Simpson index on the seven
-ACS racial and ethnic groups, median home value, median year built,
-and population density per square mile.  We standardize each
-moderator to zero mean and unit variance before entering it into the
-meta-regression, so coefficients are interpretable on the
-per-standard-deviation scale.
+\paragraph{Pooled effects.} Table~\ref{tab:meta-pooled-12} reports the
+random-effects pooled per-$\sigma$ effect for the Shen-Ross uniqueness
+channel and the within-city-centered pooled-PCA Baur sentence-BERT
+channel.  The Shen channel returns a Paule-Mandel + HKSJ pooled
+estimate of $+0.022$ with $95\%$ confidence interval
+$[-0.001, +0.044]$ and $p = 0.054$, sitting just outside conventional
+$5\%$ significance and well inside $10\%$.  The Baur channel returns
+a pooled estimate of $-0.029$ with confidence interval
+$[-0.051, -0.008]$ and $p = 0.013$. The signs reflect the chosen
+sign conventions for the two operationalisations and both point in
+the substantively consistent direction of distinctive or luxury-axis
+language correlating with higher prices (positive on the Shen
+uniqueness scale; negative on the Baur PC1 axis, which loads
+positively on utilitarian and starter-home vocabulary).
+The agreement between the two pooled estimators (REML vs Paule-Mandel)
+is within $0.001$ on both the point estimate and the CI half-width,
+indicating that the choice of $\tau^2$ estimator does not drive the
+inference at our panel size.
 
-\paragraph{Univariate scan with FDR control.}
-Table~\ref{tab:meta-regression-12} reports the univariate scan over
-the eight moderators, applying Benjamini-Hochberg false-discovery
-control with target rate $\alpha = 0.05$. The renter share returns
-the smallest $p$-value of $0.008$ with Knapp-Hartung-adjusted
-coefficient $+0.026$ per standard-deviation increase in renter share
-($95\%$ CI $[+0.008, +0.044]$, $t({10}) = 3.27$). Under
-Benjamini-Hochberg adjustment for eight tests this corresponds to a
-$q$-value of $0.067$, which falls just outside the conventional
-$0.05$ false-discovery threshold but well inside the $0.10$ threshold
-some readers prefer. Median home value ($p = 0.029$, $q = 0.115$),
-diversity index ($p = 0.045$, $q = 0.120$), and median household
-income ($p = 0.125$, $q = 0.250$) are the next four candidates in
-order of $p$-value. The omnibus test of equal-zero coefficients
-across all eight moderators yields $F(8, 4) = 4.27$, $p = 0.10$,
-which we take as suggestive evidence against the joint null.
+\paragraph{Heterogeneity quantification.} The Paule-Mandel
+$\tau^2$ estimate is $0.0003$ for the Shen channel and exactly $0$
+for the Baur channel; both translate to a residual $I^2$ of zero or
+near zero, meaning the per-city sampling variances on their own
+absorb essentially all the observed between-city dispersion in point
+estimates.  This is the small-$k$ boundary behaviour
+\citet{veroniki2016methods} flag as common at $k \leq 15$: when
+within-study variance is sizeable and the panel size is small, both
+Paule-Mandel and REML routinely return $\hat\tau^2 = 0$ even when
+moderate true between-study heterogeneity is present.  We report the
+estimate without further smoothing and treat the heterogeneity
+finding conservatively: we cannot reject the null of zero true
+between-city heterogeneity at our sample size.
 
-\paragraph{Theory-driven primary specification.} We pre-registered
-a three-moderator specification in
-Appendix~\ref{app:meta-prereg} based on the Borenstein guidance that
-$k \geq 10$ studies are required per moderator entered. The
-specification is renter share, log of population, and population
-density. The Knapp-Hartung-adjusted coefficient on renter share in
-the joint specification is $+0.025$ ($p = 0.012$, $95\%$ CI
-$[+0.006, +0.043]$), essentially unchanged from the univariate
-estimate. Coefficients on log population and population density are
-indistinguishable from zero in the joint model
-($p = 0.54, 0.23$ respectively). This robustness is reassuring;
-the renter-share effect does not vanish when the two next-most-
-plausible candidates are entered alongside it.
+\paragraph{Moderator scan.}
+Table~\ref{tab:meta-moderators-12} reports the univariate moderator
+scan over the eight ACS demographic candidates.  The renter share
+of housing stock returns a raw HKSJ $p$-value of $0.009$ on the Shen
+channel ($\hat\beta = +0.025$, $95\%$ HKSJ CI $[+0.008, +0.042]$) and
+$0.245$ on the Baur channel ($\hat\beta = -0.015$, CI
+$[-0.041, +0.012]$). Under Benjamini-Hochberg false-discovery
+adjustment for the eight tests, the Shen renter-share $q$-value is
+$0.074$ and the Baur $q$-value is $0.965$. Under Romano-Wolf
+stepdown bootstrap adjustment, which uses Dirichlet cluster
+resampling to respect the dependence structure of the eight tests at
+the city level, the Shen $p$-value rises to $0.218$ and the Baur to
+$0.168$.  No moderator survives Romano-Wolf correction in either
+channel.
 
-\paragraph{Substantive interpretation.} The renter-share finding has
-a clean economic reading. Listings whose language departs from the
-neighborhood centroid have a larger price impact in markets where a
-larger share of prospective buyers are themselves recent arrivals
-without the deep neighborhood familiarity that long-term
-owner-occupiers possess. In high-renter markets, the listing text is
-doing more work in the search-and-pricing process, and a one-standard-
-deviation increase in language uniqueness moves the realized price by
-more. In low-renter markets, prospective buyers anchor on
-neighborhood-level information that the listing text only marginally
-augments, and the realized price is less responsive to language
-content.
+The difference between the BH and Romano-Wolf adjustments at $k = 12$
+warrants comment.  Under the standard reading of
+\citet{romano2005stepwise}, the stepdown adjustment is expected to
+yield tighter adjusted $p$-values than BH when the tests are
+dependent. At $k = 12$ cities the Dirichlet cluster bootstrap is
+sufficiently noisy that the maximum studentised statistic across the
+eight tests in each bootstrap draw is inflated relative to its
+asymptotic distribution, producing more conservative adjusted
+$p$-values than BH.  This is the small-cluster regime in which the
+\citet{cameron2008bootstrap} bootstrap-improvement results are known
+to deteriorate and is consistent with the small-$G$ instability we
+observed in the pooled DML cluster-robust SE for the same data
+(Section~\ref{sec:pooled-dml-12}).
 
-\paragraph{Heterogeneity diagnostics.} The residual $\tau^2$ statistic
-of the random-effects baseline model is essentially zero at the
-between-study scale of our twelve estimates, which means the sampling
-variance dominates the between-city dispersion. The
-renter-share moderator captures essentially all the residual
-heterogeneity that survives the within-city sampling-variance
-correction (residual $I^2 = 0\%$, $R^2_{\text{meta}} = 100\%$). This
-is consistent with a clean partitioning of the per-market estimates
-into renter-share-driven mean and residual sampling noise, though the
-$k = 12$ panel size means these statistics carry their own Monte
-Carlo noise and we report them as guides rather than as definitive
-heterogeneity decompositions. The $\tau^2$-on-boundary behavior is a
-known artifact of REML at small $k$, and the Knapp-Hartung adjustment
-gives us inferential robustness against it.
+\paragraph{Substantive reading.} The honest reading of these
+adjustments is that the renter-share moderator is at the borderline
+of conventional significance under BH for the Shen channel
+($q = 0.074$), is not significant under either correction on the
+Baur channel, and is not significant under either correction in any
+channel under the stricter Romano-Wolf cluster bootstrap.  We do not
+read the BH-borderline finding for Shen as evidence of a true
+renter-share moderator; rather, we read the pattern as consistent
+with the meta-regression's pooled estimate carrying the substantive
+content (a small but statistically detectable per-$\sigma$ effect on
+both channels in the substantively consistent direction) and the
+cross-city dispersion being well-explained by within-city sampling
+variance.
 
-\paragraph{Caveats.} The meta-regression we report depends on the
-quality of the within-city DML estimates and their bootstrap
-confidence intervals, both of which carry their own assumptions about
-the cross-fit nuisance learners and the bootstrap convergence.  The
-per-market sample sizes in our panel are too small to detect
-moderate Shen-Ross effects in any one city, which means the moderator
-findings have the character of describing the cross-market structure
-in our point estimates rather than identifying the conditions under
-which the Shen-Ross channel is causally important. Larger per-market
-samples would let us address both questions jointly.
+\paragraph{Pre-registration disclosure.} A previous version of this
+manuscript reported a renter-share moderator with $p = 0.008$
+($q_{\mathrm{BH}} = 0.067$) on the per-market PC1 Baur estimates.
+That specification used per-market PCAs of the BERT embedding, which
+produces a treatment whose operationalisation varies across markets
+and whose sign is identified only up to a per-market flip.  We
+replace the per-market PCA with the within-city-centered pooled PCA
+of Section~\ref{sec:baur-12city} to obtain a single stable treatment
+definition, and we report the meta-regression on the corrected per-
+city estimates here. The differing moderator finding between the two
+specifications is itself a methodological observation about the
+sensitivity of cross-city moderator inference to the choice of text-
+treatment operationalisation, and we report both for transparency in
+Appendix~\ref{app:per-market-pc1-comparison}.

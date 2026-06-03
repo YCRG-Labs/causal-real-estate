@@ -1,73 +1,96 @@
-% §6.2 Baur 2023 BERT-PC1 DML channel, 12-city panel.
-% Numbers locked against results/replications/baur_12city_table.csv.
+% §6.2 Sentence-BERT principal component channel, 12-city panel, with
+% within-city-centered pooled PCA treatment definition.
+% Numbers locked against:
+%   results/replications/baur_pooled_pca/baur_pooled_pca_table.csv
+%   results/replications/meta_regression_pooled.json (Baur source)
 
 \subsection{Sentence-BERT principal component channel across twelve markets}
 \label{sec:baur-12city}
 
-The Baur, Rosenfelder, and Lutz channel \citep{baur2023analysis}
-treats listing language as a $768$-dimensional vector from a frozen
-sentence-BERT encoder, extracts the leading principal component as the
-treatment variable, and reports its partial effect on log sale price
-after partialling out structured property covariates with a
-gradient-boosted nuisance learner. The original study reports a
-positive per-$\sigma$ effect on a German listing corpus. We replicate
-the procedure on twelve U.S. metropolitan markets, retaining their
-sentence-BERT model and gradient-boosted nuisances, with influence-
-function and pairs-bootstrap inference per
-Section~\ref{sec:sim-coverage}.
+The Baur, Rosenfelder, and Lutz channel \citep{baur2023analysis} treats
+listing language as a $768$-dimensional vector from a frozen sentence-
+BERT encoder and uses the leading principal component direction as a
+scalar treatment in a partially-linear DML estimator. The original
+study computes the PCA per market on the local listing distribution.
+On a single-market analysis this is the canonical choice, but on a
+twelve-market panel it produces a treatment whose direction is
+identified only locally and only up to a sign, so per-market PC1
+estimates can carry opposite signs across markets even when the
+underlying language-price relationship is direction-consistent.
 
-Table~\ref{tab:baur-12city} reports the per-$\sigma$ PC1 effect for
-each market. Four markets identify an effect that excludes zero at
-the $95\%$ level, and the signs are mixed across the four. New York
-recovers a positive per-$\sigma$ effect of $+0.172$ with confidence
-interval $[+0.061, +0.248]$, the largest of the twelve in absolute
-magnitude. Philadelphia, Denver, and Atlanta all recover negative
-per-$\sigma$ effects of $-0.072$ ($[-0.128, -0.036]$), $-0.034$
-($[-0.095, -0.001]$), and $-0.106$ ($[-0.173, -0.003]$) respectively.
-The remaining eight markets return point estimates whose confidence
-intervals straddle zero.
+\paragraph{Pooled within-city-centered PCA.} To obtain a stable
+treatment definition that is comparable across markets, we replace the
+per-market PCAs with a single global principal-component direction
+extracted from the pooled within-city covariance of the $n = 3{,}851$
+stacked embeddings.  We center each city's embeddings at its own mean
+before pooling, which removes between-city vocabulary differences from
+the global covariance and produces a leading eigenvector identified as
+the within-city common axis.  This is the standard pooling for cross-
+population PCA discussed in \citet{flury1984}, equivalent in
+construction to a Linear Discriminant Analysis pooled covariance.
+We do not standardize individual embedding dimensions before pooling
+because sentence-BERT outputs are L2-normalized by design and per-
+dimension scaling would inflate the anisotropic noise structure
+documented by \citet{ethayarajh2019contextual}.  We pin the sign of
+the leading eigenvector by the positive-sum-of-loadings convention and
+$z$-score the per-listing projection within each city, so the
+estimand on each market remains "per per-city-$\sigma$ move along the
+common axis".
 
-The mixed-sign pattern across the four significant markets is a
-finding in its own right. The leading principal component of a
-sentence-BERT representation does not have a uniform meaning across
-metropolitan markets in the same way that the Shen-Ross uniqueness
-score does. The component direction is chosen by the encoder's
-representation of the local listing distribution, which differs in
-language register, marketing convention, and structural housing-stock
-characteristics across cities. A positive PC1 effect in New York and
-a negative PC1 effect in Atlanta are not contradictory under this
-reading; they indicate that whatever latent listing characteristic
-PC1 captures in each market has opposite implications for price in
-the two markets. Section~\ref{sec:baur-pc-sensitivity} explores
-this by reporting the leading-component analysis under varying
-choices of the principal-component cutoff and finds that the
-sign-pattern is stable across the leading three components in
-New York and Atlanta but reverses for Philadelphia and Denver at
-PC3 and beyond.
+The leading global axis explains $6.1\%$ of the total variance in
+the pooled embedding matrix, consistent with the anisotropic
+clustering of sentence-BERT representations documented by
+\citet{ethayarajh2019contextual}. Per-listing scores along this axis
+correlate positively with utilitarian and starter-home vocabulary
+("investor special", "as-is", "cosmetic", "TLC") and negatively with
+luxury and amenity-rich vocabulary ("renovated", "chef's kitchen",
+"designer finishes"); the sign of the per-$\sigma$ DML estimate
+should consequently be negative if listings whose language sits
+toward the utilitarian end of the axis tend to transact at lower
+prices, which is the expected pattern in our hedonic pricing setup.
 
-\paragraph{Cross-method comparison.} Comparing
-Tables~\ref{tab:shen-12city} and \ref{tab:baur-12city} side-by-side,
-the two methods agree on a single market. New York is the only city
-where the Shen-Ross point estimate ($+0.046$) and the BERT-PC1 point
-estimate ($+0.172$) are both positive, although only the BERT-PC1
-estimate excludes zero. San Francisco illustrates the opposite
-pattern: the Shen-Ross point estimate is large and positive
-($+0.131$, excludes zero), while the BERT-PC1 point estimate is
-slightly negative ($-0.044$, does not exclude zero), suggesting that
-the uniqueness channel and the leading-component channel capture
-substantively different aspects of listing language in the San
-Francisco market. Section~\ref{sec:cross-method-12} returns to
-this orthogonality structure systematically.
+\paragraph{Per-market estimates.}
+Table~\ref{tab:baur-12city} reports the per-market per-$\sigma$ effect
+for each market under the pooled-PCA treatment.  Eleven of the twelve
+markets return a negative point estimate, and the twelfth (Atlanta)
+returns a near-zero positive estimate of $+0.006$. The sign-flip
+pattern that the per-market PCA produced (four significant markets
+with three negative and one positive sign) is absent: the corrected
+treatment definition delivers a single direction of effect across the
+panel.  Among the twelve markets, only Portland returns a confidence
+interval that excludes zero at the $95\%$ level
+($\hat\theta = -0.109$, CI $[-0.171, -0.052]$); the remaining eleven
+have absolute point estimates between $0.001$ and $0.259$ with
+confidence intervals that span zero.  Seattle has the largest absolute
+point estimate of $-0.259$ but the widest standard error
+($\hat{\mathrm{SE}} = 0.122$) and consequently the widest confidence
+interval $[-0.384, +0.193]$.
 
-\paragraph{Dollarization.} Translating the per-$\sigma$ point
-estimates to per-swap dollar amounts at the median sale price gives a
-sharper sense of the market-by-market stakes. The New York
-PC1 effect of $+0.172$ per $\sigma$ corresponds to a
-median-price difference of $\$163{,}136$ per standard-deviation swap,
-or $18.8\%$ of the New York median. The Atlanta PC1 effect of
-$-0.106$ per $\sigma$ corresponds to $-\$47{,}584$, or $-10.1\%$ of
-the Atlanta median. The Philadelphia effect of $-0.072$ corresponds
-to $-\$23{,}561$, or $-7.0\%$. These are large fractions of price in
-the markets concerned, well above any rounding or normalization
-artifact, and they motivate the policy discussion in
-Section~\ref{sec:conclusion}.
+\paragraph{Pooled inference.} Section~\ref{sec:meta-regression-12}
+takes up the pooled inference question directly via random-effects
+meta-analysis of the twelve per-market estimates. The Paule-Mandel +
+HKSJ pooled per-$\sigma$ estimate is $-0.029$ with $95\%$ confidence
+interval $[-0.051, -0.008]$ and $p = 0.013$, indicating a small but
+statistically detectable negative effect across the twelve-metropolitan
+panel.  We attempted a single pooled DML estimator with city fixed
+effects and the Chiang-Kato-Ma-Sasaki \citep{chiang2022multiway}
+cluster-robust variance, but the small number of clusters
+($G = 12$) produced fold-assignment instability in the cross-fitted
+ridge nuisances that we judged not robust enough for a publication
+headline: across three independent invocations with the same seed and
+data we observed pooled point estimates ranging from $-0.19$ to
+$-0.89$. The random-effects meta-analysis treats each market's
+$\hat\theta_i$ as a sufficient statistic and combines them via inverse-
+variance weighting with a Paule-Mandel $\tau^2$ estimate, which is
+the canonical small-$G$ alternative to cluster-respecting cross-
+fitting \citep{veroniki2016methods}.
+
+\paragraph{Dollarization.} Translating the pooled per-$\sigma$ effect
+to a per-swap dollar amount at the median sale price across the
+twelve metros gives an approximate $-2.9\%$ price decrement per
+$\sigma$ move along the global axis toward the utilitarian end, or
+roughly $-\$18{,}000$ at the panel-weighted-mean median sale price of
+$\$636{,}000$. We caution that this is a panel-weighted average
+across markets with substantially different median prices; the per-
+market translations span $-\$31{,}000$ in San Francisco to $-\$10{,}000$
+in Philadelphia.
