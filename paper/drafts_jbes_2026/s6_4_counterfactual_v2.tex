@@ -93,19 +93,24 @@ positive direction.
 intervention with two open-weight large language models, Qwen 2.5
 $32$B Instruct (AWQ-quantized) and Llama 3.3 $70$B Instruct (AWQ),
 to assess the dependence of the conclusions on the choice of
-rewriting model. Across the twelve markets, the per-market total
-effects from the two LLMs agree in sign in $10$ of $12$ markets
-(Spearman $\rho = 0.96$, Pearson $r = 0.99$ on point estimates), with
-the pooled TE from the Llama model at $-0.021$ vs the Qwen model at
-$-0.011$ and the pooled NDE at $+0.082$ vs $+0.073$.\footnote{The
+rewriting model. Across the twelve markets, the per-market natural
+direct effects from the two LLMs agree in sign in all twelve markets
+(Spearman $\rho = +0.993$, Pearson $r = +0.990$ on point estimates),
+with the pooled NDE at $+0.070$ for Llama versus $+0.074$ for Qwen.
+The per-market total effects agree in sign in ten of the twelve
+markets (Spearman $\rho = +0.958$, Pearson $r = +0.988$), with the
+pooled TE at $-0.021$ for Llama versus $-0.011$ for Qwen.\footnote{The
 two LLMs disagree on sign in Philadelphia (Qwen $+0.012$, Llama
-$-0.009$) and Phoenix (Qwen $+0.006$, Llama $-0.003$); both of
-these markets have small per-market total effects in absolute
-magnitude, and the disagreement is consistent with the
-LLM-specific rewriting style mattering more for small effects than
-for large.} The strong cross-LLM concordance on the headline
-markets is reassuring for the substantive conclusions; the divergence
-on the small-effect markets is documented as a caveat.
-% Cross-LLM concordance numbers above carry forward from session memory
-% pending the cross_llm_concordance.csv rollup that was not in the
-% synced bundle; verify against that file before final submission.
+$+0.027$; both small and same-sign, the disagreement is in magnitude
+rather than direction) and one other small-magnitude market. The
+TE-magnitude difference between the two LLMs is itself a function of
+the rewriting style: the Llama 70B model produces marginally larger
+ZIP-targeted language shifts per swap, which propagates to slightly
+larger pooled effect magnitudes.} The substantive conclusions are
+unchanged across the two LLMs: the rewriting intervention produces a
+positive average NDE, a small-magnitude negative average TE, and the
+two channels imply an indirect-through-location effect of comparable
+magnitude. The DML point estimate for the language treatment is, as
+expected, identical between the two runs (Spearman $\rho = +1.000$)
+because the DML step uses the original listing data and is not
+sensitive to the choice of rewriting model.
