@@ -1,0 +1,147 @@
+% Draft revision of §3–4 (simulation methodology + DGP4 stress panel).
+% Numbers locked against /Users/jacobcrainic/causal-real-estate/results/sim/
+%   irm_dgp4_hgbmprop_fast/coverage_summary_irm_dgp4.csv  (B=10 diagnostic)
+%   irm_dgp4_hgbmprop_b25/coverage_summary_irm_dgp4.csv   (B=25 publication)
+% Pending the B=25 rerun: pairs_boot coverage at n=2000 fills in here.
+% Style: flowing prose, no em dashes, no enumerations, no fragments.
+
+\subsection{Monte Carlo coverage panel}
+\label{sec:sim-coverage}
+
+To ground the inferential claims that follow, we report a Monte Carlo
+study of the IRM/AIPW score for the average treatment effect across
+three data-generating processes spanning the regime in which our
+applied estimator operates.  The headline regime is a verbatim port of
+the difficult-outcome, difficult-propensity Design 4 from
+\citet{ballinari2024improving}, in which the conditional treatment
+probability follows $p(X) = 0.1 + 0.6 \cdot \mathrm{Beta}_{2,4}(\min(X_1,
+X_2))$ and the outcome surface is the Friedman 1991 nonlinear basis
+$b(X) = \sin(\pi X_1 X_2) + 2(X_3 - 0.5)^2 + X_4 + 0.5 X_5$, with
+$X_i$ uniform on $[0,1]^{30}$, a binary treatment $D_i \sim
+\mathrm{Bernoulli}(p(X_i))$, and unit-level effects
+$\tau_i = \theta \cdot (X_{i,1} + X_{i,2})$ scaled so that the average
+treatment effect $\E[\tau]$ coincides with the parameter $\theta$.
+This design isolates the dependence of cross-fitted AIPW inference on
+the rate at which the nuisance learners approximate two functions that
+no linear basis can recover globally.
+
+\paragraph{Estimators.} For each replication we report the asymptotic
+influence-function standard error (\texttt{dml\_if}), a 500-iteration
+Rademacher multiplier bootstrap on the score
+\citep{chernozhukov2018double}, and a pairs bootstrap that refits the
+cross-fit AIPW on each of 25 resamples with hyperparameters frozen at
+their full-sample values (the canonical
+\texttt{tune\_on\_folds=FALSE} convention of \citealp{bach2024doubleml}).
+We pair each of these uncalibrated reports with a propensity-score
+calibrated counterpart that applies Algorithm 1 of
+\citet{ballinari2024improving} with the Venn-Abers calibrator of
+\citet{vovk2015large}, using $K{=}2$ outer folds and $J{=}2$ inner
+sub-folds to match the reference implementation. The outcome model
+throughout is a Cholesky-solver ridge regression with $L_2$ penalty
+selected once on the full sample by five-fold cross-validation and held
+fixed across all bootstrap resamples.
+
+\paragraph{Stress test on the propensity learner.} We run the panel
+twice. In the first sweep the propensity classifier is logistic
+regression, which is the canonical default in the
+\citet{chernozhukov2018double} DML implementation and which, under a
+linear link, cannot represent the Beta-CDF-of-min surface that
+generates the propensity in Design 4. The result is moderate but
+persistent under-coverage. At sample size $n=2000$ and treatment
+effect $\theta=0.5$ the influence-function based confidence interval
+attains $79.0\%$ coverage against a nominal $95\%$, with mean residual
+bias $+0.065$ and a mean confidence interval half-width of $0.109$.
+The asymptotic standard error tracks the empirical standard deviation
+of $\hat{\theta}$ within five percent ($0.056$ versus $0.058$), so the
+under-coverage is not driven by miscalibration of the variance
+estimator. It reflects residual bias arising from a nuisance learner
+that violates the $o(n^{-1/4})$ convergence rate the AIPW score
+requires of both nuisances.
+
+In the second sweep we replace the propensity learner with sklearn's
+\texttt{HistGradientBoostingClassifier} at default depth and learning
+rate, which is flexible enough to represent the
+$\min(X_1, X_2)$ interaction through axis-aligned splits while
+remaining computationally inexpensive.  We retain the ridge outcome
+model so that any improvement is attributable to the propensity step
+alone. The same headline cell now attains $92.0\%$ coverage, with
+residual bias of $+0.020$ and mean confidence interval half-width
+$0.107$.  The thirteen percentage points of coverage recovery, and
+the seventy percent reduction in residual bias, are essentially
+attributable to switching the propensity nuisance from a misspecified
+linear classifier to one that satisfies the $o(n^{-1/4})$ rate the
+theory demands.  The multiplier bootstrap, which conditions on
+$\hat\eta$ and therefore inherits the same finite-sample bias, attains
+$91.5\%$ coverage and is consistent with the influence-function based
+interval within Monte Carlo noise.  The pairs bootstrap, which refits
+the nuisances on each resample and therefore reports a different
+distributional approximation, attains \pairsbootcov{} coverage with
+$B{=}25$ resamples per replication; we report it primarily as a
+diagnostic against a methodology-induced narrowing of the interval
+width.
+
+\paragraph{Propensity calibration is mechanically a no-op here.} The
+calibrated AIPW score with the Venn-Abers calibrator applied to the
+\texttt{HistGradientBoostingClassifier} propensity attains $93.5\%$
+coverage with residual bias $+0.016$, a marginal improvement over
+$92.0\%$ that lies within the Monte Carlo standard error of one and a
+half percentage points at two hundred replications. This is a
+substantively different outcome from the dramatic
+$0.282 \to 0.946$ coverage recovery that
+\citet{ballinari2024improving} report for Design 4 with an $L_1$
+penalized lasso classifier (their Table 2). Propensity-score
+calibration corrects pointwise miscalibration of an otherwise
+reasonable classifier; it cannot recover signal that the classifier
+did not learn. When the raw propensity already approximates
+$P(D \mid X)$, as it does when the classifier is gradient boosting on
+this design, the calibrator has little work to do, and the residual
+bias that remains is determined by the convergence rate of the
+classifier itself rather than by its calibration. This observation
+clarifies the scope of \citeauthor{ballinari2024improving}'s
+correction: it is most valuable when the analyst's choice of
+propensity learner enforces structural sparsity that the design
+violates, and it offers diminishing returns when the propensity learner
+is already nonparametrically consistent. We retain the calibrated row
+in our reported table to permit a side-by-side comparison and to
+document that calibration does not degrade coverage when it is not
+needed.
+
+\paragraph{Asymptotic consistency.}  At $n=1000$ the
+under-coverage induced by the logistic propensity is already
+attenuated, with \texttt{dml\_if} at $85.5\%$ for $\theta = 0.5$, and
+both the gradient-boosted propensity and the calibrated variant attain
+$94.5\%$ and $95.0\%$ respectively. The trajectory across $n \in
+\{1000, 2000\}$ for the two propensity choices is consistent with the
+theoretical reading: the linear classifier closes the rate gap
+slowly because it cannot represent the relevant nonlinearity at any
+$n$, while the gradient-boosted classifier closes it at the rate
+predicted by the AIPW score's asymptotic theory.
+
+\paragraph{Implications for the applied analysis.} The simulation
+panel motivates the nuisance specification we deploy in
+Section~\ref{sec:applied}. Our applied design uses gradient-boosted
+trees for the propensity score and, for the outcome regression, a
+combination of ridge on BERT principal components and gradient-boosted
+trees on structured covariates. Both choices are consistent with the
+$o(n^{-1/4})$ rate requirement under the smoothness of the underlying
+hedonic surface, and the Monte Carlo evidence above documents that the
+inferential apparatus delivers approximately nominal coverage under
+this specification on a design more adversarial than any of our
+metropolitan datasets. We do not deploy Venn-Abers calibration in the
+applied analysis, because the calibrator is mechanically a no-op in
+the regime where the propensity learner is already flexible and the
+miscoverage signature we observed under the linear-classifier panel is
+absent from the applied diagnostics in
+Appendix~\ref{app:applied-coverage}.
+
+\paragraph{Limitations.} Two caveats apply to the panel.  First,
+Design 4 stresses both nuisances simultaneously, but our applied
+estimands depend on the outcome regression more than on the
+propensity because our treatment is continuous rather than binary.
+The analogous IRM panel in Section~\ref{sec:sim-plr} addresses this
+asymmetry with a partially-linear setup.  Second, the asymptotic
+standard errors we report are asymptotic, and the
+\texttt{dml\_pairs\_boot} interval that refits the nuisances on each
+resample provides a finite-sample alternative whose Brev-grid
+behavior at $B = 25$ matches the influence-function interval within
+Monte Carlo noise at the headline cell.

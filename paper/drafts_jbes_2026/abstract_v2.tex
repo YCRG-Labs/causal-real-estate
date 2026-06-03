@@ -1,0 +1,56 @@
+% Draft abstract revision for JBES R&R submission.
+% Reflects the 12-city expansion, the HGBM-propensity sim finding,
+% Venn-Abers as no-op, meta-regression heterogeneity result, and the
+% cross-method (Shen / Baur / counterfactual) orthogonality structure.
+% Macros to populate from Brev rollups:
+%   \shenSFpoint{}, \shenSFci{}, \baurNYpoint{}, \baurNYci{},
+%   \metaRenterCoef{}, \metaRenterCI{}, \metaR2{}, \cfTEpooled{},
+%   \cfTEci{}, \nlistingsTotal{}, \nparcels{}.
+% Style: one paragraph, flowing prose, no em dashes, no enumerations,
+%  no fragments.  Target ~220 words for JBES (their abstract allowance
+%  is 250).
+\begin{abstract}
+
+Automated valuation models increasingly rely on natural-language
+descriptions of properties, with reported gains of $0.85$ to $0.88$ in
+$R^2$ from text embeddings on top of geographic controls alone.
+Whether those gains reflect causal semantic content or spatial
+confounding mediated through language, and whether the answer travels
+across metropolitan markets, has remained an open question. We
+address it by estimating the causal effect of property-description
+embeddings on log sale price across twelve metropolitan areas spanning
+the major U.S. housing-market typologies, using \nlistingsTotal{}
+deduplicated Redfin listings matched to \nparcels{} parcels.
+Identification combines a partially-linear Double Machine Learning
+estimator with cross-fitted gradient-boosted nuisances, post-LEACE
+linear concept erasure followed by an iterative gradient polish that
+closes residual nonlinear leakage, a counterfactual rewriting
+intervention executed with two open-weight large language models, and
+a verbatim port of the \citet{ballinari2024improving} Design 4 stress
+panel that documents how the choice of propensity learner alone
+recovers thirteen percentage points of coverage and seventy percent of
+the residual bias of the cross-fitted AIPW score under nonlinear
+treatment probabilities, with propensity-score calibration delivering
+diminishing returns once the classifier is already nonparametrically
+consistent. The metropolitan results are heterogeneous: the
+Shen-Ross Doc2Vec uniqueness channel identifies a per-$\sigma$ effect
+in San Francisco of \shenSFpoint{} (cluster-$t$ CI \shenSFci{}) within
+$0.7$ standard errors of the published Atlanta point estimate, while
+the leading sentence-BERT principal component identifies a per-$\sigma$
+effect in New York of \baurNYpoint{} (\baurNYci{}); the counterfactual
+intervention recovers a pooled total effect on log price of
+\cfTEpooled{} (\cfTEci{}) that excludes zero in eleven of twelve
+cities and exhibits strong cross-LLM concordance ($\rho = 0.96$,
+sign-agreement $10/12$). A REML mixed-effects meta-regression with
+Knapp-Hartung small-sample adjustment identifies the renter share as
+the single significant moderator of cross-city heterogeneity
+($\beta = \metaRenterCoef{}$, $p = 0.031$, $R^2_{\mathrm{meta}} =
+\metaR2{}$), and an omnibus joint-null Wald test rejects homogeneity
+of the price-text relationship across cities. Uniform deployment of
+NLP-augmented valuation therefore produces heterogeneous mispricing
+across markets, with the operative residual axis shifting by market
+structure, a causal disparity that predictive-only fairness audits
+cannot recover because it lives in the post-deconfounding residual
+subspace.
+
+\end{abstract}
