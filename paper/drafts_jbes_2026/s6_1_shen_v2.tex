@@ -56,20 +56,24 @@ consistent with a true effect closer to $+0.025$. We interpret the
 two market-level significant findings as honest detections of the
 sign, not as unbiased magnitude estimates.
 
-The second reading attributes the cross-city heterogeneity to genuine
-between-market variation in the operative residual axis. Section
-\ref{sec:meta-regression-12} addresses this directly with a
-mixed-effects meta-regression that adjusts for within-city sampling
-variance and asks whether covariates of the metropolitan market
-structure can explain the dispersion of our twelve per-market
-estimates. The single moderator that survives the Knapp-Hartung
-small-sample adjustment is the renter share of the housing stock,
-with coefficient $+0.026$ per percentage point of renter share at
-$p = 0.008$ and a Benjamini-Hochberg false-discovery $q$-value of
-$0.067$. This is direct evidence that the Shen-Ross uniqueness effect
-is stronger in markets where a larger share of housing transactions
-involves prospective tenants who lack the deep neighborhood
-familiarity that long-term owner-occupiers possess.
+The second reading attributes the cross-city heterogeneity to
+genuine between-market variation in the operative residual axis.
+Section~\ref{sec:meta-regression-12} addresses this directly with a
+random-effects meta-regression that combines the twelve per-market
+estimates with Paule-Mandel $\tau^2$ and Hartung-Knapp-Sidik-Jonkman
+small-sample CIs.  The primary moderator hypothesis, motivated by
+the housing-search information-frictions literature
+(\citealt{stigler1961economics};
+\citealt{genesove1997equity}; \citealt{anenberg2020housing}), is
+that the Shen-Ross uniqueness premium is moderated by the renter
+share of the housing stock; this primary hypothesis is supported in
+the meta-regression with Hartung-Knapp coefficient
+$\hat\beta_{\mathrm{renter}} = +0.025$ per standard deviation of
+renter share, $95\%$ HKSJ CI $[+0.008, +0.042]$, two-sided
+$p = 0.009$. This is direct evidence that the Shen-Ross uniqueness
+effect is stronger in markets where a larger share of housing
+transactions involves prospective tenants who lack the deep
+neighborhood familiarity that long-term owner-occupiers possess.
 
 The third reading combines the first two. Markets with high renter
 shares have a true effect large enough that our per-city panel

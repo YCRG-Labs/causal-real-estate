@@ -18,30 +18,34 @@ Section~\ref{sec:counterfactual-12} as a third axis.
 
 \paragraph{Pairwise Spearman correlations.}
 Table~\ref{tab:cross-method-12} reports the per-market point
-estimates for the three channels. Across the twelve markets in our
-panel, the Spearman rank correlation between the Shen-Ross point
-estimate and the Baur PC1 point estimate is $+0.15$ ($p = 0.65$),
-indistinguishable from zero. The Spearman correlation between the
-Shen-Ross estimate and the counterfactual total effect is $-0.07$
-($p = 0.83$), also indistinguishable from zero. The correlation
-between the Baur PC1 estimate and the counterfactual total effect
-is $-0.33$ ($p = 0.30$), the largest in absolute magnitude and
-negative in sign. None of the three pairwise correlations
-approaches statistical significance, and the negative sign of the
-Baur-counterfactual correlation rules out the possibility that the
-three channels are identifying a common latent text-on-price quantity
-with positive loadings.
+estimates for the three channels under the pooled-PCA Baur
+specification of Section~\ref{sec:baur-12city}. Across the twelve
+markets in our panel, the Spearman rank correlation between the
+Shen-Ross point estimate and the Baur point estimate is $-0.15$
+($p = 0.65$), indistinguishable from zero. The Spearman correlation
+between the Shen-Ross estimate and the counterfactual total effect
+is $-0.07$ ($p = 0.83$), also indistinguishable from zero. The
+correlation between the Baur estimate and the counterfactual total
+effect is $+0.48$ ($p = 0.12$), suggestive but not statistically
+significant at conventional levels.  The Baur-counterfactual
+positive correlation is consistent with the substantive reading that
+both channels measure aspects of language-induced price change in
+the substantively consistent direction (utilitarian or starter-home
+language correlating with lower prices), while the Shen-Ross
+uniqueness channel captures a logically distinct property of
+listing language (distinctiveness from local peer set) whose
+correlation with the other two is small in absolute magnitude.
 
 \paragraph{Sign agreement.} The three methods agree on a single
-common sign of the per-market point estimate in $5$ of the $12$
-markets. Pairwise, Shen and Baur agree on sign in $9$ of $12$
+common sign of the per-market point estimate in $3$ of the $12$
+markets. Pairwise, Shen and Baur agree on sign in $4$ of $12$
 markets, Shen and the counterfactual in $5$ of $12$, and Baur and
-the counterfactual in $4$ of $12$. The Shen-Baur sign agreement is
-driven largely by the eight cities in which both estimates are near
-zero and share the noise sign; among the four markets where Baur
-identifies an effect at the $95\%$ level (New York, Philadelphia,
-Denver, Atlanta), only New York has a matching positive Shen
-sign.
+the counterfactual in $5$ of $12$.  The pooled-PCA Baur axis returns
+negative point estimates in eleven of the twelve markets (Atlanta
+the sole exception with a near-zero positive estimate), so most
+sign-disagreements with Shen reflect the difference between
+distinctive-language premia (Shen) and utilitarian-axis discounts
+(Baur), rather than methodological inconsistency.
 
 \paragraph{Substantive interpretation.} Three readings of the
 cross-method discordance are worth distinguishing. The first
@@ -73,12 +77,17 @@ identified markets as the conservative or aggressive answer.
 
 The third reading is intermediate. The three channels probably
 do not all target the same causal quantity, but the overlap is
-positive: $5$ of the $12$ markets are identified at the $95\%$ level
+positive: $3$ of the $12$ markets are identified at the $95\%$ level
 by at least two of the three methods, with no market identified by
 all three. San Francisco and Dallas are identified by Shen and the
-counterfactual; New York, Philadelphia, and Denver are identified by
-Baur and the counterfactual; Atlanta is identified by Baur alone and
-by neither Shen nor the counterfactual.
+counterfactual; Portland is identified by Baur and the
+counterfactual.  Under the pooled-PCA Baur specification of
+Section~\ref{sec:baur-12city}, only Portland returns an individual
+$95\%$ confidence interval that excludes zero on the Baur axis, so
+the multi-method identification overlap on the Baur side concentrates
+in that single market; the joint-null Hotelling-$T^2$ test below
+takes up the question of cross-method consistency more directly and
+yields a much larger rejection set.
 
 \paragraph{Joint-null Hotelling test.} A more powerful summary of
 cross-method evidence is to ask whether, for each market, the joint
