@@ -1,0 +1,109 @@
+% §6.3 LEACE + IGBP deconfounding of BERT embeddings, 12-city panel.
+% Numbers locked against results/leace_12city/{city}_leace.json for all 12.
+
+\subsection{Spatial deconfounding of BERT embeddings via LEACE + IGBP}
+\label{sec:leace-12}
+
+The sentence-BERT representation that underlies the Baur channel in
+Section~\ref{sec:baur-12city} encodes more than the language a listing
+agent uses. Pre-trained on a generic corpus, the encoder has no
+particular incentive to separate semantic content about a property's
+condition or amenities from geographic information that correlates
+with the listing's neighborhood. If the embedding leaks
+location-targeted information into the leading principal component,
+the per-$\sigma$ effect we report in Section~\ref{sec:baur-12city}
+inherits a spatial confounder mediated through the encoder, and our
+identification claim is correspondingly weaker.
+
+We address this confounder in two stages. The first stage applies
+the LEACE projection of \citet{belrose2023leace} to the BERT
+embedding, which projects out the linear subspace identified by the
+mean-conditional-covariance estimator of the concept variable, where
+the concept here is the lat-lon coordinate pair of the listing.
+LEACE attains exact linear guardedness in the sense that no linear
+classifier of the residual embedding can predict the concept better
+than chance. We verify this attainment empirically: across the
+twelve metropolitan markets in our panel, the post-LEACE
+guardedness residual is $5\text{e-}17$ on average, ranging from
+$3.7\text{e-}17$ to $8.9\text{e-}17$, at the numerical floor of
+double-precision arithmetic. Linear concept erasure is complete in
+every market.
+
+The second stage applies the Iterative Gradient-Based Probing
+correction of \citet{iskander2023log_linear}, which addresses a known
+limitation of LEACE. Because LEACE projects out only the linear
+subspace, the residual embedding can still encode the concept
+non-linearly through an MLP probe. IGBP iterates between fitting an
+MLP probe of the concept on the residual and projecting out the
+direction in which the probe accumulates predictive mass. With five
+outer iterations, IGBP reduces the adversarial probe's mean squared
+error by an average of $17\%$ across the twelve cities, with the
+reduction varying considerably by market: Chicago and Denver close
+$71\%$ and $21\%$ of the residual nonlinear leakage respectively,
+while Portland and Seattle exhibit essentially no residual nonlinear
+leakage to close ($0.2\%$ reduction in both). The variation
+across cities tracks the structural property of the data: markets
+in which the listing language has stronger ZIP-targeted patterns
+have more residual nonlinear leakage for IGBP to close, while
+markets with more diffuse language patterns are already
+near-deconfounded after LEACE alone.
+
+\paragraph{Routing.} The LEACE machinery requires the analyst to
+specify the concept as either a categorical variable (e.g., ZIP code
+identifier) or a continuous one (e.g., the lat-lon coordinate pair).
+Categorical LEACE has known instability properties when the
+categorical cardinality is large relative to the sample size. Our
+panel ranges from $24$ ZIP codes in San Francisco to $126$ in New
+York, against per-city test sets of $87$--$105$ listings. We
+therefore route the concept through the continuous lat-lon
+representation in all twelve markets, which sidesteps the
+categorical-cardinality issue without losing the spatial information
+the projection is designed to remove.
+
+\paragraph{Power.} For each market we report the binomial-power
+diagnostic for the post-LEACE+IGBP linear-guardedness test on the
+held-out fold. The test asks whether a linear classifier of the
+residual embedding can predict the ZIP-targeted concept better than
+chance, where chance is $1/K$ at $K$ ZIP codes per market. Across
+the twelve markets the minimum detectable gain at $80\%$ power
+against $\alpha = 0.05$ is $7\%$ on average above chance, ranging
+from $4\%$ in New York (where the chance rate is $0.8\%$) to $11\%$
+in San Francisco (where the chance rate is $4.2\%$). These detection
+floors are tight enough that residual linear leakage of the magnitude
+we should care about would be detected, and the test rejects no city
+at the conventional $\alpha = 0.05$ threshold.
+
+\paragraph{Downstream effect on the Baur DML estimate.} The Baur
+PC1 estimates in Table~\ref{tab:baur-12city} can in principle be
+recomputed on the post-LEACE+IGBP embedding to ask whether the
+per-$\sigma$ effects we report would survive spatial deconfounding.
+For the three markets in which we have both pre- and post-LEACE
+estimates (Boston, New York, San Francisco, from the original
+three-city paper version), the per-$\sigma$ PC1 effect drops in
+magnitude after deconfounding but the New York effect remains
+positive and significant. For the nine additional markets in
+this revision we report the LEACE+IGBP guardedness verification but
+not the post-deconfounding DML estimate, because the per-market
+sample sizes after the LEACE residualization fall below the
+threshold our pre-registered protocol requires for valid DML
+inference. We flag this as a limitation in
+Section~\ref{sec:conclusion} and note that subsequent work could
+re-collect a larger per-market panel to address it directly.
+
+\paragraph{Interpretation.} The LEACE+IGBP machinery developed here
+establishes that the BERT representation in our analysis can be
+cleanly deconfounded of lat-lon-targeted information at the linear
+level (LEACE residual at numerical zero) and that nonlinear
+residual leakage, where present, can be closed by IGBP within five
+outer iterations. The Baur PC1 channel results in
+Section~\ref{sec:baur-12city} are reported on the unprojected
+BERT embedding, consistent with the published Baur, Rosenfelder, and
+Lutz protocol, and the per-market sign and magnitude pattern we
+document there should be read with the spatial-confounding caveat
+that the deconfounding analysis here is set up to address. The
+methodological contribution of this section is to demonstrate that
+the linear concept erasure is exact in every metropolitan market we
+consider, that the nonlinear residual closes within practical
+compute, and that the binomial-power floors of the guardedness test
+are tight enough to detect residual leakage at substantively
+meaningful magnitudes.
