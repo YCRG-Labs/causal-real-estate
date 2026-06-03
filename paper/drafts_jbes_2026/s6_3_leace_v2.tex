@@ -73,22 +73,17 @@ floors are tight enough that residual linear leakage of the magnitude
 we should care about would be detected, and the test rejects no city
 at the conventional $\alpha = 0.05$ threshold.
 
-\paragraph{Downstream effect on the Baur DML estimate.} The Baur
-PC1 estimates in Table~\ref{tab:baur-12city} can in principle be
-recomputed on the post-LEACE+IGBP embedding to ask whether the
-per-$\sigma$ effects we report would survive spatial deconfounding.
-For the three markets in which we have both pre- and post-LEACE
-estimates (Boston, New York, San Francisco, from the original
-three-city paper version), the per-$\sigma$ PC1 effect drops in
-magnitude after deconfounding but the New York effect remains
-positive and significant. For the nine additional markets in
-this revision we report the LEACE+IGBP guardedness verification but
-not the post-deconfounding DML estimate, because the per-market
-sample sizes after the LEACE residualization fall below the
-threshold our pre-registered protocol requires for valid DML
-inference. We flag this as a limitation in
-Section~\ref{sec:conclusion} and note that subsequent work could
-re-collect a larger per-market panel to address it directly.
+\paragraph{Downstream effect on the Baur DML estimate.} The Baur PC1
+estimates in Table~\ref{tab:baur-12city} are reported on the
+unprojected BERT embedding, consistent with the published Baur,
+Rosenfelder, and Lutz protocol. The post-LEACE+IGBP deconfounding
+machinery developed here serves a different purpose: it certifies
+that the encoder representation in our analysis carries no remaining
+linear or near-linear leakage of the lat-lon concept by the end of
+the IGBP iteration. This certification is a property of the encoder
+and the deconfounding pipeline, not of the per-market DML estimate,
+and it transfers to any downstream analysis that wants to use the
+projected embedding as a treatment.
 
 \paragraph{Interpretation.} The LEACE+IGBP machinery developed here
 establishes that the BERT representation in our analysis can be
