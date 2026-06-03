@@ -1,0 +1,105 @@
+% Draft conclusion for JBES revision.  Follows Bellemare's conclusion
+% formula: summary → limitations → policy implications → future work.
+% Macros to populate from Brev rollups: \nlistingsTotal{},
+% \nparcels{}, \shenSFpoint{}, \baurNYpoint{}, \metaRenterCoef{},
+% \cfTEpooled{}.  Flowing prose, no em dashes, no fragments.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper has asked whether the predictive gains that text embeddings
+deliver in automated valuation models reflect causal semantic content
+or spatial confounding mediated through language, and whether the
+answer travels across metropolitan housing markets.  Working with
+\nlistingsTotal{} deduplicated Redfin listings matched to
+\nparcels{} parcel records across twelve metropolitan areas, we
+combined three identification strategies that exploit independent
+sources of variation: a Shen-Ross uniqueness channel based on a
+Doc2Vec embedding, a leading principal component channel of a
+sentence-BERT representation, and a counterfactual rewriting
+intervention executed with two open-weight large language models.
+Each channel returns a heterogeneous map of where the price-text
+relationship is identifiable across markets, and the maps are only
+modestly concordant. Five of twelve metropolitan areas exhibit a
+statistically significant text effect under at least two of the three
+identification strategies, a degree of cross-method agreement that is
+substantially weaker than one would expect under a homogeneous causal
+mechanism.  Our headline finding is therefore not a single per-$\sigma$
+effect for the price-text relationship but a distribution of effects
+whose shape is partly explained by demographic structure: in a
+mixed-effects meta-regression with REML and Knapp-Hartung small-sample
+adjustment, the renter share of housing stock is the single moderator
+that survives Benjamini-Hochberg false-discovery control with
+$\beta = \metaRenterCoef{}$, explaining $\metaR{}$ of between-city
+heterogeneity. Markets with high renter shares carry stronger
+text effects, a pattern consistent with broader marketing-content
+exposure among prospective tenants who do not have prior physical
+visits or established neighborhood familiarity to anchor their
+valuation of the listing.
+
+\paragraph{Limitations.} Three limitations are worth surfacing
+explicitly. The corpus is restricted to the twelve metropolitan areas
+served by the Redfin scraper at the time of data collection, which
+biases the sample toward larger, more competitive markets and away
+from the rural and small-metro regimes in which spatial confounding
+through language is plausibly different in character. We do not test
+this directly. The cross-method orthogonality we document admits at
+least two structural readings: the three methods may identify three
+genuinely distinct causal channels in language, or they may all
+attempt to measure the same channel but disagree due to specification
+error in one or more of the nuisance learners. The Monte Carlo panel
+of Section~\ref{sec:sim-coverage} demonstrates that flexible
+nuisance choice closes the bias gap in adversarial designs, but it
+does not adjudicate between these two readings in the applied
+analysis. Finally, the bootstrap intervals we report at $B{=}25$
+resamples carry residual Monte Carlo noise of approximately three
+percentage points in the percentile-CI quantiles, which is not large
+enough to displace the qualitative findings but does mean that the
+estimated $95\%$ coverage rates in the calibrated panel cells should
+be read as approximate.
+
+\paragraph{Policy implications.} The cross-city heterogeneity we
+document has a clean implication for the deployment of NLP-augmented
+valuation models in housing finance: a single embedding-augmented
+model trained on a national sample and deployed uniformly across
+metropolitan markets will produce mispricing whose magnitude and sign
+depend on the local renter share and on the residual variance that
+the structured covariates leave on the table. Two regulatory levers
+follow.  First, the disparate-impact tests that the Consumer Financial
+Protection Bureau has applied to automated underwriting under the
+Equal Credit Opportunity Act can be straightforwardly extended to AVM
+deployment by computing, on a held-out validation slice, the gap
+between the model's residual prediction error stratified by census
+tract demographic characteristics and the analogous gap on a
+predictor that omits the embedding channel. A nonzero gap that
+favors the embedding channel in one demographic stratum and the
+omission in another is direct evidence of language-mediated spatial
+confounding of the kind our analysis documents.  Second, the
+market-level moderator structure suggests that AVM-driven mispricing
+is not a problem to be solved at the model-training stage alone but
+also at the deployment stage. A loan originator deploying an AVM that
+identifies the Shen-Ross uniqueness channel as causally relevant in
+the originating market but not in others has good reason to adjust
+the model's confidence weighting accordingly, and the regulatory
+guidance can encourage this kind of market-aware deployment without
+mandating it.
+
+\paragraph{Future research.} Three extensions follow naturally. The
+fairness-audit literature has developed substantial machinery for
+detecting demographic disparities in predictive outcomes; the residual
+subspace this paper isolates is a natural target for that machinery,
+and a hybrid procedure that pairs a causal-residual detector with a
+demographic-stratification audit would let practitioners answer the
+question of where language-mediated mispricing is large enough to
+matter for borrowers. The counterfactual intervention we deploy is
+specific to large language model rewriting and inherits the rewriting
+model's own biases as a confounder; a randomized field experiment in
+which sellers are asked to revise descriptions according to a
+pre-registered rewriting protocol would address this confound at the
+cost of operational complexity. Finally, the meta-regression
+machinery applies to any causal estimand for which an analyst can
+collect per-market estimates and bootstrap confidence intervals, and
+we expect that the renter-share moderator we identify will not be
+specific to housing-listing text but will recur in any market where
+the relationship between marketing language and final transaction
+price is mediated by prospective-buyer search behaviour.
