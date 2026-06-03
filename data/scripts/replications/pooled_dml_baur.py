@@ -55,13 +55,24 @@ def _load_city_block(city: str, pool: pd.DataFrame):
     if feats is None:
         return None
     _, confounders, Y_log, meta = feats
-    T = _attach_pooled(city, emb_df, pool)
-    if confounders.shape[0] != Y_log.shape[0]:
-        print(f"  [warn] {city}: shape mismatch X={confounders.shape}, "
-              f"Y={Y_log.shape}; skipping")
-        return None
+    # T_pooled is aligned to the FULL emb_df (3851 across 12 cities). The
+    # get_features_and_target filter drops listings with bad Y or all-zero
+    # confounders; we use the now-exposed valid_mask to align T to the
+    # surviving subset.
+    T_all = _attach_pooled(city, emb_df, pool)
+    mask = meta.get("valid_mask")
+    if mask is None:
+        if T_all.shape[0] == Y_log.shape[0]:
+            T = T_all
+        else:
+            print(f"  [warn] {city}: no valid_mask in meta and shape "
+                  f"mismatch; skipping")
+            return None
+    else:
+        T = T_all[mask]
     if T.shape[0] != Y_log.shape[0]:
-        print(f"  [warn] {city}: T-merge shape mismatch; skipping")
+        print(f"  [warn] {city}: T post-mask shape {T.shape} != Y "
+              f"{Y_log.shape}; skipping")
         return None
     return Y_log, T, confounders, meta
 

@@ -200,6 +200,10 @@ def get_features_and_target(emb_df, parcels, drop_mismatched_crime=False):
         "has_rich_confounders": joined is not None and "contextual" in joined,
         "crime_temporal_ok": crime_temporal_ok,
         "crime_dropped": (drop_mismatched_crime and not crime_temporal_ok),
+        # Expose the row-validity mask so external callers can align
+        # per-listing data (e.g. pooled-PCA treatment) against the
+        # subset that survives Y / confounder filtering.
+        "valid_mask": valid,
     }
 
     return T, confounders, Y, meta
