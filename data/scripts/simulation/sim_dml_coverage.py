@@ -162,14 +162,20 @@ def make_irm_dgp4(n: int, dim_x: int = 30, theta: float = 0.5,
 
 
 # HGBM nuisance configuration. Per DoubleML's R default for non-linear
-# DML, max_depth=3 + 100 iters + early stopping on a 10% validation hold-
-# out. With n=2000 this fits in ~50 ms vs ridge's ~1 ms.
+# DML, max_depth=3 + 100 iters + early stopping. Tightened tol=1e-4
+# (default 1e-7 over-tunes at small n), capped max_bins (outcome 64,
+# binary classifier 32 — 30 smooth features don't need finer), and
+# categorical_features=[] skips sklearn's auto-detection pass. Net ~1.15x
+# vs default at n=500-2000, p=30 (sklearn HGBM issue #30662 small-data
+# benchmark).
 _HGBM_REG_KW = dict(max_depth=3, max_iter=100, learning_rate=0.1,
                      early_stopping=True, validation_fraction=0.1,
+                     tol=1e-4, n_iter_no_change=5, max_bins=64,
                      random_state=0)
 _HGBM_CLF_KW = dict(max_depth=3, max_iter=100, learning_rate=0.1,
                      early_stopping=True, validation_fraction=0.1,
-                     random_state=0)
+                     tol=1e-4, n_iter_no_change=5, max_bins=32,
+                     categorical_features=[], random_state=0)
 
 
 def _fit_outcome(Xs_tr, Y_tr, learner, alpha):
@@ -377,7 +383,7 @@ def aipw_pairs_boot(Y, D, X, n_boot=100, k_folds=5, seed=42,
         except Exception:
             continue
     valid = thetas[~np.isnan(thetas)]
-    if valid.size < max(20, n_boot // 5):
+    if valid.size < max(5, n_boot // 4):
         return theta_hat, float("nan"), float("nan"), float("nan")
     se = float(np.std(valid, ddof=1))
     lo, hi = float(np.percentile(valid, 2.5)), float(np.percentile(valid, 97.5))
@@ -596,7 +602,7 @@ def aipw_cal_pairs_boot(Y, D, X, n_boot=50, k_folds=5, seed=42,
         except Exception:
             continue
     valid = thetas[~np.isnan(thetas)]
-    if valid.size < max(20, n_boot // 5):
+    if valid.size < max(5, n_boot // 4):
         return theta_hat, float("nan"), float("nan"), float("nan")
     se = float(np.std(valid, ddof=1))
     lo, hi = float(np.percentile(valid, 2.5)), float(np.percentile(valid, 97.5))
@@ -755,7 +761,7 @@ def dml_pairs_boot(Y, D, X, n_boot=200, k_folds=5, seed=42,
             continue
         thetas[b] = float(np.mean(D_res * Y_res) / denom)
     valid = thetas[~np.isnan(thetas)]
-    if valid.size < max(20, n_boot // 5):
+    if valid.size < max(5, n_boot // 4):
         return theta_hat, float("nan"), float("nan"), float("nan")
     se = float(np.std(valid, ddof=1))
     lo = float(np.percentile(valid, 2.5))
@@ -785,7 +791,7 @@ def dml_fixed_nuisance_boot(Y_res, D_res, theta_hat, n_boot=500, seed=42):
         denom = float(np.mean(Dr ** 2))
         thetas[b] = float(np.mean(Dr * Yr) / denom) if denom > 1e-12 else np.nan
     valid = thetas[~np.isnan(thetas)]
-    if valid.size < max(20, n_boot // 10):
+    if valid.size < max(5, n_boot // 4):
         return theta_hat, float("nan"), float("nan"), float("nan")
     se = float(np.std(valid, ddof=1))
     lo = float(np.percentile(valid, 2.5))
@@ -804,6 +810,33 @@ class RepResult:
     ci_low: float
     ci_high: float
     covers: bool
+
+
+def _run_cell_worker(args_pickle, n, theta, q):
+    """Cell worker for the multiprocessing spawn dispatcher. Runs one full
+    (n, theta) cell sequentially in its own Python interpreter, sending
+    the resulting rows back via a Queue. Used only when
+    `--parallel_cells > 1`; the sequential / loky / threading paths
+    use the in-process dispatch in `main()`.
+    """
+    import pickle as _pickle
+    import time as _time
+    args = _pickle.loads(args_pickle)
+    rows = []
+    seeds = [(rep, args["seed"] + 1009 * rep + 41 * int(n) + 13 * int(theta * 100))
+             for rep in range(args["n_reps"])]
+    t0 = _time.time()
+    for rep, seed in seeds:
+        rows.extend(run_one_rep(
+            n, theta, rep, seed,
+            args["n_boot_mult"], args["n_boot_pairs"],
+            args["n_boot_fixed"], args["k_folds"],
+            dgp=args["dgp"],
+            calibration=args["calibration"],
+            learner_outcome=args["learner_outcome"],
+            learner_propensity=args["learner_propensity"],
+        ))
+    q.put((n, theta, _time.time() - t0, rows))
 
 
 def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs,
@@ -966,6 +999,15 @@ def main():
                          "nonlinear outcome → published IF-SE coverage 0.28 "
                          "with lasso, 0.81 with RF.")
     ap.add_argument("--k_folds", type=int, default=5)
+    ap.add_argument("--parallel_cells", type=int, default=1,
+                    help="If > 1, dispatch each (n, theta) cell to its "
+                         "own spawn-method multiprocessing.Process. Each "
+                         "child gets a fresh Python interpreter + fresh "
+                         "libgomp, bypassing the loky / OpenMP deadlocks "
+                         "that hang shared-process backends in cgroup "
+                         "containers (Brev/shadeform). ~4x speedup with "
+                         "4-6 cells on a 32-vCPU box. Inside each child, "
+                         "reps run sequentially.")
     ap.add_argument("--backend", choices=["loky", "threading", "sequential"],
                     default="loky",
                     help="joblib backend. Default 'loky' (process pool). "
@@ -1037,8 +1079,39 @@ def main():
 
     t0 = time.time()
     all_rows = []
-    for n in args.n_grid:
-        for theta in args.theta_grid:
+    cells = [(n, theta) for n in args.n_grid for theta in args.theta_grid]
+
+    if args.parallel_cells > 1:
+        # Cell-level multiprocessing with spawn start method. Bypasses
+        # the loky deadlock that's killed every joblib launch on this
+        # container, and the OpenMP-init-order issue that hangs HGBM at
+        # first fit. Each child process gets its own Python interpreter
+        # and its own libgomp; threadpool_limits inside _fit_propensity
+        # still caps each child to one OpenMP thread, so 4 cells on a
+        # 32-vCPU box use 4 vCPUs (12% util) — but it's 4x the cell
+        # throughput of the sequential dispatch we're escaping from.
+        import multiprocessing as _mp
+        import pickle as _pickle
+        ctx = _mp.get_context("spawn")
+        q = ctx.Queue()
+        args_pickle = _pickle.dumps(vars(args))
+        print(f"  launching {len(cells)} cells as spawn processes "
+              f"(parallel_cells={args.parallel_cells})", flush=True)
+        procs = []
+        for (n, theta) in cells:
+            p = ctx.Process(target=_run_cell_worker,
+                             args=(args_pickle, n, theta, q))
+            p.start()
+            procs.append(p)
+        for _ in cells:
+            n_done, theta_done, dt, cell_rows = q.get()
+            all_rows.extend(cell_rows)
+            print(f"  cell n={n_done} theta={theta_done} done in {dt:.1f}s "
+                  f"({len(cell_rows)} rep-estimator rows)", flush=True)
+        for p in procs:
+            p.join()
+    else:
+        for n, theta in cells:
             cell_t = time.time()
             seeds = [(rep, args.seed + 1009 * rep + 41 * int(n) + 13 * int(theta * 100))
                      for rep in range(args.n_reps)]
