@@ -45,6 +45,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.linear_model import (
     LogisticRegression, LogisticRegressionCV, Ridge, RidgeCV, LinearRegression,
 )
+from sklearn.isotonic import IsotonicRegression
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 
@@ -295,6 +296,184 @@ def aipw_pairs_boot(Y, D, X, n_boot=100, k_folds=5, seed=42):
     return theta_hat, se, lo, hi
 
 
+# ---------------------------------------------------------------------------
+# Ballinari & Bearth (2024) Propensity-Score Calibration
+# arXiv:2409.04874v2. Algorithm 1 (p. 8) embeds an inner J-fold partition of
+# each outer test fold to fit a calibrator on raw classifier outputs without
+# touching the outcome regression. Per their Table 2 the calibrated estimator
+# restores nominal coverage on DGP4 (isotonic 0.937, Venn-Abers 0.946) where
+# uncalibrated lasso DML coverage is 0.282. Only the propensity is
+# calibrated; outcome ridges are unchanged.
+# ---------------------------------------------------------------------------
+
+def _fit_calibrator(raw_ps, D, method="isotonic"):
+    """B&B (2024) calibrator factory. Returns a callable f(raw) -> calibrated.
+
+    Implements isotonic / Platt / beta scaling per Sections 3.2-3.4. Isotonic
+    is the default (parameter-free, asymptotically licensed per Theorem 1,
+    coverage on DGP4/Lasso 0.937 per Table 2). Platt is NOT asymptotically
+    licensed (Theorem 1 footnote) so we keep it for sensitivity only.
+    """
+    raw_ps = np.clip(np.asarray(raw_ps, dtype=float), 1e-6, 1 - 1e-6)
+    D = np.asarray(D, dtype=int)
+    if method == "isotonic":
+        iso = IsotonicRegression(out_of_bounds="clip", y_min=1e-3, y_max=1 - 1e-3)
+        iso.fit(raw_ps, D)
+        return lambda p: np.clip(
+            iso.transform(np.clip(p, 1e-6, 1 - 1e-6)), 1e-3, 1 - 1e-3
+        )
+    if method == "platt":
+        z = np.log(raw_ps / (1.0 - raw_ps)).reshape(-1, 1)
+        try:
+            lr = LogisticRegression(C=1e6, solver="lbfgs",
+                                     max_iter=500).fit(z, D)
+        except Exception:
+            return lambda p: np.clip(p, 1e-3, 1 - 1e-3)
+        def _apply(p):
+            p = np.clip(p, 1e-6, 1 - 1e-6)
+            zz = np.log(p / (1.0 - p)).reshape(-1, 1)
+            return np.clip(lr.predict_proba(zz)[:, 1], 1e-3, 1 - 1e-3)
+        return _apply
+    if method == "beta":
+        Z = np.column_stack([np.log(raw_ps), -np.log(1.0 - raw_ps)])
+        try:
+            lr = LogisticRegression(C=1e6, solver="lbfgs",
+                                     max_iter=500).fit(Z, D)
+        except Exception:
+            return lambda p: np.clip(p, 1e-3, 1 - 1e-3)
+        def _apply(p):
+            p = np.clip(p, 1e-6, 1 - 1e-6)
+            ZZ = np.column_stack([np.log(p), -np.log(1.0 - p)])
+            return np.clip(lr.predict_proba(ZZ)[:, 1], 1e-3, 1 - 1e-3)
+        return _apply
+    raise ValueError(f"unknown calibration method: {method}")
+
+
+def _aipw_calibrated_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
+                                alpha0=None, alpha1=None, C_lr=None,
+                                calibration="isotonic", j_subfolds=2):
+    """Cross-fit AIPW with propensity-score calibration per Ballinari &
+    Bearth (2024) Algorithm 1. Within each outer fold k the held-out
+    indices `te` are partitioned into J=`j_subfolds` inner sub-folds;
+    for each j a calibrator f is fit on (raw_ps, D) over the other J-1
+    sub-folds and applied to the held-out sub-fold. Outcome ridges are
+    not calibrated. Falls back to raw PS when a sub-fold has only one
+    class. Returns the AIPW score under the calibrated PS plus raw PS
+    for diagnostics.
+    """
+    n = len(Y)
+    if Xs is None:
+        Xs = StandardScaler().fit_transform(X)
+    if alpha0 is None or alpha1 is None or C_lr is None:
+        alpha0_fb, alpha1_fb, C_lr_fb = _tune_aipw_once(Xs, Y, D)
+        alpha0 = alpha0 if alpha0 is not None else alpha0_fb
+        alpha1 = alpha1 if alpha1 is not None else alpha1_fb
+        C_lr   = C_lr   if C_lr   is not None else C_lr_fb
+    kf = KFold(n_splits=k_folds, shuffle=True, random_state=seed)
+    g0_hat = np.empty(n); g1_hat = np.empty(n)
+    p_hat = np.empty(n); p_hat_raw = np.empty(n)
+    rng = np.random.default_rng(seed)
+    for tr, te in kf.split(np.arange(n)):
+        D_tr = D[tr].astype(int)
+        try:
+            m_p = LogisticRegression(
+                C=C_lr, solver="lbfgs", max_iter=200, n_jobs=1,
+            ).fit(Xs[tr], D_tr)
+            p_te_raw = m_p.predict_proba(Xs[te])[:, 1]
+        except Exception:
+            p_te_raw = np.full(len(te), float(D_tr.mean()))
+        p_te_raw = np.clip(p_te_raw, 1e-3, 1 - 1e-3)
+        mask0 = D_tr == 0
+        mask1 = D_tr == 1
+        if mask0.sum() >= 5:
+            g0_te = Ridge(alpha=alpha0, solver="cholesky").fit(
+                Xs[tr][mask0], Y[tr][mask0]).predict(Xs[te])
+        else:
+            g0_te = np.full(len(te), float(Y[tr][mask0].mean()) if mask0.sum() else 0.0)
+        if mask1.sum() >= 5:
+            g1_te = Ridge(alpha=alpha1, solver="cholesky").fit(
+                Xs[tr][mask1], Y[tr][mask1]).predict(Xs[te])
+        else:
+            g1_te = np.full(len(te), float(Y[tr][mask1].mean()) if mask1.sum() else 0.0)
+        # Inner J-fold loop on the held-out indices for PS calibration.
+        n_te = len(te)
+        D_te = D[te].astype(int)
+        perm = rng.permutation(n_te)
+        sub = np.array_split(perm, j_subfolds)
+        p_te_cal = np.empty(n_te)
+        for j in range(j_subfolds):
+            idx_E = sub[j]
+            idx_C = np.concatenate([sub[i] for i in range(j_subfolds) if i != j])
+            D_C = D_te[idx_C]
+            if D_C.sum() < 2 or (len(D_C) - D_C.sum()) < 2:
+                p_te_cal[idx_E] = p_te_raw[idx_E]
+                continue
+            try:
+                f_cal = _fit_calibrator(p_te_raw[idx_C], D_C,
+                                         method=calibration)
+                p_te_cal[idx_E] = f_cal(p_te_raw[idx_E])
+            except Exception:
+                p_te_cal[idx_E] = p_te_raw[idx_E]
+        p_te_cal = np.clip(p_te_cal, 1e-3, 1 - 1e-3)
+        g0_hat[te] = g0_te
+        g1_hat[te] = g1_te
+        p_hat[te] = p_te_cal
+        p_hat_raw[te] = p_te_raw
+    psi = (g1_hat - g0_hat
+           + D * (Y - g1_hat) / p_hat
+           - (1.0 - D) * (Y - g0_hat) / (1.0 - p_hat))
+    return psi, g0_hat, g1_hat, p_hat, p_hat_raw
+
+
+def aipw_cal_if(Y, D, X, k_folds=5, seed=42, Xs=None,
+                alpha0=None, alpha1=None, C_lr=None,
+                calibration="isotonic"):
+    psi, _, _, _, _ = _aipw_calibrated_cross_fit(
+        Y, D, X, k_folds=k_folds, seed=seed, Xs=Xs,
+        alpha0=alpha0, alpha1=alpha1, C_lr=C_lr, calibration=calibration,
+    )
+    theta = float(np.mean(psi))
+    se = float(np.sqrt(np.var(psi, ddof=1) / len(Y)))
+    return theta, se, psi
+
+
+def aipw_cal_pairs_boot(Y, D, X, n_boot=50, k_folds=5, seed=42,
+                         calibration="isotonic"):
+    """Pairs bootstrap for the calibrated AIPW. Frozen hyperparameters
+    and standardization (B&B + DoubleML tune_on_folds=FALSE convention);
+    calibrator is refit per resample inside _aipw_calibrated_cross_fit.
+    """
+    n = len(Y)
+    Xs_full = StandardScaler().fit_transform(X)
+    alpha0, alpha1, C_lr = _tune_aipw_once(Xs_full, Y, D)
+    theta_hat, _, _ = aipw_cal_if(
+        Y, D, X, k_folds=k_folds, seed=seed, Xs=Xs_full,
+        alpha0=alpha0, alpha1=alpha1, C_lr=C_lr, calibration=calibration,
+    )
+    if np.isnan(theta_hat):
+        return theta_hat, float("nan"), float("nan"), float("nan")
+    rng = np.random.default_rng(seed)
+    thetas = np.full(n_boot, np.nan)
+    for b in range(n_boot):
+        idx = rng.integers(0, n, n)
+        try:
+            psi_b, _, _, _, _ = _aipw_calibrated_cross_fit(
+                Y[idx], D[idx], X[idx], k_folds=k_folds,
+                seed=seed + b + 1, Xs=Xs_full[idx],
+                alpha0=alpha0, alpha1=alpha1, C_lr=C_lr,
+                calibration=calibration,
+            )
+            thetas[b] = float(np.mean(psi_b))
+        except Exception:
+            continue
+    valid = thetas[~np.isnan(thetas)]
+    if valid.size < max(20, n_boot // 5):
+        return theta_hat, float("nan"), float("nan"), float("nan")
+    se = float(np.std(valid, ddof=1))
+    lo, hi = float(np.percentile(valid, 2.5)), float(np.percentile(valid, 97.5))
+    return theta_hat, se, lo, hi
+
+
 def make_plr_ccddhnr_2018(n: int, dim_x: int = 20, alpha: float = 0.5,
                           rho: float = 0.7, s1: float = 1.0, s2: float = 1.0,
                           a0: float = 1.0, a1: float = 0.25,
@@ -499,7 +678,8 @@ class RepResult:
 
 
 def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs,
-                n_boot_fixed, k_folds, dgp="ccddhnr"):
+                n_boot_fixed, k_folds, dgp="ccddhnr",
+                calibration="isotonic"):
     rng = np.random.default_rng(seed)
     if dgp == "ccddhnr":
         Y, D, X = make_plr_ccddhnr_2018(n=n, alpha=theta_true, rng=rng)
@@ -528,6 +708,29 @@ def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs,
             rows.append(RepResult(n, theta_true, rep, "dml_pairs_boot",
                                   theta_if, se_pb, lo_pb, hi_pb,
                                   lo_pb <= theta_true <= hi_pb))
+        # Calibrated counterparts (B&B 2024 PS calibration; isotonic).
+        theta_cal, se_cal, psi_cal = aipw_cal_if(
+            Y, D, X, k_folds=k_folds, seed=seed, calibration=calibration,
+        )
+        lo_cal, hi_cal = theta_cal - 1.96 * se_cal, theta_cal + 1.96 * se_cal
+        rows.append(RepResult(n, theta_true, rep, "dml_cal_if",
+                              theta_cal, se_cal, lo_cal, hi_cal,
+                              lo_cal <= theta_true <= hi_cal))
+        if n_boot_mult > 0:
+            _, se_cmb, lo_cmb, hi_cmb = aipw_mult_boot(
+                theta_cal, psi_cal, n_boot=n_boot_mult, seed=seed + 7919,
+            )
+            rows.append(RepResult(n, theta_true, rep, "dml_cal_mult_boot",
+                                  theta_cal, se_cmb, lo_cmb, hi_cmb,
+                                  lo_cmb <= theta_true <= hi_cmb))
+        if n_boot_pairs > 0:
+            _, se_cpb, lo_cpb, hi_cpb = aipw_cal_pairs_boot(
+                Y, D, X, n_boot=n_boot_pairs, k_folds=k_folds,
+                seed=seed + 31337, calibration=calibration,
+            )
+            rows.append(RepResult(n, theta_true, rep, "dml_cal_pairs_boot",
+                                  theta_cal, se_cpb, lo_cpb, hi_cpb,
+                                  lo_cpb <= theta_true <= hi_cpb))
         return rows
     else:
         raise ValueError(f"unknown dgp: {dgp}")
@@ -628,6 +831,15 @@ def main():
                          "GIL during inner BLAS, so threading is "
                          "~30% slower but never hangs. Use 'sequential' "
                          "for single-threaded debugging.")
+    ap.add_argument("--calibration",
+                    choices=["isotonic", "platt", "beta"],
+                    default="isotonic",
+                    help="Propensity-score calibration method appended "
+                         "to the IRM panel per Ballinari & Bearth (2024) "
+                         "Algorithm 1. Isotonic (default) is parameter-"
+                         "free and asymptotically licensed; Platt is "
+                         "kept for sensitivity (not asymptotically "
+                         "licensed; see B&B Theorem 1 footnote).")
     ap.add_argument("--seed", type=int, default=20260601)
     ap.add_argument("--out_dir", type=Path,
                     default=REPO / "results" / "simulation_jbes2026")
@@ -642,7 +854,7 @@ def main():
           f"reps={args.n_reps}, mult_boot={args.n_boot_mult}, "
           f"pairs_boot={args.n_boot_pairs}, fixed_nuis_boot={args.n_boot_fixed}, "
           f"joblib_n_jobs={args.joblib_n_jobs}, chunk={args.chunk}, "
-          f"backend={args.backend}")
+          f"backend={args.backend}, calibration={args.calibration}")
     from joblib import Parallel, delayed
 
     def _rep_chunk(seeds_with_reps, n, theta):
@@ -651,7 +863,8 @@ def main():
             out.extend(run_one_rep(n, theta, rep, seed,
                                     args.n_boot_mult, args.n_boot_pairs,
                                     args.n_boot_fixed, args.k_folds,
-                                    dgp=args.dgp))
+                                    dgp=args.dgp,
+                                    calibration=args.calibration))
         return out
 
     t0 = time.time()
