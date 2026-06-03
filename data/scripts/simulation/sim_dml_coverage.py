@@ -66,6 +66,12 @@ except ImportError:
 K_FOLDS_CAL = 2
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
+from threadpoolctl import threadpool_limits
+import warnings as _warnings
+# Cosmetic — venn-abers' calc_p0p1 emits one All-NaN RuntimeWarning per
+# degenerate gradient slice. Harmless but floods the log.
+_warnings.filterwarnings("ignore", category=RuntimeWarning,
+                          module=r"venn_abers")
 
 REPO = Path(__file__).resolve().parents[3]
 RIDGE_ALPHAS = (0.01, 0.1, 1.0, 10.0, 100.0, 1000.0)
@@ -170,7 +176,13 @@ def _fit_outcome(Xs_tr, Y_tr, learner, alpha):
     if learner == "ridge":
         return Ridge(alpha=alpha, solver="cholesky").fit(Xs_tr, Y_tr)
     if learner == "hgbm":
-        return HistGradientBoostingRegressor(**_HGBM_REG_KW).fit(Xs_tr, Y_tr)
+        # sklearn HGBM deadlocks on first OpenMP fit inside cgroup
+        # containers (Brev/shadeform); OMP_NUM_THREADS env doesn't
+        # reliably defang because libgomp initialises before sklearn
+        # reads the env. threadpool_limits forces single-thread at fit
+        # time, after init — see sklearn #16016, #25822, #30662.
+        with threadpool_limits(limits=1, user_api="openmp"):
+            return HistGradientBoostingRegressor(**_HGBM_REG_KW).fit(Xs_tr, Y_tr)
     raise ValueError(f"unknown outcome learner: {learner}")
 
 
@@ -179,7 +191,8 @@ def _fit_propensity(Xs_tr, D_tr, learner, C):
         return LogisticRegression(C=C, solver="lbfgs", max_iter=200,
                                    n_jobs=1).fit(Xs_tr, D_tr)
     if learner == "hgbm":
-        return HistGradientBoostingClassifier(**_HGBM_CLF_KW).fit(Xs_tr, D_tr)
+        with threadpool_limits(limits=1, user_api="openmp"):
+            return HistGradientBoostingClassifier(**_HGBM_CLF_KW).fit(Xs_tr, D_tr)
     raise ValueError(f"unknown propensity learner: {learner}")
 
 
