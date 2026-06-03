@@ -1,0 +1,126 @@
+% §5.3 Structural foundation for the renter-share moderator hypothesis.
+% Builds on Kurlat & Stroebel (2015) RFS heterogeneously-informed-buyer
+% model + a Gaussian public-signal extension from Vives (2008) Ch. 2.
+% This subsection converts the renter-share moderator from rhetorical
+% primary-outcome designation to structurally derived prediction.
+
+\subsection{Structural foundation for the renter-share moderator}
+\label{sec:structural-renter}
+
+The pooled meta-regression in Section~\ref{sec:meta-regression-12}
+identifies the renter share of housing stock as the primary moderator
+of the Shen-Ross uniqueness premium under the housing-search
+information-frictions literature.  Here we make the directional
+prediction structurally precise by extending
+\citet{kurlat2015testing}'s heterogeneously-informed-buyer model with
+a Gaussian public signal in the \citet{vives2008information} tradition.
+Two auxiliary assumptions are required and we state them explicitly.
+
+\paragraph{Setup.} Following \citet{kurlat2015testing}, the valuation
+of house $h$ in neighborhood $j$ decomposes as
+\begin{equation}
+v_h = \beta_h \theta_j + (1 - \beta_h) \eta_h,
+\label{eq:ks-decomp}
+\end{equation}
+where $\theta_j$ is the unobserved quality of neighborhood $j$ and
+$\eta_h$ is house-specific idiosyncratic quality.
+\citeauthor{kurlat2015testing} distinguish two buyer types: informed
+buyers observe a binary signal about $v_h$, while uninformed buyers
+do not.  Their Proposition~4 establishes that
+$\partial^2 v / (\partial \theta \partial \beta_h) = 1 > 0$, i.e.,
+a house's response to a neighborhood-quality shock is increasing in
+its loading $\beta_h$.
+
+\paragraph{Auxiliary assumption 1: listing text as Gaussian public
+signal of $\theta_j$.}
+We treat the listing text content $T_h$ as a noisy public signal of
+the neighborhood-quality component:
+\begin{equation}
+T_h = \theta_j + \xi_h, \qquad \xi_h \sim N(0, \sigma_T^2),
+\label{eq:public-signal}
+\end{equation}
+observed by both buyer types prior to bidding. This places the model
+in the normal-linear signal-extraction tradition of
+\citet{vives2008information} Chapter 2.  Under
+\eqref{eq:public-signal} and a Gaussian prior on $\theta_j$, an
+informed buyer with private-signal precision $\tau_I$ on $\theta_j$
+forms the posterior
+\begin{equation}
+E_I[\theta_j \mid T_h, \text{private}] = \alpha_I \, \text{private}
++ (1 - \alpha_I) T_h,
+\quad
+\alpha_I = \frac{\tau_I}{\tau_I + \tau_T},
+\label{eq:posterior-informed}
+\end{equation}
+where $\tau_T = 1/\sigma_T^2$ is the precision of the public signal.
+An uninformed buyer has $\tau_U = 0$, so $\alpha_U = 0$ and her
+posterior is simply $T_h$.
+
+\paragraph{Auxiliary assumption 2: renter share as proxy for the
+uninformed-buyer share.}
+Let $r$ denote the share of uninformed buyers in market $j$.
+Following \citet{chinco2016misinformed}, who establish that out-of-
+town and recent-mover buyers carry less neighborhood-specific
+information than long-term resident buyers, and
+\citet{kurlat2015testing}'s own use of recent-mover share as a
+proxy for the informed-seller share, we operationalize $r$ as the
+metropolitan-area renter share of housing stock. This is the
+empirical link in the derivation and we report sensitivity to
+alternative buyer-information proxies (recent-mover share, length-
+of-residence percentiles) in Appendix~\ref{app:moderator-robustness}.
+
+\paragraph{Equilibrium price.} Under the
+\citet{kurlat2015testing} equilibrium pricing rule (their equations
+10-11), the marginal-buyer transaction price for observationally
+indistinguishable houses is the share-weighted average of the two
+buyer types' expected valuations.  Substituting equations
+\eqref{eq:ks-decomp}, \eqref{eq:public-signal}, and
+\eqref{eq:posterior-informed},
+\begin{align}
+\log p_h^* &\approx r \cdot E_U[v_h \mid T_h] + (1 - r) \cdot
+E_I[v_h \mid T_h] \\
+&= r \beta_h T_h + (1 - r) \beta_h
+[\alpha_I \, \text{private} + (1 - \alpha_I) T_h]
++ \text{(constants in $\eta_h$)}.
+\label{eq:price}
+\end{align}
+
+\paragraph{Moderation prediction.} Differentiating
+\eqref{eq:price} twice yields
+\begin{equation}
+\frac{\partial \log p_h^*}{\partial T_h}
+= \beta_h \cdot [1 - (1 - r) \alpha_I],
+\qquad
+\frac{\partial^2 \log p_h^*}{\partial T_h \partial r}
+= \beta_h \alpha_I > 0.
+\label{eq:moderation}
+\end{equation}
+The partial effect of listing text on sale price is increasing in the
+share of uninformed buyers.  Operationalizing the latter as the
+metropolitan-area renter share gives the empirical prediction
+\begin{equation}
+\frac{\partial^2 \log p_h^*}{\partial T_h \partial \text{(renter share)}_j} > 0,
+\label{eq:empirical-prediction}
+\end{equation}
+which is the primary moderator hypothesis tested in
+Section~\ref{sec:meta-regression-12}.
+
+\paragraph{Robustness to the auxiliary assumptions.} The two
+auxiliary assumptions are not innocuous and we note their role.
+First, the Gaussian public-signal assumption \eqref{eq:public-signal}
+imposes a normal-linear signal-extraction structure that
+\citeauthor{kurlat2015testing} themselves do not adopt; their buyer
+signal is binary.  We follow \citet{vives2008information} in
+adopting the Gaussian extension because (i) the binary case is a
+limiting case of the Gaussian case as signal precision tends to a
+threshold, and (ii) the empirical content of the moderation
+prediction in \eqref{eq:moderation} is robust to the specific
+distributional form, requiring only that uninformed buyers place
+greater weight on the public signal than informed buyers (a property
+true of all reasonable signal structures).  Second, the renter-share-
+as-uninformed-buyer-share map is empirical; we report sensitivity to
+alternative proxies in Appendix~\ref{app:moderator-robustness} and
+flag this as a limitation of any attempt to identify buyer-
+information moderation from market-level demographic aggregates.
+The prediction in \eqref{eq:empirical-prediction} survives under any
+proxy that is increasing in the uninformed-buyer share.

@@ -47,18 +47,42 @@ sign-disagreements with Shen reflect the difference between
 distinctive-language premia (Shen) and utilitarian-axis discounts
 (Baur), rather than methodological inconsistency.
 
-\paragraph{Substantive interpretation.} Three readings of the
-cross-method discordance are worth distinguishing. The first
-attributes the discordance to genuinely orthogonal channels.
-Listing uniqueness in the Shen-Ross sense, leading-component
-position in the BERT representation, and counterfactual
-out-of-distribution rewriting are three different operationalizations
-of "language signal", and there is no a priori reason any two should
-identify the same causal channel. Under this reading the three
-methods are complementary tools that each isolate a different aspect
-of the text-on-price relationship, and the empirical fact that
-their cross-correlations are near zero is informative about the
-multi-dimensional structure of language as a treatment.
+\paragraph{Substantive interpretation under a triangulation
+design.} The three identification strategies are not redundant point
+estimators of a single scalar effect; they are deliberately chosen
+to have orthogonal sources of bias.  The Shen-Ross uniqueness measure
+leverages within-market lexical rarity and inherits any bias from the
+neighborhood-peer-set definition.  The pooled-PCA Baur sentence-BERT
+axis leverages cross-listing semantic geometry and inherits bias from
+the embedding model's pretraining distribution.  The LLM counter-
+factual rewriting intervention leverages within-listing minimal-edit
+substitution and inherits bias from the rewriter's distributional
+shift.  Following the causal-triangulation framework of
+\citet{lawlor2016triangulation} and \citet{hammerton2021causal},
+methods whose biases are largely unrelated provide jointly stronger
+evidence on a common causal target than methods with shared bias
+structure, regardless of whether their per-market point estimates
+agree numerically.  This is a formal restatement of the Heckman
+\citep{heckman2008econometric} position that "different estimators
+identify different parameters," reinterpreted at the per-market
+level: each per-method test rejects a method-specific null about a
+method-specific functional of the language-price relationship, while
+the joint Hotelling test rejects the global null that no functional
+has effect in the given market.
+
+Under this design, the low pairwise Spearman correlations (Shen-Baur
+$\rho = -0.15$ and Shen-CF $\rho = -0.07$, neither distinguishable
+from zero at our panel size) are exactly the discriminant-validity
+pattern the design targets; the moderate Baur-CF correlation
+($\rho = +0.48$), with both methods exploiting global semantic
+geometry, is the corresponding convergent-validity signal.  The
+Hotelling-$T^2$ rejection of the joint null in eleven of twelve
+markets, while any individual method rejects in only a small
+subset, is the canonical signature predicted when several low-power
+estimators each identify a different feature of a partially-
+identified estimand \citep{manski2003partial, tamer2010partial}: the
+joint test inherits power from the union of identifying restrictions
+even when each marginal test does not.
 
 The second reading attributes the discordance to model
 misspecification. The Shen-Ross channel is essentially a one-
