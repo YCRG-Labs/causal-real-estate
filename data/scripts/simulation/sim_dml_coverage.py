@@ -41,11 +41,29 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.linalg import cho_factor, cho_solve
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import (
+    GradientBoostingRegressor,
+    HistGradientBoostingRegressor,
+    HistGradientBoostingClassifier,
+)
 from sklearn.linear_model import (
     LogisticRegression, LogisticRegressionCV, Ridge, RidgeCV, LinearRegression,
 )
 from sklearn.isotonic import IsotonicRegression
+try:
+    from venn_abers import VennAbers
+    _HAS_VENN_ABERS = True
+except ImportError:
+    _HAS_VENN_ABERS = False
+
+# Ballinari & Bearth (2024) reference repo uses K=2 outer × J=2 inner
+# (run_simulation.py n_folds=2). With K=5 outer × J=2 inner the inner
+# calibration sub-fold has n/10 points which is too small for isotonic
+# regression to learn the PS tails — bias and variance explode (see
+# Brev grid 2026-06-02). For the calibrated AIPW path we hard-code
+# K_FOLDS_CAL=2 to faithfully replicate B&B Algorithm 1; the
+# uncalibrated DML path keeps its canonical K=5 default.
+K_FOLDS_CAL = 2
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 
@@ -137,10 +155,42 @@ def make_irm_dgp4(n: int, dim_x: int = 30, theta: float = 0.5,
     return Y, D, X
 
 
-def _tune_aipw_once(Xs, Y, D):
+# HGBM nuisance configuration. Per DoubleML's R default for non-linear
+# DML, max_depth=3 + 100 iters + early stopping on a 10% validation hold-
+# out. With n=2000 this fits in ~50 ms vs ridge's ~1 ms.
+_HGBM_REG_KW = dict(max_depth=3, max_iter=100, learning_rate=0.1,
+                     early_stopping=True, validation_fraction=0.1,
+                     random_state=0)
+_HGBM_CLF_KW = dict(max_depth=3, max_iter=100, learning_rate=0.1,
+                     early_stopping=True, validation_fraction=0.1,
+                     random_state=0)
+
+
+def _fit_outcome(Xs_tr, Y_tr, learner, alpha):
+    if learner == "ridge":
+        return Ridge(alpha=alpha, solver="cholesky").fit(Xs_tr, Y_tr)
+    if learner == "hgbm":
+        return HistGradientBoostingRegressor(**_HGBM_REG_KW).fit(Xs_tr, Y_tr)
+    raise ValueError(f"unknown outcome learner: {learner}")
+
+
+def _fit_propensity(Xs_tr, D_tr, learner, C):
+    if learner == "logreg":
+        return LogisticRegression(C=C, solver="lbfgs", max_iter=200,
+                                   n_jobs=1).fit(Xs_tr, D_tr)
+    if learner == "hgbm":
+        return HistGradientBoostingClassifier(**_HGBM_CLF_KW).fit(Xs_tr, D_tr)
+    raise ValueError(f"unknown propensity learner: {learner}")
+
+
+def _tune_aipw_once(Xs, Y, D, learner_outcome="ridge",
+                    learner_propensity="logreg"):
     """One-shot full-sample tuning of the AIPW nuisances. Returns the
     selected (alpha_0, alpha_1, C_lr) for the outcome ridges and the
-    propensity logistic regression.
+    propensity logistic regression. When learner_outcome="hgbm" or
+    learner_propensity="hgbm" the corresponding alpha/C is unused (HGBM
+    self-tunes via early stopping) and the returned value is a no-op
+    placeholder so downstream signatures stay stable.
 
     Per DoubleML's `tune_on_folds = FALSE` convention (the default in
     their R interface; see https://docs.doubleml.org/stable/guide/
@@ -160,22 +210,29 @@ def _tune_aipw_once(Xs, Y, D):
     D_int = D.astype(int)
     mask0 = D_int == 0
     mask1 = D_int == 1
-    alpha0 = float(RidgeCV(alphas=RIDGE_ALPHAS).fit(Xs[mask0], Y[mask0]).alpha_) \
-        if mask0.sum() >= 5 else 1.0
-    alpha1 = float(RidgeCV(alphas=RIDGE_ALPHAS).fit(Xs[mask1], Y[mask1]).alpha_) \
-        if mask1.sum() >= 5 else 1.0
-    try:
-        lr_cv = LogisticRegressionCV(
-            Cs=5, cv=3, max_iter=2000, n_jobs=1,
-        ).fit(Xs, D_int)
-        C_lr = float(lr_cv.C_[0])
-    except Exception:
-        C_lr = 1.0
+    if learner_outcome == "ridge":
+        alpha0 = float(RidgeCV(alphas=RIDGE_ALPHAS).fit(
+            Xs[mask0], Y[mask0]).alpha_) if mask0.sum() >= 5 else 1.0
+        alpha1 = float(RidgeCV(alphas=RIDGE_ALPHAS).fit(
+            Xs[mask1], Y[mask1]).alpha_) if mask1.sum() >= 5 else 1.0
+    else:
+        alpha0 = alpha1 = 0.0   # HGBM ignores; placeholder for signature
+    if learner_propensity == "logreg":
+        try:
+            lr_cv = LogisticRegressionCV(
+                Cs=5, cv=3, max_iter=2000, n_jobs=1,
+            ).fit(Xs, D_int)
+            C_lr = float(lr_cv.C_[0])
+        except Exception:
+            C_lr = 1.0
+    else:
+        C_lr = 0.0   # HGBM ignores
     return alpha0, alpha1, C_lr
 
 
 def _aipw_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
-                    alpha0=None, alpha1=None, C_lr=None):
+                    alpha0=None, alpha1=None, C_lr=None,
+                    learner_outcome="ridge", learner_propensity="logreg"):
     """Cross-fit AIPW nuisances: g0(X) = E[Y|X,D=0], g1(X) = E[Y|X,D=1],
     p(X) = P(D=1|X). When `(Xs, alpha0, alpha1, C_lr)` are supplied uses
     fixed hyperparameters with `Ridge(solver='cholesky')` and
@@ -194,7 +251,11 @@ def _aipw_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
         Xs = StandardScaler().fit_transform(X)
     if alpha0 is None or alpha1 is None or C_lr is None:
         # Lazy first-call tune so bare aipw_if(...) still works.
-        alpha0_fb, alpha1_fb, C_lr_fb = _tune_aipw_once(Xs, Y, D)
+        alpha0_fb, alpha1_fb, C_lr_fb = _tune_aipw_once(
+            Xs, Y, D,
+            learner_outcome=learner_outcome,
+            learner_propensity=learner_propensity,
+        )
         alpha0 = alpha0 if alpha0 is not None else alpha0_fb
         alpha1 = alpha1 if alpha1 is not None else alpha1_fb
         C_lr   = C_lr   if C_lr   is not None else C_lr_fb
@@ -202,27 +263,27 @@ def _aipw_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
     g0_hat = np.empty(n); g1_hat = np.empty(n); p_hat = np.empty(n)
     for tr, te in kf.split(np.arange(n)):
         D_tr = D[tr].astype(int)
-        # Propensity. One-shot lbfgs at frozen C; cap PS away from 0/1.
+        # Propensity. Frozen-hyperparam fit for the chosen learner.
         try:
-            m_p = LogisticRegression(
-                C=C_lr, solver="lbfgs", max_iter=200, n_jobs=1,
-            ).fit(Xs[tr], D_tr)
+            m_p = _fit_propensity(Xs[tr], D_tr,
+                                   learner=learner_propensity, C=C_lr)
             p_te = m_p.predict_proba(Xs[te])[:, 1]
         except Exception:
-            # Degenerate fold (one class). Fall back to mean.
             p_te = np.full(len(te), float(D_tr.mean()))
         p_te = np.clip(p_te, 1e-3, 1 - 1e-3)
-        # Outcome under D=0 and D=1 separately, Cholesky ridge.
+        # Outcome under D=0 and D=1 separately.
         mask0 = D_tr == 0
         mask1 = D_tr == 1
         if mask0.sum() >= 5:
-            g0_te = Ridge(alpha=alpha0, solver="cholesky").fit(
-                Xs[tr][mask0], Y[tr][mask0]).predict(Xs[te])
+            g0_te = _fit_outcome(Xs[tr][mask0], Y[tr][mask0],
+                                  learner=learner_outcome, alpha=alpha0
+                                  ).predict(Xs[te])
         else:
             g0_te = np.full(len(te), float(Y[tr][mask0].mean()) if mask0.sum() else 0.0)
         if mask1.sum() >= 5:
-            g1_te = Ridge(alpha=alpha1, solver="cholesky").fit(
-                Xs[tr][mask1], Y[tr][mask1]).predict(Xs[te])
+            g1_te = _fit_outcome(Xs[tr][mask1], Y[tr][mask1],
+                                  learner=learner_outcome, alpha=alpha1
+                                  ).predict(Xs[te])
         else:
             g1_te = np.full(len(te), float(Y[tr][mask1].mean()) if mask1.sum() else 0.0)
         g0_hat[te] = g0_te
@@ -235,10 +296,14 @@ def _aipw_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
 
 
 def aipw_if(Y, D, X, k_folds=5, seed=42, Xs=None,
-            alpha0=None, alpha1=None, C_lr=None):
-    psi, _, _, _ = _aipw_cross_fit(Y, D, X, k_folds=k_folds, seed=seed,
-                                    Xs=Xs, alpha0=alpha0, alpha1=alpha1,
-                                    C_lr=C_lr)
+            alpha0=None, alpha1=None, C_lr=None,
+            learner_outcome="ridge", learner_propensity="logreg"):
+    psi, _, _, _ = _aipw_cross_fit(
+        Y, D, X, k_folds=k_folds, seed=seed,
+        Xs=Xs, alpha0=alpha0, alpha1=alpha1, C_lr=C_lr,
+        learner_outcome=learner_outcome,
+        learner_propensity=learner_propensity,
+    )
     theta = float(np.mean(psi))
     se = float(np.sqrt(np.var(psi, ddof=1) / len(Y)))
     return theta, se, psi
@@ -254,7 +319,8 @@ def aipw_mult_boot(theta_hat, psi, n_boot=500, seed=42):
     return theta_hat, se, lo, hi
 
 
-def aipw_pairs_boot(Y, D, X, n_boot=100, k_folds=5, seed=42):
+def aipw_pairs_boot(Y, D, X, n_boot=100, k_folds=5, seed=42,
+                    learner_outcome="ridge", learner_propensity="logreg"):
     """Pairs bootstrap for AIPW with frozen hyperparameters.
 
     Tunes (alpha_0, alpha_1, C_lr) once on the full sample (DoubleML's
@@ -269,10 +335,17 @@ def aipw_pairs_boot(Y, D, X, n_boot=100, k_folds=5, seed=42):
     """
     n = len(Y)
     Xs_full = StandardScaler().fit_transform(X)
-    alpha0, alpha1, C_lr = _tune_aipw_once(Xs_full, Y, D)
-    theta_hat, _, _ = aipw_if(Y, D, X, k_folds=k_folds, seed=seed,
-                               Xs=Xs_full, alpha0=alpha0, alpha1=alpha1,
-                               C_lr=C_lr)
+    alpha0, alpha1, C_lr = _tune_aipw_once(
+        Xs_full, Y, D,
+        learner_outcome=learner_outcome,
+        learner_propensity=learner_propensity,
+    )
+    theta_hat, _, _ = aipw_if(
+        Y, D, X, k_folds=k_folds, seed=seed,
+        Xs=Xs_full, alpha0=alpha0, alpha1=alpha1, C_lr=C_lr,
+        learner_outcome=learner_outcome,
+        learner_propensity=learner_propensity,
+    )
     if np.isnan(theta_hat):
         return theta_hat, float("nan"), float("nan"), float("nan")
     rng = np.random.default_rng(seed)
@@ -284,6 +357,8 @@ def aipw_pairs_boot(Y, D, X, n_boot=100, k_folds=5, seed=42):
                 Y[idx], D[idx], X[idx], k_folds=k_folds,
                 seed=seed + b + 1, Xs=Xs_full[idx],
                 alpha0=alpha0, alpha1=alpha1, C_lr=C_lr,
+                learner_outcome=learner_outcome,
+                learner_propensity=learner_propensity,
             )
             thetas[b] = float(np.mean(psi_b))
         except Exception:
@@ -317,11 +392,32 @@ def _fit_calibrator(raw_ps, D, method="isotonic"):
     raw_ps = np.clip(np.asarray(raw_ps, dtype=float), 1e-6, 1 - 1e-6)
     D = np.asarray(D, dtype=int)
     if method == "isotonic":
+        # B&B (2024) src/calibration.py:121-140 uses y_min/y_max as the
+        # only clipping; the redundant outer np.clip in the prior draft
+        # double-floored at 0.001 and triggered AIPW IPW blowup whenever
+        # isotonic hit the boundary on small calibration sub-folds.
         iso = IsotonicRegression(out_of_bounds="clip", y_min=1e-3, y_max=1 - 1e-3)
         iso.fit(raw_ps, D)
-        return lambda p: np.clip(
-            iso.transform(np.clip(p, 1e-6, 1 - 1e-6)), 1e-3, 1 - 1e-3
-        )
+        return lambda p: iso.transform(np.clip(p, 1e-6, 1 - 1e-6))
+    if method == "venn_abers":
+        # B&B's headline calibrator (Theorem 1 asymptotic licence; Table 2
+        # bias 0.009, coverage 0.946 on Lasso/DGP4/N=2000). API per the
+        # `venn-abers` PyPI package: 2-column probability input, returns
+        # (p_prime, p0_p1) tuple with shape (n, 2) each. We feed in
+        # [1-raw, raw] and take p_prime[:, 1].
+        if not _HAS_VENN_ABERS:
+            raise ImportError(
+                "pip install venn-abers (required for --calibration venn_abers)"
+            )
+        va = VennAbers()
+        p_cal_2col = np.column_stack([1.0 - raw_ps, raw_ps])
+        va.fit(p_cal_2col, D)
+        def _apply(p):
+            p = np.clip(np.asarray(p, dtype=float), 1e-6, 1 - 1e-6)
+            p_2col = np.column_stack([1.0 - p, p])
+            p_prime, _ = va.predict_proba(p_2col)
+            return np.clip(p_prime[:, 1], 1e-3, 1 - 1e-3)
+        return _apply
     if method == "platt":
         z = np.log(raw_ps / (1.0 - raw_ps)).reshape(-1, 1)
         try:
@@ -351,7 +447,9 @@ def _fit_calibrator(raw_ps, D, method="isotonic"):
 
 def _aipw_calibrated_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
                                 alpha0=None, alpha1=None, C_lr=None,
-                                calibration="isotonic", j_subfolds=2):
+                                calibration="isotonic", j_subfolds=2,
+                                learner_outcome="ridge",
+                                learner_propensity="logreg"):
     """Cross-fit AIPW with propensity-score calibration per Ballinari &
     Bearth (2024) Algorithm 1. Within each outer fold k the held-out
     indices `te` are partitioned into J=`j_subfolds` inner sub-folds;
@@ -365,7 +463,11 @@ def _aipw_calibrated_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
     if Xs is None:
         Xs = StandardScaler().fit_transform(X)
     if alpha0 is None or alpha1 is None or C_lr is None:
-        alpha0_fb, alpha1_fb, C_lr_fb = _tune_aipw_once(Xs, Y, D)
+        alpha0_fb, alpha1_fb, C_lr_fb = _tune_aipw_once(
+            Xs, Y, D,
+            learner_outcome=learner_outcome,
+            learner_propensity=learner_propensity,
+        )
         alpha0 = alpha0 if alpha0 is not None else alpha0_fb
         alpha1 = alpha1 if alpha1 is not None else alpha1_fb
         C_lr   = C_lr   if C_lr   is not None else C_lr_fb
@@ -376,9 +478,8 @@ def _aipw_calibrated_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
     for tr, te in kf.split(np.arange(n)):
         D_tr = D[tr].astype(int)
         try:
-            m_p = LogisticRegression(
-                C=C_lr, solver="lbfgs", max_iter=200, n_jobs=1,
-            ).fit(Xs[tr], D_tr)
+            m_p = _fit_propensity(Xs[tr], D_tr,
+                                   learner=learner_propensity, C=C_lr)
             p_te_raw = m_p.predict_proba(Xs[te])[:, 1]
         except Exception:
             p_te_raw = np.full(len(te), float(D_tr.mean()))
@@ -386,13 +487,15 @@ def _aipw_calibrated_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
         mask0 = D_tr == 0
         mask1 = D_tr == 1
         if mask0.sum() >= 5:
-            g0_te = Ridge(alpha=alpha0, solver="cholesky").fit(
-                Xs[tr][mask0], Y[tr][mask0]).predict(Xs[te])
+            g0_te = _fit_outcome(Xs[tr][mask0], Y[tr][mask0],
+                                  learner=learner_outcome, alpha=alpha0
+                                  ).predict(Xs[te])
         else:
             g0_te = np.full(len(te), float(Y[tr][mask0].mean()) if mask0.sum() else 0.0)
         if mask1.sum() >= 5:
-            g1_te = Ridge(alpha=alpha1, solver="cholesky").fit(
-                Xs[tr][mask1], Y[tr][mask1]).predict(Xs[te])
+            g1_te = _fit_outcome(Xs[tr][mask1], Y[tr][mask1],
+                                  learner=learner_outcome, alpha=alpha1
+                                  ).predict(Xs[te])
         else:
             g1_te = np.full(len(te), float(Y[tr][mask1].mean()) if mask1.sum() else 0.0)
         # Inner J-fold loop on the held-out indices for PS calibration.
@@ -427,10 +530,13 @@ def _aipw_calibrated_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
 
 def aipw_cal_if(Y, D, X, k_folds=5, seed=42, Xs=None,
                 alpha0=None, alpha1=None, C_lr=None,
-                calibration="isotonic"):
+                calibration="isotonic",
+                learner_outcome="ridge", learner_propensity="logreg"):
     psi, _, _, _, _ = _aipw_calibrated_cross_fit(
         Y, D, X, k_folds=k_folds, seed=seed, Xs=Xs,
         alpha0=alpha0, alpha1=alpha1, C_lr=C_lr, calibration=calibration,
+        learner_outcome=learner_outcome,
+        learner_propensity=learner_propensity,
     )
     theta = float(np.mean(psi))
     se = float(np.sqrt(np.var(psi, ddof=1) / len(Y)))
@@ -438,17 +544,25 @@ def aipw_cal_if(Y, D, X, k_folds=5, seed=42, Xs=None,
 
 
 def aipw_cal_pairs_boot(Y, D, X, n_boot=50, k_folds=5, seed=42,
-                         calibration="isotonic"):
+                         calibration="isotonic",
+                         learner_outcome="ridge",
+                         learner_propensity="logreg"):
     """Pairs bootstrap for the calibrated AIPW. Frozen hyperparameters
     and standardization (B&B + DoubleML tune_on_folds=FALSE convention);
     calibrator is refit per resample inside _aipw_calibrated_cross_fit.
     """
     n = len(Y)
     Xs_full = StandardScaler().fit_transform(X)
-    alpha0, alpha1, C_lr = _tune_aipw_once(Xs_full, Y, D)
+    alpha0, alpha1, C_lr = _tune_aipw_once(
+        Xs_full, Y, D,
+        learner_outcome=learner_outcome,
+        learner_propensity=learner_propensity,
+    )
     theta_hat, _, _ = aipw_cal_if(
         Y, D, X, k_folds=k_folds, seed=seed, Xs=Xs_full,
         alpha0=alpha0, alpha1=alpha1, C_lr=C_lr, calibration=calibration,
+        learner_outcome=learner_outcome,
+        learner_propensity=learner_propensity,
     )
     if np.isnan(theta_hat):
         return theta_hat, float("nan"), float("nan"), float("nan")
@@ -462,6 +576,8 @@ def aipw_cal_pairs_boot(Y, D, X, n_boot=50, k_folds=5, seed=42,
                 seed=seed + b + 1, Xs=Xs_full[idx],
                 alpha0=alpha0, alpha1=alpha1, C_lr=C_lr,
                 calibration=calibration,
+                learner_outcome=learner_outcome,
+                learner_propensity=learner_propensity,
             )
             thetas[b] = float(np.mean(psi_b))
         except Exception:
@@ -679,7 +795,8 @@ class RepResult:
 
 def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs,
                 n_boot_fixed, k_folds, dgp="ccddhnr",
-                calibration="isotonic"):
+                calibration="isotonic",
+                learner_outcome="ridge", learner_propensity="logreg"):
     rng = np.random.default_rng(seed)
     if dgp == "ccddhnr":
         Y, D, X = make_plr_ccddhnr_2018(n=n, alpha=theta_true, rng=rng)
@@ -689,7 +806,11 @@ def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs,
         Y, D, X = make_irm_dgp4(n=n, theta=theta_true, rng=rng)
         # IRM uses the AIPW (ATE) score, not the PLR partialling-out.
         rows = []
-        theta_if, se_if, psi = aipw_if(Y, D, X, k_folds=k_folds, seed=seed)
+        theta_if, se_if, psi = aipw_if(
+            Y, D, X, k_folds=k_folds, seed=seed,
+            learner_outcome=learner_outcome,
+            learner_propensity=learner_propensity,
+        )
         lo_if, hi_if = theta_if - 1.96 * se_if, theta_if + 1.96 * se_if
         rows.append(RepResult(n, theta_true, rep, "dml_if", theta_if, se_if,
                               lo_if, hi_if, lo_if <= theta_true <= hi_if))
@@ -701,16 +822,24 @@ def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs,
                                   theta_if, se_mb, lo_mb, hi_mb,
                                   lo_mb <= theta_true <= hi_mb))
         if n_boot_pairs > 0:
-            _, se_pb, lo_pb, hi_pb = aipw_pairs_boot(Y, D, X,
-                                                      n_boot=n_boot_pairs,
-                                                      k_folds=k_folds,
-                                                      seed=seed + 31337)
+            _, se_pb, lo_pb, hi_pb = aipw_pairs_boot(
+                Y, D, X, n_boot=n_boot_pairs, k_folds=k_folds,
+                seed=seed + 31337,
+                learner_outcome=learner_outcome,
+                learner_propensity=learner_propensity,
+            )
             rows.append(RepResult(n, theta_true, rep, "dml_pairs_boot",
                                   theta_if, se_pb, lo_pb, hi_pb,
                                   lo_pb <= theta_true <= hi_pb))
-        # Calibrated counterparts (B&B 2024 PS calibration; isotonic).
+        # Calibrated counterparts (B&B 2024 PS calibration). Forced to
+        # K_FOLDS_CAL=2 (B&B Algorithm 1 spec) regardless of the user's
+        # --k_folds; with K=5 the inner J=2 calibration sub-folds have
+        # n/10 points which under-samples the PS tails and blows up the
+        # AIPW IPW term (Brev grid 2026-06-02).
         theta_cal, se_cal, psi_cal = aipw_cal_if(
-            Y, D, X, k_folds=k_folds, seed=seed, calibration=calibration,
+            Y, D, X, k_folds=K_FOLDS_CAL, seed=seed, calibration=calibration,
+            learner_outcome=learner_outcome,
+            learner_propensity=learner_propensity,
         )
         lo_cal, hi_cal = theta_cal - 1.96 * se_cal, theta_cal + 1.96 * se_cal
         rows.append(RepResult(n, theta_true, rep, "dml_cal_if",
@@ -725,8 +854,10 @@ def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs,
                                   lo_cmb <= theta_true <= hi_cmb))
         if n_boot_pairs > 0:
             _, se_cpb, lo_cpb, hi_cpb = aipw_cal_pairs_boot(
-                Y, D, X, n_boot=n_boot_pairs, k_folds=k_folds,
+                Y, D, X, n_boot=n_boot_pairs, k_folds=K_FOLDS_CAL,
                 seed=seed + 31337, calibration=calibration,
+                learner_outcome=learner_outcome,
+                learner_propensity=learner_propensity,
             )
             rows.append(RepResult(n, theta_true, rep, "dml_cal_pairs_boot",
                                   theta_cal, se_cpb, lo_cpb, hi_cpb,
@@ -831,15 +962,35 @@ def main():
                          "GIL during inner BLAS, so threading is "
                          "~30% slower but never hangs. Use 'sequential' "
                          "for single-threaded debugging.")
+    ap.add_argument("--learner_outcome",
+                    choices=["ridge", "hgbm"], default="ridge",
+                    help="Outcome regression learner for the IRM/AIPW path. "
+                         "'ridge' (default) is linear, fast, and matches "
+                         "our applied §6 BERT-PC1 ridge nuisance. 'hgbm' is "
+                         "sklearn HistGradientBoostingRegressor — flexible "
+                         "enough to capture the Friedman 1991 surface in "
+                         "DGP4; ~2-3x slower than ridge.")
+    ap.add_argument("--learner_propensity",
+                    choices=["logreg", "hgbm"], default="logreg",
+                    help="Propensity classifier for the IRM/AIPW path. "
+                         "'logreg' (default) is L2-regularized logistic "
+                         "regression and is already well-calibrated. "
+                         "'hgbm' is sklearn HistGradientBoostingClassifier "
+                         "— more flexible but typically miscalibrated, so "
+                         "pairs well with --calibration venn_abers.")
     ap.add_argument("--calibration",
-                    choices=["isotonic", "platt", "beta"],
-                    default="isotonic",
+                    choices=["venn_abers", "isotonic", "platt", "beta"],
+                    default="venn_abers",
                     help="Propensity-score calibration method appended "
                          "to the IRM panel per Ballinari & Bearth (2024) "
-                         "Algorithm 1. Isotonic (default) is parameter-"
-                         "free and asymptotically licensed; Platt is "
-                         "kept for sensitivity (not asymptotically "
-                         "licensed; see B&B Theorem 1 footnote).")
+                         "Algorithm 1. Venn-Abers (default) is B&B's "
+                         "headline recommendation and is asymptotically "
+                         "licensed (Theorem 1); isotonic is parameter-"
+                         "free but unstable on small inner sub-folds; "
+                         "Platt is NOT asymptotically licensed (see B&B "
+                         "Theorem 1 footnote). The calibrated path uses "
+                         "K_FOLDS_CAL=2 outer folds (B&B's default) "
+                         "regardless of --k_folds.")
     ap.add_argument("--seed", type=int, default=20260601)
     ap.add_argument("--out_dir", type=Path,
                     default=REPO / "results" / "simulation_jbes2026")
@@ -854,7 +1005,9 @@ def main():
           f"reps={args.n_reps}, mult_boot={args.n_boot_mult}, "
           f"pairs_boot={args.n_boot_pairs}, fixed_nuis_boot={args.n_boot_fixed}, "
           f"joblib_n_jobs={args.joblib_n_jobs}, chunk={args.chunk}, "
-          f"backend={args.backend}, calibration={args.calibration}")
+          f"backend={args.backend}, calibration={args.calibration}, "
+          f"learner_outcome={args.learner_outcome}, "
+          f"learner_propensity={args.learner_propensity}")
     from joblib import Parallel, delayed
 
     def _rep_chunk(seeds_with_reps, n, theta):
@@ -864,7 +1017,9 @@ def main():
                                     args.n_boot_mult, args.n_boot_pairs,
                                     args.n_boot_fixed, args.k_folds,
                                     dgp=args.dgp,
-                                    calibration=args.calibration))
+                                    calibration=args.calibration,
+                                    learner_outcome=args.learner_outcome,
+                                    learner_propensity=args.learner_propensity))
         return out
 
     t0 = time.time()
