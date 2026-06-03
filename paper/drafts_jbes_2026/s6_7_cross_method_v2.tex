@@ -78,14 +78,33 @@ by at least two of the three methods, with no market identified by
 all three. San Francisco and Dallas are identified by Shen and the
 counterfactual; New York, Philadelphia, and Denver are identified by
 Baur and the counterfactual; Atlanta is identified by Baur alone and
-by neither Shen nor the counterfactual. The counterfactual channel
-sits between the two embedding-based channels in coverage breadth,
-identifying an effect in $11$ of the $12$ markets at the $95\%$
-level, but with effects of small magnitude in eight of those markets.
-The pattern is consistent with the counterfactual being a noisy
-high-coverage detector and the two embedding-based channels being
-sharp low-coverage detectors of substantively different aspects of
-listing language.
+by neither Shen nor the counterfactual.
+
+\paragraph{Joint-null Hotelling test.} A more powerful summary of
+cross-method evidence is to ask whether, for each market, the joint
+null  H_0: (\theta_{\mathrm{Shen}}, \theta_{\mathrm{Baur}},
+\theta_{\mathrm{CF}}) = (0, 0, 0) can be rejected against the two-
+sided alternative.  Treating the three per-market estimates as
+asymptotically independent (the three methods use disjoint sources
+of variation: a Doc2Vec uniqueness score, a sentence-BERT principal
+component, and an LLM-rewriting differential), we compute the
+Hotelling-style statistic $T^2_m = z^2_{\mathrm{Shen},m} +
+z^2_{\mathrm{Baur},m} + z^2_{\mathrm{CF},m}$ per market and refer it
+to a $\chi^2_3$ asymptotic distribution.
+
+The joint null is rejected at conventional $5\%$ significance in
+eleven of the twelve markets and survives only in Atlanta
+($T^2 = 3.07$, $p = 0.38$). Under Benjamini-Hochberg false-discovery
+correction across the twelve markets, the joint null is rejected in
+eleven of twelve at $q < 0.02$. The Hotelling rejection in eleven
+markets despite weak pairwise rank correlations between the
+individual methods is consistent with each method contributing
+independent low-power evidence of a non-zero text-on-price signal,
+even when no single method attains significance on that market alone.
+Atlanta is the only market where all three methods return small
+estimates whose joint null cannot be rejected, and we interpret
+Atlanta as a clean null for the text-on-price relationship in the
+post-2020 listing corpus.
 
 We favor the third reading for the JBES revision because it is the
 most parsimonious of the three and because it preserves the

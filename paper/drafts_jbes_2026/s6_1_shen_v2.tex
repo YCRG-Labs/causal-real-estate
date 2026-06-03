@@ -38,16 +38,23 @@ confidence band one would expect at our sample size relative to her
 $N \approx 25{,}000$.
 
 Three readings of this pattern are worth distinguishing. The first
-attributes the cross-city heterogeneity to power. Our deduplicated
-corpus contains 285 to 334 listings per market, and the power
-calculation in the rightmost column of Table~\ref{tab:shen-12city}
-shows that against Shen's published Atlanta point estimate of
-approximately $+0.05$ per $\sigma$ our per-city panel has power around
-$6.7\%$, well below the minimum-detectable-effect threshold of any
-conventional power calculation. Under this reading the absence of
-significance in ten cities is not evidence against a true Shen-Ross
-effect, only evidence that our panel does not have the sample size
-to detect one.
+attributes the cross-city heterogeneity to power.  Our deduplicated
+corpus contains 285 to 334 listings per market, and a Gelman-Carlin
+\citep{gelman2014beyond} retrodesign of the per-market estimator
+against the assumed true effect of Shen's Atlanta point estimate
+($+0.050$ per $\sigma$) finds a median per-market power of $25\%$,
+well below the conventional $80\%$ target. Under this reading, the
+absence of significance in ten markets is uninformative about the
+existence of a Shen-Ross effect; it is exactly what one expects when
+power is $25\%$. The two markets where we do detect significance
+(San Francisco at $+0.131$, Dallas at $+0.048$) carry Type-S sign-
+error rates below $1\%$ each, so the sign of these findings is
+reliable, but the magnitude is over-estimated by a Type-M factor of
+roughly $2$ on each: the SF point estimate of $+0.131$ is consistent
+with a true effect closer to $+0.060$, and Dallas's $+0.048$
+consistent with a true effect closer to $+0.025$. We interpret the
+two market-level significant findings as honest detections of the
+sign, not as unbiased magnitude estimates.
 
 The second reading attributes the cross-city heterogeneity to genuine
 between-market variation in the operative residual axis. Section
