@@ -10,9 +10,7 @@
 This paper has asked whether the predictive gains that text embeddings
 deliver in automated valuation models reflect causal semantic content
 or spatial confounding mediated through language, and whether the
-answer travels across metropolitan housing markets.  Working with
-\nlistingsTotal{} deduplicated Redfin listings matched to
-\nparcels{} parcel records across twelve metropolitan areas, we
+answer travels across metropolitan housing markets.  Working with $3{,}914$ deduplicated Redfin listings across twelve metropolitan areas, we
 combined three identification strategies that exploit independent
 sources of variation: a Shen-Ross uniqueness channel based on a
 Doc2Vec embedding, a leading principal component channel of a
@@ -20,18 +18,11 @@ sentence-BERT representation, and a counterfactual rewriting
 intervention executed with two open-weight large language models.
 Each channel returns a heterogeneous map of where the price-text
 relationship is identifiable across markets, and the maps are only
-modestly concordant. Five of twelve metropolitan areas exhibit a
-statistically significant text effect under at least two of the three
-identification strategies, a degree of cross-method agreement that is
-substantially weaker than one would expect under a homogeneous causal
-mechanism.  Our headline finding is therefore not a single per-$\sigma$
+modestly concordant. Five of twelve metropolitan areas exhibit a statistically significant text effect under at least two of the three identification strategies, with no market identified by all three, a degree of cross-method agreement that is weaker than one would expect under a single homogeneous causal mechanism.  Our headline finding is therefore not a single per-$\sigma$
 effect for the price-text relationship but a distribution of effects
 whose shape is partly explained by demographic structure: in a
 mixed-effects meta-regression with REML and Knapp-Hartung small-sample
-adjustment, the renter share of housing stock is the single moderator
-that survives Benjamini-Hochberg false-discovery control with
-$\beta = \metaRenterCoef{}$, explaining $\metaR{}$ of between-city
-heterogeneity. Markets with high renter shares carry stronger
+adjustment, the renter share of housing stock is the single moderator that returns a Knapp-Hartung-adjusted coefficient distinguishable from zero in a univariate scan ($\beta = +0.026$ per standard-deviation increase in renter share, $p = 0.008$, Benjamini-Hochberg $q = 0.067$), accounting for essentially all of the residual between-city heterogeneity that survives the within-city sampling-variance correction. Markets with high renter shares carry stronger
 text effects, a pattern consistent with broader marketing-content
 exposure among prospective tenants who do not have prior physical
 visits or established neighborhood familiarity to anchor their

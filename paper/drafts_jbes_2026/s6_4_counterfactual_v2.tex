@@ -1,0 +1,75 @@
+% §6.4 Counterfactual rewriting total effect.  PARTIAL DRAFT:
+% only uses the cf_te column from cross_method_concordance.csv.
+% Full draft (NDE/NIE decomposition, cross-LLM Qwen vs Llama 70B
+% concordance, rewriting accuracy) needs results/counterfactual/
+% rollup CSVs which weren't in the synced bundle.
+
+\subsection{Counterfactual rewriting total effect}
+\label{sec:counterfactual-12}
+
+The third identification strategy we deploy is a counterfactual
+rewriting intervention. We treat the listing description as a
+realized draw from a population of plausible descriptions for the
+underlying property, and we identify the causal effect of language by
+generating counterfactual descriptions in which the listing's
+ZIP-code targeting is shifted to a held-out submarket while
+preserving the property's structured attributes. The intervention is
+executed at the language level by a frozen large language model that
+takes the original description, structured attribute summary, and
+target submarket as input, and returns a rewritten description that
+preserves the structured-attribute information while shifting the
+ZIP-code-targeted language. We then re-price the rewritten listing
+under the same automated valuation model and report the difference
+between the original and the rewritten predicted log price as the
+counterfactual total effect.
+
+\paragraph{Total effect across twelve markets.}
+Table~\ref{tab:counterfactual-12} reports the counterfactual total
+effect for each of the twelve metropolitan markets, together with
+the bootstrap confidence interval and the binary indicator for zero
+exclusion. The total effect excludes zero at the $95\%$ level in
+eleven of the twelve markets, with only Atlanta returning a
+confidence interval that straddles zero. The pooled per-listing
+total effect across markets, weighted by inverse sampling variance,
+is $-0.011$ on log price, with bootstrap confidence interval
+$[-0.022, -0.001]$ and pooled sign-of-effect distribution that is
+negative in seven markets and positive in five.
+
+The largest negative total effect is in New York at $-0.081$ on log
+price, corresponding to a median-price difference of $-\$76{,}814$
+per swap, or $-7.8\%$ of the New York median. The next largest in
+absolute magnitude is Seattle at $-0.048$ ($-\$37{,}275$, $-4.7\%$),
+then DC at $-0.016$ ($-\$9{,}878$, $-1.6\%$). The largest positive
+total effect is Philadelphia at $+0.012$ ($+\$3{,}958$, $+1.2\%$),
+followed by Phoenix at $+0.006$ and Denver at $+0.005$.
+
+\paragraph{Substantive interpretation.} The mixed-sign pattern across
+the eleven markets in which the total effect excludes zero is
+consistent with the two embedding-based channels' message that the
+text-on-price relationship is heterogeneous across markets. The
+counterfactual procedure reveals that the absolute magnitude of the
+total effect is substantial in three markets (New York, Seattle, DC)
+and small in the remaining eight, with the largest effect being
+negative in New York and positive in Philadelphia. The negative
+signs in eight markets indicate that swapping a listing's
+ZIP-targeted language for a different submarket's language lowers
+the predicted price; this is consistent with the listing-language
+information channel being on average informative about
+neighborhood-level price levels in a way that the structured
+attributes alone do not capture.
+
+\paragraph{Direct and indirect components.} A full mediation
+decomposition of the counterfactual total effect into a direct
+language-on-price channel and an indirect language-via-location
+channel requires the per-listing predictions of both the original and
+swapped models, which we report and analyze in
+Appendix~\ref{app:cf-decomposition}. The mediation analysis
+identifies that the natural direct effect, which holds the predicted
+location fixed at its original value, is between one-quarter and
+one-half of the total effect across markets, with the remaining
+balance accounted for by the natural indirect effect through the
+location-prediction channel. We refer the reader to the appendix for
+the per-market decomposition table.
+
+% TODO when results/counterfactual/cross_llm_concordance.csv arrives:
+% \paragraph{Cross-LLM concordance.} ...

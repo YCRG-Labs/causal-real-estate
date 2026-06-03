@@ -1,0 +1,73 @@
+% §6.2 Baur 2023 BERT-PC1 DML channel, 12-city panel.
+% Numbers locked against results/replications/baur_12city_table.csv.
+
+\subsection{Sentence-BERT principal component channel across twelve markets}
+\label{sec:baur-12city}
+
+The Baur, Rosenfelder, and Lutz channel \citep{baur2023analysis}
+treats listing language as a $768$-dimensional vector from a frozen
+sentence-BERT encoder, extracts the leading principal component as the
+treatment variable, and reports its partial effect on log sale price
+after partialling out structured property covariates with a
+gradient-boosted nuisance learner. The original study reports a
+positive per-$\sigma$ effect on a German listing corpus. We replicate
+the procedure on twelve U.S. metropolitan markets, retaining their
+sentence-BERT model and gradient-boosted nuisances, with influence-
+function and pairs-bootstrap inference per
+Section~\ref{sec:sim-coverage}.
+
+Table~\ref{tab:baur-12city} reports the per-$\sigma$ PC1 effect for
+each market. Four markets identify an effect that excludes zero at
+the $95\%$ level, and the signs are mixed across the four. New York
+recovers a positive per-$\sigma$ effect of $+0.172$ with confidence
+interval $[+0.061, +0.248]$, the largest of the twelve in absolute
+magnitude. Philadelphia, Denver, and Atlanta all recover negative
+per-$\sigma$ effects of $-0.072$ ($[-0.128, -0.036]$), $-0.034$
+($[-0.095, -0.001]$), and $-0.106$ ($[-0.173, -0.003]$) respectively.
+The remaining eight markets return point estimates whose confidence
+intervals straddle zero.
+
+The mixed-sign pattern across the four significant markets is a
+finding in its own right. The leading principal component of a
+sentence-BERT representation does not have a uniform meaning across
+metropolitan markets in the same way that the Shen-Ross uniqueness
+score does. The component direction is chosen by the encoder's
+representation of the local listing distribution, which differs in
+language register, marketing convention, and structural housing-stock
+characteristics across cities. A positive PC1 effect in New York and
+a negative PC1 effect in Atlanta are not contradictory under this
+reading; they indicate that whatever latent listing characteristic
+PC1 captures in each market has opposite implications for price in
+the two markets. Section~\ref{sec:baur-pc-sensitivity} explores
+this by reporting the leading-component analysis under varying
+choices of the principal-component cutoff and finds that the
+sign-pattern is stable across the leading three components in
+New York and Atlanta but reverses for Philadelphia and Denver at
+PC3 and beyond.
+
+\paragraph{Cross-method comparison.} Comparing
+Tables~\ref{tab:shen-12city} and \ref{tab:baur-12city} side-by-side,
+the two methods agree on a single market. New York is the only city
+where the Shen-Ross point estimate ($+0.046$) and the BERT-PC1 point
+estimate ($+0.172$) are both positive, although only the BERT-PC1
+estimate excludes zero. San Francisco illustrates the opposite
+pattern: the Shen-Ross point estimate is large and positive
+($+0.131$, excludes zero), while the BERT-PC1 point estimate is
+slightly negative ($-0.044$, does not exclude zero), suggesting that
+the uniqueness channel and the leading-component channel capture
+substantively different aspects of listing language in the San
+Francisco market. Section~\ref{sec:cross-method-12} returns to
+this orthogonality structure systematically.
+
+\paragraph{Dollarization.} Translating the per-$\sigma$ point
+estimates to per-swap dollar amounts at the median sale price gives a
+sharper sense of the market-by-market stakes. The New York
+PC1 effect of $+0.172$ per $\sigma$ corresponds to a
+median-price difference of $\$163{,}136$ per standard-deviation swap,
+or $18.8\%$ of the New York median. The Atlanta PC1 effect of
+$-0.106$ per $\sigma$ corresponds to $-\$47{,}584$, or $-10.1\%$ of
+the Atlanta median. The Philadelphia effect of $-0.072$ corresponds
+to $-\$23{,}561$, or $-7.0\%$. These are large fractions of price in
+the markets concerned, well above any rounding or normalization
+artifact, and they motivate the policy discussion in
+Section~\ref{sec:conclusion}.

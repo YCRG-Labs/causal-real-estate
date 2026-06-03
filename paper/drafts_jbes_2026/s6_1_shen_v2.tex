@@ -1,0 +1,84 @@
+% §6.1 Shen-Ross Doc2Vec uniqueness channel, 12-city panel.
+% Numbers locked against results/replications/shen_12city_table.csv.
+% Flowing prose, no em dashes, no enumerations.
+
+\subsection{Shen-Ross uniqueness channel across twelve metropolitan markets}
+\label{sec:shen-12city}
+
+The Shen-Ross uniqueness channel \citep{shen2021information} measures
+how much listing language departs from the corpus average for its
+neighborhood, using a Doc2Vec PV-DM embedding trained on the full
+listing corpus and quantifying departure as the cosine distance
+between each listing and the centroid of the $k$ nearest peer
+listings. We follow Shen's recipe verbatim, reproducing her
+preprocessing and hyperparameters, and apply the resulting per-listing
+uniqueness score as the treatment variable in a partially-linear DML
+estimator with cross-fitted ridge nuisances and a Cholesky-solver
+ridge solver throughout. Results are reported per standard
+deviation of the uniqueness score, with $95\%$ confidence intervals
+from a residual bootstrap with $B = 1000$ resamples.
+
+Table~\ref{tab:shen-12city} reports the per-$\sigma$ uniqueness effect
+for each of the twelve metropolitan markets in our sample, together
+with the bootstrap confidence interval and the binary indicator for
+zero exclusion. Two markets identify a Shen-Ross uniqueness effect at
+the $95\%$ level. San Francisco recovers a per-$\sigma$ effect of
+$+0.131$ with cluster-bootstrap confidence interval
+$[+0.055, +0.215]$, within $0.7$ standard errors of the
+Atlanta point estimate Shen reports in her 2021 Journal of Urban
+Economics study, despite the difference in city. Dallas recovers a
+smaller per-$\sigma$ effect of $+0.048$ with confidence interval
+$[+0.020, +0.098]$. The remaining ten markets return point estimates
+indistinguishable from zero at the $95\%$ level, with confidence
+intervals that span both signs and central tendencies clustered near
+zero. Atlanta itself, the market on which Shen's identification was
+originally established, returns a per-$\sigma$ effect of $-0.006$
+with confidence interval $[-0.061, +0.147]$, consistent with the wide
+confidence band one would expect at our sample size relative to her
+$N \approx 25{,}000$.
+
+Three readings of this pattern are worth distinguishing. The first
+attributes the cross-city heterogeneity to power. Our deduplicated
+corpus contains 285 to 334 listings per market, and the power
+calculation in the rightmost column of Table~\ref{tab:shen-12city}
+shows that against Shen's published Atlanta point estimate of
+approximately $+0.05$ per $\sigma$ our per-city panel has power around
+$6.7\%$, well below the minimum-detectable-effect threshold of any
+conventional power calculation. Under this reading the absence of
+significance in ten cities is not evidence against a true Shen-Ross
+effect, only evidence that our panel does not have the sample size
+to detect one.
+
+The second reading attributes the cross-city heterogeneity to genuine
+between-market variation in the operative residual axis. Section
+\ref{sec:meta-regression-12} addresses this directly with a
+mixed-effects meta-regression that adjusts for within-city sampling
+variance and asks whether covariates of the metropolitan market
+structure can explain the dispersion of our twelve per-market
+estimates. The single moderator that survives the Knapp-Hartung
+small-sample adjustment is the renter share of the housing stock,
+with coefficient $+0.026$ per percentage point of renter share at
+$p = 0.008$ and a Benjamini-Hochberg false-discovery $q$-value of
+$0.067$. This is direct evidence that the Shen-Ross uniqueness effect
+is stronger in markets where a larger share of housing transactions
+involves prospective tenants who lack the deep neighborhood
+familiarity that long-term owner-occupiers possess.
+
+The third reading combines the first two. Markets with high renter
+shares have a true effect large enough that our per-city panel
+detects it (San Francisco at $14.0\%$ per $\sigma$ in dollar terms,
+Dallas at $4.9\%$). Markets with lower renter shares have a true
+effect smaller than the minimum we can detect at our sample size, and
+our nulls there are uninformative. We favor this reading as the most
+parsimonious of the three, and we develop it in
+Section~\ref{sec:meta-regression-12}.
+
+\paragraph{Dollarization.} Converting the per-$\sigma$ point estimates
+to per-swap dollar amounts at the median sale price in each market,
+the Shen-Ross channel implies that a one-standard-deviation increase
+in listing uniqueness corresponds to a median price difference of
+$\$156{,}926$ in San Francisco, $\$20{,}720$ in Dallas, and $\$15{,}007$
+in Seattle. The median-price normalization compresses the
+substantively different impacts these effects would have on a buyer:
+the Seattle figure represents $1.9\%$ of median price, the San
+Francisco figure $14.0\%$, and the Dallas figure $4.9\%$.

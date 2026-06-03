@@ -1,0 +1,95 @@
+% §6.7 Cross-method orthogonality between Shen, Baur, and counterfactual.
+% Numbers locked against results/replications/cross_method_concordance.csv.
+% Spearman and sign-agreement computed on the per-city point estimates.
+
+\subsection{Cross-method orthogonality}
+\label{sec:cross-method-12}
+
+Sections~\ref{sec:shen-12city} and \ref{sec:baur-12city} each identify
+a different small subset of metropolitan markets in which a
+text-on-price effect can be detected at conventional significance.
+The natural question is whether the two channels agree on which
+markets have an effect, or whether they identify substantively
+different aspects of listing language. We answer this question by
+computing per-market rank and sign correlations between the
+Shen-Ross uniqueness DML estimates and the Baur PC1 DML estimates,
+and we add the counterfactual rewriting total effect from
+Section~\ref{sec:counterfactual-12} as a third axis.
+
+\paragraph{Pairwise Spearman correlations.}
+Table~\ref{tab:cross-method-12} reports the per-market point
+estimates for the three channels. Across the twelve markets in our
+panel, the Spearman rank correlation between the Shen-Ross point
+estimate and the Baur PC1 point estimate is $+0.15$ ($p = 0.65$),
+indistinguishable from zero. The Spearman correlation between the
+Shen-Ross estimate and the counterfactual total effect is $-0.07$
+($p = 0.83$), also indistinguishable from zero. The correlation
+between the Baur PC1 estimate and the counterfactual total effect
+is $-0.33$ ($p = 0.30$), the largest in absolute magnitude and
+negative in sign. None of the three pairwise correlations
+approaches statistical significance, and the negative sign of the
+Baur-counterfactual correlation rules out the possibility that the
+three channels are identifying a common latent text-on-price quantity
+with positive loadings.
+
+\paragraph{Sign agreement.} The three methods agree on a single
+common sign of the per-market point estimate in $5$ of the $12$
+markets. Pairwise, Shen and Baur agree on sign in $9$ of $12$
+markets, Shen and the counterfactual in $5$ of $12$, and Baur and
+the counterfactual in $4$ of $12$. The Shen-Baur sign agreement is
+driven largely by the eight cities in which both estimates are near
+zero and share the noise sign; among the four markets where Baur
+identifies an effect at the $95\%$ level (New York, Philadelphia,
+Denver, Atlanta), only New York has a matching positive Shen
+sign.
+
+\paragraph{Substantive interpretation.} Three readings of the
+cross-method discordance are worth distinguishing. The first
+attributes the discordance to genuinely orthogonal channels.
+Listing uniqueness in the Shen-Ross sense, leading-component
+position in the BERT representation, and counterfactual
+out-of-distribution rewriting are three different operationalizations
+of "language signal", and there is no a priori reason any two should
+identify the same causal channel. Under this reading the three
+methods are complementary tools that each isolate a different aspect
+of the text-on-price relationship, and the empirical fact that
+their cross-correlations are near zero is informative about the
+multi-dimensional structure of language as a treatment.
+
+The second reading attributes the discordance to model
+misspecification. The Shen-Ross channel is essentially a one-
+dimensional summary of the listing's language; the Baur PC1 channel
+is essentially a one-dimensional summary of a $768$-dimensional
+encoder; the counterfactual channel measures an intervention that
+the rewriting model may not execute perfectly. The estimands these
+channels target may all be the same underlying causal quantity but
+the estimators applied to our finite sample produce different
+point estimates because of finite-sample noise and method-specific
+specification error. Under this reading the cross-method discordance
+is evidence that the variance of language-as-treatment estimation
+exceeds the bias of any one method, and the right response is to
+deploy all three jointly and report the union or intersection of
+identified markets as the conservative or aggressive answer.
+
+The third reading is intermediate. The three channels probably
+do not all target the same causal quantity, but the overlap is
+positive: $5$ of the $12$ markets are identified at the $95\%$ level
+by at least two of the three methods, with no market identified by
+all three. San Francisco and Dallas are identified by Shen and the
+counterfactual; New York, Philadelphia, and Denver are identified by
+Baur and the counterfactual; Atlanta is identified by Baur alone and
+by neither Shen nor the counterfactual. The counterfactual channel
+sits between the two embedding-based channels in coverage breadth,
+identifying an effect in $11$ of the $12$ markets at the $95\%$
+level, but with effects of small magnitude in eight of those markets.
+The pattern is consistent with the counterfactual being a noisy
+high-coverage detector and the two embedding-based channels being
+sharp low-coverage detectors of substantively different aspects of
+listing language.
+
+We favor the third reading for the JBES revision because it is the
+most parsimonious of the three and because it preserves the
+substantive finding that text-on-price effects are real but
+heterogeneous across metropolitan markets, while leaving open the
+question of which method is preferred when an analyst can pick only
+one.

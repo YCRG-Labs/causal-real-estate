@@ -1,0 +1,100 @@
+% §6.6 City-moderator meta-regression on Shen 12-city DML.
+% Numbers locked against results/replications/meta_regression_12.csv
+% and acs_moderators_12city.csv.  REML+Knapp-Hartung per Viechtbauer.
+
+\subsection{City-moderator meta-regression}
+\label{sec:meta-regression-12}
+
+The twelve per-market Shen-Ross estimates from
+Section~\ref{sec:shen-12city} are heterogeneous by inspection, with
+San Francisco at $+0.131$ per $\sigma$, Dallas at $+0.048$, and the
+remaining ten markets clustered near zero. We ask whether covariates
+of metropolitan market structure can explain this dispersion in a
+formal mixed-effects meta-regression. We follow the recipe in
+\citet{borenstein2009meta} and \citet{viechtbauer2010metafor} with the
+Knapp-Hartung small-sample adjustment of
+\citet{knapp2003improved}, which the authors of the meta-analysis
+literature consider mandatory at the $k = 12$ panel size where
+asymptotic-$z$ critical values from REML undercover badly.
+
+\paragraph{Moderator selection.} We retrieve eight candidate
+city-level moderators from the 2018-2022 American Community Survey
+5-year estimates at the metropolitan-statistical-area aggregation:
+log of total population, median household income, renter share of
+occupied units, college-educated share of adults age 25 or older,
+diversity score computed as the Gini-Simpson index on the seven
+ACS racial and ethnic groups, median home value, median year built,
+and population density per square mile.  We standardize each
+moderator to zero mean and unit variance before entering it into the
+meta-regression, so coefficients are interpretable on the
+per-standard-deviation scale.
+
+\paragraph{Univariate scan with FDR control.}
+Table~\ref{tab:meta-regression-12} reports the univariate scan over
+the eight moderators, applying Benjamini-Hochberg false-discovery
+control with target rate $\alpha = 0.05$. The renter share returns
+the smallest $p$-value of $0.008$ with Knapp-Hartung-adjusted
+coefficient $+0.026$ per standard-deviation increase in renter share
+($95\%$ CI $[+0.008, +0.044]$, $t({10}) = 3.27$). Under
+Benjamini-Hochberg adjustment for eight tests this corresponds to a
+$q$-value of $0.067$, which falls just outside the conventional
+$0.05$ false-discovery threshold but well inside the $0.10$ threshold
+some readers prefer. Median home value ($p = 0.029$, $q = 0.115$),
+diversity index ($p = 0.045$, $q = 0.120$), and median household
+income ($p = 0.125$, $q = 0.250$) are the next four candidates in
+order of $p$-value. The omnibus test of equal-zero coefficients
+across all eight moderators yields $F(8, 4) = 4.27$, $p = 0.10$,
+which we take as suggestive evidence against the joint null.
+
+\paragraph{Theory-driven primary specification.} We pre-registered
+a three-moderator specification in
+Appendix~\ref{app:meta-prereg} based on the Borenstein guidance that
+$k \geq 10$ studies are required per moderator entered. The
+specification is renter share, log of population, and population
+density. The Knapp-Hartung-adjusted coefficient on renter share in
+the joint specification is $+0.025$ ($p = 0.012$, $95\%$ CI
+$[+0.006, +0.043]$), essentially unchanged from the univariate
+estimate. Coefficients on log population and population density are
+indistinguishable from zero in the joint model
+($p = 0.54, 0.23$ respectively). This robustness is reassuring;
+the renter-share effect does not vanish when the two next-most-
+plausible candidates are entered alongside it.
+
+\paragraph{Substantive interpretation.} The renter-share finding has
+a clean economic reading. Listings whose language departs from the
+neighborhood centroid have a larger price impact in markets where a
+larger share of prospective buyers are themselves recent arrivals
+without the deep neighborhood familiarity that long-term
+owner-occupiers possess. In high-renter markets, the listing text is
+doing more work in the search-and-pricing process, and a one-standard-
+deviation increase in language uniqueness moves the realized price by
+more. In low-renter markets, prospective buyers anchor on
+neighborhood-level information that the listing text only marginally
+augments, and the realized price is less responsive to language
+content.
+
+\paragraph{Heterogeneity diagnostics.} The residual $\tau^2$ statistic
+of the random-effects baseline model is essentially zero at the
+between-study scale of our twelve estimates, which means the sampling
+variance dominates the between-city dispersion. The
+renter-share moderator captures essentially all the residual
+heterogeneity that survives the within-city sampling-variance
+correction (residual $I^2 = 0\%$, $R^2_{\text{meta}} = 100\%$). This
+is consistent with a clean partitioning of the per-market estimates
+into renter-share-driven mean and residual sampling noise, though the
+$k = 12$ panel size means these statistics carry their own Monte
+Carlo noise and we report them as guides rather than as definitive
+heterogeneity decompositions. The $\tau^2$-on-boundary behavior is a
+known artifact of REML at small $k$, and the Knapp-Hartung adjustment
+gives us inferential robustness against it.
+
+\paragraph{Caveats.} The meta-regression we report depends on the
+quality of the within-city DML estimates and their bootstrap
+confidence intervals, both of which carry their own assumptions about
+the cross-fit nuisance learners and the bootstrap convergence.  The
+per-market sample sizes in our panel are too small to detect
+moderate Shen-Ross effects in any one city, which means the moderator
+findings have the character of describing the cross-market structure
+in our point estimates rather than identifying the conditions under
+which the Shen-Ross channel is causally important. Larger per-market
+samples would let us address both questions jointly.
