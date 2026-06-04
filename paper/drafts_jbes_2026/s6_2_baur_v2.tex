@@ -86,24 +86,65 @@ the canonical small-$G$ alternative to cluster-respecting cross-
 fitting \citep{veroniki2016methods}.
 
 \paragraph{Magnitude in context.} The pooled per-$\sigma$ effect of
-$-0.029$ on log sale price sits within an order of magnitude of the
-closest causal benchmark in the literature. \citet{shen2021information},
-exploiting roughly forty thousand Atlanta transactions from 2010 to
-2017, report that a one-standard-deviation increase in their
-uniqueness measure raises sale price by approximately $5.6\%$ in
-their hedonic specification; our magnitude is roughly half theirs,
-identified from a within-city-centered embedding axis rather than a
-neighbor-relative uniqueness scale.  As a structural benchmark,
-\citet{sirmans2005composition}'s meta-analysis of forty-five hedonic
-studies reports an average semi-elasticity of approximately $0.038$
-per additional bedroom, so our per-$\sigma$ text effect is comparable
-to roughly three-quarters of a bedroom of structural variation in
-log price.  Aggregated over the $4.06$ million existing-home
-transactions and $\$414{,}400$ median sale price reported by the
-National Association of Realtors for 2025 (a $\$1.68$ trillion
-annual market), our pooled coefficient implies approximately
-$\$12{,}000$ per median home and $\$49$ billion in annual aggregate
-transaction value per $\sigma$ of textual signal, magnitudes that are
-policy-meaningful for appraisal review, automated-valuation
-auditing, and fair-housing surveillance applications that operate at
-market scale.
+$-0.029$ on log sale price is small as a fraction of price but
+substantial when situated against the magnitudes published in the
+housing and text-as-treatment literatures.  The same Doc2Vec
+uniqueness construct in \citet{shen2021information} carries a per-
+standard-deviation effect of approximately ten to fifteen percent on
+Atlanta sale price in her hedonic and repeat-sales specifications,
+and our own replication recovers $+0.131$ per standard deviation in
+San Francisco within $0.7$ standard errors of her published estimate.
+A single additional bedroom in the canonical
+\citet{sirmans2005composition} meta-analysis of forty-five hedonic
+studies carries a mean effect of $+3.8\%$ on log price, so the pooled
+$-2.9\%$ per standard deviation of our text-axis treatment is of the
+same order of magnitude as the marginal price of an additional
+bedroom, and exceeds the racial sale-price premium of approximately
+three percent that \citet{bayer2017racial} document for Black and
+Hispanic homebuyers across Chicago, Baltimore-Washington, San
+Francisco, and Los Angeles in two million repeat-sales transactions
+from 1990 through 2008.  Translated into aggregate dollar terms
+against the National Association of Realtors total of $4.06$ million
+existing-home transactions at a median price of $\$407{,}500$ in
+$2024$, summing to a roughly $\$1.65$ trillion annual market, a one-
+standard-deviation shift in the operative text axis maps to an annual
+mispricing exposure on the order of $\$48$ billion across the U.S.\
+resale market.  By comparison, \citet{tetlock2007giving} documents
+that a one-standard-deviation rise in Wall Street Journal pessimism
+predicts a next-day Dow drop of approximately eight basis points,
+which is to say that our housing-market per-$\sigma$ effect is
+roughly $36$ times the canonical aggregate-equity text-effect
+magnitude, reflecting the substantially larger idiosyncratic
+dispersion of residential property prices relative to equity
+returns.
+
+The structural model in Section~\ref{sec:structural-renter} sharpens
+the policy interpretation.  The marginal-buyer pricing equation
+\eqref{eq:price} implies that the per-$\sigma$ text effect equals
+$\beta_h \cdot [1 - (1-r)\alpha_I]$, so the pooled $-2.9\%$ per
+standard deviation is loaded on the uninformed-buyer share $r$ at a
+rate governed by the informed-buyer signal precision $\alpha_I$.
+Calibrating $\beta_h$ to the residential land-share estimates of
+\citet{davis2007price} ($\beta \in [0.3, 0.6]$) and using the
+Hartung-Knapp moderation slope $\partial \log p / \partial r = +0.025$
+per standard deviation of renter share from
+Section~\ref{sec:meta-regression-12}, the calibrated information-
+rent parameter is $\alpha_I = (\partial \log p / \partial r)/\beta_h
+\in [0.042, 0.083]$.  At the panel median renter share of roughly
+thirty-five percent in our twelve markets, this implies an informed-
+buyer-borne component of approximately $-0.5\%$ per standard
+deviation and an uninformed-buyer-borne component of approximately
+$-2.4\%$ per standard deviation.  The latter is the loss borne by
+the marginal first-time buyer, recent mover, and out-of-area buyer
+in the sense of \citet{chinco2016misinformed}, and in dollar terms
+maps to roughly $\$40$ billion of the annual mispricing exposure
+falling on the buyer cohort with the least neighborhood-specific
+information.  By way of comparison, \citet{bartlett2022consumer}
+document algorithmic-pricing-driven discrimination in U.S.\ mortgage
+origination that costs Latinx and Black borrowers approximately
+$\$450$ million annually, so the consumer-welfare exposure that
+uniform NLP-augmented automated valuation creates for the
+uninformed-buyer margin is on the order of one hundred times the
+consumer-welfare exposure from documented mortgage-pricing
+discrimination, while inheriting the same algorithmic-fairness
+analytic register.

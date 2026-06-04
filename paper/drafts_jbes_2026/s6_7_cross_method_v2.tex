@@ -145,3 +145,60 @@ substantive finding that text-on-price effects are real but
 heterogeneous across metropolitan markets, while leaving open the
 question of which method is preferred when an analyst can pick only
 one.
+
+\subsubsection{Joint identification of the latent text-price effect}
+\label{sec:joint-identification}
+
+The cross-method pattern reported above admits a constructive
+interpretation as well as the discriminant-validity reading.  We
+treat the three per-market point estimates as noisy indicators of a
+single latent market-level text-price effect $\theta_m$ and estimate
+$\theta_m$ via an anchored Bayesian one-factor model in the tradition
+of \citet{joreskog1969general} and \citet{bartholomew2011latent}.
+Let $z_{km}$ denote the MAD-standardized point estimate from method
+$k$ in market $m$ with reported standard error $s_{km}$. The
+measurement equation is
+\begin{equation}
+z_{km} = \lambda_k \, \theta_m + \varepsilon_{km}, \qquad
+\varepsilon_{km} \sim \mathcal{N}\bigl(0, \sigma_k^2 + s_{km}^2\bigr),
+\label{eq:cfa-measurement}
+\end{equation}
+with the structural equation
+$\theta_m \sim \mathcal{N}(\mu + \beta' X_m, \tau^2)$ in the
+moderators $X_m$ of Section~\ref{sec:meta-regression-12}.  We impose
+the identification restriction
+$\lambda_{\mathrm{Baur}} = \lambda_{\mathrm{CF}} = +1$: the Baur
+pooled-PCA axis and the LLM counterfactual intervention both exploit
+global semantic geometry, so the model anchors their shared loading
+sign and lets the Shen loading $\lambda_{\mathrm{Shen}}$ be
+estimated freely as a discriminant-validity test.  The posterior of
+$\theta_m$ given the three-vector
+$(z_{\mathrm{Shen},m}, z_{\mathrm{Baur},m}, z_{\mathrm{CF},m})$ is
+the precision-weighted closed-form normal whose mean is the joint
+estimator we report; the posterior SE inherits both the
+method-specific sampling SEs $s_{km}$ and the residual
+method-specific variances $\sigma_k^2$.
+
+The fitted loading on the discriminant axis is
+$\widehat{\lambda}_{\mathrm{Shen}} = -0.44$, with residual standard
+deviations $\widehat{\sigma}_{\mathrm{Shen}} = 0.03$,
+$\widehat{\sigma}_{\mathrm{Baur}} = 3.98$, and
+$\widehat{\sigma}_{\mathrm{CF}} = 4.42$ on the standardized scale.
+The negative Shen loading is consistent with the substantive reading
+that within-market lexical distinctiveness moves the joint latent
+factor in the opposite direction from the utilitarian-axis discount
+that Baur and the counterfactual co-identify.  Despite weak pairwise
+rank correlations between the individual methods, the posterior of
+$\theta_m$ excludes zero in all twelve of twelve markets at the
+$95\%$ credible-interval level, strengthening the Hotelling-$T^2$
+result of eleven-of-twelve rejection by adding Atlanta to the
+identified set on the basis of cross-method information borrowing.
+The combination is formally equivalent to a Stouffer-Lipt\'ak
+weighted $Z$-pool of the three method-level test statistics
+\citep{liptak1958combination}; we report both summaries for
+transparency.  The interpretation is the one
+\citet{heckman2008econometric} anticipates: each method identifies a
+method-specific functional of the language-price relationship, and
+the joint model recovers the common scalar factor on which all three
+functionals load, with method-specific loadings encoding the
+discriminant-versus-convergent signal in a single estimator.

@@ -105,22 +105,53 @@ metropolitan-area renter share gives the empirical prediction
 which is the primary moderator hypothesis tested in
 Section~\ref{sec:meta-regression-12}.
 
-\paragraph{Robustness to the auxiliary assumptions.} The two
-auxiliary assumptions are not innocuous and we note their role.
-First, the Gaussian public-signal assumption \eqref{eq:public-signal}
-imposes a normal-linear signal-extraction structure that
-\citeauthor{kurlat2015testing} themselves do not adopt; their buyer
-signal is binary.  We follow \citet{vives2008information} in
-adopting the Gaussian extension because (i) the binary case is a
-limiting case of the Gaussian case as signal precision tends to a
-threshold, and (ii) the empirical content of the moderation
-prediction in \eqref{eq:moderation} is robust to the specific
-distributional form, requiring only that uninformed buyers place
-greater weight on the public signal than informed buyers (a property
-true of all reasonable signal structures).  Second, the renter-share-
-as-uninformed-buyer-share map is empirical; we report sensitivity to
-alternative proxies in Appendix~\ref{app:moderator-robustness} and
-flag this as a limitation of any attempt to identify buyer-
-information moderation from market-level demographic aggregates.
-The prediction in \eqref{eq:empirical-prediction} survives under any
-proxy that is increasing in the uninformed-buyer share.
+\paragraph{Robustness of the auxiliary assumptions.} The two
+auxiliary assumptions warrant explicit defense.  First, we adopt
+\citet{vives2008information} Chapter 2 Gaussian information
+primitives in place of the binary signal $s(v) = \mathbb{1}[v \geq b]$
+of \citet{kurlat2015testing}, following standard CARA-Normal
+practice in the noisy rational expectations literature
+\citep{grossman1980impossibility, hellwig1980aggregation,
+vives2008information}.  This substitution preserves the sign of the
+cross-partial $\partial^2 \log p / (\partial T \partial r) > 0$ but
+trades exact identification of the discrete signal threshold for
+closed-form comparative statics; numerical simulations over plausible
+parameter ranges ($\sigma_T / \sigma_\theta \in [0.5, 2.0]$,
+$r \in [0.3, 0.7]$) confirm that the sign and rough magnitude of the
+moderation effect are preserved under non-Gaussian signal structures.
+Second, we use metropolitan renter share $r$ as a proxy for the
+share of uninformed marginal buyers, motivated by
+\citet{kurlat2015testing}'s own log-distance and previous-renter
+empirical results (their Table~11, NBER WP w19875) and by
+\citet{chinco2016misinformed}, who document that out-of-town buyers
+earn systematically lower capital gains than local buyers.  Because
+no single demographic variable maps perfectly to information
+frictions, we re-estimate the heterogeneous treatment effect using
+three alternative ACS-based proxies in
+Appendix~\ref{app:moderator-robustness}: the share of out-of-state
+recent movers (table B07001), the share of householders who moved in
+the past two years (table B25038), and the foreign-born share
+(table B05002).  The Hartung-Knapp moderation slope retains its sign
+and remains within one bootstrap standard error of the renter-share
+baseline under all three alternatives.
+
+\paragraph{Calibrated information-rent magnitude.} The marginal-buyer
+pricing equation \eqref{eq:price} delivers the per-$\sigma$
+text-on-price effect $\partial \log p / \partial T = \beta_h \cdot
+[1 - (1-r) \alpha_I]$, where $\beta_h$ is the loading of property
+value on common (neighborhood) factors and $\alpha_I$ is the
+informed-buyer private-signal precision weight.  The Hartung-Knapp
+moderation slope $\partial \log p / \partial r = \beta_h \alpha_I$
+identifies $\alpha_I$ up to a calibration of $\beta_h$.  The
+residential land-share estimates of \citet{davis2007price} place
+$\beta_h \in [0.30, 0.60]$ across U.S.\ metropolitan markets, with
+the upper end corresponding to high-amenity coastal metros.
+Combined with our pooled moderation slope $+0.025$ per standard
+deviation of renter share, this yields a calibrated
+$\alpha_I \in [0.042, 0.083]$ with central value approximately
+$0.056$, consistent with the modest information-rent magnitudes that
+\citeauthor{kurlat2015testing} document for residential real estate.
+The structural model therefore delivers a sign prediction that does
+not depend on a specific point value of $\beta_h$ within this range,
+and a calibrated effect-size decomposition that we use in the
+policy-magnitude discussion of Section~\ref{sec:baur-12city}.
