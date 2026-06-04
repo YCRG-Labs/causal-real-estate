@@ -37,6 +37,19 @@ sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
 from city_endpoints import CITIES, CityConfig, list_new  # noqa: E402
 
+# Patch each CityConfig with its zip_codes shards from the side-car JSON.
+# This is the load-bearing change that lets `fetch_city_index` enter
+# ZIP-shard mode and bypass the legacy 350-listing search cap.
+import dataclasses as _dataclasses  # noqa: E402
+_zip_shards_path = Path(__file__).parent / "zip_shards.json"
+if _zip_shards_path.exists():
+    _zip_shards = json.loads(_zip_shards_path.read_text())
+    for _slug, _cfg in list(CITIES.items()):
+        if _slug in _zip_shards and not _cfg.zip_codes:
+            CITIES[_slug] = _dataclasses.replace(
+                _cfg, zip_codes=tuple(_zip_shards[_slug]),
+            )
+
 RAW_DIR = REPO_ROOT / "data" / "raw" / "redfin"
 PROCESSED_DIR = REPO_ROOT / "data" / "processed"
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
@@ -125,30 +138,71 @@ def html_sha256(html: str) -> str:
     return hashlib.sha256(html.encode("utf-8", errors="ignore")).hexdigest()
 
 
-async def fetch_city_index(client, cfg: CityConfig, max_pages: int = 30) -> list[str]:
+async def _fetch_index_pages(client, base_url: str, slug: str, max_pages: int = 9,
+                              tag: str = "") -> list[str]:
+    """Drain up to max_pages of a Redfin search URL.  Redfin caps any
+    single search at 9 pages × ~40 listings ≈ 350 unique URLs.
+    """
     urls: list[str] = []
-    expected_state = cfg.redfin_state_slug
     for page in range(1, max_pages + 1):
-        index_url = f"{cfg.redfin_url}/page-{page}" if page > 1 else cfg.redfin_url
+        index_url = f"{base_url}/page-{page}" if page > 1 else base_url
         try:
             r = await client.get(index_url)
         except Exception as e:
-            print(f"  [{cfg.slug}] index page {page} error: {e}", file=sys.stderr)
+            print(f"  [{slug}{tag}] page {page} error: {e}", file=sys.stderr)
             break
         if r.status_code != 200:
-            print(f"  [{cfg.slug}] index page {page} status {r.status_code}, stopping", file=sys.stderr)
             break
-        if page == 1:
-            final_url = str(r.url)
-            if f"/{expected_state}/" not in final_url:
-                print(f"  [{cfg.slug}] WARNING: redirected to {final_url}, expected state {expected_state}; aborting", file=sys.stderr)
-                return []
         page_urls = re.findall(r'href="(/[A-Z]{2}/[^"]+/home/\d+)"', r.text)
         if not page_urls:
             break
         urls.extend(f"https://www.redfin.com{u}" for u in page_urls)
         await asyncio.sleep(PER_HOST_DELAY_S)
-    return list(dict.fromkeys(urls))
+    return urls
+
+
+async def fetch_city_index(client, cfg: CityConfig, max_pages: int = 9,
+                            target_n: int = 0) -> list[str]:
+    """Discover Redfin listing URLs for `cfg`.
+
+    Legacy mode (cfg.zip_codes empty): scrape the city search endpoint
+    up to max_pages (9 by default, matching Redfin's pagination cap).
+    Yields the ~350-listing-per-city ceiling.
+
+    ZIP-shard mode (cfg.zip_codes non-empty): iterate per-ZIP search
+    endpoints `https://www.redfin.com/zipcode/{zip}` and union the
+    deduplicated URLs.  Stops early once `target_n` unique URLs are
+    discovered (target_n=0 means exhaust all ZIPs).  Bypasses the
+    350-cap by sharding the search space; typical per-ZIP yield is
+    30-150 listings, so a 30-ZIP city reaches 1,500-4,500 unique
+    URLs before any single ZIP hits its own page cap.
+    """
+    expected_state = cfg.redfin_state_slug
+    if not cfg.zip_codes:
+        urls = await _fetch_index_pages(client, cfg.redfin_url, cfg.slug,
+                                          max_pages=max_pages)
+        if urls and f"/{expected_state}/" not in urls[0]:
+            print(f"  [{cfg.slug}] WARNING: first URL state mismatch", file=sys.stderr)
+            return []
+        return list(dict.fromkeys(urls))
+
+    seen: set[str] = set()
+    out: list[str] = []
+    for zip5 in cfg.zip_codes:
+        if target_n and len(seen) >= target_n:
+            break
+        base = f"https://www.redfin.com/zipcode/{zip5}"
+        zip_urls = await _fetch_index_pages(client, base, cfg.slug,
+                                              max_pages=max_pages,
+                                              tag=f"/{zip5}")
+        new = 0
+        for u in zip_urls:
+            if u not in seen:
+                seen.add(u); out.append(u); new += 1
+        if new:
+            print(f"  [{cfg.slug}/{zip5}] +{new} new (total {len(seen)})",
+                  file=sys.stderr)
+    return out
 
 
 def _type_tokens(item: dict) -> set[str]:
@@ -336,7 +390,8 @@ async def scrape_city(cfg: CityConfig, resume: bool, max_listings: int) -> int:
         )
     async with client_ctx as client:
         print(f"[{cfg.slug}] discovering listing URLs (backend={_BACKEND})...")
-        listing_urls = await fetch_city_index(client, cfg)
+        # target_n=max_listings means "stop early at this count" when in ZIP-shard mode.
+        listing_urls = await fetch_city_index(client, cfg, target_n=max_listings)
         if max_listings > 0:
             listing_urls = listing_urls[:max_listings]
         new_urls = [u for u in listing_urls if u not in seen]
@@ -429,7 +484,11 @@ def reparse_all(cities: list[CityConfig]) -> dict[str, int]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Async Redfin scraper for the 12-city expansion")
     parser.add_argument("--cities", type=str, default="new9", help="comma-separated slugs or 'new9' or 'all'")
-    parser.add_argument("--max-listings", type=int, default=350, help="cap per city; 0 for no cap")
+    parser.add_argument("--max-listings", type=int, default=0,
+                         help="cap per city (0 = no cap; in ZIP-shard mode "
+                              "this is the early-stop target). Default 0 "
+                              "now that fetch_city_index supports per-ZIP "
+                              "discovery for bypassing the legacy 350-cap.")
     parser.add_argument("--no-resume", action="store_true")
     parser.add_argument("--reparse", action="store_true", help="re-parse cached HTML without any network fetch")
     args = parser.parse_args()

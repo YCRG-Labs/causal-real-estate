@@ -67,6 +67,13 @@ class CityConfig:
     status: str                       # "existing", "ready", "ready_with_friction", "ready_with_caveat"
     tier: str                         # mechanism prediction: "pc1_predicted", "shen_predicted", "null_predicted"
     notes: list[str] = field(default_factory=list)
+    # ZIP shards for the per-zipcode discovery loop in
+    # scrape_redfin_async.fetch_city_index when expanding past the
+    # 350-listing-per-city Redfin search cap.  Populated lazily from
+    # the already-scraped parquet's `zip` column via the helper script
+    # `extract_zip_shards.py`; an empty tuple falls back to the legacy
+    # /city/.../ search endpoint with the 350-cap.
+    zip_codes: tuple[str, ...] = field(default_factory=tuple)
 
     @property
     def redfin_url(self) -> str:
