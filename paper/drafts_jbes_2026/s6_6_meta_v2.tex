@@ -104,14 +104,30 @@ Section~\ref{sec:baur-12city} finding that the pooled-PCA axis
 carries a uniform modest-magnitude effect across markets without
 substantial heterogeneity in magnitude.
 
+\paragraph{Federal-data robustness check.} As a transparency-driven
+robustness check against unobserved-moderator concerns, we augment
+the eight ACS demographic moderators with three additional metro-
+level federal-data covariates obtained via the St.~Louis Federal
+Reserve Bank's FRED API: BLS Local Area Unemployment Statistics
+unemployment rate, FHFA All-Transactions House Price Index year-
+over-year appreciation, and BEA per-capita personal income.  None
+of the three federal additions returns a Hartung-Knapp $t$-statistic
+distinguishable from zero at conventional significance (raw two-
+sided $p$-values $0.915$, $0.325$, $0.074$ respectively), and none
+survives Benjamini-Hochberg false-discovery correction across the
+expanded eleven-test family.  The primary moderator finding (renter
+share, raw two-sided $p = 0.009$) is unchanged; the augmented panel
+does not surface any hidden moderator missed by the original ACS
+specification.
+
 \paragraph{Pre-registration disclosure.} The primary moderator
 hypothesis (renter share on the Shen channel) is motivated by the
 \citet{stigler1961economics} / \citet{genesove1997equity} / \citet{anenberg2020housing}
 housing-search information-frictions literature and was identified
 as the theoretical primary candidate before estimation; the seven
-secondary moderators were included as background ACS demographic
-controls for transparency and are explicitly treated as exploratory
-under FDR adjustment.  We do not invoke a one-sided directional
+secondary ACS moderators and the three federal-data moderators were
+included as background controls for transparency and are explicitly
+treated as exploratory under FDR adjustment.  We do not invoke a one-sided directional
 alternative for the primary moderator: \citet{shen2021information}
 analyses a single metropolitan market (Atlanta) and does not predict
 cross-market moderation, and we therefore use the conservative two-

@@ -257,7 +257,9 @@ def main():
 
     mods = ["log_population", "median_hh_income", "pct_renter",
             "pct_college", "diversity_gini_simpson", "median_home_value",
-            "median_year_built", "pop_density_per_sqmi"]
+            "median_year_built", "pop_density_per_sqmi",
+            # Federal-data moderators (BEA/BLS/FHFA via FRED, added 2026-06-03)
+            "fred_unemp_rate", "fred_hpi_yoy_pct", "fred_pcpi"]
     mods = [m for m in mods if m in df.columns]
     Z = df[mods].apply(lambda s: (s - s.mean()) / (s.std(ddof=0) or 1.0))
 
