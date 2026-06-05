@@ -37,6 +37,12 @@ def convert_one(city: str) -> int:
     if "description" not in df.columns:
         print(f"{city}: no description column, skipping", file=sys.stderr)
         return 0
+    # Redfin ships ZIP+4 strings like "11355-4788"; pgeocode and the
+    # downstream geocoder treat ZIP as numeric, so we collapse to the
+    # 5-digit base ZIP. Anything that already is 5-digit passes through.
+    if "zip" in df.columns:
+        df["zip"] = (df["zip"].astype(str)
+                              .str.extract(r"^(\d{5})", expand=False))
     keep = df["description"].notna() & (df["description"].str.len() > 20)
     df = df.loc[keep].copy()
     DST_DIR.mkdir(parents=True, exist_ok=True)
