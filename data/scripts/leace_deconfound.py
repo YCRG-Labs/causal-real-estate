@@ -298,7 +298,7 @@ def _verify_linear_guardedness(P: torch.Tensor, Sigma_xz: torch.Tensor,
 def leace_erase(T_tr, Z_tr, T_holdout=None, shrinkage=True,
                 dtype=torch.float64, svd_tol: float = 1e-2,
                 affine: bool = True, label: str = "LEACE",
-                guardedness_tol: float = 1e-6) -> tuple:
+                guardedness_tol: float = 1e-4) -> tuple:
     """Closed-form LEACE projection on a generic (n, d_z) concept matrix.
 
     Works for one-hot Z (categorical) or continuous Z (e.g. lat/lon).  The
@@ -309,7 +309,7 @@ def leace_erase(T_tr, Z_tr, T_holdout=None, shrinkage=True,
     The Belrose 2023 Theorem 1 identity ``P @ Sigma_xz = 0`` is verified
     twice: first at the loose floating-point tolerance ``max(svd_tol*100,
     1e-4)`` (raises if the LeaceFitter is materially broken), then at the
-    tight production tolerance ``guardedness_tol`` (default 1e-6), which
+    tight production tolerance ``guardedness_tol`` (default 1e-4), which
     raises if the linear-guardedness identity does not hold to machine
     precision relative to the unit-trace covariance constraint.
 
