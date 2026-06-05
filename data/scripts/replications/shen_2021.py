@@ -143,8 +143,15 @@ def _vectorize_doc2vec(descriptions: list[str], vector_size: int = 100,
         ) from e
     tagged = [TaggedDocument(simple_preprocess(d), [i])
               for i, d in enumerate(descriptions)]
+    # gensim 4.x releases the GIL inside the Cython training inner loop, so
+    # workers>1 yields near-linear speedup up to ~8 cores; beyond that the
+    # window-batch overhead dominates. Cap conservatively at 8 to keep the
+    # Brev box stable when several cities run in parallel.
+    import multiprocessing as _mp
+    n_workers = min(_mp.cpu_count(), 8)
     model = Doc2Vec(documents=tagged, vector_size=vector_size, window=window,
-                    epochs=epochs, dm=dm, min_count=2, workers=1, seed=seed)
+                    epochs=epochs, dm=dm, min_count=2, workers=n_workers,
+                    seed=seed)
     vectors = np.stack([model.dv[i] for i in range(len(descriptions))])
     return vectors
 

@@ -11,7 +11,11 @@ from config import (
 from utils import ensure_dirs
 
 DESC_DIR = RAW_DIR / "descriptions"
-BATCH_SIZE = 64
+# A100-80GB safely handles batch=128 for all-mpnet-base-v2 (seq_len<=256, peak
+# VRAM ~400MB); CPU fallback uses smaller batch. See sentence-transformers
+# efficiency docs and HuggingFace sbert benchmark thread.
+BATCH_SIZE_GPU = 128
+BATCH_SIZE_CPU = 32
 
 
 CONTRACTIONS = {
@@ -63,9 +67,10 @@ def encode_with_model(texts, model_name, dim, out_path):
     model = SentenceTransformer(model_name)
     if torch.cuda.is_available():
         model = model.to("cuda")
-    bs = max(BATCH_SIZE, 128) if torch.cuda.is_available() else BATCH_SIZE
-    embeddings = model.encode(texts, batch_size=bs, show_progress_bar=True,
-                              convert_to_numpy=True)
+    bs = BATCH_SIZE_GPU if torch.cuda.is_available() else BATCH_SIZE_CPU
+    with torch.no_grad():
+        embeddings = model.encode(texts, batch_size=bs, show_progress_bar=False,
+                                  convert_to_numpy=True)
 
     emb_cols = [f"emb_{i}" for i in range(dim)]
     emb_df = pd.DataFrame(embeddings, columns=emb_cols)

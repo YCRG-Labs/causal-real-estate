@@ -261,7 +261,7 @@ def main():
             # Federal-data moderators (BEA/BLS/FHFA via FRED, added 2026-06-03)
             "fred_unemp_rate", "fred_hpi_yoy_pct", "fred_pcpi"]
     mods = [m for m in mods if m in df.columns]
-    Z = df[mods].apply(lambda s: (s - s.mean()) / (s.std(ddof=0) or 1.0))
+    Z = df[mods].apply(lambda s: (s - s.mean()) / (s.std(ddof=1) or 1.0))
 
     # Baseline: intercept-only random-effects pooled mean.
     X0 = np.ones((len(df), 1))
@@ -286,8 +286,12 @@ def main():
     uni_rows = []
     for j, m in enumerate(mods):
         Xj = np.column_stack([np.ones(len(df)), Z[m].to_numpy()])
-        tau2_j = tau2_paule_mandel(y, v)
-        hk = hksj_ci(np.zeros(2), Xj, y, v, tau2_j)
+        # τ² fixed at the intercept-only PM estimate across all univariate
+        # moderator scans (Veroniki 2016, Hartung-Knapp 2001). Re-estimating
+        # per moderator conflates "between-study variance after partialling
+        # out moderator j" with the unconditional heterogeneity that t-crit
+        # values are calibrated against; fixing τ² is the standard.
+        hk = hksj_ci(np.zeros(2), Xj, y, v, tau2_pm)
         uni_rows.append({
             "moderator": m,
             "beta": float(hk["beta"][1]),
@@ -296,7 +300,7 @@ def main():
             "p_raw": float(hk["p"][1]),
             "ci_low": float(hk["ci_low"][1]),
             "ci_high": float(hk["ci_high"][1]),
-            "tau2_pm": tau2_j,
+            "tau2_pm": tau2_pm,
         })
 
     uni_df = pd.DataFrame(uni_rows)

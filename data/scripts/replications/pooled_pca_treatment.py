@@ -92,13 +92,13 @@ def compute_pooled_pca_treatment(
     if n_components == 1:
         out["treatment"] = scores[:, 0]
         out["treatment_z"] = out.groupby("city")["treatment"].transform(
-            lambda s: (s - s.mean()) / (s.std(ddof=0) or 1.0)
+            lambda s: (s - s.mean()) / (s.std(ddof=1) or 1.0)
         )
     else:
         for k in range(n_components):
             out[f"treatment_{k}"] = scores[:, k]
             out[f"treatment_z_{k}"] = out.groupby("city")[f"treatment_{k}"].transform(
-                lambda s: (s - s.mean()) / (s.std(ddof=0) or 1.0)
+                lambda s: (s - s.mean()) / (s.std(ddof=1) or 1.0)
             )
     print(f"\n  explained variance ratio: "
           f"{pca.explained_variance_ratio_.round(4).tolist()}")
