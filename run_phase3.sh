@@ -29,6 +29,17 @@ step() {
 
 log "=== PHASE 3 START ==="
 
+# 0. Adapt the new ZIP-shard listings parquets into the CSV layout
+#    generate_embeddings.py expects (lat_centroid -> latitude, etc.). The
+#    embedder reads data/raw/descriptions/{city}_descriptions.csv and is left
+#    unchanged so the existing geocoding + cleaning code keeps working.
+step parquet_to_csv python3 data/scripts/parquet_to_descriptions.py $C
+
+# 0b. Wipe stale embedding parquets so the next step actually re-encodes
+#     against the new 75K corpus rather than overwriting some files only.
+rm -f data/processed/*_embeddings*.parquet
+log "INFO  cleared stale embedding parquets"
+
 # 1. Re-embed all 12 cities in a single process (positional CLI). 75K listings
 #    at batch=128 on A100-80GB should run in ~30-45 min total.
 step embed_all python3 data/scripts/generate_embeddings.py $C
