@@ -45,7 +45,7 @@ log "INFO  all 12 embedding parquets present"
 # meta-regression, which provides the headline HKSJ CI; IF-SE is
 # documented as the small-G default in §6.2 already.
 for c in $C; do step baur_$c python3 data/scripts/replications/baur_pooled_pca.py --city $c --fast; done
-for c in $C; do step shen_$c python3 data/scripts/replications/shen_2021.py --city $c --doc2vec --fast; done
+for c in $C; do step shen_$c python3 data/scripts/replications/shen_2021.py --city $c --doc2vec --fast --out results/replications/shen_$c.json; done
 for c in $C; do step leace_$c python3 data/scripts/leace_deconfound.py --city $c; done
 step leace_rollup python3 data/scripts/replications/rollup_leace_12.py
 
