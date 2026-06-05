@@ -102,7 +102,11 @@ def geocode_from_zip(df, city):
     import pgeocode
     nomi = pgeocode.Nominatim("us")
 
-    zips = df["zip"].astype(float).astype(int).astype(str).str.zfill(5)
+    # Tolerant ZIP parse: coerce non-numeric to NaN, fill with sentinel that
+    # cannot match any real ZIP centroid, then proceed. Without this, any
+    # stray NaN in df["zip"] crashes the whole encoding for the city.
+    zips_num = pd.to_numeric(df["zip"], errors="coerce")
+    zips = (zips_num.fillna(-1).astype(int).astype(str).str.zfill(5))
     unique_zips = zips.unique()
     zip_lookup = {}
     for z in unique_zips:
