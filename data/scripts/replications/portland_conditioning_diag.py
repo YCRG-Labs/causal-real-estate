@@ -92,6 +92,15 @@ for c in CITIES:
         pc1 = PCA(1, random_state=0).fit_transform(E).ravel()
         t = (pc1 - pc1.mean()) / pc1.std()
 
+        # max-leverage probe + winsorized refit (tests the single-outlier hypothesis)
+        absz = np.abs(Xs)
+        maxz = float(absz.max())
+        ri, cj = np.unravel_index(int(absz.argmax()), Xs.shape)
+        max_lev = (name0(int(cj)), round(maxz, 1), int(ri),
+                   round(float(X[ri, cj]), 3))
+        Xw = np.clip(Xs, -5, 5)
+        r2y_w = r2(logY, oof_predict(Xw, logY))
+
         yhat, that = oof_predict(Xs, logY), oof_predict(Xs, t)
         r2y, r2t = r2(logY, yhat), r2(t, that)
         Yt, Tt = logY - yhat, t - that
@@ -111,9 +120,11 @@ for c in CITIES:
                          kappa=kappa, denom_E_Tt2=denom, final_r2=final_r2,
                          theta=theta, cond_X=cond_X, degen_cols=degen_cols,
                          top_corr_Y=topy, top_corr_T=topt))
-        print(f"{c:<13} n={len(Y):>6}  R2(Y|X)={r2y:+.3f}  R2(T|X)={r2t:+.3f}  "
-              f"cond(X)={cond_X:>11.1f}  finalR2={final_r2:+.3f}  "
-              f"theta={theta:+.3f}  degen_cols={near_const}")
+        rows[-1]["max_leverage_col"] = max_lev
+        rows[-1]["r2_y_X_winsor5"] = r2y_w
+        print(f"{c:<13} n={len(Y):>6}  R2(Y|X)={r2y:+9.3f}  R2(Y|X,clip5)={r2y_w:+.3f}  "
+              f"finalR2={final_r2:+.3f}  theta={theta:+.3f}  "
+              f"maxz={max_lev[1]:>7} @row{max_lev[2]} col={max_lev[0]}")
     except Exception as e:
         print(f"{c:<13} ERROR {type(e).__name__}: {e}")
 
