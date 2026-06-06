@@ -309,6 +309,101 @@ def _pick_swap_targets(city: str, orig_submarket: str, k: int = 3) -> list[str]:
     return pool[:k]
 
 
+def _write_result(out: dict, out_path: Path) -> None:
+    """Serialize the result dict to disk (also used for intra-city checkpoints)."""
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w") as f:
+        json.dump(out, f, indent=2, default=str)
+
+
+def _assemble_result(
+    city: str,
+    n_listings: int,
+    listings_out: list[ListingRecord],
+    art: DMLArtifacts,
+    generator: object,
+    skip_perplexity: bool,
+) -> dict:
+    """Build the output dict from whatever listings have been processed so far.
+
+    Called both for the final write and for the every-25-listings checkpoints,
+    so a partial file is always a valid, self-consistent JSON with fewer rows.
+    """
+    # 7. aggregate per-arm causal effects
+    per_arm: dict[str, dict] = {}
+    for arm_kind in ("style_stripped", "style_swap"):
+        deltas: list[float] = []
+        for L in listings_out:
+            for rw in L.rewrites:
+                if not rw.validation["overall_pass"]:
+                    continue
+                if arm_kind == "style_stripped" and rw.arm == "style_stripped":
+                    deltas.append(rw.delta_logprice)
+                if arm_kind == "style_swap" and rw.arm.startswith("style_swap:"):
+                    deltas.append(rw.delta_logprice)
+        arr = np.asarray(deltas, dtype=float)
+        mean, lo, hi = bootstrap_mean_ci(arr) if len(arr) > 0 else (float("nan"),) * 3
+        per_arm[arm_kind] = {
+            "n_valid": int(len(arr)),
+            "mean_delta_logprice": mean,
+            "ci_low": lo,
+            "ci_high": hi,
+            "pct_change_implied": (float(np.exp(mean) - 1) * 100) if not np.isnan(mean) else float("nan"),
+        }
+
+    # 8. validation pass rates
+    n_total = sum(len(L.rewrites) for L in listings_out)
+    pass_rates = {
+        "slot_preserved": sum(1 for L in listings_out for r in L.rewrites if r.validation["slot_preserved"]) / max(n_total, 1),
+        "ppl_ok":          sum(1 for L in listings_out for r in L.rewrites if r.validation["ppl_ok"]) / max(n_total, 1),
+        "classifier_flipped_toward_target": sum(1 for L in listings_out for r in L.rewrites if r.validation["classifier_flipped_toward_target"]) / max(n_total, 1),
+        "overall_pass":    sum(1 for L in listings_out for r in L.rewrites if r.validation["overall_pass"]) / max(n_total, 1),
+    }
+
+    # 9. cache + cost stats from generator (real API only)
+    usage_summary: dict | None = None
+    if not isinstance(generator, MockGenerator):
+        u = generator.usage
+        usage_summary = {
+            "n_calls": u.n_calls,
+            "input_tokens": u.input_tokens,
+            "cache_creation_input_tokens": u.cache_creation_input_tokens,
+            "cache_read_input_tokens": u.cache_read_input_tokens,
+            "output_tokens": u.output_tokens,
+            "cache_hit_rate": u.cache_hit_rate(),
+            "estimated_cost_usd_sonnet35": u.estimated_cost_usd(),
+        }
+
+    # 10. assemble JSON
+    return {
+        "city": city,
+        "n_listings_requested": int(n_listings),
+        "n_listings_processed": int(len(listings_out)),
+        "n_rewrites_total": int(n_total),
+        "used_mock_generator": bool(isinstance(generator, MockGenerator)),
+        "skip_perplexity": bool(skip_perplexity),
+        "api_usage": usage_summary,
+        "dml": {
+            "theta": art.theta,
+            "se": art.se,
+            "n_pca": int(art.pca.n_components_),
+        },
+        "validation_pass_rates": pass_rates,
+        "natural_direct_effect_style_stripped": per_arm["style_stripped"],
+        "total_effect_style_swap": per_arm["style_swap"],
+        "listings": [
+            {
+                "listing_idx": L.listing_idx,
+                "address": L.address,
+                "zip": L.zip,
+                "slots": L.slots,
+                "rewrites": [asdict(r) for r in L.rewrites],
+            }
+            for L in listings_out
+        ],
+    }
+
+
 async def run_pipeline(
     city: str,
     n_listings: int,
@@ -319,6 +414,7 @@ async def run_pipeline(
     seed: int = 42,
     use_vllm: bool = False,
     vllm_model: str | None = None,
+    generator: object | None = None,
 ) -> dict:
     """Top-level orchestration. Returns the result dict written to disk.
 
@@ -369,13 +465,23 @@ async def run_pipeline(
             except Exception:
                 pass
 
-    generator = make_async_generator(force_mock=force_mock,
-                                     use_vllm=use_vllm, vllm_model=vllm_model)
+    # The generator is normally built ONCE in main() and passed in so the vLLM
+    # engine (and its prefix cache) survives across all cities. Fall back to
+    # building our own only when called directly (e.g. the smoke test).
+    if generator is None:
+        generator = make_async_generator(force_mock=force_mock,
+                                         use_vllm=use_vllm, vllm_model=vllm_model)
     print(f"  Generator: {type(generator).__name__}")
 
-    listings_out: list[ListingRecord] = []
-    print(f"\n  Generating + validating {n_pick} listings × 4 variants ...")
-    for n_done, li in enumerate(pick_idx):
+    # ---- Pass 1: build the arms + per-listing metadata for EVERY listing and
+    # flatten every arm across every listing into a single batch. Generation
+    # then happens in one generate_blocks_batch() call so vLLM's continuous
+    # batcher processes the whole city at once (instead of 4 arms × n_pick
+    # separate calls) and the prefix cache stays warm. We record the flat index
+    # span [start:end) that each listing owns so the results realign exactly.
+    listing_meta: list[dict] = []
+    all_items: list[dict] = []
+    for li in pick_idx:
         row = city_desc.iloc[li]
         original_text = str(row["description"])
         zip_int = int(row["zip"])
@@ -403,35 +509,56 @@ async def run_pipeline(
             listing_conf_s = mean_conf_s
         baseline = baseline_logprice(art, listing_conf_s)
 
-        rec = ListingRecord(
-            listing_idx=int(li),
-            address=addr,
-            zip=zip_int,
-            original_text=original_text,
-            slots=slots,
-        )
+        start = len(all_items)
+        for _arm_name, _target_sub, blocks in arms:
+            # original_text is carried so the asyncio.gather fallback (mock /
+            # async Anthropic) can echo it back exactly as before; the vLLM
+            # batch path ignores the extra key.
+            all_items.append({
+                "system": blocks["system"],
+                "user": blocks["user"],
+                "slot_dict": slots,
+                "original_text": original_text,
+            })
+        listing_meta.append({
+            "li": int(li),
+            "original_text": original_text,
+            "zip_int": zip_int,
+            "addr": addr,
+            "slots": slots,
+            "arms": arms,
+            "listing_conf_s": listing_conf_s,
+            "baseline": baseline,
+            "start": start,
+            "end": len(all_items),
+        })
 
-        # Fire all 4 arms concurrently via asyncio.gather (~4x speedup on
-        # API-bound time vs sequential loop; cache_control on the shared system
-        # prompt still fires correctly across concurrent requests).
-        if hasattr(generator, "generate_blocks_batch"):
-            batch_items = [
-                {"system": blocks["system"], "user": blocks["user"],
-                 "slot_dict": slots}
-                for _arm_name, _target_sub, blocks in arms
-            ]
-            arm_results = await generator.generate_blocks_batch(batch_items)
-        else:
-            async_calls = [
-                generator.generate_blocks(
-                    system=blocks["system"],
-                    user=blocks["user"],
-                    slot_dict=slots,
-                    original_text=original_text,
-                )
-                for _arm_name, _target_sub, blocks in arms
-            ]
-            arm_results = await asyncio.gather(*async_calls, return_exceptions=False)
+    print(f"\n  Generating {n_pick} listings × ~4 variants "
+          f"({len(all_items)} prompts) in one batch ...")
+    # Single generation call for the whole city. Generators that expose a batch
+    # surface (vLLM) continuous-batch on the GPU; generators without one (mock /
+    # async Anthropic) fan the identical prompts out through one asyncio.gather.
+    if hasattr(generator, "generate_blocks_batch"):
+        flat_results = await generator.generate_blocks_batch(all_items)
+    else:
+        flat_results = await asyncio.gather(*[
+            generator.generate_blocks(
+                system=it["system"],
+                user=it["user"],
+                slot_dict=it["slot_dict"],
+                original_text=it["original_text"],
+            )
+            for it in all_items
+        ], return_exceptions=False)
+
+    # ---- Pass 2: encode, validate, score, and build ListingRecords from the
+    # flat results, realigned per listing. The accumulating result is flushed to
+    # out_path every 25 listings so a crash loses at most ~25 listings, not the
+    # whole city.
+    listings_out: list[ListingRecord] = []
+    for n_done, meta in enumerate(listing_meta):
+        arms = meta["arms"]
+        arm_results = flat_results[meta["start"]:meta["end"]]
         gen_results: list[tuple[str, Optional[str], GenerationResult]] = [
             (arm_name, target_sub, res)
             for (arm_name, target_sub, _), res in zip(arms, arm_results)
@@ -440,10 +567,20 @@ async def run_pipeline(
         rewrite_texts = [r.rewritten_text for _, _, r in gen_results]
         rewrite_embs = encode_texts(rewrite_texts)
 
+        listing_conf_s = meta["listing_conf_s"]
+        baseline = meta["baseline"]
+        rec = ListingRecord(
+            listing_idx=meta["li"],
+            address=meta["addr"],
+            zip=meta["zip_int"],
+            original_text=meta["original_text"],
+            slots=meta["slots"],
+        )
+
         for (arm_name, target_sub, gres), emb in zip(gen_results, rewrite_embs):
             target_zip = _submarket_to_target_zip(city, target_sub) if target_sub else None
             v = validate_rewrite(
-                original_text=original_text,
+                original_text=meta["original_text"],
                 rewritten_text=gres.rewritten_text,
                 target_zip=target_zip,
                 skip_perplexity=skip_perplexity,
@@ -463,88 +600,23 @@ async def run_pipeline(
         listings_out.append(rec)
         if (n_done + 1) % 5 == 0 or n_done == n_pick - 1:
             print(f"    [{n_done + 1}/{n_pick}] processed")
+        if (n_done + 1) % 25 == 0 and (n_done + 1) < n_pick:
+            _write_result(
+                _assemble_result(city, n_listings, listings_out, art,
+                                 generator, skip_perplexity),
+                out_path,
+            )
+            print(f"    checkpoint written ({n_done + 1}/{n_pick}) -> {out_path}")
 
-    # 7. aggregate per-arm causal effects
-    per_arm: dict[str, dict] = {}
-    for arm_kind in ("style_stripped", "style_swap"):
-        deltas: list[float] = []
-        for L in listings_out:
-            for rw in L.rewrites:
-                if not rw.validation["overall_pass"]:
-                    continue
-                if arm_kind == "style_stripped" and rw.arm == "style_stripped":
-                    deltas.append(rw.delta_logprice)
-                if arm_kind == "style_swap" and rw.arm.startswith("style_swap:"):
-                    deltas.append(rw.delta_logprice)
-        arr = np.asarray(deltas, dtype=float)
-        mean, lo, hi = bootstrap_mean_ci(arr) if len(arr) > 0 else (float("nan"),) * 3
-        per_arm[arm_kind] = {
-            "n_valid": int(len(arr)),
-            "mean_delta_logprice": mean,
-            "ci_low": lo,
-            "ci_high": hi,
-            "pct_change_implied": (float(np.exp(mean) - 1) * 100) if not np.isnan(mean) else float("nan"),
-        }
-
-    # 8. validation pass rates
-    n_total = sum(len(L.rewrites) for L in listings_out)
-    pass_rates = {
-        "slot_preserved": sum(1 for L in listings_out for r in L.rewrites if r.validation["slot_preserved"]) / max(n_total, 1),
-        "ppl_ok":          sum(1 for L in listings_out for r in L.rewrites if r.validation["ppl_ok"]) / max(n_total, 1),
-        "classifier_flipped_toward_target": sum(1 for L in listings_out for r in L.rewrites if r.validation["classifier_flipped_toward_target"]) / max(n_total, 1),
-        "overall_pass":    sum(1 for L in listings_out for r in L.rewrites if r.validation["overall_pass"]) / max(n_total, 1),
-    }
-
-    # 9. cache + cost stats from generator (real API only)
-    usage_summary: dict | None = None
-    if not isinstance(generator, MockGenerator):
-        u = generator.usage
-        usage_summary = {
-            "n_calls": u.n_calls,
-            "input_tokens": u.input_tokens,
-            "cache_creation_input_tokens": u.cache_creation_input_tokens,
-            "cache_read_input_tokens": u.cache_read_input_tokens,
-            "output_tokens": u.output_tokens,
-            "cache_hit_rate": u.cache_hit_rate(),
-            "estimated_cost_usd_sonnet35": u.estimated_cost_usd(),
-        }
-
-    # 10. assemble + write JSON
-    out: dict = {
-        "city": city,
-        "n_listings_requested": int(n_listings),
-        "n_listings_processed": int(len(listings_out)),
-        "n_rewrites_total": int(n_total),
-        "used_mock_generator": bool(isinstance(generator, MockGenerator)),
-        "skip_perplexity": bool(skip_perplexity),
-        "api_usage": usage_summary,
-        "dml": {
-            "theta": art.theta,
-            "se": art.se,
-            "n_pca": int(art.pca.n_components_),
-        },
-        "validation_pass_rates": pass_rates,
-        "natural_direct_effect_style_stripped": per_arm["style_stripped"],
-        "total_effect_style_swap": per_arm["style_swap"],
-        "listings": [
-            {
-                "listing_idx": L.listing_idx,
-                "address": L.address,
-                "zip": L.zip,
-                "slots": L.slots,
-                "rewrites": [asdict(r) for r in L.rewrites],
-            }
-            for L in listings_out
-        ],
-    }
-
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w") as f:
-        json.dump(out, f, indent=2, default=str)
+    # 7-10. aggregate per-arm effects, pass rates, usage; assemble + write JSON.
+    out = _assemble_result(
+        city, n_listings, listings_out, art, generator, skip_perplexity,
+    )
+    _write_result(out, out_path)
     print(f"\n  Wrote {out_path}")
-    print(f"  validation pass rates: {pass_rates}")
-    print(f"  NDE (style-stripped): {per_arm['style_stripped']}")
-    print(f"  TE  (style-swap):     {per_arm['style_swap']}")
+    print(f"  validation pass rates: {out['validation_pass_rates']}")
+    print(f"  NDE (style-stripped): {out['natural_direct_effect_style_stripped']}")
+    print(f"  TE  (style-swap):     {out['total_effect_style_swap']}")
     if not isinstance(generator, MockGenerator):
         print("\n  API usage (with prompt caching on system block):")
         print(generator.usage.summary())
@@ -589,6 +661,24 @@ def main():
 
     import asyncio
     args.out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Build the generator ONCE, before the city loop, and reuse it across every
+    # city. Previously run_pipeline() built its own per city, so --all_12 loaded
+    # the 32B vLLM engine 12 times; a single resident engine also keeps its
+    # prefix cache warm across cities. reset_caches() (per city below) only
+    # clears the validator/encoder caches and never touches this generator.
+    # Skip the load entirely when every requested city already has output.
+    pending = [c for c in cities
+               if args.force_redo or not (args.out_dir / f"{c}.json").exists()]
+    generator = None
+    if pending:
+        generator = make_async_generator(
+            force_mock=args.force_mock,
+            use_vllm=args.use_vllm,
+            vllm_model=args.vllm_model,
+        )
+        print(f"  Generator (shared across cities): {type(generator).__name__}")
+
     for c in cities:
         out_path = args.out_dir / f"{c}.json"
         if out_path.exists() and not args.force_redo:
@@ -605,6 +695,7 @@ def main():
             seed=args.seed,
             use_vllm=args.use_vllm,
             vllm_model=args.vllm_model,
+            generator=generator,
         ))
 
 

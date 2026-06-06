@@ -1,7 +1,9 @@
 import sys
+import os
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+import torch
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
 from config import (
@@ -16,6 +18,25 @@ DESC_DIR = RAW_DIR / "descriptions"
 # efficiency docs and HuggingFace sbert benchmark thread.
 BATCH_SIZE_GPU = 128
 BATCH_SIZE_CPU = 32
+
+# The secondary MiniLM "alternative" encode pass is a robustness extra; the
+# pipeline only consumes the primary all-mpnet-base-v2 output. Off by default
+# to avoid re-encoding every city twice; enable with ENCODE_ALTERNATIVES=1.
+ENCODE_ALTERNATIVES = os.environ.get("ENCODE_ALTERNATIVES", "0").lower() in ("1", "true", "yes")
+
+# Load each SentenceTransformer once and reuse it across cities; force CUDA +
+# fp16 on the GPU path, stay fp32 on CPU.
+_MODEL_CACHE: dict = {}
+
+
+def get_model(model_name):
+    if model_name in _MODEL_CACHE:
+        return _MODEL_CACHE[model_name]
+    model = SentenceTransformer(model_name)
+    if torch.cuda.is_available():
+        model = model.to("cuda").half()
+    _MODEL_CACHE[model_name] = model
+    return model
 
 
 CONTRACTIONS = {
@@ -63,14 +84,13 @@ def clean_description(text):
 
 
 def encode_with_model(texts, model_name, dim, out_path):
-    import torch
-    model = SentenceTransformer(model_name)
-    if torch.cuda.is_available():
-        model = model.to("cuda")
+    model = get_model(model_name)
     bs = BATCH_SIZE_GPU if torch.cuda.is_available() else BATCH_SIZE_CPU
     with torch.no_grad():
         embeddings = model.encode(texts, batch_size=bs, show_progress_bar=False,
-                                  convert_to_numpy=True)
+                                  convert_to_numpy=True,
+                                  normalize_embeddings=False)
+    embeddings = np.asarray(embeddings, dtype=np.float32)
 
     emb_cols = [f"emb_{i}" for i in range(dim)]
     emb_df = pd.DataFrame(embeddings, columns=emb_cols)
@@ -131,7 +151,7 @@ def geocode_from_zip(df, city):
     return df
 
 
-def generate_embeddings(city):
+def generate_embeddings(city, encode_alternatives=False):
     desc_path = DESC_DIR / f"{city}_descriptions.csv"
     if not desc_path.exists():
         print(f"{city}: no descriptions file found, skipping")
@@ -159,6 +179,10 @@ def generate_embeddings(city):
     norms = np.linalg.norm(embeddings, axis=1)
     print(f"  norm stats: mean={norms.mean():.3f} std={norms.std():.3f} min={norms.min():.3f} max={norms.max():.3f}")
 
+    if not encode_alternatives:
+        print("  Skipping alternative models (set ENCODE_ALTERNATIVES=1 to enable)")
+        return
+
     for alt_model, alt_dim in EMBEDDING_ALTERNATIVES.items():
         print(f"\n  Alternative model: {alt_model}")
         alt_emb_df, alt_embeddings = encode_with_model(texts, alt_model, alt_dim, None)
@@ -177,7 +201,7 @@ def main():
     ensure_dirs()
     cities = sys.argv[1:] if len(sys.argv) > 1 else list(CITIES.keys())
     for city in cities:
-        generate_embeddings(city)
+        generate_embeddings(city, encode_alternatives=ENCODE_ALTERNATIVES)
     print("\nEmbedding generation complete.")
 
 

@@ -2,8 +2,6 @@ import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); 
 import sys
 import numpy as np
 import pandas as pd
-import torch
-import torch.nn as nn
 from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401 — kept for type hints/tests
 from booster import make_regressor
 from sklearn.linear_model import LogisticRegression
@@ -445,19 +443,28 @@ def dml_continuous_treatment(T, confounders, Y, n_pca=50, k_folds=5,
     theta, se_if = core
 
     if ci_method == "bootstrap":
+        import os
+        from joblib import Parallel, delayed, parallel_config
         n = len(Y)
         T = np.asarray(T)
         confounders = np.asarray(confounders)
         Y = np.asarray(Y)
+        # Draw every resample's indices up front, in the same sequential order
+        # the serial loop used, so the parallel fits are bit-for-bit identical
+        # to the old code (only faster).
         rng = np.random.default_rng(20260526)
-        boot = []
-        for _ in range(n_boot):
-            idx = rng.integers(0, n, n)
-            r = _dml_core(T[idx], confounders[idx], Y[idx], n_pca, k_folds,
-                          cross_fit_pca)
-            if r is not None:
-                boot.append(r[0])
-        boot = np.asarray(boot)
+        boot_idx = [rng.integers(0, n, n) for _ in range(n_boot)]
+        # loky (processes): LightGBM concurrent fit is not documented thread-safe,
+        # so use separate processes; inner_max_num_threads=1 keeps each worker's
+        # native threads pinned (no oversubscription against the OMP=1 pins).
+        n_jobs = min(os.cpu_count() or 1, n_boot)
+        with parallel_config(backend="loky", n_jobs=n_jobs, inner_max_num_threads=1):
+            results = Parallel()(
+                delayed(_dml_core)(T[idx], confounders[idx], Y[idx], n_pca,
+                                   k_folds, cross_fit_pca)
+                for idx in boot_idx
+            )
+        boot = np.asarray([r[0] for r in results if r is not None])
         se = float(boot.std(ddof=1))
         ci_low = float(np.percentile(boot, 2.5))
         ci_high = float(np.percentile(boot, 97.5))
@@ -567,65 +574,76 @@ def cate_by_price_quantile(T, confounders, Y, n_quantiles=4, n_pca=50):
     return results
 
 
-class Encoder(nn.Module):
-    def __init__(self, input_dim, hidden_dim=128, output_dim=64):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.BatchNorm1d(hidden_dim),
-            nn.Dropout(0.2),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.BatchNorm1d(hidden_dim),
-            nn.Dropout(0.2),
-            nn.Linear(hidden_dim, output_dim),
-        )
+def _build_adversarial_modules():
+    """Lazily import torch and build the adversarial nn.Module classes.
 
-    def forward(self, x):
-        return self.net(x)
+    torch is only used by adversarial_deconfounding. Importing it at module top
+    forced every Baur/Shen DML process to pay a ~3-5s torch import it never
+    touches, so the import (and these nn.Module subclasses, which reference nn
+    at class-creation time) live here and load only when adversarial
+    deconfounding actually runs.
+    """
+    import torch
+    import torch.nn as nn
 
+    class Encoder(nn.Module):
+        def __init__(self, input_dim, hidden_dim=128, output_dim=64):
+            super().__init__()
+            self.net = nn.Sequential(
+                nn.Linear(input_dim, hidden_dim),
+                nn.ReLU(),
+                nn.BatchNorm1d(hidden_dim),
+                nn.Dropout(0.2),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.BatchNorm1d(hidden_dim),
+                nn.Dropout(0.2),
+                nn.Linear(hidden_dim, output_dim),
+            )
 
-class Predictor(nn.Module):
-    def __init__(self, input_dim=64):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(input_dim, 64),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.Linear(64, 1),
-        )
+        def forward(self, x):
+            return self.net(x)
 
-    def forward(self, x):
-        return self.net(x).squeeze(-1)
+    class Predictor(nn.Module):
+        def __init__(self, input_dim=64):
+            super().__init__()
+            self.net = nn.Sequential(
+                nn.Linear(input_dim, 64),
+                nn.ReLU(),
+                nn.Dropout(0.1),
+                nn.Linear(64, 1),
+            )
 
+        def forward(self, x):
+            return self.net(x).squeeze(-1)
 
-class MultiHeadDiscriminator(nn.Module):
-    def __init__(self, input_dim=64, n_zips=10, n_income_bins=5):
-        super().__init__()
-        self.shared = nn.Sequential(
-            nn.Linear(input_dim, 64),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-        )
-        self.zip_head = nn.Linear(64, n_zips)
-        self.geo_head = nn.Linear(64, 2)
-        self.income_head = nn.Linear(64, n_income_bins)
+    class MultiHeadDiscriminator(nn.Module):
+        def __init__(self, input_dim=64, n_zips=10, n_income_bins=5):
+            super().__init__()
+            self.shared = nn.Sequential(
+                nn.Linear(input_dim, 64),
+                nn.ReLU(),
+                nn.Dropout(0.1),
+            )
+            self.zip_head = nn.Linear(64, n_zips)
+            self.geo_head = nn.Linear(64, 2)
+            self.income_head = nn.Linear(64, n_income_bins)
 
-    def forward(self, x):
-        h = self.shared(x)
-        return self.zip_head(h), self.geo_head(h), self.income_head(h)
+        def forward(self, x):
+            h = self.shared(x)
+            return self.zip_head(h), self.geo_head(h), self.income_head(h)
 
+    class GradientReversal(torch.autograd.Function):
+        @staticmethod
+        def forward(ctx, x, alpha):
+            ctx.alpha = alpha
+            return x.clone()
 
-class GradientReversal(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x, alpha):
-        ctx.alpha = alpha
-        return x.clone()
+        @staticmethod
+        def backward(ctx, grad_output):
+            return -ctx.alpha * grad_output, None
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        return -ctx.alpha * grad_output, None
+    return torch, nn, Encoder, Predictor, MultiHeadDiscriminator, GradientReversal
 
 
 def _frozen_encoder_probe(encoder, T_tensor, lat, lon, zip_labels, income):
@@ -643,6 +661,7 @@ def _frozen_encoder_probe(encoder, T_tensor, lat, lon, zip_labels, income):
     discriminator accuracy, the adversarial training "fooled" the live
     discriminator but the location signal is still in the representation.
     """
+    import torch
     encoder.eval()
     with torch.no_grad():
         # encoder may be on CUDA (per T1.6); move input to match its device.
@@ -699,6 +718,9 @@ def _frozen_encoder_probe(encoder, T_tensor, lat, lon, zip_labels, income):
 
 def adversarial_deconfounding(T, Y, meta, n_pca=50, epochs=150, lr=1e-3):
     print("\n  [3] Adversarial Deconfounding (Multi-Head + Frozen Probe)")
+
+    torch, nn, Encoder, Predictor, MultiHeadDiscriminator, GradientReversal = \
+        _build_adversarial_modules()
 
     n_pca = min(n_pca, T.shape[1], T.shape[0])
     pca = PCA(n_components=n_pca, random_state=42)

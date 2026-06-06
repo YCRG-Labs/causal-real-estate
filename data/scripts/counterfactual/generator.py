@@ -314,7 +314,7 @@ class VLLMGenerator:
     def __init__(
         self,
         model: str = "Qwen/Qwen2.5-32B-Instruct-AWQ",
-        max_tokens: int = 2048,
+        max_tokens: int = 512,
         temperature: float = 0.0,
         seed: int = 42,
         max_model_len: int = 8192,

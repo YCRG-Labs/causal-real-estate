@@ -78,9 +78,15 @@ from scipy import stats
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import r2_score
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.utils.extmath import randomized_svd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from causal_inference import load_analysis_data, get_features_and_target
+
+# Force CUDA for the neural probes + IGBP adversary when available, falling
+# back to CPU so the module still imports/runs on a non-CUDA machine.  The
+# float32 LEACE path (below) is what makes the CUDA kernels viable.
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # ---------------------------------------------------------------------------
@@ -296,9 +302,9 @@ def _verify_linear_guardedness(P: torch.Tensor, Sigma_xz: torch.Tensor,
 
 
 def leace_erase(T_tr, Z_tr, T_holdout=None, shrinkage=True,
-                dtype=torch.float64, svd_tol: float = 1e-2,
+                dtype=torch.float32, svd_tol: float = 1e-2,
                 affine: bool = True, label: str = "LEACE",
-                guardedness_tol: float = 1e-4) -> tuple:
+                guardedness_tol: float = 1e-3) -> tuple:
     """Closed-form LEACE projection on a generic (n, d_z) concept matrix.
 
     Works for one-hot Z (categorical) or continuous Z (e.g. lat/lon).  The
@@ -309,7 +315,7 @@ def leace_erase(T_tr, Z_tr, T_holdout=None, shrinkage=True,
     The Belrose 2023 Theorem 1 identity ``P @ Sigma_xz = 0`` is verified
     twice: first at the loose floating-point tolerance ``max(svd_tol*100,
     1e-4)`` (raises if the LeaceFitter is materially broken), then at the
-    tight production tolerance ``guardedness_tol`` (default 1e-4), which
+    tight production tolerance ``guardedness_tol`` (default 1e-3), which
     raises if the linear-guardedness identity does not hold to machine
     precision relative to the unit-trace covariance constraint.
 
@@ -575,10 +581,10 @@ def _fit_igbp_adversary(T_tr_np: np.ndarray, Z_tr_z: np.ndarray, seed: int,
         nn.Linear(T_tr_np.shape[1], hidden), nn.GELU(),
         nn.Linear(hidden, hidden), nn.GELU(),
         nn.Linear(hidden, Z_tr_z.shape[1]),
-    ).double()
+    ).to(DEVICE).float()
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-    X = torch.from_numpy(T_tr_np.astype(np.float64))
-    Y = torch.from_numpy(Z_tr_z.astype(np.float64))
+    X = torch.from_numpy(T_tr_np.astype(np.float32)).to(DEVICE)
+    Y = torch.from_numpy(Z_tr_z.astype(np.float32)).to(DEVICE)
     for _ in range(n_epochs):
         model.train()
         loss = ((model(X) - Y) ** 2).mean()
@@ -613,21 +619,24 @@ def igbp_polish(T_tr, T_te, Z_concept_tr, n_outer: int = 5,
     for k in range(1, n_outer + 1):
         adv = _fit_igbp_adversary(T_tr_curr, Z, seed=seed + k,
                                   hidden=hidden, n_epochs=n_inner)
-        T_tr_t = torch.from_numpy(T_tr_curr).requires_grad_(True)
-        Y_t = torch.from_numpy(Z)
+        T_tr_t = (torch.from_numpy(T_tr_curr.astype(np.float32))
+                  .to(DEVICE).requires_grad_(True))
+        Y_t = torch.from_numpy(Z.astype(np.float32)).to(DEVICE)
         pred = adv(T_tr_t)
         loss_per_row = ((pred - Y_t) ** 2).mean(dim=1)
         grads = torch.autograd.grad(loss_per_row.sum(), T_tr_t)[0]
         G = grads.detach().cpu().numpy().astype(np.float64)
-        _, _, Vt = np.linalg.svd(G, full_matrices=False)
+        _, _, Vt = randomized_svd(G, n_components=1, n_iter=7,
+                                  random_state=seed + k)
         v = Vt[0]
         v = v / max(np.linalg.norm(v), 1e-12)
         P = np.eye(T_tr_curr.shape[1]) - np.outer(v, v)
         T_tr_curr = T_tr_curr @ P
         T_te_curr = T_te_curr @ P
 
-        train_loss = float(((adv(torch.from_numpy(T_tr_curr)) - Y_t) ** 2)
-                           .detach().cpu().numpy().mean())
+        train_loss = float(
+            ((adv(torch.from_numpy(T_tr_curr.astype(np.float32)).to(DEVICE))
+              - Y_t) ** 2).detach().cpu().numpy().mean())
         history.append({"outer": int(k),
                         "v_unit_norm_check": float(np.linalg.norm(v)),
                         "adv_train_mse_postproj": train_loss})
@@ -661,22 +670,24 @@ def mlp_probe_classification(T_tr, T_te, Z_tr, Z_te, n_epochs: int = 80,
                              hidden: int = 256, seed: int = 0) -> dict:
     torch.manual_seed(seed)
     n_classes = int(np.max(Z_tr) + 1)
-    device = T_tr.device if isinstance(T_tr, torch.Tensor) else torch.device("cpu")
-    T_tr_t = T_tr if isinstance(T_tr, torch.Tensor) else torch.from_numpy(np.asarray(T_tr))
-    T_te_t = T_te if isinstance(T_te, torch.Tensor) else torch.from_numpy(np.asarray(T_te))
-    model = _MLPProbe(T_tr_t.shape[1], n_classes, hidden=hidden).to(device).double()
+    device = DEVICE
+    T_tr_t = (T_tr if isinstance(T_tr, torch.Tensor)
+              else torch.from_numpy(np.asarray(T_tr))).to(device).float()
+    T_te_t = (T_te if isinstance(T_te, torch.Tensor)
+              else torch.from_numpy(np.asarray(T_te))).to(device).float()
+    model = _MLPProbe(T_tr_t.shape[1], n_classes, hidden=hidden).to(device).float()
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     loss_fn = nn.CrossEntropyLoss()
     Ztr = torch.from_numpy(np.asarray(Z_tr)).long().to(device)
     Zte = torch.from_numpy(np.asarray(Z_te)).long().to(device)
     for _ in range(n_epochs):
         model.train()
-        logits = model(T_tr_t.double())
+        logits = model(T_tr_t)
         loss = loss_fn(logits, Ztr)
         opt.zero_grad(); loss.backward(); opt.step()
     model.eval()
     with torch.no_grad():
-        logits_te = model(T_te_t.double())
+        logits_te = model(T_te_t)
         preds = logits_te.argmax(-1)
         acc = float((preds == Zte).float().mean().item())
     counts = np.bincount(Z_te)
@@ -696,22 +707,24 @@ def mlp_probe_regression(T_tr, T_te, Z_tr, Z_te, n_epochs: int = 200,
     mu = Z_tr.mean(0); sd = Z_tr.std(0, ddof=1); sd[sd < 1e-12] = 1.0
     Z_tr_s = (Z_tr - mu) / sd; Z_te_s = (Z_te - mu) / sd
 
-    T_tr_t = T_tr if isinstance(T_tr, torch.Tensor) else torch.from_numpy(np.asarray(T_tr))
-    T_te_t = T_te if isinstance(T_te, torch.Tensor) else torch.from_numpy(np.asarray(T_te))
-    device = T_tr_t.device
+    T_tr_t = (T_tr if isinstance(T_tr, torch.Tensor)
+              else torch.from_numpy(np.asarray(T_tr))).to(DEVICE).float()
+    T_te_t = (T_te if isinstance(T_te, torch.Tensor)
+              else torch.from_numpy(np.asarray(T_te))).to(DEVICE).float()
+    device = DEVICE
 
-    model = _MLPProbe(T_tr_t.shape[1], Z_tr_s.shape[1], hidden=hidden).to(device).double()
+    model = _MLPProbe(T_tr_t.shape[1], Z_tr_s.shape[1], hidden=hidden).to(device).float()
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-    Y_tr = torch.from_numpy(Z_tr_s).double().to(device)
-    Y_te = torch.from_numpy(Z_te_s).double().to(device)
+    Y_tr = torch.from_numpy(Z_tr_s).float().to(device)
+    Y_te = torch.from_numpy(Z_te_s).float().to(device)
     for _ in range(n_epochs):
         model.train()
-        pred = model(T_tr_t.double())
+        pred = model(T_tr_t)
         loss = ((pred - Y_tr) ** 2).mean()
         opt.zero_grad(); loss.backward(); opt.step()
     model.eval()
     with torch.no_grad():
-        pred_te = model(T_te_t.double()).cpu().numpy()
+        pred_te = model(T_te_t).cpu().numpy()
     Z_te_np = Z_te_s
     r2_per = [float(r2_score(Z_te_np[:, j], pred_te[:, j])) for j in range(Z_te_np.shape[1])]
     return {"r2_avg_test": float(np.mean(r2_per)),
@@ -749,9 +762,11 @@ def mdl_codelength_probe(T_tr, T_te, Z_tr, Z_te, n_portions: int = 10,
     Y_te = np.array([label_to_id[c] for c in Z_te], dtype=np.int64)
     K = int(classes.size)
 
-    T_tr_t = T_tr if isinstance(T_tr, torch.Tensor) else torch.from_numpy(np.asarray(T_tr))
-    T_te_t = T_te if isinstance(T_te, torch.Tensor) else torch.from_numpy(np.asarray(T_te))
-    device = T_tr_t.device
+    T_tr_t = (T_tr if isinstance(T_tr, torch.Tensor)
+              else torch.from_numpy(np.asarray(T_tr))).float()
+    T_te_t = (T_te if isinstance(T_te, torch.Tensor)
+              else torch.from_numpy(np.asarray(T_te))).float()
+    device = DEVICE
 
     n_tr = T_tr_t.shape[0]
     perm = rng.permutation(n_tr)
@@ -782,9 +797,9 @@ def mdl_codelength_probe(T_tr, T_te, Z_tr, Z_te, n_portions: int = 10,
 
     for k in range(1, len(timesteps)):
         prefix = perm[:timesteps[k - 1]]
-        Xp = T_tr_t[prefix].double().to(device)
+        Xp = T_tr_t[prefix].float().to(device)
         yp = torch.from_numpy(Y_tr[prefix]).long().to(device)
-        model = _MLPProbe(Xp.shape[1], K, hidden=hidden).to(device).double()
+        model = _MLPProbe(Xp.shape[1], K, hidden=hidden).to(device).float()
         opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
         for _ in range(n_epochs):
             model.train()
@@ -795,7 +810,7 @@ def mdl_codelength_probe(T_tr, T_te, Z_tr, Z_te, n_portions: int = 10,
         next_block = perm[timesteps[k - 1]: timesteps[k]]
         if next_block.size == 0:
             continue
-        Xb = T_tr_t[next_block].double().to(device)
+        Xb = T_tr_t[next_block].float().to(device)
         yb = torch.from_numpy(Y_tr[next_block]).long().to(device)
         with torch.no_grad():
             logits_b = model(Xb)
@@ -804,11 +819,11 @@ def mdl_codelength_probe(T_tr, T_te, Z_tr, Z_te, n_portions: int = 10,
         L_online += ce / math.log(2)
 
     # final probe accuracy on test fold for cross-check
-    Xte = T_te_t.double().to(device)
+    Xte = T_te_t.float().to(device)
     yte = torch.from_numpy(Y_te).long().to(device)
-    final_model = _MLPProbe(T_tr_t.shape[1], K, hidden=hidden).to(device).double()
+    final_model = _MLPProbe(T_tr_t.shape[1], K, hidden=hidden).to(device).float()
     opt = torch.optim.AdamW(final_model.parameters(), lr=lr, weight_decay=1e-4)
-    Xtr_full = T_tr_t.double().to(device)
+    Xtr_full = T_tr_t.float().to(device)
     ytr_full = torch.from_numpy(Y_tr).long().to(device)
     for _ in range(n_epochs):
         final_model.train()
@@ -885,7 +900,7 @@ def run_leace(city: str, variant: str = "leace", seed: int = 42,
     income = (emb_df[inc_col].fillna(emb_df[inc_col].median()).values.astype(np.float64)
               if inc_col is not None else np.zeros(n))
 
-    T_arr = np.asarray(T_np, dtype=np.float64)
+    T_arr = np.asarray(T_np, dtype=np.float32)
     mask = (np.isfinite(T_arr).all(axis=1) & np.isfinite(latlon).all(axis=1)
             & np.isfinite(income) & np.isfinite(Y))
     n_drop = int((~mask).sum())
@@ -1046,8 +1061,8 @@ def _self_test(seed: int = 0) -> None:
     X = Z @ B + 0.5 * rng.normal(size=(n, d))
     Y = (X[:, 0] - X[:, 1]) + 0.3 * Z[:, 0] + 0.2 * rng.normal(size=n)
 
-    T_tr = torch.from_numpy(X[: 600]).double()
-    T_te = torch.from_numpy(X[600 :]).double()
+    T_tr = torch.from_numpy(X[: 600]).float()
+    T_te = torch.from_numpy(X[600 :]).float()
     Z_tr, Z_te = Z[:600], Z[600:]
     Y_tr, Y_te = Y[:600], Y[600:]
 

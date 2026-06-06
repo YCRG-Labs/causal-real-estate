@@ -48,10 +48,10 @@ step embed_all python3 data/scripts/generate_embeddings.py $C
 step pooled_pca python3 data/scripts/replications/pooled_pca_treatment.py
 
 # 3. Baur DML per city.
-for c in $C; do step baur_$c python3 data/scripts/replications/baur_pooled_pca.py --city $c; done
+for c in $C; do step baur_$c python3 data/scripts/replications/baur_pooled_pca.py --city $c --fast; done
 
 # 4. Shen Doc2Vec uniqueness per city. workers=8 fix → ~3x faster Doc2Vec.
-for c in $C; do step shen_$c python3 data/scripts/replications/shen_2021.py --city $c --doc2vec; done
+for c in $C; do step shen_$c python3 data/scripts/replications/shen_2021.py --city $c --doc2vec --fast; done
 
 # 5. LEACE per city, then roll up.
 for c in $C; do step leace_$c python3 data/scripts/leace_deconfound.py --city $c; done
