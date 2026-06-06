@@ -97,6 +97,29 @@ def _spatial_join_parcels(emb_df, parcels):
     return result
 
 
+def _winsorize_confounders(C, n_mad=5.0):
+    """Robust per-column outlier guard. Imputes non-finite entries with the
+    column median and clips each column to median +/- n_mad * (1.4826 * MAD).
+    This protects the DML cross-fit nuisance regressions from data-entry
+    artifacts (e.g. a year_built parsed from a full date, or a missing value
+    coded as 0) that otherwise make the nuisance fit numerically degenerate for
+    a single market. MAD center/scale are robust to <50% contamination, so
+    clean columns are left essentially untouched."""
+    C = np.array(C, dtype=float, copy=True)
+    for j in range(C.shape[1]):
+        col = C[:, j]
+        finite = np.isfinite(col)
+        if finite.sum() < 20:
+            continue
+        med = float(np.median(col[finite]))
+        mad = float(np.median(np.abs(col[finite] - med))) * 1.4826
+        col = np.where(finite, col, med)
+        if mad > 0:
+            col = np.clip(col, med - n_mad * mad, med + n_mad * mad)
+        C[:, j] = col
+    return C
+
+
 def get_features_and_target(emb_df, parcels, drop_mismatched_crime=False):
     """
     Builds the (T, confounders, Y, meta) tuple for the causal estimators.
@@ -177,6 +200,7 @@ def get_features_and_target(emb_df, parcels, drop_mismatched_crime=False):
     col_nan_rate = nan_conf.mean(axis=0)
     good_cols = col_nan_rate < 0.5
     confounders = confounders[:, good_cols]
+    confounders = _winsorize_confounders(confounders)
     np.nan_to_num(confounders, copy=False, nan=0.0)
 
     valid &= ~np.all(confounders == 0, axis=1)
