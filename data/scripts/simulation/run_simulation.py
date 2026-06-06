@@ -131,22 +131,30 @@ def calibrate_truths(
 ) -> dict[str, float]:
     """For each (estimator, dgp), one big-N draw -> theta_truth.
 
-    Parallelized over (estimator, dgp) cells (SCM_1 cells only — SCM_0 is
-    enforced to 0 by construction). On 16-core Brev: ~12-15x speedup on this
-    step.
-
-    For SCM_0 we *enforce* truth = 0 (this is by construction of the DGP).
-    For SCM_1(eta) we run one big draw and use the estimator's theta on it.
+    Each (estimator, dgp) cell gets one big-N draw and the estimator's theta on
+    it, including SCM_0. We do NOT enforce SCM_0 truth = 0: with the finite n_W
+    confounder set the DGP leaves a small residual estimand (~+0.007) that the
+    estimator targets, and coverage must be assessed against that probability
+    limit, not the structural zero (assessing against 0 mislabels the residual
+    as bias and craters null-cell coverage; see check_scm0_truth.py).
     """
     from joblib import Parallel, delayed
 
     def _one_cell(est: str, dgp_name: str, beta: float):
-        if dgp_name == "scm0":
-            return f"{est}|{dgp_name}", 0.0
+        # Calibrate truth as the estimator's probability limit on a big-N draw
+        # of the SAME DGP each replicate uses, for BOTH scm0 and scm1. scm0 is
+        # NOT enforced to 0: with the finite n_W confounder set the DGP leaves a
+        # residual estimand (~+0.007), so the CI must be assessed against the
+        # quantity the estimator actually targets, not the structural zero.
+        # Forcing truth=0 mislabels that residual as bias and destroys null-cell
+        # coverage (see check_scm0_truth.py).
         rng = np.random.default_rng(seed)
-        E, _, W, Y = sample_scm1(
-            gen, None, n_truth_pop, beta_direct=beta, n_W=n_W, rng=rng,
-        )
+        if dgp_name == "scm0":
+            E, _, W, Y = sample_scm0(gen, None, n_truth_pop, n_W=n_W, rng=rng)
+        else:
+            E, _, W, Y = sample_scm1(
+                gen, None, n_truth_pop, beta_direct=beta, n_W=n_W, rng=rng,
+            )
         try:
             r = ESTIMATORS[est](E, W, Y)
             return f"{est}|{dgp_name}", float(r.theta)
