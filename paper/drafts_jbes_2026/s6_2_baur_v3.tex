@@ -1,0 +1,128 @@
+% §6.2 Sentence-BERT principal component channel, clean 12-city panel,
+% with the within-city-centered pooled PCA treatment definition.
+% Numbers re-pulled and locked against:
+%   results/replications/baur_pooled_pca/baur_pooled_pca_table.csv  (per-city dml_theta/se/ci, excludes_zero)
+%   results/replications/baur_pooled_pca/{city}.json                (per-city DML detail, treatment label)
+%   results/replications/shen_sf.json, shen_12city_pooled.json      (Shen contrast)
+% Pooled PM+HKSJ recomputed from the canonical per-city table (k=12): theta=-0.078,
+% se=0.025, t(11)=-3.16, two-sided p=0.009, CI [-0.133,-0.024]; Q=755 on 11 df,
+% I^2 approx 98.5%, tau^2_PM approx 0.0072.
+% Supersedes v2, which was locked against the stale results/replications/baur_12city_pooled.json
+% (theta_re=+0.0078) and meta_regression_pooled.json (since overwritten by a Shen run), and which
+% carried fabricated per-city values, a Portland-exclusion narrative, and a dollar-exposure bridge
+% built on a -0.029 pooled effect that the clean panel does not support.
+
+\subsection{Sentence-BERT principal component channel across twelve markets}
+\label{sec:baur-12city}
+
+The Baur, Rosenfelder, and Lutz channel \citep{baur2023analysis} treats
+listing language as a $768$-dimensional vector from a frozen sentence-BERT
+encoder and uses the leading principal component direction as a scalar
+treatment in a partially-linear DML estimator. The original study computes the
+PCA per market on the local listing distribution. On a single-market analysis
+this is the canonical choice, but on a twelve-market panel it produces a
+treatment whose direction is identified only locally and only up to a sign, so
+per-market PC1 estimates can carry opposite signs across markets even when the
+underlying language-price relationship is direction-consistent. A panel built
+on per-market axes therefore mixes genuine heterogeneity with an artifact of
+local sign and orientation, and it cannot be pooled coherently.
+
+\paragraph{Pooled within-city-centered PCA.} To obtain a treatment definition
+that is comparable across markets, we replace the per-market PCAs with a single
+global principal-component direction extracted from the pooled within-city
+covariance of the stacked embeddings. We center each city's embeddings at its
+own mean before pooling, which removes between-city vocabulary differences from
+the global covariance and produces a leading eigenvector identified as the
+within-city common axis. This is the standard pooling for cross-population PCA
+discussed in \citet{flury1984}, equivalent in construction to a linear
+discriminant analysis pooled covariance. We do not standardize individual
+embedding dimensions before pooling because sentence-BERT outputs are
+L2-normalized by design and per-dimension scaling would inflate the anisotropic
+noise structure documented by \citet{ethayarajh2019contextual}. We pin the sign
+of the leading eigenvector by the positive-sum-of-loadings convention and
+$z$-score the per-listing projection within each city, so the estimand on each
+market remains a per-city-standard-deviation move along the common axis. The
+global axis is extracted from the within-city-centered pooling of all twelve
+markets, an analysis sample of $69{,}173$ listings whose per-market sizes range
+from $986$ in San Francisco to $15{,}227$ in New York.
+
+The leading axis captures a modest share of the total variance in the pooled
+embedding matrix, consistent with the anisotropic clustering of sentence-BERT
+representations documented by \citet{ethayarajh2019contextual}. Per-listing
+scores along it separate utilitarian and as-is language at one end from
+amenity-rich and luxury language at the other, so the sign of the
+per-standard-deviation DML estimate should be negative if listings whose
+language sits toward the utilitarian end tend to transact at lower prices, which
+is the pattern the hedonic setup leads us to expect.
+
+\paragraph{Per-market estimates.} Table~\ref{tab:baur-12city} reports the
+per-market per-standard-deviation effect under the pooled-PCA treatment. The
+corrected definition removes the sign ambiguity of the per-market axes and
+delivers a single direction of effect across the panel. Eleven of the twelve
+markets return a negative point estimate, and the twelfth, New York, returns a
+near-zero positive estimate of $+0.011$ with a confidence interval
+$[-0.001, +0.024]$ that includes zero. Eight of the twelve markets return a
+confidence interval that excludes zero at the $95\%$ level, and every one of
+those eight is negative. Philadelphia carries the largest effect at
+$\hat\theta = -0.310$ with interval $[-0.331, -0.288]$, followed by Dallas at
+$-0.119$, Chicago at $-0.117$, and Atlanta at $-0.115$. San Francisco returns
+$-0.101$ with interval $[-0.151, -0.051]$, and Boston, Portland, and Denver
+return smaller but still significant effects of $-0.049$, $-0.043$, and
+$-0.035$. The four markets whose intervals span zero, namely New York, the
+District of Columbia at $-0.019$, Phoenix at $-0.021$, and Seattle at $-0.024$,
+all carry small point estimates. Portland, which the per-market PCA had rendered
+a degenerate outlier, now sits squarely inside the panel at $-0.043$ with
+interval $[-0.066, -0.020]$, so the panel is clean at twelve markets and there
+is no market we exclude.
+
+\paragraph{Pooled inference.} Section~\ref{sec:meta-regression-12} takes up the
+pooled inference question directly via random-effects meta-analysis of the
+twelve per-market estimates. Combining the estimates with a Paule-Mandel
+$\tau^2$ and the Hartung-Knapp-Sidik-Jonkman variance correction returns a
+pooled per-standard-deviation effect of $-0.078$ with standard error $0.025$,
+a $t$ statistic of $-3.16$ on $11$ degrees of freedom, a two-sided $p$ of
+$0.009$, and a $95\%$ confidence interval of $[-0.133, -0.024]$. The pooled
+estimate is small but statistically detectable and negative across the panel.
+Heterogeneity is large, with $Q = 755$ on $11$ degrees of freedom, an $I^2$ of
+roughly $98.5\%$, and a Paule-Mandel $\tau^2$ of about $0.0072$, so the pooled
+point estimate masks substantial cross-market dispersion that Philadelphia
+anchors at one end and New York at the other. Because between-market variance
+dwarfs the within-market sampling variance, the meta-analytic weights are close
+to uniform and the pooled estimate coincides almost exactly with the unweighted
+across-market mean. We attempted a single pooled DML estimator with city fixed
+effects and the Chiang-Kato-Ma-Sasaki \citep{chiang2022multiway} cluster-robust
+variance, but the small number of clusters produced fold-assignment instability
+in the cross-fitted ridge nuisances that we judged not robust enough for a
+publication headline, with pooled point estimates that shifted materially across
+independent invocations on the same seed and data. The random-effects
+meta-analysis treats each market's $\hat\theta_i$ as a sufficient statistic and
+combines them via inverse-variance weighting with a Paule-Mandel $\tau^2$
+estimate, which is the canonical small-$G$ alternative to cluster-respecting
+cross-fitting \citep{veroniki2016methods}.
+
+\paragraph{Magnitude and interpretation.} The pooled per-standard-deviation
+effect of $-0.078$ on log sale price is about a seven and a half percent
+reduction in price, which is small as a fraction of value but substantial
+against the magnitudes published in the housing and text-as-treatment
+literatures. A single additional bedroom in the canonical
+\citet{sirmans2005composition} meta-analysis of forty-five hedonic studies
+carries a mean effect of $+3.8\%$ on log price, so the pooled text-axis effect
+is roughly twice the marginal price of an additional bedroom in magnitude, and
+it exceeds the racial sale-price premium of approximately three percent that
+\citet{bayer2017racial} document for Black and Hispanic homebuyers across
+Chicago, Baltimore-Washington, San Francisco, and Los Angeles. The more
+informative comparison is internal. The Doc2Vec uniqueness construct of
+\citet{shen2021information} runs in the same direction the original author
+reports and the opposite direction from our pooled BERT-PC1 effect. In San
+Francisco, where both channels are estimated on the identical $986$-listing
+sample, the same DML pipeline recovers a uniqueness effect of $+0.111$ with
+interval $[+0.063, +0.159]$, positive and significant, while the BERT-PC1 axis
+returns $-0.101$ with interval $[-0.151, -0.051]$, negative and significant.
+Pooled across the twelve markets the uniqueness effect remains positive at
+about $+0.04$ per standard deviation, against the $-0.078$ of the BERT axis.
+The two text treatments therefore disagree in sign both within a single market
+and across the panel, which is the central reading of this section. Textual
+distinctiveness in the Shen sense and the utilitarian-to-amenity axis that the
+leading sentence-BERT component recovers are different constructs that price
+differently, and the sign disagreement is a substantive finding about what each
+representation measures rather than an artifact of estimation.

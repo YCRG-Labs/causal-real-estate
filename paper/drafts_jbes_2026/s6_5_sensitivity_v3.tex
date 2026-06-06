@@ -1,0 +1,109 @@
+% §6.5 Confounder sensitivity, full 12-city panel.
+% Numbers locked against results/replications/confounder_sensitivity_12.csv.
+% The CSV carries one leave-one-out per city: the spatial control block
+% (lat-lon + ZIP). Per-market baseline RV, the Cinelli-Hazlett f^2 benchmark,
+% the spatial-block sensitivity delta_theta_short_long, and a 4/12 FRAGILE
+% count. Supersedes v2, which described a five-block census/crime/amenity/
+% micro-geo leave-one-out that was never run.
+
+\subsection{Sensitivity to unobserved confounding}
+\label{sec:sensitivity-12}
+
+The Shen-Ross DML estimates in Section~\ref{sec:shen-12city} rest on
+the conditional ignorability assumption that, after partialling out
+the structured property covariates and the location indicators we
+observe, residual variation in the listing language is exogenous to
+residual variation in the log sale price. This assumption is not
+directly testable. We follow \citet{cinelli2020making} and bound the
+strength of any unobserved confounder that would be needed to
+overturn the per-market findings, and we complement that bound with a
+leave-one-out ablation of the spatial control block, which is the
+observed covariate group most directly implicated in the
+spatial-proxy concern that motivates this paper.
+
+\paragraph{Robustness Value.} The Robustness Value (RV) of
+\citeauthor{cinelli2020making} quantifies the minimum strength of an
+unobserved confounder, measured as its partial $R^2$ on both the
+outcome and the treatment, that would suffice to overturn the
+estimate, so that higher RV means greater robustness to unobserved
+confounding. Table~\ref{tab:confounder-sensitivity-12} reports the
+per-market baseline RV alongside the long-DML point estimate against
+which it is computed and the Cinelli-Hazlett $f^2$ benchmark of the
+strongest observed covariate, for all twelve metropolitan markets in
+the panel. Only San Francisco exhibits an RV above the $0.10$
+threshold, at $0.165$, meaning an unobserved confounder would have to
+explain more than sixteen percent of residual variance in both the
+listing-uniqueness score and the log sale price to overturn the San
+Francisco estimate. The remaining eleven markets fall below $0.10$,
+led by Dallas at $0.094$, Chicago at $0.083$, and Phoenix at $0.066$,
+and descending through Atlanta and Denver near $0.056$ and
+Philadelphia at $0.053$ to New York at $0.025$, Boston at $0.023$,
+and Seattle at $0.019$. The earlier description of five markets above
+$0.10$ does not survive the clean rerun, and we report the single
+market that clears the threshold rather than the inflated count.
+
+The $f^2$ values, which place the strength of the most influential
+\emph{observed} covariate on a comparable partial-$R^2$ scale, range
+from about $0.0004$ in Seattle to $0.033$ in San Francisco. The
+strongest covariate we actually measure therefore sits well below the
+RV in every market, so an unobserved confounder would need to be
+considerably stronger than any observed covariate to flip the
+inference. This reassurance is most informative in San Francisco,
+where both the RV and the room between it and the observed benchmark
+are largest, and least informative in the low-RV markets, where
+neither the observed nor the hypothetical-unobserved benchmark is
+large enough to anchor a confident reading.
+
+\paragraph{Spatial-block leave-one-out.} For each of the twelve
+markets we drop the spatial control block, the latitude-longitude
+coordinates together with the ZIP indicators, and recompute the DML
+estimate, reporting the change in $\hat\theta$ relative to the
+fully-controlled specification. The spatial controls move the
+estimate most in Washington DC, where removing them shifts
+$\hat\theta$ by $-0.173$, and next in Atlanta at $+0.060$, Chicago at
+$+0.040$, and New York at $+0.033$. They move it least in Seattle at
+$+0.003$, Boston at $-0.006$, Portland at $+0.006$, and San Francisco
+at $+0.011$. The market with the highest RV is therefore also among
+the least sensitive to its own location controls, which is the
+pattern one would hope to see if the San Francisco estimate were
+genuinely identified rather than carried by the spatial controls.
+
+\paragraph{Fragility.} Under the Cinelli-Hazlett benchmarking
+convention a city-block pair is flagged FRAGILE when the partial
+$R^2$ of the dropped block on either the outcome or the treatment
+exceeds the city's baseline RV, meaning a confounder no stronger than
+the spatial controls we already include could in principle overturn
+the estimate. Four of the twelve markets are flagged on the spatial
+block: Boston, New York, Washington DC, and Atlanta. In each of the
+four the flag is driven by the spatial block's explanatory power for
+the outcome rather than for the treatment, with the block's partial
+$R^2$ on log price reaching $0.153$ in Washington DC against a
+baseline RV of $0.036$, and exceeding the RV by smaller margins in
+New York, Atlanta, and Boston. San Francisco and the other markets
+with the higher RV values carry no fragile flag, consistent with the
+reading that confounding of strength comparable to the observed
+spatial information would not displace those inferences.
+
+\paragraph{Interpretation.} The analysis is deliberately scoped to
+the one observed covariate group the per-market panels share, the
+spatial control block, which is also the block most directly tied to
+the text-as-spatial-proxy mechanism this paper studies. The RV bounds
+general unobserved confounding of the per-market estimate, while the
+spatial leave-one-out localizes how much of each estimate rides on
+measured location. With per-market samples ranging from about $990$
+listings in San Francisco to roughly $15{,}000$ in New York, both
+quantities are estimated with reasonable precision, so the
+cross-market ordering is unlikely to be an artifact of sampling
+noise. Read together, the two diagnostics point to the same
+conclusion as Section~\ref{sec:shen-12city}: San Francisco is the
+market in which the Shen-Ross effect is both the largest in absolute
+terms and the most robust to unobserved confounding, the markets that
+clear the spatial-fragility check are the ones where the point
+estimate is already large relative to its location controls, and the
+low-RV markets are those where modest confounding could overturn an
+already small estimate. We report the per-market sensitivities as
+informative about robustness rather than as a second identification
+test, and we defer benchmarking of non-spatial confounder groups to
+future work, since the covariates required to construct census,
+crime, and amenity blocks are not uniformly available across the
+twelve per-market panels.

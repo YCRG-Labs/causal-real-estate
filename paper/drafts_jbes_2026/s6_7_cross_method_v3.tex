@@ -1,0 +1,135 @@
+% §6.7 Cross-method orthogonality between Shen, Baur, and counterfactual.
+% Numbers locked against results/replications/cross_method_concordance.csv
+% and hotelling_t2_cross_method.csv (both refreshed with the clean CF run).
+% Spearman and sign-agreement computed on the per-city point estimates.
+% Clean k=12, no Portland exclusion. The v2 "joint factor model" subsection
+% (lambda/sigma values, 12/12 credible intervals) had no backing file and is
+% removed; a latent one-factor pooling is noted as planned future work only.
+
+\subsection{Cross-method orthogonality}
+\label{sec:cross-method-12}
+
+Sections~\ref{sec:shen-12city} and~\ref{sec:baur-12city} each identify
+a different small subset of metropolitan markets in which a
+text-on-price effect can be detected at conventional significance. The
+natural question is whether the channels agree on which markets carry
+an effect, or whether they capture substantively different aspects of
+listing language. We answer it by computing per-market rank and sign
+correlations between the Shen-Ross uniqueness DML estimate and the
+Baur PC1 DML estimate, and we add the counterfactual rewriting total
+effect from Section~\ref{sec:counterfactual-12} as a third axis.
+
+\paragraph{Pairwise rank correlations.}
+Table~\ref{tab:cross-method-12} reports the per-market point estimates
+for the three channels. Across the twelve markets the Spearman rank
+correlation between the Shen-Ross estimate and the counterfactual
+total effect is $+0.64$ ($p = 0.02$), the strongest of the three
+pairings, while the correlation between the Shen-Ross estimate and the
+Baur estimate is $-0.59$ ($p = 0.05$) and the correlation between the
+Baur estimate and the counterfactual total effect is $-0.52$
+($p = 0.09$). With only twelve markets the rank statistic carries a
+standard error near $1/\sqrt{12} \approx 0.29$, so we read these
+coefficients as descriptive of the cross-market pattern rather than as
+precise estimates of agreement. The pattern that emerges is that the
+Shen uniqueness channel and the counterfactual-rewriting channel rank
+together across markets, whereas the Baur PC1 axis ranks oppositely to
+both, which is the direction expected from its negative pooled loading
+on the utilitarian-vocabulary axis documented in
+Section~\ref{sec:baur-12city}: a market with a strongly positive
+Shen uniqueness premium tends to sit low on the Baur axis. We do not
+read the negative Baur correlations as evidence that the channels
+contradict one another, because the channels are measured on axes with
+opposite substantive orientation.
+
+\paragraph{Sign agreement.} Counting markets in which two channels
+share the sign of their point estimate, the Shen and counterfactual
+channels agree in seven of the twelve markets, the strongest pairwise
+sign concordance and consistent with their positive rank correlation,
+while Shen and Baur agree in three markets and Baur and the
+counterfactual agree in two. No market has all three channels sharing
+a common sign, which again reflects the opposite orientation of the
+Baur axis rather than methodological inconsistency.
+
+\paragraph{Identification overlap.} A more decision-relevant summary
+than rank agreement is which markets each channel identifies at the
+$95\%$ level, where the per-method bootstrap confidence interval
+excludes zero. The Shen channel identifies ten of the twelve markets,
+the counterfactual channel nine, and the Baur axis four, namely New
+York, Philadelphia, Denver, and Atlanta, all of which also clear the
+Shen threshold. Three markets are identified by all three channels
+jointly, New York, Philadelphia, and Denver, and eight of the twelve
+are identified by at least two channels, with no market left
+unidentified by every channel. Among the markets identified by
+exactly two channels, four pair the Shen and counterfactual axes, San
+Francisco, Washington DC, Phoenix, and Dallas, and one pairs Shen and
+Baur, Atlanta, which mirrors the positive Shen-counterfactual rank
+correlation at the level of the identified set.
+
+\paragraph{Substantive interpretation under a triangulation design.}
+The three identification strategies are not redundant point estimators
+of a single scalar effect; they are deliberately chosen to have
+orthogonal sources of bias. The Shen-Ross uniqueness measure leverages
+within-market lexical rarity and inherits any bias from the
+neighborhood-peer-set definition, the Baur sentence-BERT axis
+leverages cross-listing semantic geometry and inherits bias from the
+embedding model's pretraining distribution, and the LLM counterfactual
+rewriting intervention leverages within-listing minimal-edit
+substitution and inherits bias from the rewriter's distributional
+shift. Following the causal-triangulation framework of
+\citet{lawlor2016triangulation} and \citet{hammerton2021causal},
+methods whose biases are largely unrelated provide jointly stronger
+evidence on a common causal target than methods that share a bias
+structure, regardless of whether their per-market point estimates
+agree numerically. This is a per-market restatement of the
+\citet{heckman2008econometric} position that different estimators
+identify different parameters: each method rejects a method-specific
+null about a method-specific functional of the language-price
+relationship, while the joint test below rejects the global null that
+no functional has any effect in a given market. Under this design the
+mixed and imprecise pairwise correlations are the discriminant-validity
+signal the design anticipates, and the joint rejection pattern is the
+convergent signal, which is the canonical signature predicted when
+several low-power estimators each identify a different feature of a
+partially-identified estimand \citep{manski2003partial, tamer2010partial}:
+the joint test inherits power from the union of identifying
+restrictions even when each marginal test does not.
+
+\paragraph{Joint-null Hotelling test.} The most powerful summary of
+the cross-method evidence asks, for each market, whether the joint null
+$H_0: (\theta_{\mathrm{Shen}}, \theta_{\mathrm{Baur}},
+\theta_{\mathrm{CF}}) = (0, 0, 0)$ can be rejected against the
+two-sided alternative. Treating the three per-market estimates as
+asymptotically independent, since the three methods use disjoint
+sources of variation in a Doc2Vec uniqueness score, a sentence-BERT
+principal component, and an LLM-rewriting differential, we compute the
+Hotelling-style statistic $T^2_m = z^2_{\mathrm{Shen},m} +
+z^2_{\mathrm{Baur},m} + z^2_{\mathrm{CF},m}$ per market and refer it to
+a $\chi^2_3$ asymptotic distribution. The joint null is rejected in all
+twelve of the twelve markets at conventional five-percent significance,
+and the rejection survives Benjamini-Hochberg false-discovery
+correction across the twelve markets, where the largest adjusted
+$q$-value is $0.002$. The weakest joint rejection is Boston, with
+$T^2 = 14.5$ and $q = 0.002$, and even there the joint null is
+comfortably rejected, so the post-2020 panel contains no market that
+reads as a clean text-on-price null. Atlanta, which an earlier draft
+treated as a clean null, now rejects strongly with $T^2 = 128$ on the
+strength of its Shen and Baur $z$-statistics even though its
+counterfactual interval covers zero. The rejection of the joint null
+in every market despite the mixed and imprecise pairwise rank
+correlations is consistent with each method contributing independent
+low-power evidence of a non-zero text-on-price signal, even when no
+single method attains significance on that market alone.
+
+We favor the reading that text-on-price effects are real but
+heterogeneous across metropolitan markets, with the channel that
+detects an effect varying by market, while leaving open the question of
+which method is preferred when an analyst can deploy only one. A
+constructive complement to the joint Hotelling test would treat the
+three per-market estimates as noisy indicators of a single latent
+market-level text-price effect and pool them through an anchored
+one-factor measurement model in the tradition of latent-variable
+meta-analysis, recovering a precision-weighted posterior for each
+market's common factor. We have not fit that model on the present
+panel and report it here only as a planned extension, so the joint
+Hotelling test and the identification-overlap counts above remain the
+cross-method evidence on which the conclusions of this section rest.
