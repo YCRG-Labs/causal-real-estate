@@ -140,27 +140,35 @@ def calibrate_truths(
     """
     from joblib import Parallel, delayed
 
+    n_truth_draws = 5
+
     def _one_cell(est: str, dgp_name: str, beta: float):
-        # Calibrate truth as the estimator's probability limit on a big-N draw
-        # of the SAME DGP each replicate uses, for BOTH scm0 and scm1. scm0 is
-        # NOT enforced to 0: with the finite n_W confounder set the DGP leaves a
+        # Calibrate truth as the estimator's probability limit on big-N draws of
+        # the SAME DGP each replicate uses, for BOTH scm0 and scm1. scm0 is NOT
+        # enforced to 0: with the finite n_W confounder set the DGP leaves a
         # residual estimand (~+0.007), so the CI must be assessed against the
         # quantity the estimator actually targets, not the structural zero.
         # Forcing truth=0 mislabels that residual as bias and destroys null-cell
-        # coverage (see check_scm0_truth.py).
-        rng = np.random.default_rng(seed)
-        if dgp_name == "scm0":
-            E, _, W, Y = sample_scm0(gen, None, n_truth_pop, n_W=n_W, rng=rng)
-        else:
-            E, _, W, Y = sample_scm1(
-                gen, None, n_truth_pop, beta_direct=beta, n_W=n_W, rng=rng,
-            )
-        try:
-            r = ESTIMATORS[est](E, W, Y)
-            return f"{est}|{dgp_name}", float(r.theta)
-        except Exception as e:
-            print(f"  truth calibration FAILED for {est}|{dgp_name}: {e}", flush=True)
+        # coverage (see check_scm0_truth.py). We AVERAGE n_truth_draws big-N
+        # draws because a single draw at n_truth_pop has Monte-Carlo SE
+        # comparable to the residual estimand itself, which would leave noise in
+        # the null-cell bias column.
+        thetas = []
+        for d in range(n_truth_draws):
+            rng = np.random.default_rng(seed + 1000 * d)
+            if dgp_name == "scm0":
+                E, _, W, Y = sample_scm0(gen, None, n_truth_pop, n_W=n_W, rng=rng)
+            else:
+                E, _, W, Y = sample_scm1(
+                    gen, None, n_truth_pop, beta_direct=beta, n_W=n_W, rng=rng,
+                )
+            try:
+                thetas.append(float(ESTIMATORS[est](E, W, Y).theta))
+            except Exception as e:
+                print(f"  truth draw {d} FAILED for {est}|{dgp_name}: {e}", flush=True)
+        if not thetas:
             return f"{est}|{dgp_name}", float("nan")
+        return f"{est}|{dgp_name}", float(np.mean(thetas))
 
     cells = [(est, dgp_name, beta) for est in estimators for dgp_name, beta in dgps]
     # ALWAYS sequential: calibrate_truths is small (≤16 cells × ~5s each).
