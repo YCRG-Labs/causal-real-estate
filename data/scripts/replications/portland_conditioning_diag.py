@@ -78,8 +78,15 @@ for c in CITIES:
         logY = np.log(Y)
 
         sd = X.std(0)
-        near_const = int((sd < 1e-8).sum())
+        name0 = (lambda j: NAMES_BASE[j] if (NAMES_BASE and j < len(NAMES_BASE)) else f"col{j}")
+        # near-constant / high-leverage columns: tiny sd, or constant except a few rows
+        nz = np.array([np.minimum((X[:, j] != X[:, j].min()).sum(),
+                                  (X[:, j] != X[:, j].max()).sum()) for j in range(X.shape[1])])
+        degen_cols = [(name0(j), float(sd[j]), int(nz[j]))
+                      for j in range(X.shape[1]) if sd[j] < 1e-6 or nz[j] <= 5]
+        near_const = len(degen_cols)
         Xs = (X - X.mean(0)) / np.where(sd < 1e-12, 1.0, sd)
+        cond_X = float(np.linalg.cond(Xs))
 
         E = T_emb - T_emb.mean(0)
         pc1 = PCA(1, random_state=0).fit_transform(E).ravel()
@@ -102,20 +109,25 @@ for c in CITIES:
 
         rows.append(dict(city=c, n=len(Y), n_conf=X.shape[1], r2_y_X=r2y, r2_t_X=r2t,
                          kappa=kappa, denom_E_Tt2=denom, final_r2=final_r2,
-                         theta=theta, near_const_cols=near_const, top_corr_Y=topy,
-                         top_corr_T=topt))
+                         theta=theta, cond_X=cond_X, degen_cols=degen_cols,
+                         top_corr_Y=topy, top_corr_T=topt))
         print(f"{c:<13} n={len(Y):>6}  R2(Y|X)={r2y:+.3f}  R2(T|X)={r2t:+.3f}  "
-              f"kappa={kappa:>9.1f}  E[Tt^2]={denom:.4f}  finalR2={final_r2:+.3f}  "
-              f"theta={theta:+.3f}  nconst={near_const}")
+              f"cond(X)={cond_X:>11.1f}  finalR2={final_r2:+.3f}  "
+              f"theta={theta:+.3f}  degen_cols={near_const}")
     except Exception as e:
         print(f"{c:<13} ERROR {type(e).__name__}: {e}")
 
+print("\n=== degenerate / high-leverage confounder columns (name, sd, "
+      "#rows differing from the constant value) ===")
+for r in rows:
+    flag = "  <== ILL-CONDITIONED" if (r["cond_X"] > 1e6 or r["final_r2"] > 0.99) else ""
+    dc = r["degen_cols"] if r["degen_cols"] else "(none)"
+    print(f"{r['city']:<13} cond(X)={r['cond_X']:.2e}  degenerate_cols={dc}{flag}")
+
 print("\n=== leak localization (top confounders by |corr|) ===")
 for r in rows:
-    flag = "  <== DEGENERATE" if (r["kappa"] > 100 or abs(r["theta"]) > 0.5
-                                  or r["final_r2"] > 0.99) else ""
     print(f"{r['city']:<13} |corr w/ logprice|: {r['top_corr_Y']}   "
-          f"|corr w/ text-PC1|: {r['top_corr_T']}{flag}")
+          f"|corr w/ text-PC1|: {r['top_corr_T']}")
 
 out = Path(__file__).resolve().parents[3] / "results/replications/portland_conditioning_diag.json"
 out.write_text(json.dumps(rows, indent=1, default=str))
