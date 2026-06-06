@@ -33,8 +33,15 @@ from scipy import stats
 
 REPO = Path(__file__).resolve().parents[3]
 
-# Shen-Ross (2021, JUE 121:103299) Atlanta point estimate per-σ.
-SHEN_PUBLISHED_THETA = 0.050
+# Shen & Ross (2021), "Information Value of Property Description: A Machine
+# Learning Approach," J. Urban Econ. 121:103299.  Verified against the
+# published abstract: a one-standard-deviation increase in listing uniqueness
+# raises sale price by 15% in the hedonic price model and by 10% in the
+# repeat-sales model.  This replication is a cross-sectional hedonic DML, so
+# the anchor is the hedonic figure, converted to log points via ln(1.15) =
+# 0.1398.  (The conservative repeat-sales figure maps to ln(1.10) = 0.0953 and
+# can be supplied through --theta_true.)
+SHEN_PUBLISHED_THETA = 0.140
 
 
 def retrodesign(theta_true: float, s: float, alpha: float = 0.05):
@@ -81,8 +88,9 @@ def main():
                                   / "shen_12city_table.csv"))
     ap.add_argument("--theta_true", type=float,
                     default=SHEN_PUBLISHED_THETA,
-                    help="assumed true per-σ effect; default is Shen "
-                         "& Ross 2021 Atlanta point estimate")
+                    help="assumed true per-σ effect; default is the Shen "
+                         "& Ross 2021 hedonic published effect (15%, "
+                         "0.140 log points)")
     ap.add_argument("--out",
                     default=str(REPO / "results" / "replications"
                                   / "type_s_type_m_shen.csv"))
@@ -92,7 +100,7 @@ def main():
 
     print(f"\n=== Gelman-Carlin Type-S/Type-M analysis ===")
     print(f"  assumed θ_true = {args.theta_true:+.4f} (per σ, "
-          "Shen-Ross 2021 Atlanta published)")
+          "Shen & Ross 2021 hedonic published: 15% ≈ 0.140 log pts)")
     print(f"  per-market estimators are Shen-Ross uniqueness DML "
           "with bootstrap SE\n")
 
@@ -113,8 +121,9 @@ def main():
     print(f"\n  median power across 12 markets: {out['power'].median():.3f}")
     print(f"  median Type-S error rate: {out['type_s'].median():.3f}")
     print(f"  median Type-M magnification: {out['type_m'].median():.2f}x")
+    n_min, n_max = int(out["n"].min()), int(out["n"].max())
     print(f"\n  Interpretation: at the per-market sample sizes in this "
-          "panel (n ≈ 285-334),")
+          f"panel (n = {n_min:,}-{n_max:,}),")
     print(f"  the analysis has ~{out['power'].median()*100:.0f}% power to "
           f"detect Shen's published effect; significant findings would "
           f"exaggerate")

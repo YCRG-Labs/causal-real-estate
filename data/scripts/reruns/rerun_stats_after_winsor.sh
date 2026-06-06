@@ -7,7 +7,10 @@ set -u
 cd ~/causal-real-estate
 C="sf boston nyc dc philadelphia chicago seattle denver atlanta portland phoenix dallas"
 
-echo "=== Shen per city (winsorized confounders) === $(date)"
+echo "=== Baur per city (valid_mask alignment fix) === $(date)"
+python3 data/scripts/replications/baur_pooled_pca.py --all_12 --fast 2>&1 | tail -16
+
+echo "=== Shen per city (winsorized confounders + valid_mask fix) === $(date)"
 for c in $C; do
     echo -n "  shen $c: "
     python3 data/scripts/replications/shen_2021.py --city "$c" --doc2vec --fast \

@@ -25,14 +25,20 @@ What this script actually does in its DEFAULT mode (the cousin construction):
        (zip,) when year is missing.
   3. Uniqueness = 1 - cos(self_tfidf, mean(peer_tfidf)).
   4. Hedonic OLS: log_price ~ uniqueness_z + structured features + optional
-     (zip, year) cell FE; HC3 robust SEs.  Shen reports a ~+10-15% per
-     sigma effect (her Table 5 main coefficient is ~+0.149 / sigma at the
-     Atlanta MLS-Area FE spec; SE ~0.034).
+     (zip, year) cell FE; HC3 robust SEs.  The published Shen & Ross (2021,
+     JUE 121:103299) abstract states a one-SD uniqueness increase raises sale
+     price by 15% in the hedonic model (10% in the repeat-sales model), i.e.
+     ~0.140 log-points (ln 1.15).  NOTE: the earlier +5.6%-per-SD figure that
+     circulated is the superseded working-paper number, not the published
+     value.  The published abstract reports no standard error or n, so the
+     published_se / published_n used in the power calc are UNVERIFIED
+     placeholders.
   5. Re-run the project DML pipeline with uniqueness as the continuous
      treatment, same confounder set as the production analysis.
   6. Always print the binomial-equivalent power: at our n vs Shen's
-     theta-hat=0.149 with SE 0.034, what is our power against the published
-     effect (one-sided, alpha=0.05)?
+     published theta-hat=0.140 (15% per SD in the hedonic model) with an
+     unverified SE placeholder, what is our power against the published
+     effect (two-sided, alpha=0.05)?
 
 Flags
 -----
@@ -405,7 +411,7 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
              *, k: int = 5, k_sweep: bool = False, cell_fe: bool = False,
              use_doc2vec: bool = False, fast: bool = False,
              n_boot: int | None = None,
-             published_theta: float = 0.149,
+             published_theta: float = 0.140,
              published_se: float = 0.034,
              published_n: int = 40000) -> dict:
     print(f"\n=== Shen & Ross (2021) replication: {city} ===")
@@ -418,13 +424,19 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
         return {"city": city, "error": "no features"}
     _, confounders, Y, meta = feats
 
-    # `get_features_and_target` may have dropped rows (Y<=0 etc). Align emb_df
-    # against the same `valid` mask by rebuilding the mask the way the loader
-    # does. Easier: trust that emb_df rows correspond 1:1 to confounders rows
-    # because no row drops happen on a 995-row SF set with valid prices.
-    if len(emb_df) != confounders.shape[0]:
-        # Conservative: take the first N of emb_df to match.
-        emb_df = emb_df.iloc[: confounders.shape[0]].reset_index(drop=True)
+    # `get_features_and_target` drops rows with non-positive/NaN/Inf price or
+    # all-zero confounders. Those dropped rows are INTERIOR, not a tail, so the
+    # previous `emb_df.iloc[:confounders.shape[0]]` tail-truncation silently
+    # mispaired listings with the filtered confounders/Y. meta["valid_mask"] is
+    # the boolean row mask over the original emb_df that survived filtering;
+    # subset emb_df by it so every emb-derived array built below (descriptions,
+    # lat/lon, zip, year, and the uniqueness vectors derived from them) aligns
+    # 1:1 with the filtered confounders/Y.
+    valid_mask = np.asarray(meta["valid_mask"], dtype=bool)
+    emb_df = emb_df[valid_mask].reset_index(drop=True)
+    assert len(emb_df) == confounders.shape[0] == len(Y), (
+        f"row-alignment failure: emb_df={len(emb_df)} "
+        f"confounders={confounders.shape[0]} Y={len(Y)}")
 
     # robust to schema drift: older parquets only have `description`
     desc_col = "clean_description" if "clean_description" in emb_df.columns else "description"
@@ -474,6 +486,11 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
           f"unique years={pd.Series(years).nunique()}")
 
     # ---- always print power vs published effect ---------------------------
+    # Anchor = Shen & Ross (2021, JUE) abstract: a one-SD uniqueness increase
+    # raises sale price 15% (hedonic) / 10% (repeat-sales) => ~0.140 log-points
+    # (ln 1.15). This is the PUBLISHED value, not the superseded working-paper
+    # +5.6%/SD. The abstract gives no SE or n, so published_se/published_n are
+    # unverified placeholders feeding the 1/sqrt(n) scaling below.
     pwr = power_at_published_effect(n_our=n, theta_pub=published_theta,
                                     se_pub=published_se, n_pub=published_n)
     print(f"  Power vs published θ={published_theta:+.3f} "
@@ -515,7 +532,7 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
     print(f"    uniqueness_z: β={ols.coef:+.4f}  se={ols.se:.4f}  t={ols.t:+.2f}  "
           f"p={ols.p:.4g}  95%CI=[{ols.ci_low:+.4f}, {ols.ci_high:+.4f}]")
     print(f"    → per-σ price effect: {ols.pct_per_sd:+.2f}%   "
-          f"(Shen reports ~+15% in MLS-Area×Year FE spec)")
+          f"(Shen & Ross 2021 abstract: ~+15% per σ in the hedonic model)")
     print(f"    OLS R²={ols.r2:.4f}, adj R²={ols.adj_r2:.4f}")
 
     # ---- alt cell-FE spec for direct comparison (always) -------------------
@@ -664,10 +681,13 @@ def main():
     ap.add_argument("--n_boot", type=int, default=None,
                     help="override DML bootstrap iterations (default 500; "
                          "0 forces IF-SE)")
-    ap.add_argument("--published_theta", type=float, default=0.149,
-                    help="Shen's published per-σ coefficient (default 0.149)")
+    ap.add_argument("--published_theta", type=float, default=0.140,
+                    help="Shen & Ross (2021) published per-σ effect in "
+                         "log-points (default 0.140 = ln 1.15, the abstract's "
+                         "15%% hedonic price increase per SD)")
     ap.add_argument("--published_se", type=float, default=0.034,
-                    help="Shen's published SE on that coefficient")
+                    help="SE on Shen's coefficient (UNVERIFIED placeholder; "
+                         "the published abstract reports no SE)")
     ap.add_argument("--published_n", type=int, default=40000,
                     help="Shen's n for the power calc denominator")
     ap.add_argument("--out", type=Path, default=None,

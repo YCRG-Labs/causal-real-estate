@@ -290,13 +290,16 @@ def _verify_linear_guardedness(P: torch.Tensor, Sigma_xz: torch.Tensor,
     else:
         S_np = np.asarray(Sigma_xz, dtype=np.float64)
     resid = float(np.abs(P_np @ S_np).max())
-    if resid > tol:
+    if not np.isfinite(resid) or resid > tol:
         raise RuntimeError(
             f"{label} linear-guardedness identity violated: "
-            f"max |P @ Sigma_xz| = {resid:.3e} > tol {tol:.0e}.  "
-            "This usually means LeaceFitter.svd_tol is too loose or the "
-            "Sigma_xx pseudoinverse is rank-deficient; lower svd_tol or "
-            "increase shrinkage_eps and refit."
+            f"max |P @ Sigma_xz| = {resid:.3e} is non-finite or exceeds "
+            f"tol {tol:.0e}.  A NaN/Inf residual means the erasure is "
+            "degenerate (e.g. a rank-deficient Sigma_xx pseudoinverse) and "
+            "must never be certified as guarded.  This usually means "
+            "LeaceFitter.svd_tol is too loose or the Sigma_xx pseudoinverse "
+            "is rank-deficient; lower svd_tol or increase shrinkage_eps and "
+            "refit."
         )
     return resid
 
@@ -342,6 +345,11 @@ def leace_erase(T_tr, Z_tr, T_holdout=None, shrinkage=True,
     fitter.update(T_tr, Z_t)
     eraser = fitter.eraser
 
+    # Loose floating-point sanity check.  Note: at the default svd_tol=1e-2
+    # this tolerance is max(1.0, 1e-4) = 1.0, so the magnitude branch never
+    # fires; with the NaN/Inf guard added to _verify_linear_guardedness it
+    # still catches a degenerate (non-finite) residual.  The tight check
+    # below (guardedness_tol=1e-3) is what enforces the real identity.
     resid = _verify_linear_guardedness(eraser.P, fitter.sigma_xz,
                                        tol=max(svd_tol * 100, 1e-4),
                                        label=label)

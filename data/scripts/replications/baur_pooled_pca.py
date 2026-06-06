@@ -82,6 +82,17 @@ def run_baur_pooled(
     T_pooled = _attach_pooled_treatment(city, emb_df, pooled_csv)
     if T_pooled is None:
         return {"city": city, "error": "no pooled treatment"}
+    # `_attach_pooled_treatment` builds T_pooled from the UNFILTERED emb_df, so
+    # it has one row per original listing. `get_features_and_target` may have
+    # dropped INTERIOR rows (non-positive/NaN/Inf price or all-zero confounders)
+    # from confounders/Y_log. Subset T_pooled by the same meta["valid_mask"] so
+    # the treatment pairs with the surviving listings before it is passed
+    # positionally to the DML.
+    valid_mask = np.asarray(meta["valid_mask"], dtype=bool)
+    T_pooled = T_pooled[valid_mask]
+    assert len(T_pooled) == len(confounders) == len(Y_log), (
+        f"row-alignment failure: T_pooled={len(T_pooled)} "
+        f"confounders={len(confounders)} Y_log={len(Y_log)}")
 
     if n_subset is not None and n_subset < len(Y_log):
         rng = np.random.default_rng(seed)

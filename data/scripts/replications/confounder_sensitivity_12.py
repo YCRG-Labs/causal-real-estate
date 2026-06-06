@@ -45,7 +45,7 @@ sys.path.insert(0, str(REPO / "data" / "scripts"))
 sys.path.insert(0, str(REPO / "data" / "scripts" / "replications"))
 
 from causal_inference import (  # noqa: E402
-    load_analysis_data, get_features_and_target,
+    load_analysis_data, get_features_and_target, _spatial_join_parcels,
 )
 from canonical_confounders import (  # noqa: E402
     SPATIAL, PROPERTY, CENSUS, CRIME, AMENITY, MICRO_GEO, ALL,
@@ -59,8 +59,9 @@ ALL_12 = ["boston", "nyc", "sf", "dc", "philadelphia", "chicago",
 
 BLOCKS = {
     "spatial": SPATIAL,
-    "crime": CRIME,
+    "property": PROPERTY,
     "census": CENSUS,
+    "crime": CRIME,
     "amenity": AMENITY,
     "micro_geo": MICRO_GEO,
 }
@@ -155,6 +156,55 @@ def _partial_r2_block(block_cols, others_cols, X_df, y_array):
         return 0.0
 
 
+def _confounder_block_names(emb_df, parcels, crime_dropped):
+    """Reconstruct the ordered column names of the joined confounder array
+    that get_features_and_target returns, so each canonical block can be
+    ablated and the long-regression RV uses the full ~35-confounder set.
+
+    Neither get_features_and_target nor its meta expose column names, so we
+    mirror its assembly order exactly: [latitude, longitude] + PROPERTY +
+    CONTEXTUAL (CENSUS + CRIME + AMENITY + MICRO_GEO), with the crime block
+    dropped when the city failed the crime temporal-match guard, followed by
+    the identical >50%-NaN column filter (col_nan_rate < 0.5 over all rows,
+    computed before the row-validity mask). The surviving names line up
+    one-to-one with the columns of the returned `confounders`; the caller
+    asserts that alignment. Returns None when the estimator fell back to the
+    zip one-hot design (no spatial block, no spatial join), where canonical
+    block membership is undefined.
+    """
+    lat = pd.to_numeric(emb_df.get("latitude", pd.Series(dtype=float)),
+                        errors="coerce").values
+    lon = pd.to_numeric(emb_df.get("longitude", pd.Series(dtype=float)),
+                        errors="coerce").values
+    names: list[str] = []
+    parts: list[np.ndarray] = []
+    if not np.all(np.isnan(lat)) and not np.all(np.isnan(lon)):
+        names += list(SPATIAL)
+        parts.append(np.column_stack([lat, lon]))
+    joined = None
+    if parcels is not None:
+        try:
+            joined = _spatial_join_parcels(emb_df, parcels)
+        except Exception:
+            joined = None
+    if joined and crime_dropped and "contextual" in joined:
+        ctx_cols = joined["contextual_cols"]
+        keep = [i for i, c in enumerate(ctx_cols) if not c.startswith("crime_")]
+        joined["contextual"] = joined["contextual"][:, keep]
+        joined["contextual_cols"] = [ctx_cols[i] for i in keep]
+    if joined and "property" in joined:
+        names += list(joined["property_cols"])
+        parts.append(joined["property"])
+    if joined and "contextual" in joined:
+        names += list(joined["contextual_cols"])
+        parts.append(joined["contextual"])
+    if not parts:
+        return None
+    full = np.hstack(parts)
+    good = np.isnan(full).mean(axis=0) < 0.5
+    return [nm for nm, keep in zip(names, good) if keep]
+
+
 def diagnose_one(city, seed=42, k_folds=5):
     print(f"\n========================  {city}  ========================")
     loaded = load_analysis_data(city)
@@ -165,6 +215,25 @@ def diagnose_one(city, seed=42, k_folds=5):
     if feats is None:
         return None
     _, confounders, Y, meta = feats
+    # Recover confounder column names from the ORIGINAL emb_df (before the
+    # row-truncation below), so the >50%-NaN column filter is computed over the
+    # same full row set get_features_and_target used. The resulting names align
+    # one-to-one with the columns of the joined `confounders` array.
+    conf_names = _confounder_block_names(
+        emb_df, parcels, bool(meta.get("crime_dropped", False)))
+    blocks_recovered = (conf_names is not None
+                        and len(conf_names) == confounders.shape[1])
+    if not blocks_recovered:
+        got = "None" if conf_names is None else str(len(conf_names))
+        print(f"  [{city}] WARN: confounder columns could not be mapped to "
+              f"blocks (recovered {got} names vs {confounders.shape[1]} "
+              f"columns); reporting full-set DML + RV only, skipping per-block "
+              f"ablation.")
+        # TODO: a zip one-hot fallback design or a column-count mismatch
+        # reached here, so canonical block membership is unrecoverable without
+        # column names from get_features_and_target. The full-set RV below is
+        # still correct (it conditions on the entire confounder array).
+        conf_names = [f"conf_{i}" for i in range(confounders.shape[1])]
     if len(emb_df) != confounders.shape[0]:
         emb_df = emb_df.iloc[: confounders.shape[0]].reset_index(drop=True)
 
@@ -191,49 +260,26 @@ def diagnose_one(city, seed=42, k_folds=5):
         print(f"  [{city}] uniqueness SD ~ 0; skip"); return None
     T_z = (uniqueness - float(np.mean(uniqueness))) / t_sd
 
-    # Build the confounder dataframe by canonical name, drawing each column
-    # from whichever alias the city's emb_df happens to use. The 3-city
-    # pre-expansion parquets (boston, nyc, sf) use shorter aliases like
-    # "beds" / "sqft" / "year"; the 9-city pull uses the canonical names
-    # from canonical_confounders.py. This loop unifies them.
-    src_no_dup = emb_df.loc[:, ~emb_df.columns.duplicated()]
+    # Design from the JOINED confounder array — the only source carrying every
+    # block. The census / crime / amenity / micro_geo covariates live here,
+    # not in emb_df (which only holds spatial + property), so the previous
+    # emb_df alias lookup silently ablated only the spatial block and computed
+    # the RV against ~5 confounders. Naming the columns by the reconstructed
+    # canonical names lets every real block be dropped and puts the full
+    # confounder set behind the long-regression RV.
+    X_df = pd.DataFrame(np.asarray(confounders, dtype=np.float64),
+                        columns=conf_names).reset_index(drop=True).fillna(0.0)
 
-    def _get(*aliases):
-        for a in aliases:
-            if a in src_no_dup.columns:
-                col = src_no_dup[a]
-                if isinstance(col, pd.DataFrame):
-                    col = col.iloc[:, 0]
-                return pd.to_numeric(col, errors="coerce")
-        return None
-
-    aliases = {
-        "lat": ["lat", "latitude"],
-        "lon": ["lon", "longitude"],
-        "bedrooms": ["bedrooms", "beds"],
-        "bldg_area_sqft": ["bldg_area_sqft", "sqft", "building_area_sqft"],
-        "lot_area_sqft": ["lot_area_sqft", "lot_sqft", "lot_size_sqft"],
-        "year_built": ["year_built", "year"],
-    }
-    X_dict: dict[str, pd.Series] = {}
-    for canonical in ["lat", "lon"] + list(PROPERTY) + [c for c in ALL
-                                                          if c not in {"lat", "lon"}
-                                                          and c not in PROPERTY]:
-        s = _get(*aliases.get(canonical, [canonical]))
-        if s is not None:
-            X_dict[canonical] = s.values
-    X_df = pd.DataFrame(X_dict, index=src_no_dup.index)
-    X_df = X_df.ffill().bfill().fillna(0.0)
-
-    blocks_present = {bn: [c for c in cols if c in X_df.columns]
+    blocks_present = {bn: [c for c in conf_names if c in set(cols)]
                       for bn, cols in BLOCKS.items()}
     blocks_present = {bn: cols for bn, cols in blocks_present.items() if cols}
-    print(f"  N={n}  blocks present: "
+    print(f"  N={n}  n_conf={X_df.shape[1]}  blocks present: "
           + ", ".join(f"{bn}({len(c)})" for bn, c in blocks_present.items()))
 
-    # Full long DML
-    full_cols = list(PROPERTY) + [c for cols in blocks_present.values() for c in cols]
-    full_cols = [c for c in full_cols if c in X_df.columns]
+    # Full long DML over the entire confounder set. Per Gilbert et al. (2024)
+    # the spatial block stays IN the long regression; it is ablated as one of
+    # the blocks below rather than dropped from the headline estimate.
+    full_cols = list(X_df.columns)
     Y_res_full, T_res_full = _ridge_resid(T_z, X_df[full_cols].to_numpy(), Y, k_folds, seed)
     theta_long, se_long = _theta_se_from_resids(Y_res_full, T_res_full)
     rv, rv_a, f2 = _rv(theta_long, se_long, n, len(full_cols))

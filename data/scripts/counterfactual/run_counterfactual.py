@@ -195,24 +195,21 @@ def encode_texts(texts: list[str], batch_size: int = 128) -> np.ndarray:
                           convert_to_numpy=True)
 
 
-# ---------- predicted log-price for a rewrite --------------------------------
+# ---------- predicted log-price helpers --------------------------------------
 
-def predicted_logprice_for_rewrite(
-    art: DMLArtifacts,
-    rewrite_emb: np.ndarray,
-    listing_conf_s: np.ndarray,
-) -> float:
-    """Push a rewrite through the trained DML model.
-
-    Baseline = model_y(listing's confounder vector). Marginal text effect =
-    theta * (pc1_norm_rewrite). Returns baseline + marginal."""
-    pc1_rewrite = float(art.pca.transform(rewrite_emb.reshape(1, -1))[0, 0])
-    pc1_rewrite_norm = (pc1_rewrite - art.pc1_mean) / art.pc1_std
-    baseline = float(art.model_y_full.predict(listing_conf_s.reshape(1, -1))[0])
-    return baseline + art.theta * pc1_rewrite_norm
+def pc1_norm_from_emb(art: DMLArtifacts, emb: np.ndarray) -> float:
+    """Project one embedding through the trained PCA and standardize PC1 with
+    the SAME centering/scaling used at DML fit time. Applied identically to the
+    original text and to every rewrite so their PC1 values are comparable and
+    any encoding/cleaning offset cancels in the within-listing contrast."""
+    pc1 = float(art.pca.transform(emb.reshape(1, -1))[0, 0])
+    return (pc1 - art.pc1_mean) / art.pc1_std
 
 
-def baseline_logprice(art: DMLArtifacts, listing_conf_s: np.ndarray) -> float:
+def conf_only_logprice(art: DMLArtifacts, listing_conf_s: np.ndarray) -> float:
+    """Confounder-only prediction model_y(conf). The text contribution
+    theta * pc1_norm is added on top of this by the caller, for both the
+    factual (original) text and each counterfactual rewrite."""
     return float(art.model_y_full.predict(listing_conf_s.reshape(1, -1))[0])
 
 
@@ -228,6 +225,29 @@ def bootstrap_mean_ci(values: np.ndarray, n_boot: int = 2000, seed: int = 42,
     boot_idx = rng.integers(0, n, size=(n_boot, n))
     boots = values[boot_idx].mean(axis=1)
     return (float(values.mean()),
+            float(np.quantile(boots, alpha / 2)),
+            float(np.quantile(boots, 1 - alpha / 2)))
+
+
+def cluster_bootstrap_mean_ci(clusters: list, n_boot: int = 2000, seed: int = 42,
+                              alpha: float = 0.05) -> tuple[float, float, float]:
+    """Cluster (block) bootstrap for an arm whose rewrites are correlated within
+    a listing (shared confounders, baseline, and source text). Each element of
+    `clusters` holds one listing's deltas; we resample whole listings with
+    replacement and pool their carried deltas before taking the mean. The point
+    estimate is the overall mean of all deltas; only the CI changes. Resampling
+    individual deltas i.i.d. would understate the variance."""
+    blocks = [np.asarray(c, dtype=float) for c in clusters if len(c) > 0]
+    if not blocks:
+        return float("nan"), float("nan"), float("nan")
+    all_vals = np.concatenate(blocks)
+    rng = np.random.default_rng(seed)
+    n_clusters = len(blocks)
+    boots = np.empty(n_boot, dtype=float)
+    for b in range(n_boot):
+        idx = rng.integers(0, n_clusters, size=n_clusters)
+        boots[b] = np.concatenate([blocks[j] for j in idx]).mean()
+    return (float(all_vals.mean()),
             float(np.quantile(boots, alpha / 2)),
             float(np.quantile(boots, 1 - alpha / 2)))
 
@@ -332,19 +352,34 @@ def _assemble_result(
     # 7. aggregate per-arm causal effects
     per_arm: dict[str, dict] = {}
     for arm_kind in ("style_stripped", "style_swap"):
-        deltas: list[float] = []
-        for L in listings_out:
-            for rw in L.rewrites:
-                if not rw.validation["overall_pass"]:
-                    continue
-                if arm_kind == "style_stripped" and rw.arm == "style_stripped":
-                    deltas.append(rw.delta_logprice)
-                if arm_kind == "style_swap" and rw.arm.startswith("style_swap:"):
-                    deltas.append(rw.delta_logprice)
-        arr = np.asarray(deltas, dtype=float)
-        mean, lo, hi = bootstrap_mean_ci(arr) if len(arr) > 0 else (float("nan"),) * 3
+        if arm_kind == "style_swap":
+            # The style-swap arm has up to 3 correlated rewrites per listing
+            # (same confounders, baseline, and source text). Bootstrap at the
+            # LISTING level: resample listings and carry all their swap deltas,
+            # so the CI reflects the clustering instead of treating the rewrites
+            # as independent draws.
+            clusters: list[list[float]] = []
+            for L in listings_out:
+                cl = [rw.delta_logprice for rw in L.rewrites
+                      if rw.validation["overall_pass"]
+                      and rw.arm.startswith("style_swap:")]
+                if cl:
+                    clusters.append(cl)
+            n_valid = sum(len(c) for c in clusters)
+            mean, lo, hi = (cluster_bootstrap_mean_ci(clusters)
+                            if n_valid > 0 else (float("nan"),) * 3)
+        else:
+            # Style-stripped (NDE): exactly one rewrite per listing, so the
+            # listing-level and i.i.d. bootstraps coincide; keep it i.i.d.
+            deltas = [rw.delta_logprice
+                      for L in listings_out for rw in L.rewrites
+                      if rw.validation["overall_pass"] and rw.arm == "style_stripped"]
+            arr = np.asarray(deltas, dtype=float)
+            n_valid = len(arr)
+            mean, lo, hi = (bootstrap_mean_ci(arr)
+                            if n_valid > 0 else (float("nan"),) * 3)
         per_arm[arm_kind] = {
-            "n_valid": int(len(arr)),
+            "n_valid": int(n_valid),
             "mean_delta_logprice": mean,
             "ci_low": lo,
             "ci_high": hi,
@@ -501,13 +536,15 @@ async def run_pipeline(
             style_stripped_blocks(original_text, slots),
         ))
 
-        # baseline: use the listing's matched conf row if we can; else mean.
+        # confounder vector: use the listing's matched conf row if we can; else
+        # mean. conf_base = model_y(conf) is the confounder-only prediction; the
+        # text contributions (original + rewrite) are added on top in Pass 2.
         conf_key = (addr.strip().lower(), zip_int)
         if conf_key in addr_zip_to_row and addr_zip_to_row[conf_key] < len(conf_s_full):
             listing_conf_s = conf_s_full[addr_zip_to_row[conf_key]]
         else:
             listing_conf_s = mean_conf_s
-        baseline = baseline_logprice(art, listing_conf_s)
+        conf_base = conf_only_logprice(art, listing_conf_s)
 
         start = len(all_items)
         for _arm_name, _target_sub, blocks in arms:
@@ -528,7 +565,7 @@ async def run_pipeline(
             "slots": slots,
             "arms": arms,
             "listing_conf_s": listing_conf_s,
-            "baseline": baseline,
+            "conf_base": conf_base,
             "start": start,
             "end": len(all_items),
         })
@@ -555,8 +592,30 @@ async def run_pipeline(
     # flat results, realigned per listing. The accumulating result is flushed to
     # out_path every 25 listings so a crash loses at most ~25 listings, not the
     # whole city.
+    #
+    # Collect every text to embed in ONE flat list (each listing's original text
+    # followed by its rewrites) and run a single batched encode, instead of one
+    # encode_texts() call per listing. The encoder batches internally and each
+    # text's embedding depends only on that text, so this is order-preserving and
+    # numerically equivalent to the per-listing calls, just far fewer of them.
+    # The original is encoded the SAME way as the rewrites so the within-listing
+    # PC1 contrast cancels any encoding offset (an unchanged rewrite -> Δ = 0).
+    encode_inputs: list[str] = []
+    listing_spans: list[tuple[int, int, int]] = []  # (orig_idx, rw_start, rw_end)
+    for meta in listing_meta:
+        arm_results = flat_results[meta["start"]:meta["end"]]
+        orig_idx = len(encode_inputs)
+        encode_inputs.append(meta["original_text"])
+        rw_start = len(encode_inputs)
+        encode_inputs.extend(r.rewritten_text for r in arm_results)
+        listing_spans.append((orig_idx, rw_start, len(encode_inputs)))
+
+    all_embs = (encode_texts(encode_inputs) if encode_inputs
+                else np.empty((0, EMBEDDING_DIM), dtype=float))
+
     listings_out: list[ListingRecord] = []
-    for n_done, meta in enumerate(listing_meta):
+    for n_done, (meta, (orig_idx, rw_start, rw_end)) in enumerate(
+            zip(listing_meta, listing_spans)):
         arms = meta["arms"]
         arm_results = flat_results[meta["start"]:meta["end"]]
         gen_results: list[tuple[str, Optional[str], GenerationResult]] = [
@@ -564,11 +623,16 @@ async def run_pipeline(
             for (arm_name, target_sub, _), res in zip(arms, arm_results)
         ]
 
-        rewrite_texts = [r.rewritten_text for _, _, r in gen_results]
-        rewrite_embs = encode_texts(rewrite_texts)
+        rewrite_embs = all_embs[rw_start:rw_end]
 
         listing_conf_s = meta["listing_conf_s"]
-        baseline = meta["baseline"]
+        conf_base = meta["conf_base"]
+        # Factual baseline = model_y(conf) + theta * pc1(original text). Anchoring
+        # on the ORIGINAL listing's own PC1 (not the corpus mean) makes delta the
+        # within-listing change caused by the rewrite, theta * (pc1_rewrite -
+        # pc1_original), rather than the rewrite's deviation from the corpus mean.
+        pc1_original_norm = pc1_norm_from_emb(art, all_embs[orig_idx])
+        pred_baseline = conf_base + art.theta * pc1_original_norm
         rec = ListingRecord(
             listing_idx=meta["li"],
             address=meta["addr"],
@@ -585,7 +649,7 @@ async def run_pipeline(
                 target_zip=target_zip,
                 skip_perplexity=skip_perplexity,
             )
-            pred = predicted_logprice_for_rewrite(art, emb, listing_conf_s)
+            pred_rewrite = conf_base + art.theta * pc1_norm_from_emb(art, emb)
             rec.rewrites.append(RewriteRecord(
                 arm=arm_name,
                 target_submarket=target_sub,
@@ -593,9 +657,9 @@ async def run_pipeline(
                 rewritten_text=gres.rewritten_text,
                 used_mock=gres.used_mock,
                 validation=asdict(v),
-                pred_logprice_baseline=baseline,
-                pred_logprice_rewrite=pred,
-                delta_logprice=pred - baseline,
+                pred_logprice_baseline=pred_baseline,
+                pred_logprice_rewrite=pred_rewrite,
+                delta_logprice=pred_rewrite - pred_baseline,
             ))
         listings_out.append(rec)
         if (n_done + 1) % 5 == 0 or n_done == n_pick - 1:
