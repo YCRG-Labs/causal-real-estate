@@ -23,8 +23,10 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
 import numpy as np
-import torch
-import torch.nn as nn
+# torch is imported lazily inside the adversarial estimator only. Importing it at
+# module scope made every joblib/loky worker re-import torch and probe CUDA on
+# spawn, which deadlocked the parallel rep loop on the GPU box. The DML/DR/cfpca
+# path never touches torch, so the import is deferred to _build_adversarial_modules.
 from sklearn.decomposition import PCA
 from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401
 import sys, os as _os
@@ -137,37 +139,48 @@ def dml_cfpca_estimator(T: np.ndarray, W: np.ndarray, Y: np.ndarray) -> Estimate
 # (3) Adversarial deconfounding (simplified, fast)
 # ---------------------------------------------------------------------------
 
-class _SmallEncoder(nn.Module):
-    def __init__(self, input_dim: int, hidden_dim: int = 64, output_dim: int = 32):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, output_dim),
-        )
+def _build_adversarial_modules():
+    """Lazily import torch and define the adversarial nn.Modules.
 
-    def forward(self, x):
-        return self.net(x)
+    Kept out of module scope so the DML/DR/cfpca path (which is all the JBES
+    tables use) never imports torch. Each loky worker re-imports this module on
+    spawn; a module-top torch import made every worker probe CUDA and hang the
+    rep loop on the GPU box.
+    """
+    import torch
+    import torch.nn as nn
 
+    class _SmallEncoder(nn.Module):
+        def __init__(self, input_dim: int, hidden_dim: int = 64, output_dim: int = 32):
+            super().__init__()
+            self.net = nn.Sequential(
+                nn.Linear(input_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, output_dim),
+            )
 
-class _LinearHead(nn.Module):
-    def __init__(self, input_dim: int, output_dim: int):
-        super().__init__()
-        self.linear = nn.Linear(input_dim, output_dim)
+        def forward(self, x):
+            return self.net(x)
 
-    def forward(self, x):
-        return self.linear(x)
+    class _LinearHead(nn.Module):
+        def __init__(self, input_dim: int, output_dim: int):
+            super().__init__()
+            self.linear = nn.Linear(input_dim, output_dim)
 
+        def forward(self, x):
+            return self.linear(x)
 
-class _GradReversal(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x, alpha):
-        ctx.alpha = alpha
-        return x.clone()
+    class _GradReversal(torch.autograd.Function):
+        @staticmethod
+        def forward(ctx, x, alpha):
+            ctx.alpha = alpha
+            return x.clone()
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        return -ctx.alpha * grad_output, None
+        @staticmethod
+        def backward(ctx, grad_output):
+            return -ctx.alpha * grad_output, None
+
+    return torch, nn, _SmallEncoder, _LinearHead, _GradReversal
 
 
 def adversarial_estimator(
@@ -199,6 +212,7 @@ def adversarial_estimator(
       Ganin et al. 2016 JMLR -- domain-adversarial training
       Ravfogel et al. 2020 ACL -- nullspace projection
     """
+    torch, nn, _SmallEncoder, _LinearHead, _GradReversal = _build_adversarial_modules()
     torch.manual_seed(seed)
     np.random.seed(seed)
 
