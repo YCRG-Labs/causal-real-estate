@@ -79,7 +79,8 @@ def main():
         ylab = r"ylabel={centile rank of $|z|$}," if j == 0 else "ylabel={},"
         ytl = "" if j == 0 else "yticklabels={,,,,,,},"
         leg = (r"legend style={font=\scriptsize, draw=none, fill=none, "
-               r"at={(0.04,0.56)}, anchor=west, legend columns=1, row sep=0.5pt},") if j == 0 else ""
+               r"at={(0.5,1.14)}, anchor=south, legend columns=2, "
+               r"/tikz/every even column/.append style={column sep=10pt}},") if j == 1 else ""
         L.append(f"\\begin{{axis}}[")
         L.append(f"    causalre, {pos} name=zp{chr(65+j)},")
         L.append(f"    width=0.30\\textwidth, height=6.6cm,")
@@ -106,12 +107,12 @@ def main():
                 pass  # legend added via dummy plots below for clean markers
             L.append(f"\\draw[{col}, line width=0.32pt] "
                      f"(axis cs:{lo_c:.4f},{y:.3f}) -- (axis cs:{hi_c:.4f},{y:.3f});")
-        if j == 0:
+        if j == 1:
             L.append(r"\addlegendimage{cNYC, line width=1.2pt}\addlegendentry{covers}")
             L.append(r"\addlegendimage{cSF, line width=1.2pt}\addlegendentry{misses}")
-        # coverage annotation
-        L.append(f"\\node[anchor=south east, font=\\scriptsize] at "
-                 f"(axis cs:{xhi:.3f},2) {{cov.\\ {p['cover']:.0f}\\%}};")
+        # coverage annotation, bottom-left
+        L.append(f"\\node[anchor=south west, font=\\scriptsize] at "
+                 f"(axis cs:{xlo:.3f},2) {{cov.\\ {p['cover']:.0f}\\%}};")
         L.append(r"\end{axis}")
     L.append(r"\end{tikzpicture}")
     cap = (r"\caption{Zip plot of nominal $95\%$ confidence-interval coverage "
