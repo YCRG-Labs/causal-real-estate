@@ -38,14 +38,14 @@
 \pgfplotsset{
   causalre/.style={
     axis lines*=left,
-    title style={font=\normalsize},
+    tick align=outside, tick pos=left,
+    title style={font=\small},
     label style={font=\small},
     tick label style={font=\scriptsize},
     legend style={font=\scriptsize, draw=none, fill=none, row sep=1pt},
     every axis plot/.append style={thick},
-    axis on top,
   },
-  causalre body/.style={ causalre, width=0.45\textwidth, height=6cm, },
+  causalre body/.style={ causalre, width=0.45\textwidth, height=5.6cm, },
   causalre wide/.style={ causalre, width=0.7\textwidth, height=0.6\textwidth, },
   causalre strip/.style={ causalre, width=5.0cm, height=4.5cm,
                           title style={font=\small} },

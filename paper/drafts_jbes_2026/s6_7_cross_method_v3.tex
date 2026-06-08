@@ -174,7 +174,7 @@ section rests.
 \begin{tikzpicture}
 % --- panel (a) Shen uniqueness ---
 \begin{axis}[
-    causalre, width=0.31\textwidth, height=7.6cm, name=fsA,
+    causalre, width=0.31\textwidth, height=7.0cm, name=fsA,
     symbolic y coords={Pooled,New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
     ytick={New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia,Pooled}, y dir=normal,
     xlabel={$\hat\theta$ per $\sigma$}, xmin=-0.06, xmax=0.37,
@@ -203,7 +203,7 @@ section rests.
 \end{axis}
 % --- panel (b) Baur sentence-BERT axis ---
 \begin{axis}[
-    causalre, width=0.27\textwidth, height=7.6cm,
+    causalre, width=0.27\textwidth, height=7.0cm,
     at={(fsA.east)}, anchor=west, xshift=0.7cm,
     symbolic y coords={Pooled,New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
     ytick=data, yticklabels={,,,,,,,,,,,,},
@@ -233,7 +233,7 @@ section rests.
 \end{axis}
 % --- panel (c) counterfactual style-stripped contrast ---
 \begin{axis}[
-    causalre, width=0.27\textwidth, height=7.6cm,
+    causalre, width=0.27\textwidth, height=7.0cm,
     at={(fsA.east)}, anchor=west, xshift=4.9cm,
     symbolic y coords={Pooled,New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
     ytick=data, yticklabels={,,,,,,,,,,,,},
