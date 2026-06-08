@@ -1,0 +1,227 @@
+% §3 Methodology, v3 (rewritten 2026-06-08 for the 12-city / AOAS reframe).
+% Replaces the old 3-city methods built around GRL adversarial deconfounding,
+% binarized DR, a randomization intervention, and SCM0/SCM1 cross-market
+% falsification. Describes the methods the v3 results actually use: partialling-out
+% DML, the Shen and Baur text channels, LEACE+IGBP erasure as a diagnostic, the
+% Gelbach fixed-treatment decomposition (headline test), the LLM counterfactual,
+% Cinelli-Hazlett sensitivity, and random-effects pooling. Style: flowing prose,
+% no em dashes, no enumerations, no punchy fragments.
+
+\section{Methodology}
+\label{sec:methods}
+
+\subsection{Setup and the conflation it invites}
+
+Write $\mathcal{D} = \{(x_i, t_i, \ell_i, y_i)\}_{i=1}^{n}$ for a market of $n$
+listings, where $x_i \in \mathbb{R}^{d}$ collects the structured property
+attributes that hedonic models have always used, the bedroom and bathroom counts,
+the living area, the lot size, and the year built; $\ell_i \in \mathbb{R}^{2}$ is
+the latitude-longitude coordinate of the parcel; $y_i$ is the log sale price; and
+$t_i$ is a representation of the listing's free-text description, either a scalar
+summary or a high-dimensional embedding depending on the channel. A text-augmented
+valuation model learns some $\hat{y}_i = f(x_i, t_i, \ell_i)$, and the empirical
+regularity that motivates this literature is that adding $t_i$ to the feature set
+raises predictive accuracy beyond what $x_i$ and $\ell_i$ deliver on their own.
+
+The difficulty is that an accuracy gain cannot say what kind of information the
+text carried. An agent who writes ``sun-drenched and steps from the park'' is
+describing a property, but the same phrase is also a near-deterministic signal of
+which block the property sits on, because language and location are produced
+together by an author who observes both. A predictive model that prices genuine
+semantic content and a predictive model that prices laundered geography make
+identical out-of-sample predictions, so the gain on its own leaves an analyst
+unable to tell which of the two has been bought. Our object of interest is the
+part of the text-price relationship that is not the spatial information the text
+carries, and the methods that follow are built to isolate it and then to ask, for
+each metropolitan market in turn, how much of the apparent text signal that
+isolation leaves standing.
+
+\subsection{A structural account of the confounding}
+
+The data-generating process we have in mind makes the confounding explicit rather
+than assuming it away. Location is exogenous and drives everything downstream: the
+structured attributes $x$, a vector $c$ of contextual neighborhood features such
+as demographics, amenities, and recent crime, the text $t$, and the price $y$. The
+text in turn is written with knowledge of location, structure, and context, so
+$t = f_t(\ell, x, c, U_t)$, and the question the paper exists to answer is whether
+$t$ enters the structural equation for $y$ at all once $\ell$, $x$, and $c$ are
+accounted for, or whether the entire observed association between text and price
+runs through the common dependence of both on location.
+
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm and 2cm,
+    every node/.style={draw, circle, minimum size=0.8cm},
+    arrow/.style={->, >=stealth, thick}
+]
+    \node (L) {$\ell$};
+    \node[right=of L] (X) {$x$};
+    \node[right=of X] (C) {$c$};
+    \node[below=of X] (T) {$t$};
+    \node[right=of C] (Y) {$y$};
+
+    \draw[arrow] (L) -- (X);
+    \draw[arrow] (L) to[bend left=20] (C);
+    \draw[arrow] (L) to[bend left=30] (T);
+    \draw[arrow] (X) -- (T);
+    \draw[arrow] (C) -- (T);
+    \draw[arrow] (L) to[bend left=15] (Y);
+    \draw[arrow] (X) -- (Y);
+    \draw[arrow] (C) -- (Y);
+
+    \draw[arrow, red, very thick, opacity=0.4] (L) to[bend left=30] (T);
+    \draw[arrow, red, very thick, opacity=0.4] (T) -- (Y);
+\end{tikzpicture}
+\caption{The confounding structure the paper adjudicates. Location $\ell$ is
+exogenous and feeds the property attributes $x$, the contextual features $c$, the
+listing text $t$, and the price $y$. The shaded path $\ell \rightarrow t$ together
+with $\ell \rightarrow y$ is the spatial-confounding concern: text and price are
+associated in part because both depend on where the property is, so the relevant
+causal quantity is the direct $t \rightarrow y$ effect that survives conditioning
+on $\ell$, $x$, and $c$. Whether that direct effect is zero or positive is an
+empirical question the markets answer market by market.}
+\label{fig:dag}
+\end{figure}
+\FloatBarrier
+
+Two readings of this diagram bracket the possibilities. Under one, the text effect
+on price is zero net of location and the structured covariates, every observed
+text-price correlation is geography wearing a semantic costume, and the apparent
+predictive value of listing language is spatial confounding mediated through words.
+Under the other, listing text carries property-specific content that the
+structured covariates miss, so $t$ does enter the equation for $y$ and the
+text-price relationship is at least partly a genuine semantic effect. The two
+readings disagree about a quantity that is identified once the backdoor set
+$\{\ell, x, c\}$ is conditioned on, since that set blocks every path from $t$ to
+$y$ that does not pass through the hypothesized direct edge, and the rest of this
+section develops the estimator, the encodings, and the deconfounding tests through
+which the twelve markets adjudicate between them.
+
+\subsection{The partially-linear estimand and its estimation}
+
+We summarize the listing text by a scalar treatment $T$, defer to
+Section~\ref{sec:methods-channels} how that scalar is constructed, and pose the
+partially-linear model
+\begin{equation}
+Y = \theta\,T + g(\ell, x, c) + \varepsilon, \qquad
+T = m(\ell, x, c) + \nu,
+\label{eq:plr}
+\end{equation}
+in which $\theta$ is the per-standard-deviation effect of the text direction on
+log price and the nuisance functions $g$ and $m$ are left unrestricted. The
+Robinson partialling-out estimator \citep{robinson1988root} recovers $\theta$ from
+the residual-on-residual regression of $\tilde{Y} = Y - \hat{g}$ on
+$\tilde{T} = T - \hat{m}$, and we fit $\hat{g}$ and $\hat{m}$ by cross-fitted
+gradient boosting in the double machine learning framework of
+\citet{chernozhukov2018double}, splitting each market into $K = 5$ folds and
+predicting each fold's residuals from models trained on the complement so that the
+nuisance estimates and the score are never formed on the same observations. The
+resulting estimator is Neyman-orthogonal and root-$n$ consistent whenever the
+nuisance fits converge faster than $n^{-1/4}$, and its influence-function variance
+gives the standard error we report by default,
+\begin{equation}
+\hat{\theta} = \frac{\sum_i \tilde{T}_i \tilde{Y}_i}{\sum_i \tilde{T}_i^{2}},
+\qquad
+\hat{\mathrm{SE}}_\theta
+= \sqrt{\frac{1}{n^{2}} \sum_i
+\frac{(\tilde{Y}_i - \hat{\theta}\,\tilde{T}_i)^{2}\,\tilde{T}_i^{2}}
+{\big(\tfrac{1}{n}\sum_j \tilde{T}_j^{2}\big)^{2}}}.
+\label{eq:dml}
+\end{equation}
+
+One feature of the embedding channel complicates the inference and we flag it here
+because it shapes how the per-market intervals should be read. When the treatment
+is the leading principal component of the embedding, that direction is itself
+estimated on the same sample that estimates the price effect, so $T$ is a generated
+regressor in the sense of \citet{pagan1984econometric} and the orthogonal-score
+variance in Equation~\eqref{eq:dml} does not absorb the extra sampling variability
+the estimation of the direction introduces. The interval is correspondingly
+anticonservative at the few thousand listings a single market affords, mildly so
+near the null and more seriously when the true effect is large, a pattern we
+document in a calibration study and repair with an out-of-fold construction of the
+treatment direction in Appendix~\ref{app:simulation}. The point estimates are
+approximately unbiased throughout; it is the nominal coverage of the analytic
+interval, not the location of the estimate, that the calibration study qualifies.
+
+\subsection{Two encodings of the text treatment}
+\label{sec:methods-channels}
+
+Because no single reduction of a paragraph to a number is obviously the right one,
+we read the listing text through two encodings with different inductive biases and
+treat their agreement as a robustness check rather than as independent
+corroboration. The first follows the hedonic specification of
+\citet{shen2021information}, who summarize a description by a Doc2Vec uniqueness
+score that measures how far a listing's language departs from the corpus norm, and
+we enter that scalar into Equation~\eqref{eq:plr} as the treatment. The second
+follows \citet{baur2023automated}, who embed each description with a pretrained
+sentence transformer and read the leading principal component of the embedding as
+the text signal; we standardize that component and use it as the treatment in a
+separate partialling-out fit. The sign of a principal component is not identified,
+since a component and its negation span the same axis, so wherever the Baur channel
+appears we orient the common axis to make the pooled estimate non-negative and
+disclose the orientation as a convention rather than a finding, a convention that
+cannot manufacture agreement because the cross-market correlation between channels
+is invariant in magnitude under a sign flip of either one.
+
+\subsection{What the embedding encodes: erasure as a diagnostic}
+
+The sentence-transformer embedding that underlies the Baur channel was pretrained
+on generic text and has no reason to keep semantic content about a property
+separate from the geographic information that correlates with its neighborhood, so
+before asking whether the price effect is confounded we ask the prior question of
+how much location the representation carries at all. We answer it by erasing the
+coordinate concept from the embedding and measuring what an erasure leaves
+recoverable. The closed-form concept erasure of \citet{belrose2023leace} removes
+the linear subspace that the mean-conditional-covariance estimator associates with
+the latitude-longitude pair and comes with an exact-guardedness guarantee that no
+linear predictor can recover the coordinate from the residual better than a
+constant baseline, and the iterative nonlinear procedure of
+\citet{iskander2023shielded} extends the attack to the directions a linear probe
+cannot see by alternating between fitting a nonlinear probe of the coordinate and
+projecting out where that probe concentrates its predictive mass. The erasure is a
+diagnostic of what the representation contains and not a modification of any
+per-market estimate, since the Baur effects are computed on the unprojected
+embedding in keeping with the published protocol; its role is to bound how much
+location a linear or nonlinear function of the text could carry, which the
+decomposition below then connects to how much location actually moves the price.
+
+\subsection{Holding the text fixed: a covariate decomposition}
+
+Showing that the embedding encodes geography is not the same as showing that the
+price effect is confounded by it, because a representation can carry a confounder
+along directions that have nothing to do with the one on which the treatment acts.
+The test that speaks to confounding directly holds the text treatment fixed and
+moves geography across the conditioning set, in the manner of the order-invariant
+covariate decomposition of \citet{gelbach2016covariates}. We estimate the text
+effect twice on the same fixed treatment, once with the location coordinates held
+out of the controls and once with a flexible spatial basis, the coordinates
+together with their squares and their interaction, folded in, and read the
+difference between the two estimates as the share of the text effect that explicit
+geography accounts for. A small difference means the text-price effect is not the
+spatial information re-expressed, and the decomposition is informative rather than
+mechanical precisely when the text direction is shown by the erasure diagnostic to
+carry geography, since a direction that encodes location yet whose price effect is
+unmoved by conditioning on location is the signature of a genuine semantic signal.
+This contrast is the paper's headline deconfounding test, and
+Section~\ref{sec:decomposition} reports it for every market.
+
+\subsection{An intervention check and a sensitivity bound}
+
+Two further instruments probe the same question from angles with different failure
+modes. A counterfactual rewriting intervention uses an open-weight language model
+to edit each description under a minimal-pair protocol, producing one rewrite that
+strips stylistic content while holding the model's inferred submarket fixed and a
+second that also moves the targeted submarket, and the price differentials these
+edits imply isolate a within-listing style contrast and a location-inference
+contrast whose biases are not shared with the cross-listing geometry of a fixed
+encoder. Because none of these designs identifies a structural effect by
+assumption, we close with the sensitivity calculus of \citet{cinelli2020making},
+reporting for each market the robustness value, the strength an unobserved
+confounder would need on both the treatment and the outcome to overturn the
+estimate, benchmarked against the strength of the spatial covariates we do observe.
+The twelve per-market estimates are finally combined through a random-effects
+meta-analysis with the Paule-Mandel variance estimator and Hartung-Knapp-Sidik-Jonkman
+small-sample intervals \citep{paule1982consensus, inthout2014hartung}, and a
+moderator scan asks, with multiplicity and leverage diagnostics, whether any
+metropolitan covariate explains the heterogeneity the markets display.

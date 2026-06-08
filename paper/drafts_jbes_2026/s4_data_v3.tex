@@ -1,0 +1,118 @@
+% §4 Dataset Construction, v3 (rewritten 2026-06-08 for the 12-city / AOAS reframe).
+% Replaces the old 3-city (Boston/NYC/SF) parcel + Prop-13/assessed-proxy corpus
+% (n=1,044) with the full 12-metro Redfin sold-listing corpus (n=69,173, real sold
+% prices, property-level coordinates). Numbers: per-city analysis n from
+% results/replications/shen_12city_table.csv (sum 69,173); median prices computed
+% from data/processed/{city}_listings.parquet. Style: flowing prose, no em dashes,
+% no enumerations, no fragments.
+
+\section{Dataset Construction}
+\label{sec:data}
+
+\subsection{A twelve-market corpus of listings}
+
+The corpus is built from sold residential listings scraped from a major online
+real estate platform across twelve metropolitan markets that span the price and
+geographic range of the United States housing stock, from San Francisco and New
+York at the expensive coastal end through Boston, Seattle, Washington, Denver, and
+Portland in the middle to Chicago, Atlanta, Phoenix, Dallas, and Philadelphia
+toward the more affordable interior and south. Each listing carries the free-text
+description an agent wrote, the realized sale price the platform records, the
+structured attributes a hedonic model expects, the bedroom and bathroom counts,
+the living area, the lot size, the year built, and the property type, and a
+property-level latitude and longitude rather than a coarse centroid. Working with
+recorded sale prices rather than the assessed values or tax-reassessment proxies
+that earlier versions of this project relied on removes a layer of measurement
+concern at the root, since the outcome is the transaction the market actually
+cleared.
+
+\begin{table}[t]
+\centering
+\caption{The twelve-market corpus. \emph{Listings} is the per-market analysis
+sample after deduplication to one row per listing and removal of rows missing a
+required field; the markets together contribute $69{,}173$ listings. Median sale
+price and median description length are computed on the analysis sample. The
+panel ranges over more than an order of magnitude in size and roughly fivefold in
+price.}
+\label{tab:corpus-12}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Market & Listings & Median price & Median words \\
+\midrule
+New York      & $15{,}227$ & \$975{,}000   & $183$ \\
+Dallas        & $8{,}008$  & \$439{,}000   & $161$ \\
+Phoenix       & $7{,}086$  & \$514{,}990   & $117$ \\
+Philadelphia  & $7{,}030$  & \$255{,}000   & $134$ \\
+Atlanta       & $6{,}134$  & \$384{,}000   & $178$ \\
+Chicago       & $5{,}576$  & \$374{,}900   & $129$ \\
+Denver        & $5{,}280$  & \$525{,}000   & $207$ \\
+Portland      & $4{,}337$  & \$559{,}000   & $166$ \\
+Washington    & $4{,}015$  & \$599{,}000   & $187$ \\
+Seattle       & $2{,}884$  & \$750{,}000   & $152$ \\
+Boston        & $2{,}610$  & \$999{,}000   & $137$ \\
+San Francisco & $986$      & \$1{,}295{,}000 & $174$ \\
+\midrule
+Total         & $69{,}173$ & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Deduplication, outliers, and a robust winsorizer}
+
+The scraper issued repeated requests against the same listing during collection,
+so the raw rows resolve to a smaller set of distinct listings once they are
+deduplicated on the listing identifier, and every number in the paper is computed
+on the one-row-per-listing analysis sample to keep sibling copies of a listing out
+of the training folds of any cross-fitted procedure. We drop transactions outside a
+plausible price band to remove data-entry errors and non-arm's-length transfers,
+and we guard the structured covariates with a per-column robust winsorizer that
+clips each feature at its median plus or minus five median absolute deviations and
+imputes the rare non-finite entry at the median. The winsorizer matters more than
+its routine description suggests. A single parcel-join artifact, a year-built value
+tens of standard deviations from any plausible construction date, was enough to
+make the partialling-out estimator in one market ill-conditioned and to drive its
+coefficient to an impossible magnitude with a deceptively small standard error,
+and clipping the genuine outliers without touching clean data restored that market
+to the range of the others while leaving every well-behaved market unchanged. The
+clip is applied uniformly across the twelve markets and is the only manipulation of
+the structured covariates we perform.
+
+\subsection{Confounders}
+
+The conditioning set is assembled to make the backdoor adjustment of
+Section~\ref{sec:methods} credible at the resolution where language and price are
+both determined. Alongside the structured property attributes, we attach the
+property's location through its coordinates and its ZIP code, and we join
+neighborhood context by spatial position rather than by a coarse identifier. Census
+demographics come from the American Community Survey five-year estimates at the
+block-group level, the finest geography the survey supports, and contribute median
+household income, educational attainment, racial composition, median home value,
+and median gross rent for the block group containing each listing. Recent crime is
+counted within a five-hundred-meter radius of each property from municipal incident
+records, separated into violent, property, and quality-of-life categories through a
+cross-city offense crosswalk. Local amenities are counted in the same radius from
+an open geographic database, covering food and retail, services, recreation,
+transit, and education. The assembled set runs to roughly three dozen controls per
+market, and the spatial block within it, the coordinates together with the ZIP
+indicators, is the group the sensitivity analysis of Section~\ref{sec:sensitivity-12}
+singles out because it is the one most directly implicated in the
+text-as-spatial-proxy concern.
+
+\subsection{Text preprocessing and the two encodings}
+
+Before encoding, each description is stripped of markup and boilerplate, lowercased,
+and cleared of explicit street addresses, which are replaced with anonymization
+tokens so that a model cannot recover location by reading an address out of the
+text rather than out of the language. The cleaned text then feeds the two encodings
+that Section~\ref{sec:methods-channels} defines. The Doc2Vec uniqueness score that
+drives the Shen-Ross channel measures how far a listing's language sits from its
+market's corpus norm, and the sentence-transformer embedding that drives the Baur
+channel is the $768$-dimensional representation of \texttt{all-mpnet-base-v2}
+\citep{reimers2019sentence}, from which we take the standardized leading principal
+component as the text treatment. We recompute the full analysis on a second,
+smaller transformer to confirm that the conclusions are not an artifact of one
+encoder's geometry, and the deconfounding and erasure diagnostics of
+Sections~\ref{sec:leace-12} and~\ref{sec:decomposition} operate on the same
+mpnet embedding so that what they remove is the geography the Baur treatment itself
+carries.
