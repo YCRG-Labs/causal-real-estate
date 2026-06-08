@@ -97,7 +97,8 @@ structured covariates miss, so $t$ does enter the equation for $y$ and the
 text-price relationship is at least partly a genuine semantic effect. The two
 readings disagree about a quantity that is identified once the backdoor set
 $\{\ell, x, c\}$ is conditioned on, since that set blocks every path from $t$ to
-$y$ that does not pass through the hypothesized direct edge, and the rest of this
+$y$ that does not pass through the hypothesized direct edge, a backdoor argument
+made precise in Appendices~\ref{app:scm} and~\ref{app:proofs}, and the rest of this
 section develops the estimator, the encodings, and the deconfounding tests through
 which the twelve markets adjudicate between them.
 
@@ -116,11 +117,14 @@ log price and the nuisance functions $g$ and $m$ are left unrestricted. The
 Robinson partialling-out estimator \citep{robinson1988root} recovers $\theta$ from
 the residual-on-residual regression of $\tilde{Y} = Y - \hat{g}$ on
 $\tilde{T} = T - \hat{m}$, and we fit $\hat{g}$ and $\hat{m}$ by cross-fitted
-gradient boosting in the double machine learning framework of
-\citet{chernozhukov2018double}, splitting each market into $K = 5$ folds and
+machine learning in the double machine learning framework of
+\citet{chernozhukov2018double}, using gradient boosting for the embedding-based
+channels and ridge regression for the Shen-Ross uniqueness channel in keeping with
+its published hedonic protocol, splitting each market into $K = 5$ folds and
 predicting each fold's residuals from models trained on the complement so that the
-nuisance estimates and the score are never formed on the same observations. The
-resulting estimator is Neyman-orthogonal and root-$n$ consistent whenever the
+nuisance estimates and the score are never formed on the same observations;
+Appendix~\ref{app:hyperparams} consolidates the learner, fold, and bootstrap
+settings. The resulting estimator is Neyman-orthogonal and root-$n$ consistent whenever the
 nuisance fits converge faster than $n^{-1/4}$, and its influence-function variance
 gives the standard error we report by default,
 \begin{equation}

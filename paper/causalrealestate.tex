@@ -134,7 +134,7 @@ Breaking that silence means treating the listing embedding as a high-dimensional
 
 The deconfounding test that this design supports returns an answer more reassuring than the predictive-fit worry would suggest, and the route it takes to that answer is worth following carefully, because the most obvious reading of the erasure diagnostic seems at first to point the other way. A held-out probe recovers the latitude-longitude coordinate from the embedding at an $R^2$ that climbs toward one half, so the representation unmistakably carries location, and the natural expectation is that the price effect of its leading direction would dissolve once that geography were taken out, and yet that is not what happens, because holding the text direction fixed as the treatment and folding a flexible location basis into the controls leaves its per-standard-deviation effect on log price almost exactly where it began across eleven of the twelve markets, while the single market in which the adjustment does bite, New York, turns out to be the one whose text direction is itself the most geographic, so that the exception illuminates the mechanism rather than embarrassing it. What the design settles about the magnitude of the effect is matched by what it forces us to confront about the standard error, since the leading principal component is estimated on the very sample that estimates the price effect and therefore behaves as a generated regressor in the sense of \citet{pagan1984econometric}, the orthogonal-score variance of \citet{chernozhukov2018double} does not absorb the extra sampling variability this introduces, and the analytic interval comes out anticonservative at the few thousand listings a single metropolitan market affords, a shortfall we document in a calibration study and repair with a bootstrap that resamples the entire pipeline. Beneath the generated-regressor problem sits the eigengap of the embedding covariance, and a sin-$\Theta$ stability argument ties how faithfully the estimated treatment direction tracks its population target to the size of that gap, which is finally what licenses treating the leading component as a stable object to put on the left of a causal question.
 
-Applied across twelve metropolitan areas using $3{,}851$ deduplicated Redfin listings, the framework returns a picture whose parts hang together. Listing text carries a positive per-standard-deviation association with log sale price that holds up regardless of which encoder produces it, since a Doc2Vec uniqueness channel and a sentence-BERT principal component move almost in lockstep from market to market and so read as two encodings of a single signal rather than as independent confirmations of it. That association varies strongly in magnitude across the twelve markets, it survives the spatial deconfounding just described everywhere but New York, and it is not organised by any metropolitan demographic moderator that withstands multiplicity adjustment and leave-one-out leverage diagnostics on so few units. None of this amounts to a clean causal elasticity, and we are careful to say so throughout, because the estimates remain associational rather than identified by design, and the sensitivity analysis we run in the style of \citet{cinelli2020making} fixes how weak an unmeasured confounder would have to be to overturn each market's result, a threshold that comes out uncomfortably modest in several of them. What the paper offers in the end is a disciplined protocol for measuring and deconfounding the price effect of a learned text representation, carried out with inference calibrated to the embedding-treatment setting, and we release the data and the code so that the protocol can be reused rather than only read.
+Applied across twelve metropolitan areas using $69{,}173$ deduplicated Redfin listings, the framework returns a picture whose parts hang together. Listing text carries a positive per-standard-deviation association with log sale price that holds up regardless of which encoder produces it, since a Doc2Vec uniqueness channel and a sentence-BERT principal component move almost in lockstep from market to market and so read as two encodings of a single signal rather than as independent confirmations of it. That association varies strongly in magnitude across the twelve markets, it survives the spatial deconfounding just described everywhere but New York, and it is not organised by any metropolitan demographic moderator that withstands multiplicity adjustment and leave-one-out leverage diagnostics on so few units. None of this amounts to a clean causal elasticity, and we are careful to say so throughout, because the estimates remain associational rather than identified by design, and the sensitivity analysis we run in the style of \citet{cinelli2020making} fixes how weak an unmeasured confounder would have to be to overturn each market's result, a threshold that comes out uncomfortably modest in several of them. What the paper offers in the end is a disciplined protocol for measuring and deconfounding the price effect of a learned text representation, carried out with inference calibrated to the embedding-treatment setting, and we release the data and the code, together with an independent computational verification of every analytic claim (Appendix~\ref{app:verification}), so that the protocol can be reused rather than only read.
 
 We have arranged what follows in the order a skeptical reader would want to work through it. The literatures on spatial confounding, on concept erasure, and on text as a treatment have grown up largely apart from one another, and Section~\ref{sec:related} brings them into contact, after which the estimand and the linear and nonlinear erasure pipeline on which the later analysis leans are developed in Section~\ref{sec:methods}. How the corpus was assembled, and audited for the duplication that scraped listings invite, is the business of Section~\ref{sec:data}, and the calibration study behind our inferential caution is documented in Appendix~\ref{app:simulation}, where the influence-function interval is shown to undercover for an embedding treatment and an out-of-fold construction of the treatment direction restores most of the lost coverage. The twelve-market evidence occupies Section~\ref{sec:results}, which moves in turn through the uniqueness and principal-component estimates, the rewriting intervention, the erasure and decomposition diagnostics, the sensitivity bounds, and the cross-method comparison, before Section~\ref{sec:conclusion} closes by drawing the line, for practice, between what a predictive-only evaluation of text-augmented valuation can and cannot support.
 
@@ -230,18 +230,16 @@ Text generation reflects the cognitive process by which agents write description
 
 Price formation depends on location, features, and local context through a log-linear specification: $g_y(L, X, C) = \exp\left(\alpha_y + \beta_L^\top h(L) + \beta_X^\top X + \beta_C^\top C\right)$ with $h(L)$ capturing non-linear spatial effects such as distance to city center or waterfront proximity.
 
-\subsection{Key Assumption: No Direct Text Effect}
+\subsection{The deflationary null and what identifies the text effect}
 
-The critical identifying assumption is that $T$ does not appear in the structural equation for $Y$. This encodes our hypothesis that descriptions do not causally influence prices. Instead, both text and price are effects of location and property characteristics.
+It is worth separating two things this specification is easily read as conflating. The deflationary reading of the model is that $T$ does not enter the structural equation for $Y$ at all, so that every observed text-price association is the common imprint of location, features, and context. That reading is a \emph{hypothesis to be tested}, not an assumption we impose, and the body of the paper estimates the text effect rather than assuming it away.
 
-\begin{hypothesis}[Independence of Text]
-Conditional on location, property features, and context, text embeddings are independent of price:
-\begin{equation}
-Y \perp T \mid (L, X, C)
-\end{equation}
+\begin{hypothesis}[No direct text effect]
+\label{hyp:null}
+Conditional on location, property features, and context, text is independent of price, $Y \perp T \mid (L, X, C)$, so that the per-standard-deviation effect $\theta$ of the leading text direction on log price is zero.
 \end{hypothesis}
 
-This hypothesis is testable through conditional independence tests and forms the basis for our causal identification strategy.
+What identifies $\theta$ is not Hypothesis~\ref{hyp:null} but the backdoor set $\{L, X, C\}$, which blocks every spurious path from $T$ to $Y$ whether or not the null holds (Appendix~\ref{app:proofs}). The estimand is therefore well defined under both readings: under the null it equals zero, and the partialling-out estimator of Section~\ref{sec:methods} recovers it consistently in either case. The empirical finding, a positive $\theta$ in eleven of twelve markets that survives spatial deconfounding, is a rejection of Hypothesis~\ref{hyp:null}, not the violation of an assumption.
 
 \section{Identification Proofs}
 \label{app:proofs}
@@ -285,6 +283,8 @@ implying zero causal effect.
 Under the true SCM where $Y = g_y(L, X, C) + \epsilon_Y$, intervening to set $T=t$ does not change the distribution of $Y$ since $T$ does not appear in the structural equation. Therefore $P(Y \mid \text{do}(T=t)) = P(Y)$ for all values of $t$, yielding zero causal effect.
 \end{proof}
 
+These results identify the full interventional distribution $P(Y \mid \mathrm{do}(T=t))$. The estimand the body actually targets, the per-standard-deviation projection coefficient $\theta$ of Section~\ref{sec:methods}, is the corresponding partially-linear summary; it is identified by the same backdoor set $\{L, X, C\}$ and equals zero exactly under the null of Hypothesis~\ref{hyp:null}, so the partialling-out estimator recovers it whether or not that null is true.
+
 \section{Data Collection Protocols}
 \label{app:data_collection}
 
@@ -292,9 +292,9 @@ Under the true SCM where $Y = g_y(L, X, C) + \epsilon_Y$, intervening to set $T=
 
 Property listing descriptions were collected through automated web scraping with careful attention to ethical and legal considerations. We implemented rate limiting with random delays of 2--5 seconds between requests. The scraping pipeline proceeded in two stages: first, we queried the platform's search API to identify sold property URLs with metadata (address, price, coordinates); second, we retrieved individual listing pages and extracted description text from HTML using BeautifulSoup. Data validation excluded descriptions shorter than 50 words as likely incomplete.
 
-\subsection{Geocoding and Address Standardization}
+\subsection{Geocoding}
 
-For Boston, coordinates were derived from parcel polygon centroids computed in the local projected CRS (EPSG:26986) then reprojected to WGS84. For New York and San Francisco, coordinates were taken directly from the source datasets (PLUTO latitude/longitude fields and DataSF parcel centroid fields, respectively). Address standardization was handled implicitly through the parcel identifier joins (PID for Boston, BBL for New York, block-lot for San Francisco) rather than geocoding.
+The listing platform supplies a property-level latitude and longitude with each sold record, so geocoding reduces to validation and recovery rather than a parcel join. We retain the platform coordinate when it falls inside the metropolitan bounding box and re-geocode the listing address against the U.S.\ Census Bureau batch geocoder otherwise. This replaces the parcel-centroid and assessor-identifier geocoding that an earlier three-city version of this project relied on, and it is what lets every market in the twelve-market corpus carry a property-level rather than a ZIP- or tract-centroid location.
 
 \subsection{Census Data Integration}
 
@@ -315,116 +315,6 @@ Amenity diversity is computed using Shannon entropy:
 H = -\sum_{i=1}^n p_i \log p_i
 \end{equation}
 where $p_i$ is the proportion of amenities in category $i$. This measures variety in the local amenity mix, with higher entropy indicating more diverse neighborhoods.
-
-\section{Statistical Testing Procedures}
-\label{app:testing}
-
-\subsection{Conditional Independence Testing}
-
-To test the hypothesis $Y \perp T \mid (L, X, C)$, we employ multiple conditional independence tests with different assumptions and power characteristics.
-
-\textbf{Partial Correlation Test:} Under assumptions of linearity and Gaussianity, conditional independence is equivalent to zero partial correlation:
-\begin{equation}
-\rho_{YT \cdot LXC} = \frac{\rho_{YT} - \rho_{YL}\rho_{TL}}{\sqrt{(1-\rho_{YL}^2)(1-\rho_{TL}^2)}}
-\end{equation}
-We test $H_0: \rho_{YT \cdot LXC} = 0$ using Fisher's z-transformation with sample size adjusted for degrees of freedom consumed by conditioning variables.
-
-\textbf{Kernel-Based Test:} The Hilbert-Schmidt Independence Criterion (HSIC)~\citep{gretton2005kernel} provides a non-parametric test based on reproducing kernel Hilbert spaces:
-\begin{equation}
-\text{HSIC}(Y, T \mid L, X, C) = \mathbb{E}_{YT|LXC}[k_Y(y, y')k_T(t, t')] - \mathbb{E}_{Y|LXC}[k_Y(y, y')]\mathbb{E}_{T|LXC}[k_T(t, t')]
-\end{equation}
-We use Gaussian kernels with bandwidth selected via median heuristic and compute p-values via permutation testing with 1000 resamples.
-
-\textbf{Conditional Mutual Information:} We estimate $I(Y; T \mid L, X, C)$ using k-nearest neighbor density estimation~\citep{kraskov2004estimating}:
-\begin{equation}
-\hat{I}(Y; T \mid L, X, C) = \psi(k) + \psi(n) - \mathbb{E}[\psi(n_y + 1) + \psi(n_t + 1)]
-\end{equation}
-where $\psi$ is the digamma function, $k$ is the number of neighbors, and $n_y, n_t$ are neighbor counts in marginal spaces.
-
-\subsection{Sensitivity Analysis for Unobserved Confounding}
-
-While our identification strategy assumes no unobserved confounding conditional on $\{L, X, C\}$, we assess sensitivity to violations using the approach of~\citet{cinelli2020making}.
-
-We compute the robustness value $RV$, defined as the minimum strength of confounding (measured by partial $R^2$) required to invalidate our conclusions:
-\begin{equation}
-RV = \sqrt{\frac{\hat{\tau}^2}{\hat{\tau}^2 + \hat{\sigma}^2}} \cdot \sqrt{\frac{1}{1-R^2_{Y \sim T,L,X,C}}}
-\end{equation}
-where $\hat{\tau}$ is the estimated treatment effect and $\hat{\sigma}^2$ is its variance.
-
-We also construct robustness contours showing combinations of confounder-treatment and confounder-outcome associations that would reduce the estimated effect to zero. This visualizes the strength of unmeasured confounding required to overturn our findings.
-
-\subsection{Permutation Tests for Location Randomization}
-
-When testing the impact of location randomization, we employ permutation-based inference to account for multiple testing across different model specifications.
-
-For each model $m \in \{1, \ldots, M\}$, we compute:
-\begin{equation}
-\Delta R^2_m = R^2_{\text{original},m} - R^2_{\text{randomized},m}
-\end{equation}
-
-Under the null hypothesis that text contains location-independent information, $\Delta R^2_m$ should be small. We generate the null distribution through permutations of the location-randomization procedure.
-
-The p-value for model $m$ is:
-\begin{equation}
-p_m = \frac{1 + \sum_{b=1}^B \mathbb{1}(\Delta R^2_{m,b} \leq \Delta R^2_m)}{1 + B}
-\end{equation}
-
-We control family-wise error rate across models using Bonferroni correction.
-
-\subsection{Bootstrap Confidence Intervals}
-
-Confidence intervals for causal effect estimates are constructed using the bias-corrected and accelerated (BCa) bootstrap~\citep{efron1987better}. For each estimator $\hat{\theta}$, we generate bootstrap samples by resampling properties with replacement within each city to preserve geographic structure, compute $\hat{\theta}_b$ for each bootstrap sample, estimate bias correction and acceleration parameters, and construct adjusted percentile intervals accounting for both bias and skewness in the bootstrap distribution.
-
-\section{Sensitivity to Modeling Choices}
-\label{app:sensitivity}
-
-\subsection{Embedding Model Comparison}
-
-We validate robustness to text embedding choice by replicating key analyses with multiple alternative models:
-
-\begin{table}[H]
-\centering
-\caption{Text embedding models evaluated for sensitivity analysis.}
-\begin{tabular}{lrr}
-\toprule
-\textbf{Model} & \textbf{Dimensions} & \textbf{Training Corpus} \\
-\midrule
-all-mpnet-base-v2 & 768 & General + NLI \\
-text-embedding-ada-002 & 1536 & Proprietary (OpenAI) \\
-embed-english-v3.0 & 1024 & Web + Books (Cohere) \\
-all-MiniLM-L6-v2 & 384 & General + NLI \\
-\bottomrule
-\end{tabular}
-\end{table}
-\FloatBarrier
-
-We compute pairwise correlations between embeddings and assess whether key conclusions (location prediction accuracy, causal effect estimates) vary substantially across embedding models.
-
-\subsection{Bandwidth Selection for Spatial Kernels}
-
-Crime density estimation and spatial smoothing employ Gaussian kernels with bandwidth parameter $h$. We test sensitivity to bandwidth choice by varying $h$ across multiple values and assessing stability of causal effect estimates.
-
-\subsection{Temporal Window for Feature Extraction}
-
-Contextual features (demographics, crime, amenities) are extracted using temporal windows centered on property sale dates. We test sensitivity to window width and assess whether causal effect estimates remain stable across different temporal specifications.
-
-\subsection{Outlier Threshold Selection}
-
-Price outlier exclusion employs thresholds for minimum and maximum values. We test sensitivity by varying thresholds and document stability of key findings:
-
-\begin{table}[H]
-\centering
-\caption{Sensitivity to outlier thresholds.}
-\begin{tabular}{lrr}
-\toprule
-\textbf{Thresholds} & \textbf{N (retained)} & \textbf{$\hat{\tau}_{\text{causal}}$} \\
-\midrule
-\$25K -- \$25M & 59,805 & $-0.018$ \\
-\$50K -- \$20M & 59,449 & $-0.018$ \\
-\$75K -- \$15M & 59,001 & $-0.018$ \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \section{Adversarial Deconfounding: Implementation}
 \label{app:adversarial}
@@ -558,15 +448,13 @@ To complement the written proofs in Appendices~\ref{app:proofs} and~\ref{app:fro
 \textbf{Claim} & \textbf{Verification method} & \textbf{Tool} \\
 \midrule
 Lemma~1 (d-separation, App.~\ref{app:proofs}) & Path-by-path enumeration; minimality check & pgmpy 1.1 \\
-Theorem~1 (Backdoor Adjustment, \S\ref{sec:methods}) & Independent identification on hypothetical $T \to Y$ DAG & DoWhy 0.14 \\
-Theorem~2 (Backdoor Identifiability, App.~\ref{app:proofs}) & Same as Theorem~1; backdoor estimand returned & DoWhy 0.14 \\
-Proposition~1 (Zero Causal Effect, \S\ref{sec:methods}) & Edge-set check ($T \notin \mathrm{Pa}(Y)$); DoWhy declares zero & pgmpy + DoWhy \\
-Corollary~1 (Zero Effect under True SCM, App.~\ref{app:proofs}) & Same as Proposition~1 & pgmpy \\
-Proposition~2(a) (variational MI inequality, App.~\ref{app:frozen_probe_proofs}) & Symbolic KL nonneg + numerical $V$-chain & SymPy + PyTorch \\
-Proposition~2(b1) (algebraic identity) & Symbolic and numerical equality, $|\Delta| < 10^{-8}$ & SymPy + PyTorch \\
-Proposition~2(b2) (consistency of post-hoc $\hat V_{\Phi'}^{\text{post}}$) & Monte Carlo $n$-sweep; log-log slope vs.\ rate predicted by \citet{xu2020theory} Thm~3 & scikit-learn \\
-Proposition~2(c) (XOR saddle-gap, identity-encoder construction) & Wraps \texttt{frozen\_probe\_gap.py}; assertions on $V_\Phi$, $V_{\Phi'}$ & PyTorch \\
-Proposition~2(c) (joint-game saddle existence + collapsed-encoder counterexample) & Explicit construction at $\phi_{\text{id}}$ and $\phi_{\text{collapse}}$; sweep over joint-game weight $\alpha$ & PyTorch \\
+Theorem~1 (Backdoor Identifiability, App.~\ref{app:proofs}) & Independent identification on the hypothetical $T \to Y$ DAG; backdoor estimand returned & DoWhy 0.14 \\
+Corollary~1 (Zero Effect under True SCM, App.~\ref{app:proofs}) & Edge-set check ($T \notin \mathrm{Pa}(Y)$); DoWhy declares zero & pgmpy + DoWhy \\
+Proposition~1(a) (variational MI inequality, App.~\ref{app:frozen_probe_proofs}) & Symbolic KL nonneg + numerical $V$-chain & SymPy + PyTorch \\
+Proposition~1(b1) (algebraic identity) & Symbolic and numerical equality, $|\Delta| < 10^{-8}$ & SymPy + PyTorch \\
+Proposition~1(b2) (consistency of post-hoc $\hat V_{\Phi'}^{\text{post}}$) & Monte Carlo $n$-sweep; log-log slope vs.\ rate predicted by \citet{xu2020theory} Thm~3 & scikit-learn \\
+Proposition~1(c) (XOR saddle-gap, identity-encoder construction) & Wraps \texttt{frozen\_probe\_gap.py}; assertions on $V_\Phi$, $V_{\Phi'}$ & PyTorch \\
+Proposition~1(c) (joint-game saddle existence + collapsed-encoder counterexample) & Explicit construction at $\phi_{\text{id}}$ and $\phi_{\text{collapse}}$; sweep over joint-game weight $\alpha$ & PyTorch \\
 \bottomrule
 \end{tabular}
 \caption{Mapping from analytic claims to computational verification scripts. Every entry passes; certificates are in \texttt{verification/results/*.json}.}
@@ -610,115 +498,6 @@ DR & $2000$ & $0.94$ & $0.96$ & $0.97$ & $0.93$ \\
 
 Because the residual understatement at the null is mild but real, we report bootstrap intervals for the headline estimate. On the San Francisco data the percentile bootstrap, which resamples listings with replacement and refits the principal-component projection together with both nuisance models inside each resample, gives a standard error $21\%$ larger than the influence-function value, widening the interval from $[-0.043, +0.043]$ to $[-0.046, +0.051]$ and the minimum detectable effect from $6.4$ to $7.8$ percent. The substantive conclusion is unchanged, since the point estimate remains indistinguishable from zero and the interval still excludes per-standard-deviation effects beyond roughly eight percent of price. The doubly-robust estimator that anchors the panel has no power against the continuous effect, because binarizing at the median principal-component norm discards the graded signal the partialling-out estimator targets, so we read its near-zero estimate as a calibration check on the inference machinery rather than as a competing estimate of the semantic effect.
 
-\section{Davis--Kahan Stress Test of Spatial-HAC Coverage}
-\label{app:dk_sim}
-
-The choice of inference rule for the headline DML estimate is calibrated against a Davis--Kahan stress simulation that mirrors our regime. The data-generating process draws $n = 348$ locations uniformly on the unit square, an embedding $T = \lambda u_{\text{dir}} v_{\text{dir}}^\top + \sigma E$ with rank-one spike of magnitude $\lambda$ along a sparse loading $v_{\text{dir}} \in \mathbb{R}^{768}$ and isotropic noise $E_{ij} \sim N(0, 1/\sqrt{n})$, and an outcome $Y = U + \tau (T v_{\perp}) + \nu$ in which the spatial confounder $U$ is sampled from a Mat\'ern-$2.5$ Gaussian process with length scale $\rho$ on the unit square. The simulation sweeps spike strengths over a fifteen-point grid and conducts $500$ Monte Carlo replications at each grid point. Cheap-bootstrap intervals~\citep{lam2022cheap} are constructed with $B = 200$ replicates and a $t_{B}$ pivot centred at the original-sample point estimate, in keeping with the centring identity of \citet{lam2022cheap} Equation~(1). Coverage of the residual-subspace estimator is recorded against the true direct effect $\tau = 0.10$ along the $v_\perp$ axis.
-
-The headline finding of the simulation is that the conventional asymptotic-$z$ pairing with the Salerno--Wu--McCormick fold-centred jackknife under-covers badly at our regime, while replacing the $z$ critical value with the Ibragimov--M\"uller $t_{K-1}$ critical value recovers coverage that is acceptable for headline reporting without requiring a bandwidth choice. The full sensitivity sweep across length-scale parameters $\rho \in \{0.05, 0.10, 0.15, 0.25, 0.40, 0.60\}$ (Table~\ref{tab:dk_coverage}) shows that the coverage gap is essentially invariant in $\rho$, so the failure of the asymptotic-$z$ pairing is driven by the fixed-$K$ degrees-of-freedom regime rather than by spatial-dependence strength.
-
-\begin{table}[H]
-\centering
-\caption{Empirical coverage of nominal $95\%$ confidence intervals across $500$ Monte Carlo replications per length-scale parameter $\rho$, with eleven competing inference rules. Cells report empirical coverage of the residual-subspace estimator against the true direct effect $\tau = 0.10$. The rightmost column is the mean coverage across the six $\rho$ values. SWM denotes the Salerno--Wu--McCormick jackknife HAC; BCH denotes Bester--Conley--Hansen cluster-covariance with the $K - 1 = 4$ fixed-cluster $t$ critical value; IM denotes Ibragimov--M\"uller self-normalised cluster-$t$; fixed-$b$ uses the $t_{1/b - 1}$ critical value of \citet{sun2008optimal} at $b = 0.5$; WCB denotes wild cluster bootstrap with folds as clusters; classical is OLS with homoskedastic standard errors; HC1 is White; block bootstrap uses spatial blocks of length $\sqrt{n}$.}
-\label{tab:dk_coverage}
-\begin{tabular}{lrrrrrrr}
-\toprule
-\textbf{Method} & $\rho = 0.05$ & $0.10$ & $0.15$ & $0.25$ & $0.40$ & $0.60$ & \textbf{mean} \\
-\midrule
-fixed-$b$ ($b = 0.5$, $t_1$) & 0.78 & 0.96 & 0.93 & 0.91 & 0.93 & 0.94 & \textbf{0.91} \\
-IM self-normalised $t_{K - 1}$ & 0.75 & 0.67 & 0.71 & 0.76 & 0.79 & 0.81 & \textbf{0.75} \\
-BCH cluster cov.\ $t_{K - 1}$ & 0.49 & 0.55 & 0.54 & 0.50 & 0.61 & 0.69 & 0.56 \\
-Block bootstrap & 0.48 & 0.49 & 0.53 & 0.56 & 0.61 & 0.64 & 0.55 \\
-SWM jackknife (bw sweep max) & 0.41 & 0.56 & 0.51 & 0.44 & 0.57 & 0.63 & 0.52 \\
-SWM jackknife $V_{\text{off}}$ only & 0.43 & 0.52 & 0.50 & 0.43 & 0.55 & 0.60 & 0.50 \\
-Conley HAC, Lehner bandwidth & 0.44 & 0.51 & 0.46 & 0.42 & 0.55 & 0.60 & 0.50 \\
-Classical & 0.47 & 0.46 & 0.43 & 0.43 & 0.56 & 0.62 & 0.49 \\
-SWM jackknife ($V_{\text{off}} + V_{\text{between}}$, $z = 1.96$) & 0.40 & 0.51 & 0.49 & 0.41 & 0.53 & 0.57 & 0.48 \\
-HC1 & 0.42 & 0.45 & 0.42 & 0.40 & 0.52 & 0.57 & 0.46 \\
-Wild cluster bootstrap, folds & 0.32 & 0.34 & 0.32 & 0.30 & 0.40 & 0.46 & 0.36 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Figure~\ref{fig:dk_coverage} reads four of the eleven methods as coverage curves against both stress axes, with the seven remaining rules omitted from the figure for legibility because they bunch within the band traced by the classical and Salerno--Wu--McCormick-with-$z$ lines. Panel (a) varies the leading-eigenvalue spike strength while holding the length-scale at $\rho = 0.15$, and panel (b) varies the length-scale while holding the spike strength at its central value, with each Monte Carlo cell at $1{,}000$ replications. The dashed horizontal line in each panel marks the nominal $95\%$ target.
-
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}
-\begin{axis}[
-    causalre body, name=dkA,
-    xlabel={Leading-eigenvalue spike strength},
-    ylabel={Empirical coverage of nominal $95\%$ CI},
-    title={(a) Coverage vs spike strength, $\rho = 0.15$},
-    xmin=0.4, xmax=4.1, ymin=0.28, ymax=1.02,
-    ytick={0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0},
-    legend to name=dkleg,
-    legend columns=4,
-    legend style={font=\scriptsize, draw=none, fill=none,
-                  /tikz/every even column/.append style={column sep=12pt}},
-    legend cell align=left,
-]
-\addplot[black, dashed, thin, forget plot] coordinates {(0.4,0.95) (4.1,0.95)};
-\addplot[color=cNYC, thick, mark=square*, mark size=1.4pt] coordinates {
-  (0.50,0.934) (0.75,0.920) (1.00,0.954) (1.25,0.958) (1.50,0.930)
-  (1.75,0.950) (2.00,0.930) (2.25,0.930) (2.50,0.940) (2.75,0.962)
-  (3.00,0.942) (3.25,0.940) (3.50,0.932) (3.75,0.936) (4.00,0.942)
-};
-\addlegendentry{fixed-$b$, $b = 0.5$, $t_1$}
-\addplot[color=cSF, thick, mark=*, mark size=1.4pt] coordinates {
-  (0.50,0.706) (0.75,0.722) (1.00,0.730) (1.25,0.746) (1.50,0.682)
-  (1.75,0.716) (2.00,0.726) (2.25,0.740) (2.50,0.730) (2.75,0.762)
-  (3.00,0.756) (3.25,0.730) (3.50,0.762) (3.75,0.706) (4.00,0.708)
-};
-\addlegendentry{IM self-normalised $t_{K - 1}$}
-\addplot[color=cBOS, thick, mark=triangle*, mark size=1.6pt] coordinates {
-  (0.50,0.494) (0.75,0.490) (1.00,0.496) (1.25,0.518) (1.50,0.482)
-  (1.75,0.492) (2.00,0.476) (2.25,0.480) (2.50,0.472) (2.75,0.514)
-  (3.00,0.508) (3.25,0.476) (3.50,0.488) (3.75,0.482) (4.00,0.476)
-};
-\addlegendentry{SWM jackknife, $z = 1.96$}
-\addplot[color=cMUTE, thick, mark=diamond*, mark size=1.6pt] coordinates {
-  (0.50,0.436) (0.75,0.436) (1.00,0.442) (1.25,0.444) (1.50,0.414)
-  (1.75,0.400) (2.00,0.424) (2.25,0.436) (2.50,0.392) (2.75,0.442)
-  (3.00,0.456) (3.25,0.424) (3.50,0.456) (3.75,0.438) (4.00,0.394)
-};
-\addlegendentry{Classical, $z = 1.96$}
-\end{axis}
-\begin{semilogxaxis}[
-    causalre body,
-    at={(dkA.east)}, anchor=west, xshift=1.4cm,
-    xlabel={Length-scale $\rho$}, ylabel={},
-    title={(b) Coverage vs length-scale $\rho$},
-    xmin=0.04, xmax=0.75, ymin=0.28, ymax=1.02,
-    log basis x=10,
-    xtick={0.05,0.10,0.15,0.25,0.40,0.60},
-    xticklabels={0.05,0.10,0.15,0.25,0.40,0.60},
-    ytick={0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0},
-    yticklabels={,,,,,,,},
-]
-\addplot[black, dashed, thin, forget plot] coordinates {(0.04,0.95) (0.75,0.95)};
-\addplot[color=cNYC, thick, mark=square*, mark size=1.4pt, forget plot] coordinates {
-  (0.05,0.780) (0.10,0.957) (0.15,0.927) (0.25,0.909) (0.40,0.929) (0.60,0.940)
-};
-\addplot[color=cSF, thick, mark=*, mark size=1.4pt, forget plot] coordinates {
-  (0.05,0.748) (0.10,0.672) (0.15,0.711) (0.25,0.762) (0.40,0.792) (0.60,0.808)
-};
-\addplot[color=cBOS, thick, mark=triangle*, mark size=1.6pt, forget plot] coordinates {
-  (0.05,0.395) (0.10,0.508) (0.15,0.486) (0.25,0.414) (0.40,0.534) (0.60,0.568)
-};
-\addplot[color=cMUTE, thick, mark=diamond*, mark size=1.6pt, forget plot] coordinates {
-  (0.05,0.467) (0.10,0.456) (0.15,0.430) (0.25,0.432) (0.40,0.556) (0.60,0.616)
-};
-\end{semilogxaxis}
-\node[anchor=north] at ($(dkA.south east)+(0.8cm,-1.0cm)$) {\ref{dkleg}};
-\end{tikzpicture}
-\caption{Empirical coverage of nominal $95\%$ confidence intervals across the Davis--Kahan stress simulation, with $1{,}000$ Monte Carlo replications per cell. The horizontal dashed line in each panel marks the nominal level. Panel (a) varies the leading-eigenvalue spike strength while holding the spatial length-scale at $\rho = 0.15$, and panel (b) varies the length-scale on a log axis while holding the spike strength at its central value. The Salerno--Wu--McCormick jackknife paired with the conventional $z = 1.96$ critical value sits near $0.49$ across both axes, the Ibragimov--M\"uller self-normalised $t_{K - 1}$ paired with the same fold-mean variance sits near $0.73$, and the fixed-$b$ envelope of \citet{sun2008optimal} at $b = 0.5$ reaches roughly $0.93$ at the cost of substantially wider intervals. The seven remaining inference rules reported in Table~\ref{tab:dk_coverage} bunch within the band traced by classical and SWM-with-$z$ and are omitted from the figure for legibility.}
-\label{fig:dk_coverage}
-\end{figure}
-\FloatBarrier
-
-Three readings of Table~\ref{tab:dk_coverage} guide our choice of inference rule for the headline estimate. The first reading is that the Ibragimov--M\"uller construction recovers a substantial coverage improvement over the Salerno--Wu--McCormick jackknife paired with the asymptotic-$z$ critical value, while requiring no bandwidth choice and no kernel specification. Mean coverage moves from $0.48$ to $0.75$ across the $\rho$ sweep, so the construction earns the headline slot for the per-city tables in the main text. The second reading is that the $V_{\text{off}} + V_{\text{between}}$ decomposition of \citet{salerno2026spatially} is mathematically the right correction to the kernel-smoothed Conley HAC, but at $K = 5$ folds the two terms cancel in roughly three-quarters of replications and the net standard-error inflation closes only about three percent of the coverage gap. The third reading is that the fixed-$b$ construction of \citet{sun2008optimal} and \citet{kiefer2005new} at $b = 0.5$ with the $t_1$ critical value reaches mean coverage of $0.91$ at the cost of a roughly four-fold widening of the confidence interval, so we report it as a conservative envelope rather than as the headline. Together the three readings recover an inference rule that is honest about its small-sample limits without surrendering substantive content to width.
-
-The decomposition of the Salerno jackknife variance into its $V_{\text{off}}$ and $V_{\text{between}}$ components clarifies why the $z = 1.96$ pairing under-covers. Empirical fold-mean standard deviation is roughly $3.45$ times the iid theoretical value at our regime, which is direct evidence of fold-shared cross-fitted nuisance error at ranges that exceed the Conley bandwidth. The within-fold kernel-smoothed term $V_{\text{off}}$ and the between-fold variance term $V_{\text{between}}$ are individually large and have opposite signs in a majority of replications, so the additive variance estimator $V_{\text{JK}} = V_{\text{off}} + V_{\text{between}}$ that \citet{salerno2026spatially} prescribe is correctly specified but provides only a small inflation of the realised standard error. The remedy under fixed-$K$ asymptotics is to widen the critical value rather than to enlarge the variance estimator, which is exactly what the Ibragimov--M\"uller and fixed-$b$ constructions do.
+\input{drafts_jbes_2026/app_additions_v3}
 
 \end{document}

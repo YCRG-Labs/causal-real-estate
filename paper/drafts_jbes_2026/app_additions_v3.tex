@@ -1,0 +1,85 @@
+% New appendices added 2026-06-08 (appendix audit): the Gelbach decomposition,
+% the LLM counterfactual protocol, and a consolidated hyperparameter/environment
+% table. \input before \end{document}, inside the \appendix region.
+
+\section{The Spatial-Confounding Decomposition}
+\label{app:decomposition}
+
+The headline deconfounding test of Section~\ref{sec:decomposition} rests on the order-invariant covariate decomposition of \citet{gelbach2016covariates}, and we give here the estimand, the spatial basis, and the per-market numbers behind Figure~\ref{fig:decomposition}.
+
+Fix the treatment $T$ at the oriented leading principal component of the sentence-BERT embedding, the same direction that defines the Baur channel, and consider the partialling-out regression of log price on $T$ under two nested control sets. The base set $W$ holds the structured property and contextual covariates but no geography; the augmented set $W \cup G$ adds a flexible location basis $G = (\mathrm{lat}, \mathrm{lon}, \mathrm{lat}^2, \mathrm{lon}^2, \mathrm{lat}\cdot\mathrm{lon})$. Write $\hat\theta_{\text{base}}$ and $\hat\theta_{\text{geo}}$ for the corresponding coefficients on $T$. Because the treatment is held fixed and only the control set changes, the \citet{gelbach2016covariates} result guarantees that the change
+\begin{equation}
+\Delta_{\text{geo}} = \hat\theta_{\text{base}} - \hat\theta_{\text{geo}}
+\label{eq:gelbach}
+\end{equation}
+is the contribution the location block makes to the text-price coefficient, and that this contribution is well defined rather than an artifact of the order in which control blocks enter. We read $\Delta_{\text{geo}}$ as the part of the apparent text effect that explicit geography accounts for.
+
+\begin{table}[H]
+\centering
+\caption{Spatial-confounding decomposition by market. $\hat\theta_{\text{base}}$ is the per-standard-deviation text coefficient with the structured and contextual controls only; $\hat\theta_{\text{geo}}$ adds the location basis $G$; $\Delta_{\text{geo}}$ is their difference, the share of the coefficient that geography explains; and $R^2_{T\sim G}$ is the share of the treatment's own variance the location basis explains, the diagnostic that makes the decomposition non-vacuous. Markets are ordered by $\hat\theta_{\text{base}}$.}
+\label{tab:decomposition-12}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Market & $\hat\theta_{\text{base}}$ & $\hat\theta_{\text{geo}}$ & $\Delta_{\text{geo}}$ & $R^2_{T\sim G}$ \\
+\midrule
+Chicago       & $+0.461$ & $+0.469$ & $-0.008$ & $0.187$ \\
+Philadelphia  & $+0.408$ & $+0.405$ & $+0.003$ & $0.116$ \\
+Atlanta       & $+0.253$ & $+0.250$ & $+0.003$ & $0.148$ \\
+Dallas        & $+0.200$ & $+0.199$ & $+0.001$ & $0.059$ \\
+Denver        & $+0.154$ & $+0.158$ & $-0.004$ & $0.165$ \\
+Boston        & $+0.127$ & $+0.126$ & $+0.001$ & $0.053$ \\
+San Francisco & $+0.111$ & $+0.109$ & $+0.002$ & $0.035$ \\
+Portland      & $+0.098$ & $+0.095$ & $+0.003$ & $0.158$ \\
+Seattle       & $+0.064$ & $+0.065$ & $-0.001$ & $0.034$ \\
+Washington    & $+0.015$ & $+0.013$ & $+0.002$ & $0.121$ \\
+Phoenix       & $+0.009$ & $-0.002$ & $+0.011$ & $0.097$ \\
+New York      & $-0.119$ & $-0.152$ & $+0.033$ & $0.417$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The shift is small in absolute terms throughout: $|\Delta_{\text{geo}}|$ is at most $0.033$ of a log point, in New York, and at most $0.011$ in every other market. Expressed as a fraction of the coefficient it stays under five percent in every market that carries a non-trivial effect, New York alone excepted at about a quarter; the two near-null markets, Phoenix and Washington, have absolute shifts of a hundredth of a log point or less, so their fraction is large but uninformative. The decomposition is non-vacuous because $R^2_{T\sim G}$ is far from zero, reaching $0.42$ in New York and exceeding a tenth in six markets, so the text direction does encode location, yet that location component does not carry the effect of the language on price except in New York. The location basis is a smooth coordinate polynomial laid over roughly thirty structured controls, so confounding at a finer spatial grain, or through pathways those controls miss, is outside what the comparison can rule out.
+
+\section{Counterfactual-Rewriting Protocol}
+\label{app:counterfactual}
+
+The intervention of Section~\ref{sec:counterfactual-12} treats each listing description as one draw from a population of descriptions for the same property and manipulates the language directly. A frozen instruction-tuned language model receives the original description, a structured summary of the property's attributes, and a target submarket, and returns a rewritten description; the rewrite is then re-priced under the same automated valuation model and the change in predicted log price is read off. The primary generator is Qwen~2.5 32B Instruct, run on $n = 200$ listings per market; a secondary cross-generator check uses Llama~3.3 70B Instruct on a separate $n = 100$ draw, an unmatched probe of direction and rough magnitude rather than a tight replication. The exact prompts and decoding settings are in the replication repository.
+
+Two contrasts are read from the rewrites. The style-stripped contrast holds the model's inferred submarket at its original value and rewrites only the stylistic content, isolating the price the valuation model attaches to language given a fixed location. The submarket-swap contrast rewrites the listing toward a held-out submarket and reads the full change, combining the change in language with the change the model infers about location. We verify that the manipulation does what it claims: the structured attribute slots survive in $99.8\%$ of rewrites on average, and an independent submarket classifier changes its prediction in $44.5\%$ of rewrites, evidence that the language moves across submarket boundaries while the attributes do not.
+
+Each contrast is a product, $\hat\delta = \hat\theta \, \overline{\Delta\mathrm{PC1}}$, of the Baur DML coefficient $\hat\theta$ and the average rewrite-induced change $\overline{\Delta\mathrm{PC1}} = \tfrac{1}{n}\sum_i (\mathrm{PC1}^{\text{rw}}_i - \mathrm{PC1}^{\text{orig}}_i)$ in the leading text component, so its sampling uncertainty has two sources. We fold both into a single standard error by the delta method,
+\begin{equation}
+\widehat{\mathrm{Var}}(\hat\delta) \;\approx\; \overline{\Delta\mathrm{PC1}}^{\,2}\,\widehat{\mathrm{Var}}(\hat\theta) \;+\; \hat\theta^{\,2}\,\widehat{\mathrm{Var}}\!\big(\overline{\Delta\mathrm{PC1}}\big),
+\label{eq:cf-delta}
+\end{equation}
+where $\widehat{\mathrm{Var}}(\hat\theta)$ is the influence-function variance of the DML coefficient and $\widehat{\mathrm{Var}}(\overline{\Delta\mathrm{PC1}})$ comes from a within-listing cluster bootstrap over the rewritten listings in the manner of \citet{cameron2008bootstrap}. Adding the coefficient's contribution rather than conditioning on a fitted $\hat\theta$ is what widens the intervals materially: the pooled style-stripped statistic is $t = 3.66$ under Equation~\eqref{eq:cf-delta}, against the implausible $t \approx 13$ a coefficient-conditional interval would report. Because the cross-world independence conditions that identify a formal mediation decomposition are not met, we call these model-based contrasts rather than natural direct or indirect effects and report no natural-indirect-effect quantity.
+
+\section{Hyperparameters and Computational Environment}
+\label{app:hyperparams}
+
+Table~\ref{tab:hyperparams} consolidates the settings scattered through the methods and the implementation appendices, so the estimates can be reproduced from the paper together with the replication repository.
+
+\begin{table}[H]
+\centering
+\caption{Estimator, encoder, and computational settings. Where a setting varies by channel it is noted; remaining details and exact seeds are in the replication repository.}
+\label{tab:hyperparams}
+\small
+\begin{tabular}{p{0.32\textwidth} p{0.60\textwidth}}
+\toprule
+Component & Setting \\
+\midrule
+DML cross-fitting & $K = 5$ folds, out-of-fold residualization \citep{chernozhukov2018double} \\
+Nuisance learner & gradient boosting (LightGBM, $\text{num\_leaves}=8$, $\text{max\_bin}=63$) for the embedding channels; ridge regression for the Shen-Ross uniqueness channel \\
+Treatment direction & leading principal component of the embedding, $z$-scored; out-of-fold (cross-fit) variant for the headline specification \\
+Text encoders & sentence-BERT \texttt{all-mpnet-base-v2} ($768$-d, primary); \texttt{all-MiniLM-L6-v2} ($384$-d, robustness); Doc2Vec uniqueness score (Shen channel) \\
+LEACE / IGBP erasure & continuous latitude-longitude concept; IGBP run for five outer passes with a multilayer-perceptron probe; single-precision \\
+GRL foil (App.~\ref{app:adversarial}) & top-$50$ PCs $\rightarrow$ $64$-d encoder; three discriminator heads (ZIP, lat-lon, income quintile); $\lambda$ annealed $0.1\!\to\!1.0$; Adam, $150$ epochs, $70/30$ split \\
+Counterfactual rewriting & Qwen~2.5 32B Instruct ($n=200$/market); Llama~3.3 70B Instruct ($n=100$, cross-generator) \\
+Bootstrap & cheap bootstrap \citep{lam2022cheap} with $B=50$ for the headline interval; within-listing cluster bootstrap for the counterfactual \\
+Covariate winsorizer & per-column clip at median $\pm\,5$ median absolute deviations, non-finite entries imputed at the median \\
+Meta-analysis & Paule-Mandel $\tau^2$, Hartung-Knapp-Sidik-Jonkman $t$ intervals, Benjamini-Hochberg / Romano-Wolf multiplicity control \\
+Software & Python with scikit-learn, LightGBM, PyTorch, sentence-transformers, and the \texttt{concept-erasure} (LEACE) package; the GPU stages (erasure, GRL, counterfactual) run on a single accelerator \\
+\bottomrule
+\end{tabular}
+\end{table}
