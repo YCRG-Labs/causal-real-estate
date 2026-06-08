@@ -20,7 +20,7 @@ from itertools import combinations
 from pathlib import Path
 
 import networkx as nx
-from pgmpy.base import DAG
+from networkx import DiGraph as DAG  # graph container; d-separation is hand-rolled below
 
 RESULTS = Path(__file__).parent / "results"
 RESULTS.mkdir(exist_ok=True)
@@ -104,13 +104,13 @@ def main() -> int:
     for p in proof_paths:
         assert tuple(p) in found, f"path {p} from written proof not found in DAG"
 
-    pgmpy_dsep = not g.is_dconnected("T", "Y", observed={"L", "X", "C"})
-    assert pgmpy_dsep, "pgmpy disagrees: T and Y are d-connected given {L,X,C}"
+    pgmpy_dsep = nx.is_d_separator(g, {"T"}, {"Y"}, {"L", "X", "C"})
+    assert pgmpy_dsep, "networkx disagrees: T and Y are d-connected given {L,X,C}"
 
     nondsep_pairs = []
     for missing in [{"L"}, {"X"}, {"C"}, set()]:
         smaller_obs = obs - missing
-        d_sep = not g.is_dconnected("T", "Y", observed=smaller_obs)
+        d_sep = nx.is_d_separator(g, {"T"}, {"Y"}, set(smaller_obs))
         nondsep_pairs.append({"observed": sorted(smaller_obs), "d_separated": d_sep})
 
     minimality = all(not row["d_separated"] for row in nondsep_pairs if len(row["observed"]) < 3)

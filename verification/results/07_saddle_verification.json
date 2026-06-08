@@ -13,10 +13,10 @@
   "part_B_explicit_construction_under_joint_game": {
     "claim": "\u03c6_id is a saddle of the joint game with V_\u03a6 = 0, V_\u03a6' \u2248 H(C), and L_task \u2248 0.",
     "encoder": "\u03c6(X) = X (identity)",
-    "V_phi_at_identity_nats": 0.000547347548318089,
-    "V_phi_prime_at_identity_nats": 0.6931393925331671,
+    "V_phi_at_identity_nats": 0.0005474071529628644,
+    "V_phi_prime_at_identity_nats": 0.6931436875559579,
     "H_C_nats": 0.6931471805599453,
-    "task_loss_at_identity_nats": 0.005094083957374096,
+    "task_loss_at_identity_nats": 0.006019060965627432,
     "V_phi_near_zero": true,
     "V_phi_prime_near_H_C": true,
     "task_decodable_from_phi_id": true,

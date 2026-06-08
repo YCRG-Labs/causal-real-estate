@@ -1,134 +1,118 @@
 """
-Independent corroboration of Proposition 1 / Theorem 1 / Theorem 2 via DoWhy.
+Independent corroboration of Proposition 1 / Theorem 1 / Theorem 2 via an
+explicit backdoor-criterion check on the SCM graph (networkx), plus a numerical
+sanity regression. (Ported off DoWhy/pgmpy, which are not installable in the
+PEP-668 environment; networkx implements the same graph semantics.)
 
-DoWhy implements graph-based identification (Pearl's ID algorithm + the
-backdoor/frontdoor criteria). We run it twice on the SCM:
+1. Under the *true* SCM (no T -> Y edge): there is no directed path T -> Y, so
+   the causal effect is structurally zero. Corroborates Proposition 1 / Corollary 1.
 
-1. Under the *true* SCM (no T -> Y edge): DoWhy must report that the causal
-   effect is structurally zero. This corroborates Proposition 1 and
-   Corollary 1.
+2. Under a hypothetical SCM with T -> Y added: the set {L, X, C} satisfies Pearl's
+   backdoor criterion relative to (T, Y) -- it contains no descendant of T and it
+   d-separates T from Y in the backdoor graph (T's outgoing edges deleted) -- and
+   it equals the parent set of T, the canonical sufficient adjustment. Matches
+   Theorem 1 / Theorem 2.
 
-2. Under a hypothetical SCM with T -> Y added: DoWhy must return a backdoor
-   estimand with adjustment set {L, X, C}, matching Theorem 1 / Theorem 2.
-
-Two implementations agreeing is stronger than either alone.
+3. Numerical sanity: OLS of Y on (T, L, X, C) on data simulated from the true SCM
+   returns a coefficient on T near zero.
 """
 
 import json
 import sys
-import warnings
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
-
-warnings.filterwarnings("ignore")
-
-from dowhy import CausalModel
+import networkx as nx
 
 RESULTS = Path(__file__).parent / "results"
 RESULTS.mkdir(exist_ok=True)
 
-
-GML_TRUE_SCM = """graph [
-    directed 1
-    node [ id "L" label "L" ]
-    node [ id "X" label "X" ]
-    node [ id "C" label "C" ]
-    node [ id "T" label "T" ]
-    node [ id "Y" label "Y" ]
-    edge [ source "L" target "X" ]
-    edge [ source "L" target "C" ]
-    edge [ source "L" target "T" ]
-    edge [ source "X" target "T" ]
-    edge [ source "C" target "T" ]
-    edge [ source "L" target "Y" ]
-    edge [ source "X" target "Y" ]
-    edge [ source "C" target "Y" ]
-]"""
-
-GML_HYPOTHETICAL_SCM = GML_TRUE_SCM.rstrip().rstrip("]") + '    edge [ source "T" target "Y" ]\n]'
+SCM_EDGES = [
+    ("L", "X"), ("L", "C"), ("L", "T"), ("X", "T"), ("C", "T"),
+    ("L", "Y"), ("X", "Y"), ("C", "Y"),
+]
+Z = {"L", "X", "C"}
 
 
-def synthetic_data(n: int = 1000, seed: int = 0) -> pd.DataFrame:
+def true_scm():
+    g = nx.DiGraph(); g.add_nodes_from(["L", "X", "C", "T", "Y"]); g.add_edges_from(SCM_EDGES)
+    return g
+
+
+def hypothetical_scm():
+    g = true_scm(); g.add_edge("T", "Y")
+    return g
+
+
+def valid_backdoor(g, treatment, outcome, z):
+    """Pearl's backdoor criterion: z has no descendant of treatment, and z
+    d-separates treatment from outcome in the graph with treatment's outgoing
+    edges removed."""
+    if z & nx.descendants(g, treatment):
+        return False, "adjustment set contains a descendant of the treatment"
+    g_bd = g.copy()
+    g_bd.remove_edges_from(list(g.out_edges(treatment)))
+    if not nx.is_d_separator(g_bd, {treatment}, {outcome}, set(z)):
+        return False, "adjustment set does not block all backdoor paths"
+    return True, "valid"
+
+
+def synthetic_data(n=2000, seed=0):
     rng = np.random.default_rng(seed)
     L = rng.normal(size=n)
     X = 0.7 * L + rng.normal(scale=0.5, size=n)
     C = 0.5 * L + rng.normal(scale=0.5, size=n)
     T = 0.4 * L + 0.3 * X + 0.2 * C + rng.normal(scale=0.5, size=n)
-    Y = 1.0 * L + 0.6 * X + 0.4 * C + rng.normal(scale=0.5, size=n)
-    return pd.DataFrame({"L": L, "X": X, "C": C, "T": T, "Y": Y})
+    Y = 1.0 * L + 0.6 * X + 0.4 * C + rng.normal(scale=0.5, size=n)   # no T term
+    return L, X, C, T, Y
 
 
-def main() -> int:
-    df = synthetic_data()
+def main():
+    gt, gh = true_scm(), hypothetical_scm()
 
-    model_true = CausalModel(
-        data=df, treatment="T", outcome="Y", graph=GML_TRUE_SCM,
-    )
-    estimand_true = model_true.identify_effect(proceed_when_unidentifiable=False)
-    estimand_true_str = str(estimand_true)
-    declares_zero = ("causal effect is zero" in estimand_true_str.lower()) or \
-                    ("no directed path" in estimand_true_str.lower())
+    # (1) zero causal effect under the true SCM: no directed path T -> Y
+    declares_zero = not nx.has_path(gt, "T", "Y")
 
-    model_hyp = CausalModel(
-        data=df, treatment="T", outcome="Y", graph=GML_HYPOTHETICAL_SCM,
-    )
-    estimand_hyp = model_hyp.identify_effect(proceed_when_unidentifiable=False)
-    bd_dict = estimand_hyp.backdoor_variables or {}
-    backdoor_vars = set(bd_dict.get("backdoor", bd_dict.get("backdoor1", [])))
-    expected_adjustment = {"L", "X", "C"}
-    adjustment_matches = backdoor_vars == expected_adjustment
-    estimand_text = str(estimand_hyp)
-    method_is_backdoor = "backdoor" in estimand_text.lower() and "estimand expression" in estimand_text.lower()
+    # (2) backdoor validity of {L,X,C} under the hypothetical SCM
+    is_valid, reason = valid_backdoor(gh, "T", "Y", Z)
+    parents_T = set(gh.predecessors("T"))
+    matches_parents = (Z == parents_T)
+    pass_thm = is_valid and matches_parents
 
-    estimate = model_hyp.estimate_effect(
-        estimand_hyp,
-        method_name="backdoor.linear_regression",
-        confidence_intervals=False,
-        test_significance=False,
-    )
-    point_estimate = float(estimate.value)
+    # (3) numerical sanity: OLS of Y on (T, L, X, C), true-SCM data
+    L, X, C, T, Y = synthetic_data()
+    M = np.column_stack([np.ones_like(T), T, L, X, C])
+    beta, *_ = np.linalg.lstsq(M, Y, rcond=None)
+    t_coef = float(beta[1])
+    near_zero = abs(t_coef) < 0.05
 
-    pass_prop1 = declares_zero
-    pass_thm1_thm2 = method_is_backdoor and adjustment_matches
-    sanity_estimate_low = abs(point_estimate) < 0.1
-    overall_pass = pass_prop1 and pass_thm1_thm2 and sanity_estimate_low
-
+    overall = declares_zero and pass_thm and near_zero
     result = {
-        "verdict": "PASS" if overall_pass else "FAIL",
+        "verdict": "PASS" if overall else "FAIL",
+        "tool": "networkx " + nx.__version__,
         "proposition_1_under_true_scm": {
-            "claim": "Under SCM with no T->Y edge, DoWhy must declare zero causal effect.",
-            "dowhy_declares_zero": declares_zero,
-            "estimand_text": estimand_true_str[:400],
-            "holds": pass_prop1,
+            "claim": "No directed path T->Y in the true SCM, so the causal effect is zero.",
+            "no_directed_path_T_to_Y": declares_zero,
         },
         "theorem_1_2_under_hypothetical_scm": {
-            "claim": "If T->Y were added, the backdoor adjustment set would be {L,X,C}.",
-            "dowhy_returned_backdoor_estimand": method_is_backdoor,
-            "dowhy_backdoor_variables": sorted(backdoor_vars),
-            "expected_adjustment_set": sorted(expected_adjustment),
-            "adjustment_set_matches_paper": adjustment_matches,
-            "estimand_text_excerpt": estimand_text[:600],
-            "holds": pass_thm1_thm2,
+            "claim": "{L,X,C} is a valid backdoor adjustment set and equals pa(T).",
+            "backdoor_valid": is_valid, "reason": reason,
+            "adjustment_set": sorted(Z), "parents_of_T": sorted(parents_T),
+            "matches_parents": matches_parents,
         },
-        "sanity_estimate_under_hypothetical_scm": {
-            "note": "DGP has zero causal effect of T on Y; estimate via backdoor "
-                    "adjustment on hypothetical T->Y SCM should be near zero.",
-            "point_estimate": point_estimate,
-            "near_zero": sanity_estimate_low,
+        "sanity_regression_true_scm": {
+            "claim": "OLS coefficient on T (controlling for L,X,C) is near zero.",
+            "t_coefficient": t_coef, "near_zero": near_zero,
         },
     }
-
     out = RESULTS / "02_dowhy_identification.json"
     out.write_text(json.dumps(result, indent=2))
-
-    if not overall_pass:
+    if not overall:
         print(f"[02] FAIL — see {out}")
         return 1
-    print(f"[02] PASS — DoWhy declares zero under true SCM (Prop 1) AND returns "
-          f"backdoor adjustment {sorted(backdoor_vars)} under hypothetical SCM "
-          f"(Thm 1/Thm 2). Wrote {out}.")
+    print(f"[02] PASS — no T->Y path under true SCM (Prop 1); "
+          f"{{L,X,C}}=pa(T) is a valid backdoor set (Thm 1/2); "
+          f"OLS T-coef {t_coef:+.4f} near zero. Wrote {out}.")
     return 0
 
 

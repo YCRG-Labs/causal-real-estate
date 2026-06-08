@@ -1,0 +1,40 @@
+{
+  "verdict": "PASS",
+  "checks": [
+    {
+      "check": "(a) Robinson estimator solves its moment",
+      "pass": true,
+      "detail": "theta_hat = sum(Ttil*Ytil)/sum(Ttil^2) recovered symbolically"
+    },
+    {
+      "check": "(b) PLR score is Neyman-orthogonal",
+      "pass": true,
+      "detail": "d/dr psi|_0 = -dl*nu - dm*eps + dm*nu*theta0; setting nu=eps=0 leaves 0, so every term carries a mean-zero residual factor and E[d/dr psi]=0"
+    },
+    {
+      "check": "(c) IF/sandwich variance = reported SE^2 formula",
+      "pass": true,
+      "detail": "dpsi/dtheta=-Ttil^2; sandwich = sum(resid^2 Ttil^2)/(sum Ttil^2)^2"
+    },
+    {
+      "check": "(d) Gelbach decomposition identity (numerical)",
+      "pass": true,
+      "detail": "theta_short-theta_long = -0.015638; sum of Gelbach contributions = -0.015638; |diff|=7.77e-16"
+    },
+    {
+      "check": "(e) Cinelli-Hazlett robustness-value formula",
+      "pass": true,
+      "detail": "RV=1/2(sqrt(f^4+4f^2)-f^2) satisfies RV^2/(1-RV)=f^2; back-solved RV at SF f=0.1510 is 0.1400"
+    },
+    {
+      "check": "(f) counterfactual delta-method variance",
+      "pass": true,
+      "detail": "grad(theta*Delta)=(Delta,theta); g'Sigma g = Delta^2 Var(theta) + theta^2 Var(Delta)"
+    },
+    {
+      "check": "(g) RE inverse-variance pooling + HKSJ factor",
+      "pass": true,
+      "detail": "pooled = weighted mean; Var_HKSJ = q*Var_IV with q=0.392"
+    }
+  ]
+}

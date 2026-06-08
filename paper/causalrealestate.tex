@@ -434,7 +434,7 @@ $\hat V_\Phi$ is monotone non-decreasing in capacity, asymptoting at the true mu
 \section{Computational Verification of Analytic Claims}
 \label{app:verification}
 
-To complement the written proofs in Appendices~\ref{app:proofs} and~\ref{app:frozen_probe_proofs}, we provide a computational verification artifact in the \texttt{verification/} directory of the replication repository. For every theorem, lemma, proposition, and corollary in the paper, an independent open-source toolchain re-derives the result and asserts agreement with the written proof. Each script writes a JSON certificate to \texttt{verification/results/} with a verdict (\texttt{PASS}/\texttt{FAIL}) and the numerical or symbolic quantities cited; the full suite is reproducible via \texttt{make verify} from pinned tool versions in \texttt{requirements.txt}.
+To complement the written proofs in Appendices~\ref{app:proofs} and~\ref{app:frozen_probe_proofs}, we provide a computational verification artifact in the \texttt{verification/} directory of the replication repository. For every theorem, lemma, proposition, and corollary, and for the estimation-side identities the analysis relies on, an independent open-source toolchain re-derives the result and asserts agreement with the written derivation. Each script writes a JSON certificate to \texttt{verification/results/} with a verdict (\texttt{PASS}/\texttt{FAIL}) and the numerical or symbolic quantities cited; the full suite is reproducible via \texttt{make verify} from pinned tool versions in \texttt{requirements.txt}.
 
 \begin{table}[H]
 \centering
@@ -444,21 +444,29 @@ To complement the written proofs in Appendices~\ref{app:proofs} and~\ref{app:fro
 \toprule
 \textbf{Claim} & \textbf{Verification method} & \textbf{Tool} \\
 \midrule
-Lemma~1 (d-separation, App.~\ref{app:proofs}) & Path-by-path enumeration; minimality check & pgmpy 1.1 \\
-Theorem~1 (Backdoor Identifiability, App.~\ref{app:proofs}) & Independent identification on the hypothetical $T \to Y$ DAG; backdoor estimand returned & DoWhy 0.14 \\
-Corollary~1 (Zero Effect under True SCM, App.~\ref{app:proofs}) & Edge-set check ($T \notin \mathrm{Pa}(Y)$); DoWhy declares zero & pgmpy + DoWhy \\
+Lemma~1 (d-separation, App.~\ref{app:proofs}) & Path-by-path enumeration; minimality check & networkx 3.6 \\
+Theorem~1 (Backdoor Identifiability, App.~\ref{app:proofs}) & Backdoor criterion on the hypothetical $T \to Y$ DAG; $\{L,X,C\}=\mathrm{pa}(T)$ & networkx 3.6 \\
+Corollary~1 (Zero Effect under True SCM, App.~\ref{app:proofs}) & No directed path $T \to Y$; OLS $T$-coefficient near zero & networkx 3.6 \\
 Proposition~1(a) (variational MI inequality, App.~\ref{app:frozen_probe_proofs}) & Symbolic KL nonneg + numerical $V$-chain & SymPy + PyTorch \\
 Proposition~1(b1) (algebraic identity) & Symbolic and numerical equality, $|\Delta| < 10^{-8}$ & SymPy + PyTorch \\
 Proposition~1(b2) (consistency of post-hoc $\hat V_{\Phi'}^{\text{post}}$) & Monte Carlo $n$-sweep; log-log slope vs.\ rate predicted by \citet{xu2020theory} Thm~3 & scikit-learn \\
 Proposition~1(c) (XOR saddle-gap, identity-encoder construction) & Wraps \texttt{frozen\_probe\_gap.py}; assertions on $V_\Phi$, $V_{\Phi'}$ & PyTorch \\
 Proposition~1(c) (joint-game saddle existence + collapsed-encoder counterexample) & Explicit construction at $\phi_{\text{id}}$ and $\phi_{\text{collapse}}$; sweep over joint-game weight $\alpha$ & PyTorch \\
+\midrule
+Robinson estimator (Eq.~\ref{eq:dml}) & Symbolic solution of the moment $\sum_i(\tilde Y_i-\theta\tilde T_i)\tilde T_i=0$ & SymPy \\
+Neyman orthogonality (PLR score) & Symbolic Gateaux derivative; every term carries a mean-zero residual factor & SymPy \\
+Sandwich / IF variance (Eq.~\ref{eq:dml}) & $\partial_\theta\psi=-\tilde T^2$; sandwich equals the reported $\widehat{\mathrm{SE}}^2$ & SymPy \\
+Gelbach decomposition (Eq.~\ref{eq:gelbach}) & $\hat\theta_{\text{base}}-\hat\theta_{\text{geo}}$ equals the order-invariant contribution sum & NumPy \\
+Robustness-value formula (Eq.~\ref{eq:gelbach} context) & $RV=\tfrac12(\sqrt{f^4+4f^2}-f^2)$ solves $RV^2/(1-RV)=f^2$ & SymPy \\
+Counterfactual delta method (Eq.~\ref{eq:cf-delta}) & Gradient of $\theta\Delta$; quadratic form equals the reported variance & SymPy \\
+Random-effects pooling + HKSJ factor & Inverse-variance mean; $\mathrm{Var}_{\text{HKSJ}}=q\,\mathrm{Var}_{\text{IV}}$ & NumPy \\
 \bottomrule
 \end{tabular}
 \caption{Mapping from analytic claims to computational verification scripts. Every entry passes; certificates are in \texttt{verification/results/*.json}.}
 \label{tab:verification_map}
 \end{table}
 
-We are explicit about what this artifact does and does not claim. It is \emph{not} a machine-checked formal proof in Lean, Coq, or Isabelle: as of late 2025 no proof assistant has a causal-DAG library, which would gate even Lemma~\ref{lemma:dsep} (the closest available are HOL-Probability for measure theory, infotheo for Shannon information theory, and recent Lean ports of Rademacher complexity~\citep{sonoda2025rademacher}). What it does claim is that every analytic statement has been re-derived by an independent, deterministic open-source tool, that the d-separation, backdoor identification, and XOR saddle constructions are mechanically checkable without estimation error, and that the asymptotic consistency claim is empirically verified at the rate predicted by the cited theorem (slope $-0.547$ for the $O(m^{-1/2})$ prediction). This is a reproducibility artifact for analytic claims, at the bar that current top stats journals accept; it is intended as a complement to, not a substitute for, the written proofs.
+We are explicit about what this artifact does and does not claim. It is \emph{not} a machine-checked formal proof in Lean, Coq, or Isabelle: as of late 2025 no proof assistant has a causal-DAG library, which would gate even Lemma~\ref{lemma:dsep} (the closest available are HOL-Probability for measure theory, infotheo for Shannon information theory, and recent Lean ports of Rademacher complexity~\citep{sonoda2025rademacher}). What it does claim is that every analytic statement has been re-derived by an independent, deterministic open-source tool, that the d-separation, backdoor identification, and XOR saddle constructions are mechanically checkable without estimation error, that the Robinson moment, the Neyman orthogonality of the partially-linear score, the sandwich variance, the Gelbach decomposition, the robustness-value formula, and the counterfactual delta-method variance are confirmed symbolically, and that the asymptotic consistency claim is empirically verified at the rate predicted by the cited theorem (slope $-0.547$ for the $O(m^{-1/2})$ prediction). This is a reproducibility artifact for analytic claims, at the bar that current top stats journals accept; it is intended as a complement to, not a substitute for, the written proofs.
 
 \section{Finite-Sample Calibration of the DML Estimator}
 \label{app:simulation}
