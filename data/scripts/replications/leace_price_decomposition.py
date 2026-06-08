@@ -83,8 +83,6 @@ def decompose_city(city: str, fast: bool, seed: int = 42) -> dict:
 
     pc_raw = _oriented_pc1(np.asarray(T_emb, dtype=float), Y_log, seed)
 
-    # strip the linear lat-lon columns the confounder builder injected (cols whose
-    # correlation with lat or lon is ~1), so the "naive" arm has NO geography
     cor = np.array([max(abs(np.corrcoef(conf[:, j], lat)[0, 1]),
                         abs(np.corrcoef(conf[:, j], lon)[0, 1]))
                     for j in range(conf.shape[1])])
@@ -103,7 +101,6 @@ def decompose_city(city: str, fast: bool, seed: int = 42) -> dict:
         return {"city": city, "error": "DML failed"}
 
     confounded = float(dml_naive.theta - dml_geo.theta)
-    # how geographic is the treatment itself (ceiling on what location can explain)
     A = np.column_stack([np.ones(len(Y_log)), geo_b])
     coef, *_ = np.linalg.lstsq(A, pc_raw[:, 0], rcond=None)
     pc1_geo_r2 = float(1.0 - np.var(pc_raw[:, 0] - A @ coef) / (np.var(pc_raw[:, 0]) or 1.0))

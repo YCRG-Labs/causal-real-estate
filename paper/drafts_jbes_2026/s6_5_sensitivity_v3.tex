@@ -1,9 +1,3 @@
-% §6.5 Confounder sensitivity, full 12-city panel.
-% Numbers locked against results/replications/confounder_sensitivity_12.csv
-% (block=none for rv and f2; block=spatial for delta_theta_short_long, cf_y, cf_d).
-% Fragile := spatial-block cf_y or cf_d exceeds the market's baseline RV; only
-% Boston qualifies. Two markets clear RV>0.10 (Philadelphia 0.183, SF 0.140).
-% Supersedes the v3 draft whose RV/f2/spatial-delta numbers had drifted off the CSV.
 
 \subsection{Sensitivity to unobserved confounding}
 \label{sec:sensitivity-12}
@@ -82,13 +76,6 @@ direction. The bias geometry behind these per-market summaries is drawn out, for
 the two markets that clear the robustness threshold, in
 Figure~\ref{fig:sensitivity-contour}.
 
-% ======================================================================
-% FIG: Cinelli-Hazlett OVB sensitivity contours (SF + Philadelphia)
-% c=0 (kill) and c=theta/2 (halve) contours of the adjusted estimate over
-% confounder partial-R^2 on treatment (x) x outcome (y). K=SE*sqrt(dof);
-% c-contour: y = ((theta-c)/K)^2 (1-x)/x. RV point on diagonal; benchmark = f^2.
-% sf: theta .114 se .0243 rv .140 f2 .023 K .752  | phila: .195 .0115 .183 .041 K .961
-% ======================================================================
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}
@@ -181,10 +168,6 @@ identification test, and we leave the benchmarking of non-spatial confounder
 groups to future work, since the census, crime, and amenity blocks needed to
 construct them are not uniformly available across the twelve per-market panels.
 
-% ======================================================================
-% FIG: per-market robustness value (sensitivity to unmeasured confounding)
-% data: results/replications/confounder_sensitivity_12.csv (rv, block=none)
-% ======================================================================
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}

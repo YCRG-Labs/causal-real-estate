@@ -1,9 +1,3 @@
-% Full proof of the continuous-spatial Davis-Kahan causal-bias theorem.
-% Drafted 2026-05-29. Lemma 6 corrects the eigengap exponent in the original
-% theorem statement: at the BBP cutoff, delta_r asymp lambda^{d/(2nu+d)},
-% not lambda^{2nu/(2nu+d)}. The latter is the integrated bias scale used in
-% the bias bound (iii), not the eigengap that drives sin-Theta in (ii).
-% The sim should test the corrected ~0.286 slope (d=2, nu=2.5), not 0.714.
 
 \section{Appendix A. Proof of Theorem 1 (Eigengap-Identification-HAC chain)}
 
@@ -37,7 +31,6 @@ $\mathcal{T}_K:L^2(D,\mu)\to L^2(D,\mu)$ is
 $(\mathcal{T}_K f)(s)=\int_D K_{\nu,\rho}(s,t)f(t)\,d\mu(t)$.
 
 \medskip
-%================================================================
 \begin{theorem}\label{thm:main}
 Under assumptions (A1)--(A4) the following five conclusions hold simultaneously,
 with constants made explicit in their respective lemmas.
@@ -89,11 +82,7 @@ holds (Chernozhukov et al.\ 2018, Thm.~4.1, eq.~(4.5)).
 \end{enumerate}
 \end{theorem}
 
-% Lemma statements and proofs (1 through 9) follow. See accompanying file
-% dk_full_proof_lemmas.tex for the full lemma block; the abridged main proof
-% chain (i)->(ii)->(iii)->(iv)->(v) is in the main paper appendix.
 
-% Main proof: chaining (i)-(v)
 
 \begin{proof}[Proof of Theorem~\ref{thm:main}]
 \textbf{(i)} Apply Lemma~\ref{lem:smoother-eig} to $K_n$ to get

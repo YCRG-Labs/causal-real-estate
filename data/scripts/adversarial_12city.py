@@ -93,7 +93,7 @@ def main():
     for city in cities:
         try:
             r = run_city(city)
-        except Exception as exc:  # keep the panel going if one market fails
+        except Exception as exc:
             print(f"[{city}] FAILED: {type(exc).__name__}: {exc}")
             r = None
         if r is not None:

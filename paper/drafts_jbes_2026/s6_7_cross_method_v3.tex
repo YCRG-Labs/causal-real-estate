@@ -1,12 +1,3 @@
-% §6.7 Cross-method concordance: Shen, Baur, counterfactual.
-% Numbers locked against results/replications/cross_method_concordance.csv,
-% hotelling_t2_cross_method.csv, and hotelling_t2_cross_method_meta.json,
-% refreshed 2026-06-07 after the pooled-PCA Baur axis was oriented so the
-% pooled estimand is non-negative. The principal-component sign is a disclosed
-% convention; the cross-market |correlation| reported here is sign-invariant.
-% Clean k=12, no Portland exclusion. The v2 "joint factor model" subsection had
-% no backing file and is removed; a latent one-factor pooling is noted as
-% planned future work only.
 
 \subsection{Cross-method concordance}
 \label{sec:cross-method-12}
@@ -164,15 +155,9 @@ as a planned extension, so the identification-overlap counts and the
 collinearity-corrected joint test remain the cross-method evidence on which this
 section rests.
 
-% ======================================================================
-% FIG: per-market forest, three text channels (12 metros)
-% data: shen_12city_table / baur_pooled_pca_table / counterfactual_12city_table
-% rows ordered by Shen effect (idx 1 = bottom). Gray whiskers + filled dots.
-% ======================================================================
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}
-% --- panel (a) Shen uniqueness ---
 \begin{axis}[
     causalre, width=0.31\textwidth, height=7.0cm, name=fsA,
     symbolic y coords={Pooled,New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
@@ -201,7 +186,6 @@ section rests.
 \draw[thin,gray] (axis cs:0.017,Pooled)--(axis cs:0.128,Pooled);
 \addplot[only marks, mark=diamond*, mark size=3.2pt, color=cNYC] coordinates {(0.072,Pooled)};
 \end{axis}
-% --- panel (b) Baur sentence-BERT axis ---
 \begin{axis}[
     causalre, width=0.27\textwidth, height=7.0cm,
     at={(fsA.east)}, anchor=west, xshift=0.7cm,
@@ -231,7 +215,6 @@ section rests.
 \draw[thin,gray] (axis cs:0.063,Pooled)--(axis cs:0.249,Pooled);
 \addplot[only marks, mark=diamond*, mark size=3.2pt, color=cSF] coordinates {(0.156,Pooled)};
 \end{axis}
-% --- panel (c) counterfactual style-stripped contrast ---
 \begin{axis}[
     causalre, width=0.27\textwidth, height=7.0cm,
     at={(fsA.east)}, anchor=west, xshift=4.9cm,
@@ -275,10 +258,6 @@ and \ref{tab:counterfactual-12}.}
 \label{fig:forest-12}
 \end{figure}
 
-% ======================================================================
-% SUPPLEMENT FIG: cross-method concordance scatter (Shen vs Baur), r = 0.94
-% data: results/replications/cross_method_concordance.csv
-% ======================================================================
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}

@@ -33,20 +33,17 @@ def coverage():
 def forest():
     print("\n===== FIG 2: FOREST (theta, idx) +- (halfwidth,0), idx 12=top =====")
     shen = pd.read_csv(f"{R}/replications/shen_12city_table.csv").set_index("city")
-    order = shen["dml_theta"].sort_values(ascending=True).index.tolist()  # smallest->largest (idx1=bottom)
+    order = shen["dml_theta"].sort_values(ascending=True).index.tolist()
     print("  CITY ORDER (idx 1..12, bottom->top):", [CITY[c] for c in order])
-    # Shen
     print("  -- Shen --")
     for i,c in enumerate(order,1):
         r=shen.loc[c]; hw=(r.dml_ci_high-r.dml_ci_low)/2
         print(f"    ({r.dml_theta:+.3f},{i}) +- ({hw:.3f},0)  % {CITY[c]}")
-    # Baur
     baur = pd.read_csv(f"{R}/replications/baur_pooled_pca/baur_pooled_pca_table.csv").set_index("city")
     print("  -- Baur (oriented) --")
     for i,c in enumerate(order,1):
         r=baur.loc[c]; hw=(r.dml_ci_high-r.dml_ci_low)/2
         print(f"    ({r.dml_theta:+.3f},{i}) +- ({hw:.3f},0)  % {CITY[c]}")
-    # CF style-stripped, theta-folded CIs
     cf = pd.read_csv(f"{R}/counterfactual/counterfactual_12city_table.csv").set_index("city")
     print("  -- CF style-stripped (theta-SE folded) --")
     for i,c in enumerate(order,1):

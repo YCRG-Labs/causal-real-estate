@@ -1,11 +1,3 @@
-% Central result section: the spatial-confounding decomposition (Gelbach toggle).
-% Pairs with the LEACE erasure section (sec:leace-12): erasure shows the
-% embedding ENCODES geography; this section shows the price effect SURVIVES
-% adjusting for it. Numbers: confounded share <5% in 11/12; NYC -0.119 -> -0.152
-% (~28% of its effect, no flip), pc1_geo_r2 0.42; pc1_geo_r2 0.03-0.42, >0.10 in
-% six markets. Exhibit: Figure fig:decomposition (left = naive vs geo dumbbell,
-% right = pc1_geo_r2). Written to the academic-prose standard.
-% Place after sec:leace-12 in assembly.
 
 \subsection{How much of the text-price effect is location}
 \label{sec:decomposition}
@@ -77,14 +69,6 @@ see, and since the erasure that certifies the representation's geography is itse
 linear, so that a nonlinear geographic signal no ridge probe would surface could
 in principle persist into the residual we are calling semantic.
 
-% ======================================================================
-% FIG (headline): is the text-price effect spatially confounded?
-% Gelbach fixed-treatment toggle: hold PC1 fixed, add a location basis to the
-% confounders. (a) effect without vs with spatial adjustment (dumbbell); they
-% barely move -> small confounded share. (b) PC1 geography R^2 -> the text IS
-% geographic, so panel (a)'s robustness is non-vacuous.
-% data: results/replications/leace_price_decomposition.csv
-% ======================================================================
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}

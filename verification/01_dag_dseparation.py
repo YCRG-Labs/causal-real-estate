@@ -20,7 +20,7 @@ from itertools import combinations
 from pathlib import Path
 
 import networkx as nx
-from networkx import DiGraph as DAG  # graph container; d-separation is hand-rolled below
+from networkx import DiGraph as DAG
 
 RESULTS = Path(__file__).parent / "results"
 RESULTS.mkdir(exist_ok=True)

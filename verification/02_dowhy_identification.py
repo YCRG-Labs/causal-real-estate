@@ -63,23 +63,20 @@ def synthetic_data(n=2000, seed=0):
     X = 0.7 * L + rng.normal(scale=0.5, size=n)
     C = 0.5 * L + rng.normal(scale=0.5, size=n)
     T = 0.4 * L + 0.3 * X + 0.2 * C + rng.normal(scale=0.5, size=n)
-    Y = 1.0 * L + 0.6 * X + 0.4 * C + rng.normal(scale=0.5, size=n)   # no T term
+    Y = 1.0 * L + 0.6 * X + 0.4 * C + rng.normal(scale=0.5, size=n)
     return L, X, C, T, Y
 
 
 def main():
     gt, gh = true_scm(), hypothetical_scm()
 
-    # (1) zero causal effect under the true SCM: no directed path T -> Y
     declares_zero = not nx.has_path(gt, "T", "Y")
 
-    # (2) backdoor validity of {L,X,C} under the hypothetical SCM
     is_valid, reason = valid_backdoor(gh, "T", "Y", Z)
     parents_T = set(gh.predecessors("T"))
     matches_parents = (Z == parents_T)
     pass_thm = is_valid and matches_parents
 
-    # (3) numerical sanity: OLS of Y on (T, L, X, C), true-SCM data
     L, X, C, T, Y = synthetic_data()
     M = np.column_stack([np.ones_like(T), T, L, X, C])
     beta, *_ = np.linalg.lstsq(M, Y, rcond=None)

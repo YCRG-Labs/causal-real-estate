@@ -1,11 +1,3 @@
-% §3 Methodology, v3 (rewritten 2026-06-08 for the 12-city / AOAS reframe).
-% Replaces the old 3-city methods built around GRL adversarial deconfounding,
-% binarized DR, a randomization intervention, and SCM0/SCM1 cross-market
-% falsification. Describes the methods the v3 results actually use: partialling-out
-% DML, the Shen and Baur text channels, LEACE+IGBP erasure as a diagnostic, the
-% Gelbach fixed-treatment decomposition (headline test), the LLM counterfactual,
-% Cinelli-Hazlett sensitivity, and random-effects pooling. Style: flowing prose,
-% no em dashes, no enumerations, no punchy fragments.
 
 \section{Methodology}
 \label{sec:methods}
@@ -67,10 +59,8 @@ runs through the common dependence of both on location.
     \draw[arrow] (C) -- (T);
     \draw[arrow] (X) -- (Y);
     \draw[arrow] (C) -- (Y);
-    % spatial-confounding backdoor  t <- l -> y
     \draw[arrow, cSF, very thick] (L) to[bend left=30] (T);
     \draw[arrow, cSF, very thick] (L) to[bend left=15] (Y);
-    % direct effect under test
     \draw[arrow, dashed] (T) -- (Y)
         node[midway, draw=none, fill=white, inner sep=1.5pt, font=\small] {$\theta?$};
 \end{tikzpicture}

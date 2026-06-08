@@ -25,8 +25,8 @@ DGP = "scm1_0.10"
 PANELS = [("DML", "(a) in-sample DML"),
           ("DML_cfpca", "(b) cross-fit DML"),
           ("DR", "(c) doubly-robust")]
-COV_COLOR = "cNYC"      # covering
-MISS_COLOR = "cSF"      # non-covering
+COV_COLOR = "cNYC"
+MISS_COLOR = "cSF"
 
 
 def cell_rows(rows, estimator):
@@ -36,14 +36,13 @@ def cell_rows(rows, estimator):
 
 def main():
     rows = list(csv.DictReader(open(RAW)))
-    # canonical estimand (calibrated probability limit) + coverage, per cell
     truth = {(r["estimator"], r["N"], r["dgp"]): float(r["truth"])
              for r in csv.DictReader(open(COV))}
     panels = []
     xlo, xhi = +1e9, -1e9
     for est, _title in PANELS:
         rs = cell_rows(rows, est)
-        plim = truth[(est, N, DGP)]              # estimand = calibrated prob. limit
+        plim = truth[(est, N, DGP)]
         recs = []
         for r in rs:
             t, se = float(r["theta"]), float(r["se"])
@@ -52,7 +51,7 @@ def main():
             cov = lo < plim < hi
             recs.append((abs(z), lo, hi, cov))
             xlo, xhi = min(xlo, lo), max(xhi, hi)
-        recs.sort(key=lambda x: x[0])            # small |z| (best coverers) at bottom
+        recs.sort(key=lambda x: x[0])
         n = len(recs)
         cover = 100.0 * sum(1 for x in recs if x[3]) / n
         seg = []
@@ -61,7 +60,6 @@ def main():
             seg.append((lo, hi, y, cov))
         panels.append({"est": est, "plim": plim, "cover": cover, "seg": seg})
 
-    # clip x-range to a sensible window (a few central panels can have wild tails)
     xlo = max(xlo, -0.6)
     xhi = min(xhi, 0.6)
 
@@ -91,26 +89,22 @@ def main():
         if leg:
             L.append(f"    {leg}")
         L.append(f"]")
-        # nominal-95 reference line
         L.append(r"\addplot[black, densely dashed, line width=0.5pt, forget plot] "
                  f"coordinates {{({xlo:.3f},95) ({xhi:.3f},95)}};")
-        # estimand (plim) vertical reference
         L.append(r"\addplot[cMUTE, line width=0.6pt, forget plot] "
                  f"coordinates {{({p['plim']:.4f},0) ({p['plim']:.4f},100)}};")
-        # covering then non-covering segments (legend only in panel a)
         first_cov = first_miss = (j == 0)
         for lo, hi, y, cov in p["seg"]:
             lo_c = max(lo, xlo); hi_c = min(hi, xhi)
             col = COV_COLOR if cov else MISS_COLOR
             tag = ""
             if cov and first_cov:
-                pass  # legend added via dummy plots below for clean markers
+                pass
             L.append(f"\\draw[{col}, line width=0.32pt] "
                      f"(axis cs:{lo_c:.4f},{y:.3f}) -- (axis cs:{hi_c:.4f},{y:.3f});")
         if j == 1:
             L.append(r"\addlegendimage{cNYC, line width=1.2pt}\addlegendentry{covers}")
             L.append(r"\addlegendimage{cSF, line width=1.2pt}\addlegendentry{misses}")
-        # coverage annotation, bottom-left
         L.append(f"\\node[anchor=south west, font=\\scriptsize] at "
                  f"(axis cs:{xlo:.3f},2) {{cov.\\ {p['cover']:.0f}\\%}};")
         L.append(r"\end{axis}")

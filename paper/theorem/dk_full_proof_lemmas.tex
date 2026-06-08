@@ -1,7 +1,4 @@
-% Lemmas 1-9 supporting Theorem 1 (continuous-spatial Davis-Kahan causal-bias).
-% Companion to dk_full_proof.tex.
 
-%================================================================
 \subsection*{Lemma 1 (Mercer expansion of Matern; Widom 1963 rate)}
 
 \begin{lemma}\label{lem:matern-mercer}
@@ -48,7 +45,6 @@ $k=o(n^{d/(2\nu+d)})$; the $n$-factor is absorbed into the implicit constant
 in Lemma~\ref{lem:eigengap}.
 \end{proof}
 
-%================================================================
 \subsection*{Lemma 2 (Eigenvalues of the smoothing operator)}
 
 \begin{lemma}\label{lem:smoother-eig}
@@ -63,7 +59,6 @@ $S_n=U_n\Omega(\Omega+\lambda I)^{-1}U_n^\top=U_n\mathrm{diag}(\omega_k/(\omega_
 (Rasmussen-Williams 2006 eq.~(2.34)).
 \end{proof}
 
-%================================================================
 \subsection*{Lemma 3 (Yu-Wang-Samworth 2015 sin-Theta bound)}
 
 \begin{lemma}[Yu, Wang, Samworth 2015 Biometrika, Thm.~2]\label{lem:yws}
@@ -96,7 +91,6 @@ so $\delta_{\mathrm{eff}}=\mathrm{Var}(S_nU)$ exactly. With $v_1=\gamma$ and
 $r=1$ the Frobenius norm collapses to the operator norm.
 \end{proof}
 
-%================================================================
 \subsection*{Lemma 4 (Sub-Gaussian covariance concentration)}
 
 \begin{lemma}[Vershynin 2018, Thm.~4.7.1]\label{lem:vershynin}
@@ -127,7 +121,6 @@ propagates into $C_1$; a tighter constant requires expressing $K=K(\sqrt p)$
 and inflating the sin-$\Theta$ rate to $p/(\sqrt n\,\mathrm{Var}(S_nU))$.)
 \end{proof}
 
-%================================================================
 \subsection*{Lemma 5 (OLS-on-PC1 bias decomposition)}
 
 \begin{lemma}\label{lem:pc1-bias}
@@ -166,7 +159,6 @@ $\sqrt{p/n}/\sigma_E^2$: the $\|\sin\Theta\|$ tightening does \emph{not} cancel
 the SNR amplification.
 \end{proof}
 
-%================================================================
 \subsection*{Lemma 6 (Eigengap of the smoothing operator at the BBP cutoff)}
 
 \begin{lemma}\label{lem:eigengap}
@@ -239,7 +231,6 @@ $2/7$ exponent; the appendix figure
 \texttt{results/diagnostics/widom\_rho\_sweep.png} is the diagnostic of record.
 \end{proof}
 
-%================================================================
 \subsection*{Lemma 7 (Gilbert-Ogburn-Datta 2024 identification)}
 
 \begin{lemma}[Gilbert, Ogburn, Datta 2024 Biometrika 112(2) Prop.~1]\label{lem:god}
@@ -269,7 +260,6 @@ covariance $\sigma_E^2 P_\perp$ which is positive-definite on its range
 worth stating explicitly in the main paper).
 \end{proof}
 
-%================================================================
 \subsection*{Lemma 8 (DML CLT on the residual subspace)}
 
 \begin{lemma}[Chernozhukov et al.\ 2018 Thm.~4.1; Cao-Leung 2025 Thm.~1]\label{lem:dml}
@@ -305,7 +295,6 @@ $\alpha$-mixing of $U$ at polynomial rate $O(\|s-t\|^{-(2\nu-d)})$ (Stein 1999
 Cor.~2.6.5); (N3) score bounded under (A4). Cao-Leung 2025 Thm.~1 applies.
 \end{proof}
 
-%================================================================
 \subsection*{Lemma 9 (Salerno-Wu-McCormick 2026 spatial-HAC consistency)}
 
 \begin{lemma}[Salerno, Wu, McCormick 2026 arXiv:2603.11368 Thm.~1]\label{lem:swm}
@@ -339,7 +328,6 @@ under (A4); (b) $\alpha$-mixing at polynomial rate from Holder paths of $U$;
 training noise $O(1/\sqrt{|I_k^c|})$, summable for fixed $K=5$.
 \end{proof}
 
-%================================================================
 \subsection*{Appendix: Pre-asymptotic regime for the Widom rate}\label{app:widom-regime}
 
 \begin{figure}[ht]
