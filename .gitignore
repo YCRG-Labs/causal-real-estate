@@ -7,6 +7,7 @@ data/raw/census/
 data/raw/crime/
 data/raw/amenities/
 data/raw/descriptions/
+data/raw/redfin/
 
 # LaTeX build artifacts
 *.aux
