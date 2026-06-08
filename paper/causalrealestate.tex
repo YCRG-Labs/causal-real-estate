@@ -427,6 +427,38 @@ Price outlier exclusion employs thresholds for minimum and maximum values. We te
 \end{tabular}
 \end{table}
 
+\section{Adversarial Deconfounding: Implementation}
+\label{app:adversarial}
+
+The gradient-reversal encoder used as the foil in Section~\ref{sec:leace-12} is the
+standard domain-adversarial construction of \citet{ganin2016domain}, adapted to a
+multi-resolution location target. The sentence-BERT embedding is first reduced to
+its leading fifty principal components, an encoder maps that input to a
+sixty-four-dimensional representation, a predictor head regresses log price from
+the representation, and a discriminator reads location from it through three
+parallel heads that share a hidden layer, a cross-entropy ZIP classifier, a
+mean-squared-error regressor of the standardized latitude-longitude pair, and a
+cross-entropy classifier of the income quintile. A gradient-reversal layer sits
+between the encoder and the discriminator, so the encoder is trained to minimize
+the prediction loss while maximizing the discriminator loss, under the joint
+objective $\mathcal{L}_{\mathrm{pred}} - \lambda\,\mathcal{L}_{\mathrm{disc}}$ with
+the adversarial weight $\lambda$ annealed from $0.1$ to $1.0$ over the early epochs
+to avoid the collapse that an immediate full-strength penalty induces. Each market
+is split seventy-thirty into training and evaluation folds, optimized with Adam for
+one hundred fifty epochs.
+
+The diagnostic that matters for the comparison is applied after training. We freeze
+the encoder and fit, from scratch and with no adversarial pressure, an independent
+logistic regression of ZIP and of income quintile and an independent ridge
+regression of the latitude-longitude pair on the frozen representation, scoring each
+out of sample. The gap between what this fresh probe recovers and what the live
+discriminator reported at convergence is the consistent lower bound on residual
+leakage of Proposition~\ref{prop:frozen_probe}(b); the per-market values, and the
+contrast with the LEACE projection on which the paper relies, are reported in
+Section~\ref{sec:leace-12} and Figure~\ref{fig:grl-foil}, and the driver is
+\texttt{data/scripts/adversarial\_12city.py} with per-market certificates written to
+\texttt{results/adversarial\_12city/}.
+
 \section{Frozen-Probe Diagnostic: Proofs and Numerical Verification}
 \label{app:frozen_probe_proofs}
 
