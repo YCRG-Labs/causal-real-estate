@@ -77,6 +77,18 @@ def decompose_city(city: str, fast: bool, seed: int = 42) -> dict:
 
     pc_raw = _oriented_pc1(T_emb, Y_log, seed)
     pc_era = _oriented_pc1(T_erased, Y_log, seed)
+
+    # diagnostics distinguishing a real "PC1 is geography-orthogonal" finding from
+    # a "erasing 2 of 768 dims can't move PC1" artifact:
+    #   pc1_geo_r2  = fraction of raw-PC1 variance linearly explained by lat-lon
+    #                 (if ~0, PC1 carries no geography -> nothing for erasure to remove)
+    #   pc1_cosine  = |corr(raw PC1, erased PC1)| (1 = erasure left PC1 untouched)
+    A = np.column_stack([np.ones(len(Y_log)), Z])
+    coef, *_ = np.linalg.lstsq(A, pc_raw[:, 0], rcond=None)
+    res = pc_raw[:, 0] - A @ coef
+    pc1_geo_r2 = float(1.0 - np.var(res) / (np.var(pc_raw[:, 0]) or 1.0))
+    pc1_cosine = float(abs(np.corrcoef(pc_raw[:, 0], pc_era[:, 0])[0, 1]))
+    print(f"  PC1 geography R^2={pc1_geo_r2:.3f}  cos(raw,erased PC1)={pc1_cosine:.3f}")
     kw = dict(label="decomp", ci_method="if", n_boot=None,
               use_ridge=fast, seed=seed, n_pca=1)
     dml_raw = run_dml(pc_raw, confounders, Y_log, **kw)
@@ -93,6 +105,8 @@ def decompose_city(city: str, fast: bool, seed: int = 42) -> dict:
         "erased_theta": float(dml_era.theta), "erased_se": float(dml_era.se),
         "confounded_share": confounded,
         "confounded_frac": (confounded / dml_raw.theta) if dml_raw.theta else float("nan"),
+        "pc1_geo_r2": pc1_geo_r2,
+        "pc1_cosine_raw_erased": pc1_cosine,
         "guardedness_residual": float(resid),
     }
 
