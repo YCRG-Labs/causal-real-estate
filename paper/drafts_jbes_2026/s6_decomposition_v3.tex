@@ -1,0 +1,76 @@
+% Central result section: the spatial-confounding decomposition (Gelbach toggle).
+% Pairs with the LEACE erasure section (sec:leace-12): erasure shows the
+% embedding ENCODES geography; this section shows the price effect SURVIVES
+% adjusting for it. Numbers: confounded share <5% in 11/12; NYC -0.119 -> -0.152
+% (~28% of its effect, no flip), pc1_geo_r2 0.42; pc1_geo_r2 0.03-0.42, >0.10 in
+% six markets. Exhibit: Figure fig:decomposition (left = naive vs geo dumbbell,
+% right = pc1_geo_r2). Written to the academic-prose standard.
+% Place after sec:leace-12 in assembly.
+
+\subsection{How much of the text-price effect is location}
+\label{sec:decomposition}
+
+The erasure diagnostic of Section~\ref{sec:leace-12} establishes that the
+embedding carries location, and carries it abundantly, since a held-out ridge
+recovers the latitude-longitude pair from the raw representation at an $R^2$ that
+climbs to one half in the largest market before the projection drives it to the
+floor. Taken on its own that fact invites the deflationary reading, that a
+treatment built from such a representation is geography in disguise and its
+apparent price effect is spatial confounding waiting to be exposed. The inference
+does not actually follow, because a representation can encode a confounder along
+directions that have little to do with the direction in which it predicts the
+outcome, and whether the two coincide is an empirical matter rather than something
+an erasure $R^2$ can settle on its own. Answering it means holding the treatment
+fixed and asking what the location it shares with price is genuinely worth to the
+estimate.
+
+The instrument for that question is a fixed-treatment decomposition in the manner
+of \citet{gelbach2016covariates}, whose appeal is that the change in a coefficient
+when a block of controls is added does not depend on the order in which the blocks
+enter, so the share it assigns to geography is well defined rather than an
+artifact of sequencing. We estimate the per-standard-deviation effect of the
+leading text direction on log price twice, once controlling for the structured
+confounders alone and once adding a flexible location basis of latitude,
+longitude, their squares, and their interaction, and we read the gap between the
+two as the portion of the effect that location explains. The comparison appears in
+the left panel of Figure~\ref{fig:decomposition}, where the two estimates sit
+almost on top of one another in eleven of the twelve markets, the location
+adjustment shifting the effect by less than five percent of its size everywhere
+but one. Philadelphia, Chicago, Atlanta, and the other high-effect markets give up
+essentially nothing to the geography control, the small-effect markets give up
+nothing they had to begin with, and the per-market premium that the text channel
+identifies comes through the adjustment very nearly untouched by whether the model
+is told where each property sits.
+
+A reader entitled to be skeptical will ask at once whether the test has any power,
+since a treatment that carried no geography in the first place would pass it for
+free, and the right panel of Figure~\ref{fig:decomposition} exists to meet that
+objection before it hardens into one. The share of the treatment's own variance
+that the location basis explains is nowhere near zero across the panel, reaching
+$0.42$ in New York and exceeding a tenth in six markets, so the leading text
+direction does in fact encode location through much of the country. That the price
+effect survives adjustment even where the treatment is substantially geographic is
+the whole of the result, because it means the geographic component of the language
+is real, the model can see it, and it still does not carry the effect of the
+language on price. The worry that has hung over this literature is therefore one
+that can be answered rather than only raised, and the answer across eleven of
+twelve markets is that the text is doing more than reading the map back to itself.
+
+New York is where the adjustment does bite, and it bites in precisely the place
+the diagnostic says it should. The market whose text direction is the most
+geographic of the twelve, at an $R^2$ of $0.42$, is also the market where folding
+in location moves the effect most, from $-0.119$ to $-0.152$, a shift of about a
+quarter of its magnitude that leaves the sign intact, so that the place with the
+most location in its language is the place that location matters most for the
+estimate. We read this less as a crack in the broader finding than as its
+mechanism caught in the act, and as a reminder that the protocol earns its keep by
+flagging the markets where a spatial audit is most warranted rather than by
+declaring that none is ever needed. The conclusion travels only as far as its
+instruments reach, and they reach less far than one would like, since the location
+basis is a smooth coordinate polynomial laid over roughly thirty structured
+controls that already carry census-tract demography, which leaves confounding
+operating at a finer spatial grain than the polynomial can bend to, or running
+through pathways those controls do not capture, outside what the comparison can
+see, and since the erasure that certifies the representation's geography is itself
+linear, so that a nonlinear geographic signal no ridge probe would surface could
+in principle persist into the residual we are calling semantic.
