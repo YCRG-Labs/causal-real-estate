@@ -83,7 +83,7 @@ in principle persist into the residual we are calling semantic.
 % geographic, so panel (a)'s robustness is non-vacuous.
 % data: results/replications/leace_price_decomposition.csv
 % ======================================================================
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
@@ -92,9 +92,9 @@ in principle persist into the residual we are calling semantic.
     ytick=data, enlarge y limits=0.06,
     xlabel={$\hat\theta$ per $\sigma$ (log price)}, xmin=-0.21, xmax=0.53,
     xtick={-0.1,0,0.2,0.4},
-    title={(a) effect without vs with spatial adjustment},
+    title={(a)},
     extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
-    legend style={font=\scriptsize, draw=none, fill=none, at={(0.97,0.05)}, anchor=south east, row sep=1pt},
+    legend style={font=\scriptsize, draw=none, fill=none, at={(0,1.13)}, anchor=south west, legend columns=2, /tikz/every even column/.append style={column sep=10pt}},
 ]
 \draw[thin,gray] (axis cs:-0.119,New York)--(axis cs:-0.152,New York);
 \draw[thin,gray] (axis cs:0.009,Phoenix)--(axis cs:-0.002,Phoenix);
@@ -112,12 +112,12 @@ in principle persist into the residual we are calling semantic.
   (-0.119,New York) (0.009,Phoenix) (0.015,Washington) (0.064,Seattle) (0.098,Portland)
   (0.111,San Francisco) (0.127,Boston) (0.154,Denver) (0.200,Dallas) (0.253,Atlanta)
   (0.408,Philadelphia) (0.461,Chicago)};
-\addlegendentry{no spatial adjustment}
+\addlegendentry{without location}
 \addplot[only marks, mark=*, mark size=1.7pt, color=cNYC] coordinates {
   (-0.152,New York) (-0.002,Phoenix) (0.013,Washington) (0.065,Seattle) (0.095,Portland)
   (0.109,San Francisco) (0.126,Boston) (0.158,Denver) (0.199,Dallas) (0.250,Atlanta)
   (0.405,Philadelphia) (0.469,Chicago)};
-\addlegendentry{$+$ location (lat, lon, nonlinear)}
+\addlegendentry{with location}
 \end{axis}
 \begin{axis}[
     causalre, width=0.24\textwidth, height=6.6cm,
@@ -126,7 +126,7 @@ in principle persist into the residual we are calling semantic.
     ytick=data, yticklabels={,,,,,,,,,,,},
     xlabel={PC1 geography $R^2$}, xmin=0, xmax=0.46, xtick={0,0.2,0.4},
     enlarge y limits=0.06,
-    title={(b) text is geographic},
+    title={(b)},
 ]
 \addplot[only marks, mark=square*, mark size=1.8pt, color=cSF] coordinates {
   (0.417,New York) (0.097,Phoenix) (0.121,Washington) (0.034,Seattle) (0.158,Portland)

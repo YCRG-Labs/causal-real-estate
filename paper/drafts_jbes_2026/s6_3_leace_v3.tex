@@ -106,7 +106,7 @@ fixed and geography is moved on and off the controls around it.
 % data: results/leace12_igbp/leace_12city_table.csv, ordered by raw R^2
 % dumbbell: gray segment raw->erased, open dot raw, filled dot erased
 % ======================================================================
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
@@ -115,9 +115,9 @@ fixed and geography is moved on and off the controls around it.
     ytick=data, enlarge y limits=0.06,
     xlabel={Held-out ridge $R^2$ for predicting (lat, lon) from the embedding},
     xmin=-0.38, xmax=0.55, xtick={-0.3,-0.1,0,0.1,0.3,0.5},
-    title={Linear spatial information before and after concept erasure},
+    %% descriptive heading is in the caption, not an in-axis title
     extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
-    legend style={font=\scriptsize, draw=none, fill=none, at={(0.97,0.06)}, anchor=south east, row sep=1pt},
+    legend style={font=\scriptsize, draw=none, fill=none, at={(0,1.02)}, anchor=south west, legend columns=2, /tikz/every even column/.append style={column sep=10pt}},
 ]
 % raw -> erased connecting segments
 \draw[thin,gray] (axis cs:-0.330,San Francisco)--(axis cs:0.000,San Francisco);
@@ -163,7 +163,7 @@ see, is quantified separately in Section~\ref{sec:leace-12}.}
 % data: results/adversarial_12city/adversarial_12city_summary.csv (geo_probe_r2)
 % vs the LEACE linear-erased coordinate R2 (~0, fig:erasure-12)
 % ======================================================================
-\begin{figure}[!htbp]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}
 \begin{axis}[
@@ -174,9 +174,9 @@ see, is quantified separately in Section~\ref{sec:leace-12}.}
     xlabel={Held-out ridge $R^2$ for the coordinate from the deconfounded representation},
     xmin=-0.02, xmax=0.46, xtick={0,0.1,0.2,0.3,0.4},
     xticklabel={\pgfmathprintnumber[fixed,precision=1]{\tick}},
-    title={A fresh probe recovers location after adversarial erasure, not after LEACE},
+    %% descriptive heading is in the caption, not an in-axis title
     extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
-    legend style={font=\scriptsize, draw=none, fill=none, at={(0.97,0.06)}, anchor=south east, row sep=1pt},
+    legend style={font=\scriptsize, draw=none, fill=none, at={(0,1.02)}, anchor=south west, legend columns=2, /tikz/every even column/.append style={column sep=10pt}},
 ]
 \draw[thin,gray] (axis cs:0.164,Philadelphia)--(axis cs:0.000,Philadelphia);
 \draw[thin,gray] (axis cs:0.201,Seattle)--(axis cs:0.000,Seattle);
