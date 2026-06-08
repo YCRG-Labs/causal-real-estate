@@ -18,20 +18,24 @@ association with sale price survives once geographic location is erased from the
 representation, joining a Robinson partially-linear Double Machine Learning
 estimand with cross-fitted gradient-boosted nuisances, linear concept erasure of
 the latitude-longitude coordinate in closed form, and an iterative nonlinear
-erasure that exposes the residual leakage a linear projector leaves behind. Two
-methodological findings anchor the framework. Erasing the spatial coordinate from
-the representation is a representation-space analogue of restricted spatial
-regression, and where predictive fit cannot tell semantic content apart from
-spatial information, concept erasure can. And the influence-function standard
-error that Double Machine Learning reports for an embedding-valued,
-generated-regressor treatment undercovers at the sample sizes typical of a single
-metropolitan market, an effect we document in a calibration study and for which we
-recommend a bootstrap that resamples the entire pipeline. Applying the framework
+erasure that exposes the residual leakage a linear projector leaves behind. Two findings
+anchor the framework. The first is substantive. Although predictive fit cannot
+tell genuine semantic content apart from the spatial information that listing
+language also encodes, a direct deconfounding test can, and the answer is
+reassuring rather than damning: the embedding does linearly encode location,
+recoverable at an $R^2$ as high as one half, yet holding the text treatment fixed
+and adjusting for that location leaves its per-standard-deviation price effect
+almost unchanged in eleven of twelve markets, so the text-price signal is mostly
+genuine semantic content rather than relabeled geography. The second is
+inferential: the influence-function standard error that Double Machine Learning
+reports for an embedding-valued, generated-regressor treatment undercovers at the
+sample sizes typical of a single metropolitan market, an effect we document in a
+calibration study and for which we recommend a bootstrap that resamples the entire
+pipeline. Applying the framework
 across twelve metropolitan areas with $3{,}851$ deduplicated Redfin listings, we
 find that text carries a positive per-standard-deviation association with log
-price that is robust to the choice of encoder, strongly heterogeneous across
-markets, fully erasable in its linear spatial component while a nonlinear
-remainder persists where the city is large, and unaccompanied by any demographic
+price that is robust to the choice of encoder and to spatial deconfounding,
+strongly heterogeneous across markets, and unaccompanied by any demographic
 moderator that survives multiplicity and leverage diagnostics. We are explicit
 about what this does and does not establish, because the estimates are
 associational rather than cleanly causal and a sensitivity analysis quantifies how
