@@ -1,16 +1,28 @@
 """Decompose each market's text-price premium into a spatially-confounded share
-(removed by erasing latitude-longitude from the embedding) and a residual share.
+and a residual share, via a fixed-treatment Gelbach confounder toggle.
 
-For each city we estimate the Baur PC1 DML effect on log price twice:
-  raw_theta     = effect on PC1 of the un-erased embedding
-  erased_theta  = effect on PC1 of the LEACE-erased embedding (lat-lon removed)
-The confounded share is (raw_theta - erased_theta); the residual semantic share
-is erased_theta. Both PC1s are oriented to the within-sample price gradient so
-the two estimates are sign-comparable. This produces the data for the headline
-Gelbach-style decomposition figure (fig:decomposition), which does not yet exist
-because LEACE was previously used only as a representation diagnostic.
+WHY NOT LEACE HERE: an earlier version erased lat-lon from the embedding and
+re-PCA'd, then compared the DML effect of raw-PC1 vs erased-PC1. That was wrong
+twice (an independent code review caught it): (a) lat-lon are ALREADY in the DML
+confounder set, so both arms net out geography and the difference is structurally
+~0 regardless of the truth; (b) raw-PC1 and erased-PC1 are different directions,
+so subtracting their effects is not a decomposition (it manufactured the New York
+"sign flip"). The representation-level LEACE erasure remains a valid diagnostic
+(the embedding encodes geography), but it is not how you decompose the PRICE
+effect.
 
-Run on Brev (needs torch + the 12 embedding parquets):
+CORRECT TEST (Gelbach 2016 order-invariant decomposition): hold the treatment
+fixed (the oriented leading PC of the embedding) and toggle geography on the
+confounder side.
+  naive_theta = effect controlling for the NON-geographic confounders only
+  geo_theta   = effect also controlling for location (lat, lon AND a nonlinear
+                lat-lon basis: lat^2, lon^2, lat*lon)
+  confounded_share = naive_theta - geo_theta   (how much location explains)
+  residual_share   = geo_theta                 (survives spatial adjustment)
+This holds the estimand fixed, removes the double-control, and tests nonlinear
+geography, so the share actually measures spatial confounding of the text effect.
+
+Run on Brev (needs the 12 parquets):
   python3 data/scripts/replications/leace_price_decomposition.py --all_12 --fast
 Writes results/replications/leace_price_decomposition.csv
 """
@@ -30,31 +42,30 @@ sys.path.insert(0, str(REPO / "data" / "scripts"))
 
 from replications.baur_2023 import get_features_and_target, load_analysis_data
 from replications.compare_to_dml import run_dml
-from leace_deconfound import leace_erase
 
 ALL_12 = ["boston", "nyc", "sf", "dc", "philadelphia", "chicago",
           "seattle", "denver", "atlanta", "portland", "phoenix", "dallas"]
 
 
 def _oriented_pc1(emb: np.ndarray, y: np.ndarray, seed: int = 42) -> np.ndarray:
-    """Leading PC of `emb`, sign-oriented so it co-varies positively with y."""
+    """Leading PC of `emb`, sign-oriented to co-vary positively with y. Held
+    fixed across both DML arms, so its sign is a convention only."""
     pc = PCA(n_components=1, random_state=seed).fit_transform(emb)[:, 0]
     if np.corrcoef(pc, y)[0, 1] < 0:
         pc = -pc
-    pc = (pc - pc.mean()) / (pc.std(ddof=1) or 1.0)
-    return pc.reshape(-1, 1)
+    return ((pc - pc.mean()) / (pc.std(ddof=1) or 1.0)).reshape(-1, 1)
 
 
-def _latlon(emb_df: pd.DataFrame, valid_mask: np.ndarray) -> np.ndarray | None:
-    cols = [c for c in ("latitude", "longitude") if c in emb_df.columns]
-    if len(cols) != 2:
-        return None
-    z = emb_df[["latitude", "longitude"]].to_numpy(dtype=float)[valid_mask]
-    return StandardScaler().fit_transform(z)
+def _geo_basis(lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
+    """Location confounder basis: standardized lat, lon, lat^2, lon^2, lat*lon."""
+    la = (lat - lat.mean()) / (lat.std() or 1.0)
+    lo = (lon - lon.mean()) / (lon.std() or 1.0)
+    B = np.column_stack([la, lo, la * lo, la ** 2, lo ** 2])
+    return StandardScaler().fit_transform(B)
 
 
 def decompose_city(city: str, fast: bool, seed: int = 42) -> dict:
-    print(f"\n=== price decomposition: {city} ===")
+    print(f"\n=== price-geo toggle: {city} ===")
     loaded = load_analysis_data(city)
     if loaded is None:
         return {"city": city, "error": "no data"}
@@ -63,51 +74,49 @@ def decompose_city(city: str, fast: bool, seed: int = 42) -> dict:
     if feats is None:
         return {"city": city, "error": "no features"}
     T_emb, confounders, Y_log, meta = feats
-    valid = np.asarray(meta["valid_mask"], dtype=bool)
-    Z = _latlon(emb_df, valid)
-    if Z is None:
+    lat = np.asarray(meta["lat"], dtype=float)
+    lon = np.asarray(meta["lon"], dtype=float)
+    if not np.isfinite(lat).any() or not np.isfinite(lon).any():
         return {"city": city, "error": "no lat-lon"}
-    T_emb = np.asarray(T_emb, dtype=float)
-    assert len(T_emb) == len(confounders) == len(Y_log) == len(Z)
+    conf = np.asarray(confounders, dtype=float)
+    assert len(conf) == len(Y_log) == len(lat) == len(T_emb)
 
-    # erase the lat-lon concept from the embedding (LEACE, linear guardedness)
-    T_erased, _, _, resid = leace_erase(T_emb, Z, shrinkage=True)
-    T_erased = np.asarray(T_erased, dtype=float)
-    print(f"  n={len(Y_log):,}  guardedness residual={float(resid):.2e}")
+    pc_raw = _oriented_pc1(np.asarray(T_emb, dtype=float), Y_log, seed)
 
-    pc_raw = _oriented_pc1(T_emb, Y_log, seed)
-    pc_era = _oriented_pc1(T_erased, Y_log, seed)
+    # strip the linear lat-lon columns the confounder builder injected (cols whose
+    # correlation with lat or lon is ~1), so the "naive" arm has NO geography
+    cor = np.array([max(abs(np.corrcoef(conf[:, j], lat)[0, 1]),
+                        abs(np.corrcoef(conf[:, j], lon)[0, 1]))
+                    for j in range(conf.shape[1])])
+    geo_cols = cor > 0.99
+    conf_naive = conf[:, ~geo_cols]
+    geo_b = _geo_basis(lat, lon)
+    conf_geo = np.column_stack([conf_naive, geo_b])
+    print(f"  n={len(Y_log):,}  stripped {int(geo_cols.sum())} geo confounder col(s); "
+          f"naive p={conf_naive.shape[1]}, geo p={conf_geo.shape[1]}")
 
-    # diagnostics distinguishing a real "PC1 is geography-orthogonal" finding from
-    # a "erasing 2 of 768 dims can't move PC1" artifact:
-    #   pc1_geo_r2  = fraction of raw-PC1 variance linearly explained by lat-lon
-    #                 (if ~0, PC1 carries no geography -> nothing for erasure to remove)
-    #   pc1_cosine  = |corr(raw PC1, erased PC1)| (1 = erasure left PC1 untouched)
-    A = np.column_stack([np.ones(len(Y_log)), Z])
-    coef, *_ = np.linalg.lstsq(A, pc_raw[:, 0], rcond=None)
-    res = pc_raw[:, 0] - A @ coef
-    pc1_geo_r2 = float(1.0 - np.var(res) / (np.var(pc_raw[:, 0]) or 1.0))
-    pc1_cosine = float(abs(np.corrcoef(pc_raw[:, 0], pc_era[:, 0])[0, 1]))
-    print(f"  PC1 geography R^2={pc1_geo_r2:.3f}  cos(raw,erased PC1)={pc1_cosine:.3f}")
-    kw = dict(label="decomp", ci_method="if", n_boot=None,
+    kw = dict(label="toggle", ci_method="if", n_boot=None,
               use_ridge=fast, seed=seed, n_pca=1)
-    dml_raw = run_dml(pc_raw, confounders, Y_log, **kw)
-    dml_era = run_dml(pc_era, confounders, Y_log, **kw)
-    if dml_raw is None or dml_era is None:
+    dml_naive = run_dml(pc_raw, conf_naive, Y_log, **kw)
+    dml_geo = run_dml(pc_raw, conf_geo, Y_log, **kw)
+    if dml_naive is None or dml_geo is None:
         return {"city": city, "error": "DML failed"}
 
-    confounded = float(dml_raw.theta - dml_era.theta)
-    print(f"  raw theta={dml_raw.theta:+.4f}  erased theta={dml_era.theta:+.4f}"
-          f"  confounded share={confounded:+.4f}")
+    confounded = float(dml_naive.theta - dml_geo.theta)
+    # how geographic is the treatment itself (ceiling on what location can explain)
+    A = np.column_stack([np.ones(len(Y_log)), geo_b])
+    coef, *_ = np.linalg.lstsq(A, pc_raw[:, 0], rcond=None)
+    pc1_geo_r2 = float(1.0 - np.var(pc_raw[:, 0] - A @ coef) / (np.var(pc_raw[:, 0]) or 1.0))
+    print(f"  naive theta={dml_naive.theta:+.4f}  geo theta={dml_geo.theta:+.4f}"
+          f"  confounded={confounded:+.4f}  PC1-geo R^2={pc1_geo_r2:.3f}")
     return {
         "city": city, "n": int(len(Y_log)),
-        "raw_theta": float(dml_raw.theta), "raw_se": float(dml_raw.se),
-        "erased_theta": float(dml_era.theta), "erased_se": float(dml_era.se),
+        "naive_theta": float(dml_naive.theta), "naive_se": float(dml_naive.se),
+        "geo_theta": float(dml_geo.theta), "geo_se": float(dml_geo.se),
         "confounded_share": confounded,
-        "confounded_frac": (confounded / dml_raw.theta) if dml_raw.theta else float("nan"),
+        "confounded_frac": (confounded / dml_naive.theta) if dml_naive.theta else float("nan"),
         "pc1_geo_r2": pc1_geo_r2,
-        "pc1_cosine_raw_erased": pc1_cosine,
-        "guardedness_residual": float(resid),
+        "n_geo_cols_stripped": int(geo_cols.sum()),
     }
 
 
@@ -115,8 +124,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--city")
     ap.add_argument("--all_12", action="store_true")
-    ap.add_argument("--fast", action="store_true",
-                    help="ridge nuisances + IF intervals (fast); else GBM")
+    ap.add_argument("--fast", action="store_true")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out", type=Path,
                     default=REPO / "results" / "replications"
@@ -131,7 +139,7 @@ def main():
     df = pd.DataFrame([r for r in rows if "error" not in r])
     args.out.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(args.out, index=False)
-    print("\n=== decomposition (per market) ===")
+    print("\n=== price-geo decomposition (per market) ===")
     print(df.to_string(index=False, float_format=lambda x: f"{x:+.4f}"))
     print(f"\nCSV -> {args.out}")
     errs = [r for r in rows if "error" in r]
