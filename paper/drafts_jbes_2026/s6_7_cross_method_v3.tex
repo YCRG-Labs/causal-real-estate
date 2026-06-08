@@ -175,8 +175,8 @@ section rests.
 % --- panel (a) Shen uniqueness ---
 \begin{axis}[
     causalre, width=0.31\textwidth, height=7.6cm, name=fsA,
-    symbolic y coords={New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
-    ytick=data, y dir=normal,
+    symbolic y coords={Pooled,New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
+    ytick={New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia,Pooled}, y dir=normal,
     xlabel={$\hat\theta$ per $\sigma$}, xmin=-0.06, xmax=0.37,
     xtick={0,0.1,0.2,0.3}, enlarge y limits=0.06,
     title={(a) Shen uniqueness},
@@ -198,13 +198,15 @@ section rests.
   (0.001,New York) (0.027,Boston) (0.032,Seattle) (0.045,Phoenix) (0.055,Washington)
   (0.069,Dallas) (0.071,Portland) (0.079,Denver) (0.109,Atlanta) (0.122,San Francisco)
   (0.296,Chicago) (0.315,Philadelphia)};
+\draw[thin,gray] (axis cs:0.017,Pooled)--(axis cs:0.128,Pooled);
+\addplot[only marks, mark=diamond*, mark size=3.2pt, color=cNYC] coordinates {(0.072,Pooled)};
 \end{axis}
 % --- panel (b) Baur sentence-BERT axis ---
 \begin{axis}[
     causalre, width=0.27\textwidth, height=7.6cm,
     at={(fsA.east)}, anchor=west, xshift=0.7cm,
-    symbolic y coords={New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
-    ytick=data, yticklabels={,,,,,,,,,,,},
+    symbolic y coords={Pooled,New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
+    ytick=data, yticklabels={,,,,,,,,,,,,},
     xlabel={$\hat\theta$ per $\sigma$}, xmin=-0.06, xmax=0.51,
     xtick={0,0.2,0.4}, enlarge y limits=0.06,
     title={(b) sentence-BERT},
@@ -226,13 +228,15 @@ section rests.
   (-0.019,New York) (0.072,Boston) (0.049,Seattle) (0.056,Phoenix) (0.118,Washington)
   (0.195,Dallas) (0.082,Portland) (0.103,Denver) (0.243,Atlanta) (0.101,San Francisco)
   (0.456,Chicago) (0.411,Philadelphia)};
+\draw[thin,gray] (axis cs:0.063,Pooled)--(axis cs:0.249,Pooled);
+\addplot[only marks, mark=diamond*, mark size=3.2pt, color=cSF] coordinates {(0.156,Pooled)};
 \end{axis}
 % --- panel (c) counterfactual style-stripped contrast ---
 \begin{axis}[
     causalre, width=0.27\textwidth, height=7.6cm,
     at={(fsA.east)}, anchor=west, xshift=4.9cm,
-    symbolic y coords={New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
-    ytick=data, yticklabels={,,,,,,,,,,,},
+    symbolic y coords={Pooled,New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
+    ytick=data, yticklabels={,,,,,,,,,,,,},
     xlabel={contrast (log price)}, xmin=-0.10, xmax=0.25,
     xtick={-0.1,0,0.1,0.2}, enlarge y limits=0.06,
     title={(c) style-stripped},
@@ -254,13 +258,17 @@ section rests.
   (0.110,New York) (0.184,Boston) (0.056,Seattle) (0.001,Phoenix) (-0.005,Washington)
   (0.134,Dallas) (0.088,Portland) (0.162,Denver) (0.176,Atlanta) (0.033,San Francisco)
   (-0.038,Chicago) (-0.004,Philadelphia)};
+\draw[thin,gray] (axis cs:0.034,Pooled)--(axis cs:0.113,Pooled);
+\addplot[only marks, mark=diamond*, mark size=3.2pt, color=cGRN] coordinates {(0.074,Pooled)};
 \end{axis}
 \end{tikzpicture}
 \caption{Per-market DML estimates across the twelve metropolitan areas for the
 three text channels, ordered by the Shen-Ross uniqueness effect. Filled dots are
 point estimates and gray whiskers are $95\%$ intervals (influence-function for
 the Shen and sentence-BERT channels; coefficient-uncertainty-folded cluster
-bootstrap for the counterfactual contrast). The dashed vertical line marks the
+bootstrap for the counterfactual contrast). The diamond in the bottom row of each
+panel is the random-effects pooled estimate, with its gray whisker the $95\%$
+interval. The dashed vertical line marks the
 null. The sentence-BERT axis is oriented so its pooled effect is non-negative.
 Numerical values appear in Tables~\ref{tab:shen-12city}, \ref{tab:baur-12city},
 and \ref{tab:counterfactual-12}.}

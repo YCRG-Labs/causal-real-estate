@@ -78,7 +78,70 @@ those estimates would have to be considerably stronger than any spatial or
 structural feature the data record. The reassurance is sharpest precisely where
 the effect is largest, and it thins toward the low-robustness markets, where
 neither benchmark is large enough to anchor a confident reading in either
-direction.
+direction. The bias geometry behind these per-market summaries is drawn out, for
+the two markets that clear the robustness threshold, in
+Figure~\ref{fig:sensitivity-contour}.
+
+% ======================================================================
+% FIG: Cinelli-Hazlett OVB sensitivity contours (SF + Philadelphia)
+% c=0 (kill) and c=theta/2 (halve) contours of the adjusted estimate over
+% confounder partial-R^2 on treatment (x) x outcome (y). K=SE*sqrt(dof);
+% c-contour: y = ((theta-c)/K)^2 (1-x)/x. RV point on diagonal; benchmark = f^2.
+% sf: theta .114 se .0243 rv .140 f2 .023 K .752  | phila: .195 .0115 .183 .041 K .961
+% ======================================================================
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre, name=scA, width=0.44\textwidth, height=6.4cm,
+    xlabel={Confounder partial $R^2$ with treatment},
+    ylabel={Partial $R^2$ with outcome},
+    xmin=0, xmax=0.25, ymin=0, ymax=0.25,
+    xtick={0,0.05,0.10,0.15,0.20}, ytick={0,0.05,0.10,0.15,0.20},
+    title={(a) San Francisco}, title style={font=\small},
+    legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.85,
+                  text opacity=1, at={(0.97,0.97)}, anchor=north east, row sep=0.3pt},
+]
+\addplot[cSF, thick, domain=0.085:0.25, samples=90] {0.02292*(1-x)/x};
+\addlegendentry{$\hat\theta_{\mathrm{adj}}=0$}
+\addplot[cSF, dashed, domain=0.023:0.25, samples=90] {0.00573*(1-x)/x};
+\addlegendentry{$\hat\theta_{\mathrm{adj}}=\hat\theta/2$}
+\addplot[gray, dotted, thick, domain=0:0.25] {x};
+\addlegendentry{equal strength}
+\addplot[only marks, mark=*, mark size=2pt, color=black] coordinates {(0.140,0.140)};
+\addlegendentry{robustness value}
+\addplot[only marks, mark=triangle*, mark size=2.6pt, color=cNYC] coordinates {(0.023,0.023)};
+\addlegendentry{strongest covariate}
+\end{axis}
+\begin{axis}[
+    causalre, width=0.44\textwidth, height=6.4cm,
+    at={(scA.east)}, anchor=west, xshift=1.0cm,
+    xlabel={Confounder partial $R^2$ with treatment}, ylabel={},
+    xmin=0, xmax=0.25, ymin=0, ymax=0.25,
+    xtick={0,0.05,0.10,0.15,0.20}, ytick={0,0.05,0.10,0.15,0.20},
+    title={(b) Philadelphia}, title style={font=\small},
+]
+\addplot[cSF, thick, domain=0.142:0.25, samples=90] {0.04114*(1-x)/x};
+\addplot[cSF, dashed, domain=0.040:0.25, samples=90] {0.01029*(1-x)/x};
+\addplot[gray, dotted, thick, domain=0:0.25] {x};
+\addplot[only marks, mark=*, mark size=2pt, color=black] coordinates {(0.183,0.183)};
+\addplot[only marks, mark=triangle*, mark size=2.6pt, color=cNYC] coordinates {(0.041,0.041)};
+\end{axis}
+\end{tikzpicture}
+\caption{Omitted-variable-bias sensitivity contours, in the manner of
+\citet{cinelli2020making}, for the two markets that clear the robustness
+threshold. The axes are the partial $R^2$ that a single unobserved confounder
+would have with the treatment (horizontal) and with the outcome (vertical). The
+solid curve is the locus along which such a confounder would drive the
+per-standard-deviation estimate to zero, and the dashed curve the locus along
+which it would halve it. The black dot on the diagonal is the robustness value,
+the equal-strength confounder that just eliminates the effect, at $0.14$ in San
+Francisco and $0.18$ in Philadelphia. The triangle marks a confounder as strong
+as the most influential covariate actually observed, which falls far inside the
+kill curve in both markets, so an unobserved confounder would have to be several
+times stronger than any measured one to overturn the estimate.}
+\label{fig:sensitivity-contour}
+\end{figure}
 
 \paragraph{Spatial-block leave-one-out.} Dropping the spatial control block and
 re-estimating moves the point estimate by at most four thousandths of a log point
