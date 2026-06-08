@@ -79,7 +79,8 @@ def concordance_correlation(x, y):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shen", default=str(RESULTS / "shen_12city_table.csv"))
-    ap.add_argument("--baur", default=str(RESULTS / "baur_12city_table.csv"))
+    ap.add_argument("--baur", default=str(RESULTS / "baur_pooled_pca"
+                                           / "baur_pooled_pca_table.csv"))
     ap.add_argument("--cf",   default=str(CF_RESULTS / "counterfactual_12city_table.csv"))
     args = ap.parse_args()
 

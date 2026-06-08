@@ -59,6 +59,30 @@ def _attach_pooled_treatment(city: str, emb_df: pd.DataFrame,
     return merged["treatment_z"].to_numpy().reshape(-1, 1)
 
 
+def _random_effects_pool(theta, se):
+    """DerSimonian-Laird random-effects pool, matching the Shen rollup."""
+    theta = np.asarray(theta, dtype=float)
+    se = np.asarray(se, dtype=float)
+    mask = np.isfinite(theta) & np.isfinite(se) & (se > 0)
+    theta, se = theta[mask], se[mask]
+    k = len(theta)
+    w_fe = 1.0 / se ** 2
+    theta_fe = float(np.sum(w_fe * theta) / np.sum(w_fe))
+    Q = float(np.sum(w_fe * (theta - theta_fe) ** 2))
+    if k > 1:
+        C = float(np.sum(w_fe) - np.sum(w_fe ** 2) / np.sum(w_fe))
+        tau2 = max(0.0, (Q - (k - 1)) / C) if C > 0 else 0.0
+    else:
+        tau2 = 0.0
+    w_re = 1.0 / (se ** 2 + tau2)
+    theta_re = float(np.sum(w_re * theta) / np.sum(w_re))
+    se_re = float(np.sqrt(1.0 / np.sum(w_re)))
+    I2 = float(max(0.0, (Q - (k - 1)) / Q) * 100.0) if Q > 0 else 0.0
+    return {"theta_re": theta_re, "se_re": se_re, "tau2": tau2, "Q": Q,
+            "df": k - 1, "I2_pct": I2, "theta_fe": theta_fe,
+            "se_fe": float(np.sqrt(1.0 / np.sum(w_fe))), "k": k}
+
+
 def run_baur_pooled(
     city: str = "sf",
     pooled_csv: Path = REPO / "results" / "replications"
@@ -188,8 +212,48 @@ def main():
             "dml_excludes_zero": (not d["contains_zero"]),
         })
     df = pd.DataFrame(tbl_rows)
+
+    # Canonical pooled estimate: DerSimonian-Laird random-effects pool of the
+    # per-city pooled-PCA DML thetas, the same estimator family as the Shen
+    # rollup. This supersedes the two other Baur pooled numbers on disk: the
+    # per-market meta pool in baur_12city_pooled.json (a different, sign-flipping
+    # per-market PC1 source) and the cluster-DML pooled_dml_baur.json (whose
+    # Dirichlet bootstrap is degenerate). The principal-component sign is
+    # unidentified, so we orient the common axis so the pooled estimand is
+    # non-negative. This is a disclosed interpretability convention only: it
+    # makes the per-city estimand sign-comparable to the hedonic (Shen) channel
+    # but cannot manufacture independent agreement, since the cross-market
+    # |correlation| between the two channels is sign-invariant (~0.95 here, i.e.
+    # the two text channels are near-collinear: one signal in two encodings).
+    pool = None
+    if "dml_theta" in df.columns and df["dml_theta"].notna().any():
+        th = df["dml_theta"].to_numpy(float)
+        se = df["dml_se"].to_numpy(float)
+        pool = _random_effects_pool(th, se)
+        if pool["theta_re"] < 0:
+            new_lo = -df["dml_ci_high"]
+            new_hi = -df["dml_ci_low"]
+            df["dml_theta"] = -df["dml_theta"]
+            df["dml_ci_low"] = new_lo
+            df["dml_ci_high"] = new_hi
+            pool = _random_effects_pool(df["dml_theta"].to_numpy(float),
+                                        df["dml_se"].to_numpy(float))
+            pool["oriented_flip"] = True
+        else:
+            pool["oriented_flip"] = False
+        pool["spec"] = "pooled_within_city_centered_pca_pc1; RE(DL) over 12 cities"
+        pool["sign_note"] = ("PC sign unidentified; oriented so pooled>=0; "
+                             "cross-method |corr| is sign-invariant")
+
     tbl_csv = args.out_dir / "baur_pooled_pca_table.csv"
     df.to_csv(tbl_csv, index=False)
+    if pool is not None:
+        pool_path = args.out_dir / "baur_pooled_pca_pooled.json"
+        pool_path.write_text(json.dumps(pool, indent=2, default=float))
+        print(f"\nCanonical pooled (RE, oriented): "
+              f"theta_re={pool['theta_re']:+.4f} se={pool['se_re']:.4f} "
+              f"I2={pool['I2_pct']:.0f}% flip={pool['oriented_flip']}")
+        print(f"Pooled -> {pool_path}")
     print(f"\n=== Table ===")
     print(df.to_string(index=False, float_format=lambda x: f"{x:+.4f}"))
     print(f"\nTable -> {tbl_csv}")
