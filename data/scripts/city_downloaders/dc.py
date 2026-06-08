@@ -11,7 +11,7 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from city_downloaders._helpers import arcgis_rest_query, canonicalize_crime, write_geojson_from_arcgis_chunks, write_parquet  # noqa: E402
+from city_downloaders._helpers import arcgis_rest_query, canonicalize_crime, write_geojson_from_arcgis_chunks, write_parquet
 
 SLUG = "dc"
 PARCEL_URL = "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land_WebMercator/FeatureServer/40"

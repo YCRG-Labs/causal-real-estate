@@ -35,12 +35,9 @@ except ImportError:
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from city_endpoints import CITIES, CityConfig, list_new  # noqa: E402
+from city_endpoints import CITIES, CityConfig, list_new
 
-# Patch each CityConfig with its zip_codes shards from the side-car JSON.
-# This is the load-bearing change that lets `fetch_city_index` enter
-# ZIP-shard mode and bypass the legacy 350-listing search cap.
-import dataclasses as _dataclasses  # noqa: E402
+import dataclasses as _dataclasses
 _zip_shards_path = Path(__file__).parent / "zip_shards.json"
 if _zip_shards_path.exists():
     _zip_shards = json.loads(_zip_shards_path.read_text())
@@ -390,7 +387,6 @@ async def scrape_city(cfg: CityConfig, resume: bool, max_listings: int) -> int:
         )
     async with client_ctx as client:
         print(f"[{cfg.slug}] discovering listing URLs (backend={_BACKEND})...")
-        # target_n=max_listings means "stop early at this count" when in ZIP-shard mode.
         listing_urls = await fetch_city_index(client, cfg, target_n=max_listings)
         if max_listings > 0:
             listing_urls = listing_urls[:max_listings]

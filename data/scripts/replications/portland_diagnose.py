@@ -129,7 +129,6 @@ def leverage_diag(name: str, fname: str) -> None:
 def main() -> int:
     print("=== Phase A: Portland pathology diagnostic ===\n")
 
-    # Load + pool.
     data = []
     for city in CITIES:
         X = load_city_centered(city)
@@ -151,13 +150,11 @@ def main() -> int:
     print(f"Pooled sin-theta bound (Davis-Kahan): "
           f"{davis_kahan_bound(pca_pool.explained_variance_ratio_[0] / pca_pool.explained_variance_ratio_[1]):.4f}\n")
 
-    # Per-city PCA + Flury alignment.
     print("=== Per-city PCA stability + Flury (1984) cos(PC1_city, PC1_pooled) ===\n")
     by_city = per_city_pca_report(pooled_pc1, data)
     print(by_city.to_string(index=False,
                               float_format=lambda x: f"{x:.4f}"))
 
-    # Headline finding for Portland.
     if "portland" in by_city["city"].values:
         pdx = by_city[by_city["city"] == "portland"].iloc[0]
         print()
@@ -172,7 +169,6 @@ def main() -> int:
             print(f"  ** PC1/PC2 ratio {pdx['pc1_pc2_ratio']:.3f} < 1.5 -> "
                   "sign-pinning empirically UNSTABLE for Portland. **")
 
-    # Treatment-scale check.
     scale = treatment_scale_report()
     if scale is not None:
         print("\n=== Raw treatment scale per city (BEFORE within-city z-score) ===\n")
@@ -188,7 +184,6 @@ def main() -> int:
                 print("  ** Portland raw treatment scale is >2x other cities -> "
                       "pooled PC1 is loading on Portland-specific variance. **")
 
-    # Existing leverage diag dumps.
     leverage_diag("Shen", "shen_leverage_diag.json")
     leverage_diag("Baur", "baur_leverage_diag.json")
 

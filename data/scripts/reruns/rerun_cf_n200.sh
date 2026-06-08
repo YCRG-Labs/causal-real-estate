@@ -1,5 +1,4 @@
 #!/bin/bash
-# Counterfactual rerun at n=200 (batched + engine-hoisted + checkpointed) -> results/counterfactual
 set -u
 cd ~/causal-real-estate
 mkdir -p logs/cf

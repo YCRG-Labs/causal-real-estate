@@ -44,8 +44,6 @@ DISPLAY = {"boston": "Boston", "nyc": "New York", "sf": "San Francisco",
 
 
 def _median_price(city: str) -> float | None:
-    # Listings parquet is the unified source present for all 12 cities; the
-    # embeddings parquet exists only for boston/nyc/sf.
     p = PROCESSED / f"{city}_listings.parquet"
     if not p.exists():
         return None

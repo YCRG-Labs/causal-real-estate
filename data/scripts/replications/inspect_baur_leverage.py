@@ -28,7 +28,7 @@ from sklearn.preprocessing import StandardScaler
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "data" / "scripts"))
 
-from causal_inference import (  # noqa: E402
+from causal_inference import (
     get_features_and_target,
     load_analysis_data,
 )

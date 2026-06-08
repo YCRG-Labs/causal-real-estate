@@ -83,7 +83,7 @@ def main():
     for f in files:
         try:
             data = json.loads(f.read_text())
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"== {f} ==\n  [unreadable: {e}]\n")
             continue
         rows = []

@@ -74,7 +74,7 @@ Cohen (1988).  "Statistical Power Analysis for the Behavioral Sciences,"
   2nd ed.  (One-sample z-test power calculation used below.)
 """
 from __future__ import annotations
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); import _silence  # noqa: F401
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); import _silence
 
 import argparse
 import functools
@@ -84,10 +84,6 @@ import sys
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
-# Force flush on every print so progress is visible when stdout is redirected
-# to a file under parallel orchestration (gnu parallel / xargs -P / background
-# subshell). Without this, 4 KB of phase-marker prints sit in the buffer until
-# the process exits.
 print = functools.partial(print, flush=True)
 
 import numpy as np
@@ -149,10 +145,6 @@ def _vectorize_doc2vec(descriptions: list[str], vector_size: int = 100,
         ) from e
     tagged = [TaggedDocument(simple_preprocess(d), [i])
               for i, d in enumerate(descriptions)]
-    # gensim 4.x releases the GIL inside the Cython training inner loop, so
-    # workers>1 yields near-linear speedup up to ~8 cores; beyond that the
-    # window-batch overhead dominates. Cap conservatively at 8 to keep the
-    # Brev box stable when several cities run in parallel.
     import multiprocessing as _mp
     n_workers = min(_mp.cpu_count(), 8)
     model = Doc2Vec(documents=tagged, vector_size=vector_size, window=window,
@@ -276,8 +268,6 @@ def hedonic_ols(
         cell_df = pd.DataFrame({"_cell": list(cell_keys)})
         fe = pd.get_dummies(cell_df["_cell"], prefix="cell", drop_first=True,
                             dtype=float)
-        # avoid duplicate column names with confounders (very unlikely
-        # collision, but guard nonetheless)
         fe.columns = [f"fe_{c}" for c in fe.columns]
         df = pd.concat([df.reset_index(drop=True),
                         fe.reset_index(drop=True)], axis=1)
@@ -305,9 +295,6 @@ def hedonic_ols(
     return out, model
 
 
-# ---------------------------------------------------------------------------
-# Power calculation: detectability at our n versus Shen's published effect.
-# ---------------------------------------------------------------------------
 
 def power_at_published_effect(n_our: int, theta_pub: float, se_pub: float,
                               n_pub: int = 40000, alpha: float = 0.05,
@@ -342,9 +329,6 @@ def power_at_published_effect(n_our: int, theta_pub: float, se_pub: float,
     }
 
 
-# ---------------------------------------------------------------------------
-# K-sweep: rank correlation of uniqueness across K choices.
-# ---------------------------------------------------------------------------
 
 def k_sweep_rank_correlation(
     descriptions: list[str], lat: np.ndarray, lon: np.ndarray,
@@ -394,7 +378,7 @@ def _confounder_names(confounders: np.ndarray, parcels) -> list[str]:
     *property_cols_present, *contextual_cols_present]. We label what we know
     and pad the rest.
     """
-    from causal_inference import CONTEXTUAL_COLS  # local import keeps file tidy
+    from causal_inference import CONTEXTUAL_COLS
 
     known = ["lat", "lon"]
     known += [c for c in PROPERTY_COLS if parcels is not None and c in parcels.columns]
@@ -424,21 +408,12 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
         return {"city": city, "error": "no features"}
     _, confounders, Y, meta = feats
 
-    # `get_features_and_target` drops rows with non-positive/NaN/Inf price or
-    # all-zero confounders. Those dropped rows are INTERIOR, not a tail, so the
-    # previous `emb_df.iloc[:confounders.shape[0]]` tail-truncation silently
-    # mispaired listings with the filtered confounders/Y. meta["valid_mask"] is
-    # the boolean row mask over the original emb_df that survived filtering;
-    # subset emb_df by it so every emb-derived array built below (descriptions,
-    # lat/lon, zip, year, and the uniqueness vectors derived from them) aligns
-    # 1:1 with the filtered confounders/Y.
     valid_mask = np.asarray(meta["valid_mask"], dtype=bool)
     emb_df = emb_df[valid_mask].reset_index(drop=True)
     assert len(emb_df) == confounders.shape[0] == len(Y), (
         f"row-alignment failure: emb_df={len(emb_df)} "
         f"confounders={confounders.shape[0]} Y={len(Y)}")
 
-    # robust to schema drift: older parquets only have `description`
     desc_col = "clean_description" if "clean_description" in emb_df.columns else "description"
     if "clean_description" in emb_df.columns:
         descriptions = emb_df["clean_description"].fillna(emb_df["description"]).astype(str).tolist()
@@ -448,7 +423,6 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
     lon = pd.to_numeric(emb_df["longitude"], errors="coerce").values.astype(float)
     zips = (emb_df["zip"].astype(str).values
             if "zip" in emb_df.columns else np.zeros(len(emb_df), dtype=object))
-    # year column: try 'year_sold', 'sale_year', else parse 'sale_date'/'year_built'
     year_col = next((c for c in ("year_sold", "sale_year", "year") if c in emb_df.columns), None)
     if year_col is not None:
         years = pd.to_numeric(emb_df[year_col], errors="coerce").values
@@ -457,7 +431,6 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
     else:
         years = np.full(len(emb_df), np.nan)
 
-    # drop rows with non-finite coords (would crash cKDTree)
     finite_mask = np.isfinite(lat) & np.isfinite(lon)
     n_drop = int((~finite_mask).sum())
     if n_drop:
@@ -485,12 +458,6 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
           f"unique ZIPs={pd.Series(zips).nunique()}, "
           f"unique years={pd.Series(years).nunique()}")
 
-    # ---- always print power vs published effect ---------------------------
-    # Anchor = Shen & Ross (2021, JUE) abstract: a one-SD uniqueness increase
-    # raises sale price 15% (hedonic) / 10% (repeat-sales) => ~0.140 log-points
-    # (ln 1.15). This is the PUBLISHED value, not the superseded working-paper
-    # +5.6%/SD. The abstract gives no SE or n, so published_se/published_n are
-    # unverified placeholders feeding the 1/sqrt(n) scaling below.
     pwr = power_at_published_effect(n_our=n, theta_pub=published_theta,
                                     se_pub=published_se, n_pub=published_n)
     print(f"  Power vs published θ={published_theta:+.3f} "
@@ -498,7 +465,6 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
     print(f"    implied SE at our n: {pwr['se_implied_at_our_n']:.4f}  "
           f"ncp={pwr['ncp']:.2f}  power={pwr['power']:.3f}")
 
-    # ---- uniqueness construction (default: TF-IDF + KNN; flag: cell FE) ---
     method_label = []
     if use_doc2vec:
         method_label.append("Doc2Vec(PV-DM, dim=100, win=5, ep=40)")
@@ -535,7 +501,6 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
           f"(Shen & Ross 2021 abstract: ~+15% per σ in the hedonic model)")
     print(f"    OLS R²={ols.r2:.4f}, adj R²={ols.adj_r2:.4f}")
 
-    # ---- alt cell-FE spec for direct comparison (always) -------------------
     cell_fe_block = None
     if not cell_fe and "zip" in emb_df.columns:
         cell_keys_alt = [(str(z), str(y) if not pd.isna(y) else "NA")
@@ -562,7 +527,6 @@ def run_shen(city: str = "sf", n_subset: int | None = None, seed: int = 42,
             cell_fe_block = {"error": f"cell-FE comparison failed: {e}"}
             print(f"  Cell-FE comparison skipped: {e}")
 
-    # ---- K sweep ----------------------------------------------------------
     k_sweep_block = None
     if k_sweep:
         try:

@@ -16,8 +16,6 @@ CITIES = ["boston", "nyc", "sf"]
 
 REDFIN_TEXT_COLS = ["description", "clean_description", "address", "url"]
 EMBEDDING_KEEP_META = ["zip", "latitude", "longitude", "price"]
-# SF assessor roll exposes street addresses; drop them since the paper's
-# analysis uses lat/lon and addresses are not needed for replication.
 SF_ADDRESS_COLS = [
     "from_address_num",
     "to_address_num",

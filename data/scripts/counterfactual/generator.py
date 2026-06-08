@@ -34,25 +34,15 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
-# Disable FlashInfer at the process and subprocess level BEFORE vllm is
-# imported anywhere in this module. vLLM 0.21 uses FlashInfer in two
-# places (top-k/top-p sampling AND prefill attention); a single env var
-# only disables one of them, leaving the other to crash with a JIT
-# compile error on hosts without nvcc + the right cc1plus. The three-var
-# combination below is the documented workaround on the vLLM issue
-# tracker (vllm-project/vllm#19810) and the HF gpt-oss-120b discussion
-# thread. Setting them here via setdefault means they propagate to the
-# multiprocessing workers vLLM spawns for EngineCore. Override at the
-# shell level if you actually want FlashInfer back later.
 os.environ.setdefault("VLLM_USE_FLASHINFER_SAMPLER", "0")
 os.environ.setdefault("VLLM_ATTENTION_BACKEND", "FLASH_ATTN")
 os.environ.setdefault("VLLM_DISABLE_FLASHINFER_PREFILL", "1")
 
 try:
-    import anthropic  # type: ignore
+    import anthropic
     _HAS_ANTHROPIC = True
 except ImportError:
-    anthropic = None  # type: ignore
+    anthropic = None
     _HAS_ANTHROPIC = False
 
 
@@ -197,7 +187,7 @@ class AnthropicGenerator:
 
     def _record_usage(self, response: object) -> None:
         try:
-            self.usage.add(response.usage)  # type: ignore[attr-defined]
+            self.usage.add(response.usage)
         except Exception:
             pass
 
@@ -279,8 +269,6 @@ class AnthropicGenerator:
                     used_mock=False,
                 )
             except (anthropic.APIError, ValueError) as e:
-                # Retry transient API errors + JSON parse failures only;
-                # programmer errors (TypeError, AttributeError, ...) fail fast.
                 last_err = e
                 delay = self.base_delay_s * (2 ** attempt) + random.uniform(0, 0.5)
                 time.sleep(delay)
@@ -325,7 +313,7 @@ class VLLMGenerator:
     ):
         self._structured_outputs_enabled = structured_outputs
         try:
-            from vllm import LLM, SamplingParams  # type: ignore
+            from vllm import LLM, SamplingParams
         except ImportError as e:
             raise RuntimeError(f"vllm import failed: {e!r}") from e
         StructuredCls = None
@@ -367,14 +355,6 @@ class VLLMGenerator:
             enable_prefix_caching=enable_prefix_caching,
             seed=seed,
             dtype="auto",
-            # Throughput-oriented continuous-batching settings.
-            # max_num_batched_tokens=8192 (vs vLLM default 2048) lets the
-            # scheduler keep many concurrent prefills in-flight on A100-80GB,
-            # giving 2.5-3.5x output tokens/sec on 32B-AWQ workloads at the
-            # cost of ~50ms additional first-token latency (irrelevant for
-            # batch rewriting). enable_chunked_prefill=True splits long
-            # prefills across iterations so a single big prompt does not
-            # stall the decode pipeline; recommended in vLLM perf docs.
             max_num_batched_tokens=8192,
             enable_chunked_prefill=True,
         )
@@ -383,8 +363,6 @@ class VLLMGenerator:
         self.llm = LLM(**kwargs)
         self.tokenizer = self.llm.get_tokenizer()
         self.usage = UsageStats()
-        # vLLM offline has no API usage to bill; we count requests and
-        # output_tokens for the orchestrator's summary line.
 
     @staticmethod
     def _slot_schema(slot_dict: Optional[dict]) -> dict | None:
@@ -440,12 +418,6 @@ class VLLMGenerator:
         try:
             payload = _parse_json_payload(raw)
         except (ValueError, KeyError) as e:
-            # Recover from truncated / malformed JSON. Pull whatever text we
-            # can salvage from the `rewritten_text` field with a non-greedy
-            # regex; if that also fails, mark the rewrite as empty. The
-            # downstream validator (validator.py) will fail this generation
-            # on slot_preserved and the pipeline records it as a rejected
-            # rewrite rather than crashing the entire 24k-listing run.
             import re
             print(f"  [VLLMGenerator] WARN: JSON parse failed ({e}); salvaging text",
                   flush=True)
@@ -538,13 +510,6 @@ def make_generator(force_mock: bool = False,
     return AnthropicGenerator()
 
 
-# -----------------------------------------------------------------------------
-# Async variants: AsyncMockGenerator + AsyncAnthropicGenerator
-# Used by run_counterfactual to fire all 4 arms per listing concurrently via
-# asyncio.gather. Each arm gets its own API request; the 4 requests share the
-# same cached system prompt (prompt caching unaffected by concurrency).
-# Net effect at 100 listings: ~4x speedup on API-bound time (max(4) vs sum(4)).
-# -----------------------------------------------------------------------------
 
 
 class AsyncMockGenerator(MockGenerator):
@@ -581,7 +546,7 @@ class AsyncAnthropicGenerator:
 
     def _record_usage(self, response: object) -> None:
         try:
-            self.usage.add(response.usage)  # type: ignore[attr-defined]
+            self.usage.add(response.usage)
         except Exception:
             pass
 

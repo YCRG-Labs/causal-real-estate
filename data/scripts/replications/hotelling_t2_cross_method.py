@@ -80,7 +80,6 @@ def main():
     df = shen.merge(baur, on="city").merge(
         cf[["city", "cf_theta", "cf_se"]], on="city")
 
-    # Per-method z-statistics across cities.
     df["shen_z"] = np.where(df["shen_se"] > 0,
                             df["shen_theta"] / df["shen_se"], 0.0)
     df["baur_z"] = np.where(df["baur_se"] > 0,
@@ -88,14 +87,6 @@ def main():
     df["cf_z"] = np.where(df["cf_se"] > 0,
                           df["cf_theta"] / df["cf_se"], 0.0)
 
-    # --- FIX: cross-method dependence correction (drop false independence) ---
-    # R = across-city sample correlation of the per-method z's, a usable
-    # proxy for the within-market cross-method sampling correlation (no
-    # per-city joint bootstrap draws are available).  Under H0 with
-    # z ~ N(0, R), the Mahalanobis form z' R^-1 z ~ chi^2_3 exactly, which
-    # restores the calibration that the naive Sum_j z_j^2 (= chi^2_3 only if
-    # R = I) destroys by over-rejecting under positive cross-method
-    # correlation.
     Zmat = df[["shen_z", "baur_z", "cf_z"]].to_numpy()
     R = np.corrcoef(Zmat, rowvar=False)
     R = np.nan_to_num(R, nan=0.0)
@@ -123,8 +114,6 @@ def main():
         })
 
     out = pd.DataFrame(rows)
-    # Primary inference uses the correlation-corrected p; the naive
-    # independence p is retained only for comparison.
     out["bh_q_corr"] = bh_qvalues(out["p_chi2_3df_corr"].to_numpy())
     out["bh_q_indep"] = bh_qvalues(out["p_chi2_3df_indep"].to_numpy())
     out_path = Path(args.out)

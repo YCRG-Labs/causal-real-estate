@@ -29,7 +29,7 @@ from sklearn.linear_model import RidgeCV
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "data" / "scripts"))
 
-from replications.baur_2023 import (  # noqa: E402
+from replications.baur_2023 import (
     get_features_and_target, load_analysis_data,
 )
 
@@ -55,10 +55,6 @@ def _load_city_block(city: str, pool: pd.DataFrame):
     if feats is None:
         return None
     _, confounders, Y_log, meta = feats
-    # T_pooled is aligned to the FULL emb_df (3851 across 12 cities). The
-    # get_features_and_target filter drops listings with bad Y or all-zero
-    # confounders; we use the now-exposed valid_mask to align T to the
-    # surviving subset.
     T_all = _attach_pooled(city, emb_df, pool)
     mask = meta.get("valid_mask")
     if mask is None:
@@ -126,10 +122,7 @@ def bayesian_cluster_boot_if(dml, df: pd.DataFrame, y: str, t: str,
 
     Returns (ci_low, ci_high, boot_theta_array).
     """
-    # Pull the fitted nuisance predictions: ml_l = E[Y|X], ml_m = E[T|X].
     preds = dml.predictions
-    # Predictions are shape (n, n_rep, 1); average across reps for stable
-    # nuisance estimate, then compute the cross-fit residuals.
     Y_obs = df[y].to_numpy()
     T_obs = df[t].to_numpy()
     yhat = preds["ml_l"][:, :, 0].mean(axis=1)
@@ -146,8 +139,8 @@ def bayesian_cluster_boot_if(dml, df: pd.DataFrame, y: str, t: str,
     boot_theta = np.empty(B)
     for b in range(B):
         u = rng.exponential(scale=1.0, size=G)
-        w_cluster = G * u / u.sum()             # mean 1, no duplicates
-        w_obs = w_cluster[obs_cluster_idx]       # propagate to listings
+        w_cluster = G * u / u.sum()
+        w_obs = w_cluster[obs_cluster_idx]
         num = float(np.sum(w_obs * Y_res * T_res))
         den = float(np.sum(w_obs * T_res ** 2))
         boot_theta[b] = num / den if den > 1e-12 else np.nan
@@ -218,8 +211,6 @@ def main():
 
     pool = pd.read_csv(args.pooled_csv)
 
-    # Load each city.  Keep a per-city DataFrame of (Y, T, all_confounders,
-    # city) so we can find the common confounder columns across all 12.
     per_city = {}
     for c in args.cities:
         block = _load_city_block(c, pool)
@@ -235,12 +226,6 @@ def main():
         per_city[c] = df_c
         print(f"  [{c}] n={len(df_c)} x_dim={X_arr.shape[1]}")
 
-    # Generic name x_0..x_{p-1} columns are city-specific (different
-    # confounder blocks).  The simplest defensible approach is to use the
-    # common prefix subset; since names are positional we use only the
-    # leading min(p_c) columns across cities, which corresponds to the
-    # PROPERTY block of get_features_and_target (lat, lon, beds, sqft,
-    # year_built, etc.) plus whatever subsequent blocks are universal.
     p_min = min(d.filter(like="x_").shape[1] for d in per_city.values())
     common_x = [f"x_{i}" for i in range(p_min)]
     print(f"\n  common confounder dim (intersection): {p_min}")

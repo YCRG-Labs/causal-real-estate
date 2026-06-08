@@ -13,19 +13,11 @@ from config import (
 from utils import ensure_dirs
 
 DESC_DIR = RAW_DIR / "descriptions"
-# A100-80GB safely handles batch=128 for all-mpnet-base-v2 (seq_len<=256, peak
-# VRAM ~400MB); CPU fallback uses smaller batch. See sentence-transformers
-# efficiency docs and HuggingFace sbert benchmark thread.
 BATCH_SIZE_GPU = 128
 BATCH_SIZE_CPU = 32
 
-# The secondary MiniLM "alternative" encode pass is a robustness extra; the
-# pipeline only consumes the primary all-mpnet-base-v2 output. Off by default
-# to avoid re-encoding every city twice; enable with ENCODE_ALTERNATIVES=1.
 ENCODE_ALTERNATIVES = os.environ.get("ENCODE_ALTERNATIVES", "0").lower() in ("1", "true", "yes")
 
-# Load each SentenceTransformer once and reuse it across cities; force CUDA +
-# fp16 on the GPU path, stay fp32 on CPU.
 _MODEL_CACHE: dict = {}
 
 
@@ -122,9 +114,6 @@ def geocode_from_zip(df, city):
     import pgeocode
     nomi = pgeocode.Nominatim("us")
 
-    # Tolerant ZIP parse: coerce non-numeric to NaN, fill with sentinel that
-    # cannot match any real ZIP centroid, then proceed. Without this, any
-    # stray NaN in df["zip"] crashes the whole encoding for the city.
     zips_num = pd.to_numeric(df["zip"], errors="coerce")
     zips = (zips_num.fillna(-1).astype(int).astype(str).str.zfill(5))
     unique_zips = zips.unique()

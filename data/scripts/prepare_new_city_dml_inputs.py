@@ -28,7 +28,7 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from canonical_confounders import PROPERTY, CENSUS, CRIME, AMENITY, MICRO_GEO  # noqa: E402
+from canonical_confounders import PROPERTY, CENSUS, CRIME, AMENITY, MICRO_GEO
 
 PROCESSED_DIR = REPO_ROOT / "data" / "processed"
 

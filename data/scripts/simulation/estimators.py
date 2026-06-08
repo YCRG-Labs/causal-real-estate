@@ -23,12 +23,8 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
 import numpy as np
-# torch is imported lazily inside the adversarial estimator only. Importing it at
-# module scope made every joblib/loky worker re-import torch and probe CUDA on
-# spawn, which deadlocked the parallel rep loop on the GPU box. The DML/DR/cfpca
-# path never touches torch, so the import is deferred to _build_adversarial_modules.
 from sklearn.decomposition import PCA
-from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401
+from sklearn.ensemble import GradientBoostingRegressor
 import sys, os as _os
 sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
 from booster import make_regressor
@@ -37,7 +33,7 @@ from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from causal_inference import (  # noqa: E402
+from causal_inference import (
     doubly_robust_estimation,
     dml_continuous_treatment,
 )
@@ -66,9 +62,6 @@ def _silent():
         yield
 
 
-# ---------------------------------------------------------------------------
-# (1) Doubly-robust estimator (binarized PC1-norm treatment)
-# ---------------------------------------------------------------------------
 
 def dr_estimator(T: np.ndarray, W: np.ndarray, Y: np.ndarray) -> EstimateResult:
     """Wrap `causal_inference.doubly_robust_estimation`.
@@ -95,9 +88,6 @@ def dr_estimator(T: np.ndarray, W: np.ndarray, Y: np.ndarray) -> EstimateResult:
     )
 
 
-# ---------------------------------------------------------------------------
-# (2) DML continuous-treatment estimator (PC1)
-# ---------------------------------------------------------------------------
 
 def dml_estimator(T: np.ndarray, W: np.ndarray, Y: np.ndarray,
                   cross_fit_pca: bool = False) -> EstimateResult:
@@ -111,8 +101,6 @@ def dml_estimator(T: np.ndarray, W: np.ndarray, Y: np.ndarray,
         out = dml_continuous_treatment(T, W, Y, cross_fit_pca=cross_fit_pca,
                                        verbose=False)
     if out is None:
-        # Treatment fully explained by W -- emit a NaN result so the cell
-        # records the failure rather than crashing the loop.
         return EstimateResult(
             estimator=name,
             theta=float("nan"), se=float("nan"),
@@ -135,9 +123,6 @@ def dml_cfpca_estimator(T: np.ndarray, W: np.ndarray, Y: np.ndarray) -> Estimate
     return dml_estimator(T, W, Y, cross_fit_pca=True)
 
 
-# ---------------------------------------------------------------------------
-# (3) Adversarial deconfounding (simplified, fast)
-# ---------------------------------------------------------------------------
 
 def _build_adversarial_modules():
     """Lazily import torch and define the adversarial nn.Modules.
@@ -242,7 +227,6 @@ def adversarial_estimator(
     mse = nn.MSELoss()
 
     for ep in range(epochs):
-        # Adversarial schedule: ramp lambda from 0.1 -> 1.0 over training.
         lam = 0.1 + 0.9 * min(ep / max(epochs - 1, 1), 1.0)
 
         encoder.train(); predictor.train(); discriminator.train()
@@ -268,21 +252,15 @@ def adversarial_estimator(
     with torch.no_grad():
         z_repr = encoder(W_t).cpu().numpy()
 
-    # Residualize Y on z_repr (linear), then regress on pc1 alone.
-    # This is the "deconfounded" pipeline: the encoder removed pc1's signal
-    # from z_repr, so what's left in (Y - alpha . z_repr) attributable to pc1
-    # is the direct effect.
     X_aug = np.column_stack([np.ones(n), z_repr])
     beta_y, *_ = np.linalg.lstsq(X_aug, Y - Y.mean(), rcond=None)
     Y_hat = X_aug @ beta_y
     Y_resid = (Y - Y.mean()) - Y_hat
 
-    # Regress residuals on pc1.
     X_pc1 = np.column_stack([np.ones(n), pc1])
     coef, *_ = np.linalg.lstsq(X_pc1, Y_resid, rcond=None)
     theta = float(coef[1])
 
-    # HC0 heteroskedasticity-robust SE for theta.
     eps = Y_resid - X_pc1 @ coef
     XtX_inv = np.linalg.pinv(X_pc1.T @ X_pc1)
     meat = X_pc1.T @ (X_pc1 * (eps ** 2)[:, None])
@@ -301,9 +279,6 @@ def adversarial_estimator(
     )
 
 
-# ---------------------------------------------------------------------------
-# (4) Randomization test
-# ---------------------------------------------------------------------------
 
 def randomization_estimator(
     T: np.ndarray,
@@ -352,7 +327,6 @@ def randomization_estimator(
         r2_perms[k] = _fit_score(feats_p[tr], Y[tr], feats_p[te], Y[te], seed + k + 1)
 
     delta = r2_orig - float(r2_perms.mean())
-    # SD across permutations -> SE of delta under the random-permutation null
     se = float(r2_perms.std(ddof=1)) if n_perm > 1 else float("nan")
     p_value = float(np.mean(r2_perms >= r2_orig))
 
@@ -371,7 +345,6 @@ def randomization_estimator(
     )
 
 
-# Public registry for the orchestrator to iterate over.
 ESTIMATORS = {
     "DR": dr_estimator,
     "DML": dml_estimator,

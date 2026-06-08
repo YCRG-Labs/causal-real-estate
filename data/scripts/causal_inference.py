@@ -1,8 +1,8 @@
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence
 import sys
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401 — kept for type hints/tests
+from sklearn.ensemble import GradientBoostingRegressor
 from booster import make_regressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
@@ -222,9 +222,6 @@ def get_features_and_target(emb_df, parcels, drop_mismatched_crime=False):
         "has_rich_confounders": joined is not None and "contextual" in joined,
         "crime_temporal_ok": crime_temporal_ok,
         "crime_dropped": (drop_mismatched_crime and not crime_temporal_ok),
-        # Expose the row-validity mask so external callers can align
-        # per-listing data (e.g. pooled-PCA treatment) against the
-        # subset that survives Y / confounder filtering.
         "valid_mask": valid,
     }
 
@@ -300,9 +297,6 @@ def doubly_robust_estimation(T, confounders, Y, n_pca=50, k_folds=5):
     T_median = np.median(T_norm)
     treatment = (T_norm > T_median).astype(float)
 
-    # K-fold cross-fitting: train nuisances on (k-1) folds, predict on fold k.
-    # OOF predictions ensure the IF SE on psi is Neyman-orthogonal with GBM
-    # nuisances. Without cross-fitting the IF SE is anti-conservative.
     n = len(Y)
     mu1 = np.zeros(n)
     mu0 = np.zeros(n)
@@ -341,9 +335,6 @@ def doubly_robust_estimation(T, confounders, Y, n_pca=50, k_folds=5):
     z_beta = 0.84
     mde = (z_alpha + z_beta) * if_se
 
-    # Vectorized percentile bootstrap on psi (~100x faster than scipy.stats.bootstrap
-    # which calls the statistic in a Python loop). psi is already the IF score, so
-    # the bootstrap mean of psi[idx] over resamples gives the same distribution.
     rng = np.random.default_rng(42)
     n = len(Y)
     boot_idx = rng.integers(0, n, size=(1000, n))
@@ -473,14 +464,8 @@ def dml_continuous_treatment(T, confounders, Y, n_pca=50, k_folds=5,
         T = np.asarray(T)
         confounders = np.asarray(confounders)
         Y = np.asarray(Y)
-        # Draw every resample's indices up front, in the same sequential order
-        # the serial loop used, so the parallel fits are bit-for-bit identical
-        # to the old code (only faster).
         rng = np.random.default_rng(20260526)
         boot_idx = [rng.integers(0, n, n) for _ in range(n_boot)]
-        # loky (processes): LightGBM concurrent fit is not documented thread-safe,
-        # so use separate processes; inner_max_num_threads=1 keeps each worker's
-        # native threads pinned (no oversubscription against the OMP=1 pins).
         n_jobs = min(os.cpu_count() or 1, n_boot)
         with parallel_config(backend="loky", n_jobs=n_jobs, inner_max_num_threads=1):
             results = Parallel()(
@@ -571,7 +556,6 @@ def cate_by_price_quantile(T, confounders, Y, n_quantiles=4, n_pca=50):
         )
         ate_q = float(psi_q.mean())
 
-        # Vectorized percentile bootstrap on psi_q (~100x faster than scipy).
         rng = np.random.default_rng(42 + q)
         boot_idx = rng.integers(0, n_q, size=(500, n_q))
         boot_means = psi_q[boot_idx].mean(axis=1)
@@ -688,7 +672,6 @@ def _frozen_encoder_probe(encoder, T_tensor, lat, lon, zip_labels, income):
     import torch
     encoder.eval()
     with torch.no_grad():
-        # encoder may be on CUDA (per T1.6); move input to match its device.
         enc_device = next(encoder.parameters()).device
         z = encoder(T_tensor.to(enc_device)).cpu().numpy()
 

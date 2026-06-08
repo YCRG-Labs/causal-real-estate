@@ -16,9 +16,6 @@ MAX_RETRIES = 30
 BACKOFF_BASE = 5
 BACKOFF_CAP = 300
 
-# Hard ceiling on any blocking socket call. Without this, a server-side
-# half-close (CLOSE_WAIT on our end) can leave Python wedged in recv() with
-# the requests-level timeout never firing because no bytes are arriving.
 socket.setdefaulttimeout(ABSOLUTE_TIMEOUT)
 
 BOSTON_RESOURCE_IDS = [

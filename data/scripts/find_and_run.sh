@@ -1,14 +1,4 @@
 #!/usr/bin/env bash
-#
-# Find existing Boston/NYC processed parquet + gpkg files anywhere on this
-# Mac, copy them into data/processed/, then run the analysis-only pipeline
-# for whichever cities are present.
-#
-# Usage:
-#   bash data/scripts/find_and_run.sh
-#
-# Run from the repo root (~/causal-real-estate). Searches Spotlight first
-# (fast), then falls back to `find` over ~ and /Volumes.
 
 set -e
 
@@ -22,8 +12,6 @@ echo
 
 CITIES_FOUND=()
 
-# Required files per city: embeddings parquet + ANY of the parcels gpkg
-# variants (load_analysis_data prefers micro_geo, falls back to amenities).
 PARCEL_VARIANTS=(parcels_micro_geo parcels_amenities parcels_census parcels_crime parcels)
 
 find_one() {
@@ -89,7 +77,6 @@ echo
 search_city nyc    || true
 echo
 
-# SF is local — confirm it's still present
 if [ -f "$PROCESSED_DIR/sf_embeddings.parquet" ]; then
   CITIES_FOUND+=("sf")
   echo "✔ sf already in $PROCESSED_DIR"

@@ -1,21 +1,3 @@
-# Makefile.jbes: 12-city JBES expansion pipeline driver.
-#
-# Sits alongside the existing canonical pipeline. Targets here map to the
-# run_pipeline_jbes.py subcommands and add convenience aliases.
-#
-# On Brev, after `git pull`:
-#     make -f Makefile.jbes env       # one-time, ~5 min
-#     make -f Makefile.jbes smoke     # ~30 sec; must reproduce 95.1%
-#     make -f Makefile.jbes all       # ~90 min; full 9-city expansion
-#
-# Or run stages individually:
-#     make -f Makefile.jbes acquire
-#     make -f Makefile.jbes geocode
-#     make -f Makefile.jbes confounders
-#     make -f Makefile.jbes embeddings
-#     make -f Makefile.jbes dml
-#     make -f Makefile.jbes finalize
-#     make -f Makefile.jbes verify
 
 PY ?= python3
 CITIES ?= new9

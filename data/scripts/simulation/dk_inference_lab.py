@@ -41,19 +41,15 @@ from scipy import stats
 from sklearn.gaussian_process.kernels import Matern
 
 _HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(_HERE.parent))   # scripts/
-sys.path.insert(0, str(_HERE))          # simulation/
+sys.path.insert(0, str(_HERE.parent))
+sys.path.insert(0, str(_HERE))
 
-# Reuse the canonical DGP and estimator
 from davis_kahan_sim import (
     DGPConfig, make_spatial_dgp, estimate_residual_subspace,
     conley_spatial_hac_se,
 )
 
 
-# ---------------------------------------------------------------------------
-# Helpers shared across methods
-# ---------------------------------------------------------------------------
 
 def _pairwise_dist(coords: np.ndarray) -> np.ndarray:
     diff = coords[:, None, :] - coords[None, :, :]
@@ -80,16 +76,13 @@ def _hac_var_score(
     return S.T @ W @ S
 
 
-# ---------------------------------------------------------------------------
-# Method (1)-(3): existing baselines reproduced here for one-stop coverage
-# ---------------------------------------------------------------------------
 
 def se_classical(rs: dict) -> float:
     return float(rs["se_classical"])
 
 
 def se_hc1(rs: dict) -> float:
-    return float(rs["se"])  # rs["se"] is HC1 in davis_kahan_sim.estimate_residual_subspace
+    return float(rs["se"])
 
 
 def se_conley_hac_swm_centered(
@@ -104,9 +97,6 @@ def se_conley_hac_swm_centered(
     )
 
 
-# ---------------------------------------------------------------------------
-# Method (FIX): SWM 2026 jackknife with V_off + V_between, applied to OLS
-# ---------------------------------------------------------------------------
 
 def se_swm_jk_correct(
     rs: dict, coords: np.ndarray, fold_idx: np.ndarray, h: float = 0.15,
@@ -124,11 +114,7 @@ def se_swm_jk_correct(
     e = rs["resid"].astype(np.float64).copy()
     XtX_inv = rs["XtX_inv"]
     n, p = X.shape
-    # Influence function for the slope coefficient (coef_idx=1)
-    # psi_i = n * (XtX)^{-1} X_i e_i, slope component.
-    # Note theta_hat - theta = (1/n) sum_i psi_i so the variance of the mean
-    # of psi equals Var(theta_hat). We follow the score-on-mean SWM exactly.
-    psi = n * (XtX_inv @ (X * e[:, None]).T)[1, :]      # (n,)
+    psi = n * (XtX_inv @ (X * e[:, None]).T)[1, :]
     K = int(fold_idx.max()) + 1
     theta_hat = float(psi.mean())
     fold_means: dict[int, tuple[float, int]] = {}
@@ -140,14 +126,11 @@ def se_swm_jk_correct(
         fk = float(psi[m].mean())
         fold_means[k] = (fk, int(m.sum()))
         psi_tilde[m] = psi[m] - fk
-    # V_off: Bartlett HAC of psi_tilde, off-diagonal only.
     dist = _pairwise_dist(coords)
     W = _bartlett(dist, h)
-    # Self-pairs i=j are the diagonal of W (=1); subtract them to get V_off.
     v_within = float(psi_tilde @ W @ psi_tilde) / n ** 2
     v_diag = float(psi_tilde @ psi_tilde) / n ** 2
     v_off = v_within - v_diag
-    # V_between
     v_between = 0.0
     for _, (fk, nk) in fold_means.items():
         v_between += (nk / n) ** 2 * (fk - theta_hat) ** 2
@@ -157,9 +140,6 @@ def se_swm_jk_correct(
     return float(np.sqrt(v_jk)), float(v_off), float(v_between)
 
 
-# ---------------------------------------------------------------------------
-# Method (ii): Conley HAC at Lehner 2026 data-driven bandwidth
-# ---------------------------------------------------------------------------
 
 def lehner_bandwidth(
     e: np.ndarray, coords: np.ndarray, q_grid: tuple = (0.02, 0.04, 0.06, 0.08,
@@ -186,7 +166,7 @@ def lehner_bandwidth(
     d_pairs = dist[iu, ju]
     prod = e2[iu] * e2[ju]
     qs = np.quantile(d_pairs, list(q_grid))
-    h_chosen = qs[-1]                   # fallback to max
+    h_chosen = qs[-1]
     last_q = qs[-1]
     for h in qs:
         mask = d_pairs <= h
@@ -211,9 +191,6 @@ def se_conley_lehner(
     return float(se), float(h)
 
 
-# ---------------------------------------------------------------------------
-# Method (iii): SWM-correct with bandwidth sweep max
-# ---------------------------------------------------------------------------
 
 def se_swm_jk_sweep_max(
     rs: dict, coords: np.ndarray, fold_idx: np.ndarray,
@@ -232,9 +209,6 @@ def se_swm_jk_sweep_max(
     return float(max(ses)), float(hs[int(np.argmax(ses))])
 
 
-# ---------------------------------------------------------------------------
-# Method (iv): Bester-Conley-Hansen 2011 cluster covariance, K = folds
-# ---------------------------------------------------------------------------
 
 def se_bch_cluster(rs: dict, fold_idx: np.ndarray) -> tuple[float, float]:
     """Cluster-covariance SE treating each fold as a cluster.
@@ -252,7 +226,7 @@ def se_bch_cluster(rs: dict, fold_idx: np.ndarray) -> tuple[float, float]:
         if not m.any():
             continue
         Xk = X[m]; ek = e[m]
-        s_g = (Xk * ek[:, None]).sum(axis=0)         # (p,)
+        s_g = (Xk * ek[:, None]).sum(axis=0)
         meat += np.outer(s_g, s_g)
     corr = (K / max(K - 1, 1)) * ((n - 1) / max(n - p, 1))
     V = XtX_inv @ meat @ XtX_inv * corr
@@ -260,9 +234,6 @@ def se_bch_cluster(rs: dict, fold_idx: np.ndarray) -> tuple[float, float]:
     return se, float(stats.t.ppf(0.975, df=max(K - 1, 1)))
 
 
-# ---------------------------------------------------------------------------
-# Method (v): Cameron-Gelbach-Miller 2008 wild cluster bootstrap
-# ---------------------------------------------------------------------------
 
 def se_wild_cluster_bootstrap(
     rs: dict, fold_idx: np.ndarray, rng: np.random.Generator, B: int = 199,
@@ -279,11 +250,9 @@ def se_wild_cluster_bootstrap(
     theta_hat = float(rs["theta"])
     boots = np.empty(B)
     for b in range(B):
-        # Rademacher weights at the cluster level
         w_cluster = rng.choice([-1.0, 1.0], size=K)
         w = w_cluster[fold_idx.astype(int)]
         e_star = e * w
-        # WCB-CRVE: theta_star = theta_hat + (XtX)^{-1} X' e_star
         delta = XtX_inv @ X.T @ e_star
         boots[b] = theta_hat + float(delta[1])
     se = float(np.std(boots, ddof=1))
@@ -292,9 +261,6 @@ def se_wild_cluster_bootstrap(
     return se, ci_lo, ci_hi, 1.96
 
 
-# ---------------------------------------------------------------------------
-# Method (vi): Adam-Müller 2021 self-normalized statistic
-# ---------------------------------------------------------------------------
 
 def se_self_normalized(
     rs: dict, fold_idx: np.ndarray,
@@ -334,9 +300,6 @@ def se_self_normalized(
     return se_im, bar - tq * se_im, bar + tq * se_im
 
 
-# ---------------------------------------------------------------------------
-# Method (vii): stationary block bootstrap (Politis-Romano 1994), spatial block
-# ---------------------------------------------------------------------------
 
 def se_block_bootstrap(
     rs: dict, coords: np.ndarray, rng: np.random.Generator, B: int = 199,
@@ -357,13 +320,11 @@ def se_block_bootstrap(
         block_radius = 1.0 / np.sqrt(n)
     from scipy.spatial import cKDTree
     tree = cKDTree(coords)
-    # Precompute neighbor list once
     neighbors = tree.query_ball_point(coords, r=block_radius)
     nbr_arrays = [np.asarray(nb, dtype=np.int64) for nb in neighbors]
     boots = np.empty(B)
     for b in range(B):
         centers = rng.integers(0, n, size=n)
-        # vectorised draw: for each center pick one neighbor uniformly
         idx_list = np.empty(n, dtype=np.int64)
         for k, c in enumerate(centers):
             arr = nbr_arrays[c]
@@ -385,9 +346,6 @@ def se_block_bootstrap(
     return se, ci_lo, ci_hi
 
 
-# ---------------------------------------------------------------------------
-# Method (viii): Pötscher-Preinerstorfer 2020 fixed-b inference
-# ---------------------------------------------------------------------------
 
 def se_fixed_b(
     rs: dict, coords: np.ndarray, fold_idx: np.ndarray, b_frac: float = 0.5,
@@ -410,9 +368,6 @@ def se_fixed_b(
     return float(se), float(stats.t.ppf(0.975, df=df_approx))
 
 
-# ---------------------------------------------------------------------------
-# One replicate runner
-# ---------------------------------------------------------------------------
 
 def _one_rep(
     rep_seed: int, spike_strength: float, cfg: DGPConfig,
@@ -433,23 +388,14 @@ def _one_rep(
     fold_idx = np.arange(cfg.n) % 5
     theta = float(rs["theta"])
 
-    # ---- 1. Classical
     se_cl = se_classical(rs)
-    # ---- 2. HC1
     se_h1 = se_hc1(rs)
-    # ---- 3. SWM-JK as currently coded (V_off only, no V_between)
     se_swm_v_off_only = se_conley_hac_swm_centered(rs, coords, fold_idx, h=hac_bw)
-    # ---- FIX: SWM-JK correct (V_off + V_between)
     se_swm_fix, v_off, v_between = se_swm_jk_correct(rs, coords, fold_idx, h=hac_bw)
-    # ---- iii: SWM-JK sweep max
     se_swm_sweep, h_sweep = se_swm_jk_sweep_max(rs, coords, fold_idx)
-    # ---- ii: Conley at Lehner bandwidth
     se_lehner, h_lehner = se_conley_lehner(rs, coords, fold_idx)
-    # ---- iv: BCH cluster covariance
     se_bch, t_bch = se_bch_cluster(rs, fold_idx)
-    # ---- vi: Adam-Müller self-normalized
     se_sn, ci_sn_lo, ci_sn_hi = se_self_normalized(rs, fold_idx)
-    # ---- viii: fixed-b
     se_fb, t_fb = se_fixed_b(rs, coords, fold_idx, b_frac=0.5)
 
     out = {
@@ -476,7 +422,6 @@ def _one_rep(
         "t_fixed_b": t_fb,
     }
 
-    # ---- v: wild cluster bootstrap
     if run_wcb:
         se_wcb, ci_wcb_lo, ci_wcb_hi, _ = se_wild_cluster_bootstrap(
             rs, fold_idx, rng, B=99,
@@ -489,7 +434,6 @@ def _one_rep(
         out["ci_wcb_lo"] = np.nan
         out["ci_wcb_hi"] = np.nan
 
-    # ---- vii: block bootstrap
     if run_block_boot:
         se_bb, ci_bb_lo, ci_bb_hi = se_block_bootstrap(rs, coords, rng, B=99)
         out["se_block_boot"] = se_bb
@@ -500,16 +444,13 @@ def _one_rep(
         out["ci_bb_lo"] = np.nan
         out["ci_bb_hi"] = np.nan
 
-    # ---- DGP diagnostics
     if diag_correlation:
-        # empirical residual covariogram by distance bin
         e = rs["resid"]
         n = cfg.n
         dist = _pairwise_dist(coords)
         iu, ju = np.triu_indices(n, k=1)
         d_pairs = dist[iu, ju]
         prod = e[iu] * e[ju]
-        # 6 distance bins on quantile grid
         edges = np.quantile(d_pairs, [0.0, 0.05, 0.10, 0.20, 0.40, 0.70, 1.0])
         bin_means = []
         for k in range(6):
@@ -521,13 +462,11 @@ def _one_rep(
         for k, v in enumerate(bin_means):
             out[f"cov_bin_{k}"] = v
             out[f"cov_bin_edge_{k}"] = float(edges[k + 1])
-        # within-fold vs across-fold residual product correlation
         same_fold = fold_idx[iu] == fold_idx[ju]
         within = float(prod[same_fold].mean()) if same_fold.any() else np.nan
         across = float(prod[~same_fold].mean()) if (~same_fold).any() else np.nan
         out["resid_corr_within_fold"] = within
         out["resid_corr_across_fold"] = across
-        # fold means (cross-fold mean residual SE)
         fold_means = np.array([e[fold_idx == k].mean() for k in range(5)])
         out["cross_fold_mean_sd"] = float(fold_means.std(ddof=1))
         out["cross_fold_mean_max_abs"] = float(np.max(np.abs(fold_means)))
@@ -535,9 +474,6 @@ def _one_rep(
     return out
 
 
-# ---------------------------------------------------------------------------
-# Sweep driver
-# ---------------------------------------------------------------------------
 
 def run_sweep(
     n_reps: int, spike_grid: np.ndarray, cfg: DGPConfig, out_dir: Path,
@@ -548,7 +484,6 @@ def run_sweep(
     out_dir.mkdir(parents=True, exist_ok=True)
     fixed_rng = np.random.default_rng(cfg.coord_seed)
     coords_fixed = fixed_rng.uniform(size=(cfg.n, 2))
-    # sparse loading
     idx = fixed_rng.choice(cfg.d, size=cfg.sparse_k, replace=False)
     v = np.zeros(cfg.d)
     v[idx] = fixed_rng.standard_normal(cfg.sparse_k)
@@ -590,7 +525,6 @@ def aggregate_coverage(df: pd.DataFrame, tau_true: float) -> pd.DataFrame:
     rows = []
     for lam, sub in df.groupby("spike_strength"):
         row = {"spike_strength": lam, "n_reps_ok": len(sub)}
-        # Symmetric Z=1.96 intervals
         for nm in ["classical", "hc1", "swm_v_off_only", "swm_fix",
                    "swm_sweep", "conley_lehner", "fixed_b"]:
             se = sub[f"se_{nm}"]
@@ -598,43 +532,36 @@ def aggregate_coverage(df: pd.DataFrame, tau_true: float) -> pd.DataFrame:
             hi = sub["theta_rs"] + 1.96 * se
             row[f"cov_{nm}"] = float(((lo <= tau_true) & (tau_true <= hi)).mean())
             row[f"mean_se_{nm}"] = float(se.mean())
-        # BCH: uses t with df=K-1=4
         tcrit_bch = float(stats.t.ppf(0.975, df=4))
         lo = sub["theta_rs"] - tcrit_bch * sub["se_bch"]
         hi = sub["theta_rs"] + tcrit_bch * sub["se_bch"]
         row["cov_bch_cluster"] = float(((lo <= tau_true) & (tau_true <= hi)).mean())
         row["mean_se_bch_cluster"] = float(sub["se_bch"].mean())
-        # Self-normalized: stored ci_sn_lo/hi
         row["cov_self_normalized"] = float(
             ((sub["ci_sn_lo"] <= tau_true) & (tau_true <= sub["ci_sn_hi"])).mean()
         )
         row["mean_se_self_normalized"] = float(sub["se_self_normalized"].mean())
-        # WCB
         if sub["se_wcb"].notna().any():
             row["cov_wcb"] = float(
                 ((sub["ci_wcb_lo"] <= tau_true) & (tau_true <= sub["ci_wcb_hi"])).mean()
             )
             row["mean_se_wcb"] = float(sub["se_wcb"].mean())
-        # Block bootstrap
         if sub["se_block_boot"].notna().any():
             row["cov_block_boot"] = float(
                 ((sub["ci_bb_lo"] <= tau_true) & (tau_true <= sub["ci_bb_hi"])).mean()
             )
             row["mean_se_block_boot"] = float(sub["se_block_boot"].mean())
-        # Mean v_off vs v_between
         row["mean_v_off"] = float(sub["v_off"].mean())
         row["mean_v_between"] = float(sub["v_between"].mean())
         row["mean_ratio_v_off_to_total"] = float(
             (sub["v_off"] / (sub["v_off"] + sub["v_between"] + 1e-30)).mean()
         )
-        # Diagnostics
         for k in ["cov_bin_0", "cov_bin_1", "cov_bin_2", "cov_bin_3",
                   "cov_bin_4", "cov_bin_5", "resid_corr_within_fold",
                   "resid_corr_across_fold", "cross_fold_mean_sd",
                   "cross_fold_mean_max_abs"]:
             if k in sub.columns:
                 row[f"mean_{k}"] = float(sub[k].mean())
-        # Bias / SD of theta
         row["bias_theta"] = float((sub["theta_rs"] - tau_true).mean())
         row["sd_theta"] = float(sub["theta_rs"].std(ddof=1))
         rows.append(row)
@@ -683,7 +610,6 @@ def main():
 
     if args.rho_sweep:
         rho_list = [0.05, 0.10, 0.15, 0.25, 0.40, 0.60]
-        # Use a smaller spike grid for the rho sweep
         spike_sub = np.linspace(args.spike_min, args.spike_max, 5)
         for rho in rho_list:
             cfg_rho = DGPConfig(

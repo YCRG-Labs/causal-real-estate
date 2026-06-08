@@ -115,7 +115,6 @@ def both_pool(name: str, df: pd.DataFrame, theta_col: str,
 def main() -> int:
     out: dict[str, dict] = {}
 
-    # Baur.
     try:
         baur = load_per_city_baur()
         full_b, drop_b = both_pool("baur", baur,
@@ -134,7 +133,6 @@ def main() -> int:
     except FileNotFoundError as e:
         print(f"WARN: Baur table not found ({e})", file=sys.stderr)
 
-    # Shen.
     try:
         shen = load_per_city_shen()
         full_s, drop_s = both_pool("shen", shen,
@@ -153,7 +151,6 @@ def main() -> int:
     except FileNotFoundError as e:
         print(f"WARN: Shen table not found ({e})", file=sys.stderr)
 
-    # Hotelling joint-null rejection count, full and drop Portland.
     try:
         cf = load_per_city_cf()
         shen = load_per_city_shen()
@@ -171,7 +168,6 @@ def main() -> int:
             "cf_theta": cf["te_delta_logprice"],
             "cf_se": cf_se,
         })
-        # Map display names to slugs to match merged.
         slug_map = {
             "new_york": "nyc", "san_francisco": "sf",
             "washington_dc": "dc",
@@ -201,7 +197,6 @@ def main() -> int:
         print(f"WARN: Hotelling sensitivity skipped ({type(e).__name__}: {e})",
               file=sys.stderr)
 
-    # Write JSON for §6 paper.
     out_path = REPL / "portland_sensitivity.json"
     out_path.write_text(json.dumps(out, indent=2, default=str))
     print(f"JSON -> {out_path}")

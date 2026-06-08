@@ -10,7 +10,7 @@ REPO_ID = "jcrainic2/causal-real-estate"
 REPO_TYPE = "dataset"
 PRIVATE = False
 
-ROOT = Path(__file__).resolve().parents[1]  # the release/ folder
+ROOT = Path(__file__).resolve().parents[1]
 
 IGNORE = ["scripts/push_to_hf.py", "scripts/__pycache__", "*.pyc"]
 

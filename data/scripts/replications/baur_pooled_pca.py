@@ -25,11 +25,11 @@ import pandas as pd
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "data" / "scripts"))
 
-from replications.baur_2023 import (  # noqa: E402
+from replications.baur_2023 import (
     _try_import_lightgbm, cv_metrics, get_features_and_target,
     load_analysis_data,
 )
-from replications.compare_to_dml import result_to_dict, run_dml  # noqa: E402
+from replications.compare_to_dml import result_to_dict, run_dml
 
 ALL_12 = ["boston", "nyc", "sf", "dc", "philadelphia", "chicago",
           "seattle", "denver", "atlanta", "portland", "phoenix", "dallas"]
@@ -106,12 +106,6 @@ def run_baur_pooled(
     T_pooled = _attach_pooled_treatment(city, emb_df, pooled_csv)
     if T_pooled is None:
         return {"city": city, "error": "no pooled treatment"}
-    # `_attach_pooled_treatment` builds T_pooled from the UNFILTERED emb_df, so
-    # it has one row per original listing. `get_features_and_target` may have
-    # dropped INTERIOR rows (non-positive/NaN/Inf price or all-zero confounders)
-    # from confounders/Y_log. Subset T_pooled by the same meta["valid_mask"] so
-    # the treatment pairs with the surviving listings before it is passed
-    # positionally to the DML.
     valid_mask = np.asarray(meta["valid_mask"], dtype=bool)
     T_pooled = T_pooled[valid_mask]
     assert len(T_pooled) == len(confounders) == len(Y_log), (
@@ -198,7 +192,6 @@ def main():
         out_path.write_text(json.dumps(r, indent=2, default=float))
         rows.append(r)
 
-    # Table rollup
     tbl_rows = []
     for r in rows:
         if "error" in r:
@@ -213,18 +206,6 @@ def main():
         })
     df = pd.DataFrame(tbl_rows)
 
-    # Canonical pooled estimate: DerSimonian-Laird random-effects pool of the
-    # per-city pooled-PCA DML thetas, the same estimator family as the Shen
-    # rollup. This supersedes the two other Baur pooled numbers on disk: the
-    # per-market meta pool in baur_12city_pooled.json (a different, sign-flipping
-    # per-market PC1 source) and the cluster-DML pooled_dml_baur.json (whose
-    # Dirichlet bootstrap is degenerate). The principal-component sign is
-    # unidentified, so we orient the common axis so the pooled estimand is
-    # non-negative. This is a disclosed interpretability convention only: it
-    # makes the per-city estimand sign-comparable to the hedonic (Shen) channel
-    # but cannot manufacture independent agreement, since the cross-market
-    # |correlation| between the two channels is sign-invariant (~0.95 here, i.e.
-    # the two text channels are near-collinear: one signal in two encodings).
     pool = None
     if "dml_theta" in df.columns and df["dml_theta"].notna().any():
         th = df["dml_theta"].to_numpy(float)

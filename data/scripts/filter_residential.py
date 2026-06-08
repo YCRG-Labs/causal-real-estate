@@ -120,12 +120,6 @@ def filter_one(city: str, dry_run: bool = False, backup: bool = True) -> dict:
             shutil.copy2(emb_path, backup_path)
     emb_filtered.to_parquet(emb_path, index=False)
 
-    # NOTE: we deliberately do NOT modify {city}_parcels_micro_geo.gpkg. Legacy
-    # 3-city gpkgs are 100k-row parcel reference databases; the DML script's
-    # cKDTree joins each filtered listing to its nearest parcel automatically,
-    # and restricting the parcel set to only the colocated points destroys
-    # confounder coverage (the SF n_confounders=2 bug). The 9-city listing-point
-    # gpkgs are fine to leave alone too: extra rows there just don't get queried.
 
     return report
 

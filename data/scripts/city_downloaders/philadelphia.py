@@ -13,7 +13,7 @@ import requests
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from city_downloaders._helpers import canonicalize_crime, write_parquet, DEFAULT_HEADERS  # noqa: E402
+from city_downloaders._helpers import canonicalize_crime, write_parquet, DEFAULT_HEADERS
 
 SLUG = "philadelphia"
 PARCEL_SQL = "SELECT parcel_number, location, zip_code, market_value, sale_date, sale_price, year_built, total_livable_area, number_of_bedrooms, number_of_bathrooms, category_code_description, ST_X(the_geom::geometry) AS lon, ST_Y(the_geom::geometry) AS lat FROM opa_properties_public"

@@ -12,7 +12,7 @@ Output: results/diagnostics/shen_six_variants.json with theta_OLS, theta_DML, CI
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import _silence  # noqa: F401
+import _silence
 import json
 import warnings
 from pathlib import Path
@@ -144,7 +144,6 @@ def main():
     n = len(Y)
     emb_path = Path("data/processed") / f"{CITY}_embeddings.parquet"
     df = pd.read_parquet(emb_path)
-    # align: _build_features returns valid rows in order; we proxy by trimming df
     df = df.iloc[: n].copy()
     desc = df["clean_description"].fillna("").astype(str).tolist()
     lat = pd.to_numeric(df.get("latitude"), errors="coerce").to_numpy()
@@ -157,15 +156,14 @@ def main():
     peers_knn = _knn_peers(lat, lon, k=5)
     peers_cell = _cell_peers(zips)
 
-    # uniqueness vectors
     uA = _uniqueness_pairwise_eq9(tfidf, peers_knn)
     uB = _uniqueness_pairwise_eq9(tfidf, peers_cell)
     uC = _uniqueness_pairwise_eq9(doc2vec, peers_knn) if doc2vec is not None else None
     uD = _uniqueness_pairwise_eq9(doc2vec, peers_cell) if doc2vec is not None else None
-    uE_buggy = _uniqueness_peer_mean(tfidf, peers_knn)  # the OLD formula on dedup
-    uF = uA  # placeholder; F is OLS with full zip dummies on top of uniqueness
+    uE_buggy = _uniqueness_peer_mean(tfidf, peers_knn)
+    uF = uA
 
-    log_price = Y  # already log
+    log_price = Y
     Yz = log_price
 
     structured_cols = [c for c in ["bedrooms", "bldg_area_sqft",
@@ -191,7 +189,6 @@ def main():
     else:
         results["C_D_doc2vec"] = {"note": "gensim not installed; skip Doc2Vec"}
 
-    # F: TF-IDF KNN uniqueness with explicit ZIP fixed effects
     uz_A = (uA - uA.mean()) / uA.std() if uA.std() > 0 else uA
     zip_dummies = pd.get_dummies(pd.Series(zips, dtype="Int64").astype("Int64"),
                                   drop_first=True).to_numpy(dtype=np.float64)
@@ -208,7 +205,6 @@ def main():
         },
     }
 
-    # Power vs Shen's published +0.149 / SE 0.034 at n_pub ~ 40000
     from scipy import stats
     se_our_imp = 0.034 * np.sqrt(40000 / n)
     ncp = 0.149 / se_our_imp

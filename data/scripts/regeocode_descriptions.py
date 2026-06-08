@@ -58,14 +58,11 @@ DIRS = {"N": "NORTH", "S": "SOUTH", "E": "EAST", "W": "WEST"}
 def normalize_vec(s):
     """Vectorized address normalization. Operates on a pandas Series."""
     s = s.fillna("").astype(str).str.upper().str.strip()
-    # strip unit / apt / suite designators
     s = s.str.replace(r"\s*[#,]\s*(UNIT|APT|STE|SUITE|FL|FLOOR|RM|ROOM|PH)?\s*\S*$",
                       "", regex=True)
     s = s.str.replace(r"\s+(UNIT|APT|STE|SUITE|FL|FLOOR|RM|ROOM|PH)\s+\S*$",
                       "", regex=True)
-    # strip ordinal endings on numbers: 90TH -> 90, 3RD -> 3
     s = s.str.replace(r"(\d+)(ST|ND|RD|TH)\b", r"\1", regex=True)
-    # expand directions, then street-type abbreviations
     for k, v in DIRS.items():
         s = s.str.replace(rf"\b{k}\b", v, regex=True)
     for k, v in SUFFIXES.items():
@@ -168,7 +165,6 @@ def regeocode_nyc(use_api=True):
     print(f"\n{'=' * 64}\nREGEOCODE: NYC\n{'=' * 64}")
     desc = pd.read_csv(RAW / "descriptions" / "nyc_descriptions.csv")
     n = len(desc)
-    # drop the all-NaN raw lat/lon to avoid merge column collisions
     desc = desc.drop(columns=[c for c in ("latitude", "longitude") if c in desc.columns])
     desc["norm"] = normalize_vec(desc["address"])
     desc["zip"] = pd.to_numeric(desc["zip"], errors="coerce").astype("Int64")
@@ -178,7 +174,6 @@ def regeocode_nyc(use_api=True):
     plt_zip = plt[plt.postcode.notna()]
     plt_any = plt.drop_duplicates("norm")[["norm", "latitude", "longitude", "BBL"]]
 
-    # Stage 1: exact (norm, postcode) match -- the most reliable
     s1 = desc.merge(plt_zip, left_on=["norm", "zip"],
                     right_on=["norm", "postcode"], how="left",
                     suffixes=("", "_p"))
@@ -189,7 +184,6 @@ def regeocode_nyc(use_api=True):
                       np.where(desc["norm"].str.len() > 3, "", "empty"))
     s1_hits = (method == "exact_zip").sum()
 
-    # Stage 2: exact norm only (in case description zip differs from PLUTO zip)
     rest = pd.Series(method == "").values
     if rest.any():
         s2 = desc[rest].merge(plt_any, on="norm", how="left")
@@ -205,7 +199,6 @@ def regeocode_nyc(use_api=True):
                 method[i_global] = "exact"
     s2_hits = ((method == "exact")).sum()
 
-    # Stage 3: queens-hyphen variants
     rest = pd.Series(method == "").values
     s3_hits = 0
     if rest.any():
@@ -220,7 +213,6 @@ def regeocode_nyc(use_api=True):
                     s3_hits += 1
                     break
 
-    # Stage 4: NYC GeoSearch API fallback
     rest = pd.Series(method == "").values
     api_lat, api_lon, api_lab = geosearch_fallback(desc, rest, use_api=use_api)
     api_hits = 0
@@ -245,7 +237,6 @@ def regeocode_nyc(use_api=True):
     print(f"    PROPERTY-LEVEL TOTAL : {matched_total:>4}  ({matched_total/n:>5.1%})")
     print(f"    unmatched            : {unmatched:>4}  ({unmatched/n:>5.1%})")
 
-    # Persist
     out = desc.copy()
     out["latitude"] = lat
     out["longitude"] = lon
@@ -256,7 +247,6 @@ def regeocode_nyc(use_api=True):
     out.drop(columns=["norm"]).to_csv(out_csv, index=False)
     print(f"\n  Saved -> {out_csv.name}")
 
-    # Update the embeddings parquet (row-aligned with the raw CSV)
     emb_path = PROC / "nyc_embeddings.parquet"
     if emb_path.exists():
         emb = pd.read_parquet(emb_path)
@@ -302,7 +292,6 @@ def build_boston_lookup_cached():
     else:
         assess["postcode"] = pd.NA
 
-    # Find a parcels file with lat/lon
     parcels = None
     for cand in [
         REPO / "release" / "data" / "boston" / "parcels.parquet",
@@ -433,7 +422,6 @@ def regeocode_boston(use_api=True):
     bbl = np.array([None] * n, dtype=object)
     method = np.array([""] * n, dtype=object)
 
-    # Stage 1: exact (norm, zip)
     if plt["postcode"].notna().any():
         s1 = desc.merge(plt[plt.postcode.notna()],
                         left_on=["norm", "zip"], right_on=["norm", "postcode"],
@@ -446,7 +434,6 @@ def regeocode_boston(use_api=True):
                 method[i] = "exact_zip"
     s1_hits = (method == "exact_zip").sum()
 
-    # Stage 2: exact norm only
     rest = method == ""
     if rest.any():
         s2 = desc[rest].merge(plt_any, on="norm", how="left")
@@ -459,7 +446,6 @@ def regeocode_boston(use_api=True):
                 method[i_global] = "exact"
     s2_hits = (method == "exact").sum()
 
-    # Stage 3: Census batch geocoder fallback
     rest = method == ""
     census_hits = 0
     label = np.array([None] * n, dtype=object)

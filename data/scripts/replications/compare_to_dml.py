@@ -90,13 +90,8 @@ def _ridge_dml_bootstrap(T_1d, confounders, Y, n_boot=500, k_folds=5, seed=42):
 
     import os
     from joblib import Parallel, delayed
-    # Draw every resample's indices up front, in the same sequential order the
-    # serial loop used, so each rep keeps its exact idx and seed (seed+b+1).
     rng = np.random.default_rng(seed)
     boot_idx = [rng.integers(0, n, n) for _ in range(n_boot)]
-    # threading backend: RidgeCV / numpy.linalg are LAPACK and release the GIL,
-    # so threads parallelize the fits without pickling the n×p matrices, and the
-    # OMP/OPENBLAS=1 pins keep each fit single-threaded (no oversubscription).
     n_jobs = min(os.cpu_count() or 1, n_boot)
     results = Parallel(n_jobs=n_jobs, backend="threading")(
         delayed(_ridge_dml_core)(T_1d[idx], conf_arr[idx], Y_arr[idx],

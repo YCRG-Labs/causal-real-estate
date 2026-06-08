@@ -25,7 +25,7 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from city_endpoints import CITIES, list_new, list_ready  # noqa: E402
+from city_endpoints import CITIES, list_new, list_ready
 
 PROCESSED_DIR = REPO_ROOT / "data" / "processed"
 BATCH_URL = "https://geocoding.geo.census.gov/geocoder/locations/addressbatch"

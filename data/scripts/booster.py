@@ -14,17 +14,17 @@ to avoid double-parallelism (the outer joblib spawns workers; LightGBM inside
 each worker would itself try to fan out to all cores).
 """
 from __future__ import annotations
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence
 
 from typing import Optional
 
 from sklearn.ensemble import GradientBoostingRegressor as _SkGBR
 
 try:
-    import lightgbm as _lgb  # type: ignore
+    import lightgbm as _lgb
     _HAS_LIGHTGBM = True
 except Exception:
-    _lgb = None  # type: ignore
+    _lgb = None
     _HAS_LIGHTGBM = False
 
 
@@ -83,23 +83,14 @@ def make_regressor(
         "learning_rate": learning_rate,
         "random_state": random_state,
         "verbose": -1,
-        # force_row_wise: the data here is always tall-thin (rows >> features,
-        # features are PCA'd/confounder columns <= ~50). Pinning row-wise removes
-        # the per-fit "try both then pick faster" auto-test overhead LightGBM runs
-        # otherwise; same fitted model, just skips the probe. Matters because the
-        # simulation fits tens of thousands of these.
         "force_row_wise": True,
     }
-    # Only pin n_jobs when the caller explicitly asks. Default None => LightGBM
-    # num_threads=0 => honor OMP_NUM_THREADS (see make_regressor docstring).
     if n_jobs is not None:
         lgb_params["n_jobs"] = n_jobs
     if subsample is not None and subsample < 1.0:
         lgb_params["subsample"] = subsample
         lgb_params["subsample_freq"] = 1
     if max_features is not None and max_features < 1.0:
-        # sklearn max_features = per-split feature fraction; LightGBM analog is
-        # feature_fraction_bynode (sampled per node). Approximate match.
         lgb_params["feature_fraction_bynode"] = float(max_features)
     return _lgb.LGBMRegressor(**lgb_params)
 

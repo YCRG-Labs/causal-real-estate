@@ -44,13 +44,13 @@ REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "data" / "scripts"))
 sys.path.insert(0, str(REPO / "data" / "scripts" / "replications"))
 
-from causal_inference import (  # noqa: E402
+from causal_inference import (
     load_analysis_data, get_features_and_target, _spatial_join_parcels,
 )
-from canonical_confounders import (  # noqa: E402
+from canonical_confounders import (
     SPATIAL, PROPERTY, CENSUS, CRIME, AMENITY, MICRO_GEO, ALL,
 )
-from shen_2021 import (  # noqa: E402
+from shen_2021 import (
     _vectorize_doc2vec, _uniqueness_from_vectors, _knn_peers,
 )
 
@@ -215,10 +215,6 @@ def diagnose_one(city, seed=42, k_folds=5):
     if feats is None:
         return None
     _, confounders, Y, meta = feats
-    # Recover confounder column names from the ORIGINAL emb_df (before the
-    # row-truncation below), so the >50%-NaN column filter is computed over the
-    # same full row set get_features_and_target used. The resulting names align
-    # one-to-one with the columns of the joined `confounders` array.
     conf_names = _confounder_block_names(
         emb_df, parcels, bool(meta.get("crime_dropped", False)))
     blocks_recovered = (conf_names is not None
@@ -229,10 +225,6 @@ def diagnose_one(city, seed=42, k_folds=5):
               f"blocks (recovered {got} names vs {confounders.shape[1]} "
               f"columns); reporting full-set DML + RV only, skipping per-block "
               f"ablation.")
-        # TODO: a zip one-hot fallback design or a column-count mismatch
-        # reached here, so canonical block membership is unrecoverable without
-        # column names from get_features_and_target. The full-set RV below is
-        # still correct (it conditions on the entire confounder array).
         conf_names = [f"conf_{i}" for i in range(confounders.shape[1])]
     if len(emb_df) != confounders.shape[0]:
         emb_df = emb_df.iloc[: confounders.shape[0]].reset_index(drop=True)
@@ -260,13 +252,6 @@ def diagnose_one(city, seed=42, k_folds=5):
         print(f"  [{city}] uniqueness SD ~ 0; skip"); return None
     T_z = (uniqueness - float(np.mean(uniqueness))) / t_sd
 
-    # Design from the JOINED confounder array — the only source carrying every
-    # block. The census / crime / amenity / micro_geo covariates live here,
-    # not in emb_df (which only holds spatial + property), so the previous
-    # emb_df alias lookup silently ablated only the spatial block and computed
-    # the RV against ~5 confounders. Naming the columns by the reconstructed
-    # canonical names lets every real block be dropped and puts the full
-    # confounder set behind the long-regression RV.
     X_df = pd.DataFrame(np.asarray(confounders, dtype=np.float64),
                         columns=conf_names).reset_index(drop=True).fillna(0.0)
 
@@ -276,9 +261,6 @@ def diagnose_one(city, seed=42, k_folds=5):
     print(f"  N={n}  n_conf={X_df.shape[1]}  blocks present: "
           + ", ".join(f"{bn}({len(c)})" for bn, c in blocks_present.items()))
 
-    # Full long DML over the entire confounder set. Per Gilbert et al. (2024)
-    # the spatial block stays IN the long regression; it is ablated as one of
-    # the blocks below rather than dropped from the headline estimate.
     full_cols = list(X_df.columns)
     Y_res_full, T_res_full = _ridge_resid(T_z, X_df[full_cols].to_numpy(), Y, k_folds, seed)
     theta_long, se_long = _theta_se_from_resids(Y_res_full, T_res_full)
@@ -301,10 +283,6 @@ def diagnose_one(city, seed=42, k_folds=5):
                                   X_df, T_z)
         short_cols = [c for c in full_cols if c not in cols]
         if not short_cols:
-            # Pre-expansion 3-city parquet has only one block present.
-            # Dropping it leaves 0 features and StandardScaler crashes.
-            # Report the ablation row with no short-DML estimate; the
-            # baseline RV row above still carries the per-city headline.
             print(f"    drop {bn:<10}  (skipped: 0 features remain)")
             rows.append({
                 "city": city, "block_dropped": bn,

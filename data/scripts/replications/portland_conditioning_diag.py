@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # data/scripts
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sklearn.decomposition import PCA
 from sklearn.linear_model import RidgeCV
 from sklearn.model_selection import KFold
@@ -79,7 +79,6 @@ for c in CITIES:
 
         sd = X.std(0)
         name0 = (lambda j: NAMES_BASE[j] if (NAMES_BASE and j < len(NAMES_BASE)) else f"col{j}")
-        # near-constant / high-leverage columns: tiny sd, or constant except a few rows
         nz = np.array([np.minimum((X[:, j] != X[:, j].min()).sum(),
                                   (X[:, j] != X[:, j].max()).sum()) for j in range(X.shape[1])])
         degen_cols = [(name0(j), float(sd[j]), int(nz[j]))
@@ -92,7 +91,6 @@ for c in CITIES:
         pc1 = PCA(1, random_state=0).fit_transform(E).ravel()
         t = (pc1 - pc1.mean()) / pc1.std()
 
-        # max-leverage probe + winsorized refit (tests the single-outlier hypothesis)
         absz = np.abs(Xs)
         maxz = float(absz.max())
         ri, cj = np.unravel_index(int(absz.argmax()), Xs.shape)

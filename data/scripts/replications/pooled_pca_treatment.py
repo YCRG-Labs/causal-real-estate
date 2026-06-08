@@ -79,13 +79,11 @@ def compute_pooled_pca_treatment(
     print(f"\n  pooled n={X_all.shape[0]}, dim={X_all.shape[1]}")
 
     pca = PCA(n_components=n_components, random_state=seed).fit(X_all)
-    direction = pca.components_  # shape (K, 768)
-    # Pin the sign so positive direction has positive sum of loadings; the
-    # PC sign is arbitrary up to a global flip, this is a convention only.
+    direction = pca.components_
     if direction[0].sum() < 0:
         direction = -direction
 
-    scores = X_all @ direction.T  # shape (N, K)
+    scores = X_all @ direction.T
 
     out = pd.DataFrame({"city": city_lab,
                          "listing_id": np.concatenate(ids)})

@@ -29,13 +29,11 @@ import requests
 
 REPO = Path(__file__).resolve().parents[3]
 
-# Hardcoded FRED series IDs per city, discovered by search API query on
-# 2026-06-03.  NYC HPI is at the NY-Jersey City-White Plains division.
 FRED_SERIES = {
     "boston":       {"unemp": "BOST625URN", "hpi": "ATNHPIUS14454Q",
                       "pcpi": "BOST625PCPI"},
     "nyc":          {"unemp": "NEWY636URN", "hpi": "ATNHPIUS35614Q",
-                      "pcpi": "NEWY636PCPI"},   # NY-Jersey City-White Plains PMD
+                      "pcpi": "NEWY636PCPI"},
     "sf":           {"unemp": "SANF806URN", "hpi": "ATNHPIUS41884Q",
                       "pcpi": "SANF806PCPI"},
     "dc":           {"unemp": "WASH911URN", "hpi": "ATNHPIUS47894Q",
@@ -136,7 +134,6 @@ def main():
         _, hpi_yoy = _fred_yoy(ids["hpi"], args.fred_key)
         _, pcpi = _fred_latest(ids["pcpi"], args.fred_key)
 
-        # Last-resort search fallback for NaN cells.
         if np.isnan(hpi_yoy):
             alt = _fred_search_first(
                 f"All-Transactions House Price Index {city}", args.fred_key,

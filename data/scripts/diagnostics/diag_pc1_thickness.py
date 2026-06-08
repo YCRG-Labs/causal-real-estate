@@ -70,11 +70,10 @@ from sklearn.linear_model import RidgeCV
 from sklearn.preprocessing import StandardScaler
 from scipy import stats
 
-# Import path setup so we can reuse _build_features and canonical_confounders
 _HERE = Path(__file__).resolve().parent
 _SCRIPTS = _HERE.parent
 sys.path.insert(0, str(_SCRIPTS))
-import _silence  # noqa: F401
+import _silence
 from config import PROCESSED_DIR, EMBEDDING_DIM
 import canonical_confounders as cc
 from fast_bootstrap_dml_v2 import _build_features, _pc1, _ridge_oof_predict
@@ -89,19 +88,14 @@ def _nyc_zip_to_borough(zip_code) -> str:
         z = int(zip_code)
     except Exception:
         return "unknown"
-    # Manhattan: 10001-10282
     if 10001 <= z <= 10282:
         return "Manhattan"
-    # Bronx: 10451-10475
     if 10451 <= z <= 10475:
         return "Bronx"
-    # Brooklyn: 11201-11256
     if 11201 <= z <= 11256:
         return "Brooklyn"
-    # Queens: 11004-11109, 11351-11697 (mostly)
     if 11004 <= z <= 11109 or 11351 <= z <= 11697:
         return "Queens"
-    # Staten Island: 10301-10314
     if 10301 <= z <= 10314:
         return "Staten Island"
     return "unknown"
@@ -124,28 +118,15 @@ def _load_city_with_ids(city: str):
     else:
         raise RuntimeError(f"{city}: embeddings parquet has no price column")
 
-    # Build confounders identical to _build_features by calling it
     out = _build_features(city)
     if out is None:
         return None
     T, conf, Y_log, coords, meta = out
-    # The valid mask used inside _build_features is:
-    #   valid = ~(NaN(Y) | inf(Y) | (Y<=0)) & (after col-NaN trim) ~all-zero-row
-    # Replicate it on the full frame so we can align id columns.
     valid_y = ~(np.isnan(Y_full) | np.isinf(Y_full) | (Y_full <= 0))
-    # We trust _build_features to have returned the same n; recover the rows by
-    # matching log-prices and the first embedding column. This is robust because
-    # log_price is essentially a unique key here.
     y_full_log = np.where(valid_y, np.log(np.where(valid_y, Y_full, 1.0)), np.nan)
-    # The matching: _build_features only drops rows for the price filter (the
-    # subsequent col-NaN trim is on columns, not rows; the all-zero-row drop
-    # only kicks in if confounders are entirely missing for a row). In practice
-    # the row count loss matches valid_y exactly for these three cities. Verify.
     keep_idx = np.where(valid_y)[0]
     if len(keep_idx) != len(Y_log):
-        # Fall back to a tolerance-based alignment using log_price as key.
         y_full_kept = np.log(Y_full[valid_y])
-        # Greedy left-to-right match
         matches = []
         used = np.zeros(len(y_full_kept), dtype=bool)
         for v in Y_log:
@@ -157,7 +138,6 @@ def _load_city_with_ids(city: str):
         if len(matches) == len(Y_log):
             keep_idx = np.where(valid_y)[0][np.array(matches)]
         else:
-            # Conservative: use the first len(Y_log) of valid rows
             keep_idx = np.where(valid_y)[0][: len(Y_log)]
 
     ids = emb_df.iloc[keep_idx][["address", "zip", "price", "description"]].reset_index(drop=True)
@@ -185,7 +165,7 @@ def _pc_decomp(T: np.ndarray, n_components: int = 10, seed: int = 0):
     svd = TruncatedSVD(n_components=k, random_state=seed, n_iter=15)
     scores = svd.fit_transform(Tc)
     evr = svd.explained_variance_ratio_
-    V = svd.components_.T  # d x k loadings
+    V = svd.components_.T
     sv = svd.singular_values_
     return {
         "explained_variance_ratio": evr,
@@ -203,14 +183,12 @@ def _r2_pc1_given_conf(pc1: np.ndarray, conf: np.ndarray, seed: int = 0) -> dict
     sc = StandardScaler().fit(conf)
     Xs = sc.transform(conf)
 
-    # in-sample
     m = RidgeCV(alphas=_RIDGE_ALPHAS).fit(Xs, pc1)
     pred_in = m.predict(Xs)
     ss_res = float(np.sum((pc1 - pred_in) ** 2))
     ss_tot = float(np.sum((pc1 - pc1.mean()) ** 2))
     r2_in = 1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan")
 
-    # honest 5-fold OOF
     from sklearn.model_selection import KFold
     kf = KFold(n_splits=5, shuffle=True, random_state=seed)
     oof = np.empty_like(pc1)
@@ -258,17 +236,12 @@ def _conf_group_indices(city: str, n_conf: int) -> dict[str, list[int]]:
     parcels = _load_parcels_slim(city)
     if parcels is None:
         return {}
-    # spatial parts: lat, lon (always 2)
     cols = ["latitude", "longitude"]
     cols += [c for c in PROPERTY if c in parcels.columns]
     cols += [c for c in CENSUS if c in parcels.columns]
     cols += [c for c in CRIME if c in parcels.columns]
     cols += [c for c in AMENITY if c in parcels.columns]
     cols += [c for c in MICRO_GEO if c in parcels.columns]
-    # Now the col-NaN >50% filter inside _build_features can drop some columns.
-    # We don't have access to that mask here without rebuilding; instead we
-    # report group sizes BEFORE the NaN trim. The realized total may be off
-    # by a few columns; the qualitative comparison still goes through.
     groups = {
         "spatial": ["latitude", "longitude"],
         "property": [c for c in PROPERTY if c in parcels.columns],
@@ -277,15 +250,12 @@ def _conf_group_indices(city: str, n_conf: int) -> dict[str, list[int]]:
         "amenity": [c for c in AMENITY if c in parcels.columns],
         "micro_geo": [c for c in MICRO_GEO if c in parcels.columns],
     }
-    # Convert to column-index lists relative to `cols` order
     idx = {}
     pos = 0
     name_to_idx = {n: i for i, n in enumerate(cols)}
     for g, lst in groups.items():
         idx[g] = [name_to_idx[c] for c in lst if c in name_to_idx]
-    # Trim to actual n_conf available (last columns may have been dropped by NaN trim)
     if n_conf < len(cols):
-        # Drop indices that exceed n_conf
         idx = {g: [i for i in v if i < n_conf] for g, v in idx.items()}
     return idx
 
@@ -297,7 +267,6 @@ def _extreme_listings(ids: pd.DataFrame, pc1: np.ndarray, k: int = 10) -> pd.Dat
     top_pos = df.nlargest(k, "pc1").assign(side="top_positive")
     top_neg = df.nsmallest(k, "pc1").assign(side="top_negative")
     out = pd.concat([top_pos, top_neg], ignore_index=True)
-    # truncate descriptions
     out["description_snippet"] = out["description"].astype(str).str.slice(0, 300)
     return out[["side", "pc1", "address", "zip", "price", "description_snippet"]]
 
@@ -371,7 +340,6 @@ def main():
             continue
         cities_data[city] = d
 
-    # ---- (1) Per-city PCA decomposition (PC1..PC10) ----------------------------
     pca_block = {}
     for city, d in cities_data.items():
         decomp = _pc_decomp(d["T"], n_components=10, seed=args.seed)
@@ -386,7 +354,6 @@ def main():
         }
         d["decomp"] = decomp
 
-    # ---- (2) Cross-city cosine of PC1 loadings ---------------------------------
     cos_block = {}
     pairs = [(a, b) for i, a in enumerate(args.cities) for b in args.cities[i + 1:]]
     for a, b in pairs:
@@ -395,15 +362,12 @@ def main():
         Va = cities_data[a]["decomp"]["components_d_by_k"][:, 0]
         Vb = cities_data[b]["decomp"]["components_d_by_k"][:, 0]
         cos = float(np.dot(Va, Vb) / (np.linalg.norm(Va) * np.linalg.norm(Vb)))
-        # PC sign is arbitrary; report abs and signed
         cos_block[f"{a}_vs_{b}"] = {"cosine": cos, "abs_cosine": abs(cos)}
-        # also PC1..PC3 alignment in case PC1 in one city aligns with PC2 in another
         cos_block[f"{a}_vs_{b}_top3_max_abs_cos"] = float(np.max(np.abs(
             cities_data[a]["decomp"]["components_d_by_k"][:, :3].T @
             cities_data[b]["decomp"]["components_d_by_k"][:, :3]
         )))
 
-    # ---- (3) R^2 of PC1 on canonical confounders -------------------------------
     r2_block = {}
     for city, d in cities_data.items():
         pc1 = d["decomp"]["scores_n_by_k"][:, 0]
@@ -423,7 +387,6 @@ def main():
             "per_group_r2_oof": per_group,
         }
 
-    # ---- (4) Univariate Pearson r between PC1 and log_price --------------------
     raw_corr_block = {}
     for city, d in cities_data.items():
         pc1 = d["pc1"]
@@ -436,14 +399,12 @@ def main():
             "spearman_p": float(ps),
         }
 
-    # ---- (5) Top-K extreme PC1 listings ----------------------------------------
     extreme_rows = []
     extreme_block = {}
     for city, d in cities_data.items():
         ext = _extreme_listings(d["ids"], d["pc1"], k=args.k_extreme)
         ext.insert(0, "city", city)
         extreme_rows.append(ext)
-        # borough / zip summary
         zip_top_pos = ext[ext.side == "top_positive"]["zip"].value_counts().head(10).to_dict()
         zip_top_neg = ext[ext.side == "top_negative"]["zip"].value_counts().head(10).to_dict()
         block = {
@@ -455,7 +416,6 @@ def main():
             boros_neg = ext[ext.side == "top_negative"]["zip"].map(_nyc_zip_to_borough)
             block["top_positive_borough_counts"] = boros_pos.value_counts().to_dict()
             block["top_negative_borough_counts"] = boros_neg.value_counts().to_dict()
-        # mean log_price at each extreme
         pos_lp = np.log(ext[ext.side == "top_positive"]["price"].astype(float))
         neg_lp = np.log(ext[ext.side == "top_negative"]["price"].astype(float))
         block["mean_log_price_top_positive"] = float(pos_lp.mean())
@@ -465,7 +425,6 @@ def main():
         ext_all = pd.concat(extreme_rows, ignore_index=True)
         ext_all.to_csv(RESULTS_DIR / "pc1_extreme_listings.csv", index=False)
 
-    # ---- (6) NYC under-residualization ablation --------------------------------
     ablation_block = {}
     for city in ("nyc", "sf", "boston"):
         if city not in cities_data:
@@ -478,7 +437,6 @@ def main():
                 rows.append(res)
         ablation_block[city] = rows
 
-    # ---- Per-zip listing density (motivating mechanism) ------------------------
     density_block = {}
     for city, d in cities_data.items():
         z = d["ids"]["zip"].astype(str)
@@ -493,7 +451,6 @@ def main():
             "min_listings_per_zip": int(counts.min()),
         }
 
-    # ---- Assemble JSON ---------------------------------------------------------
     out = {
         "headline_thetas_from_v2_final": {
             "nyc":    {"theta": 0.1693, "im2010_ci": [0.0587, 0.2790]},
@@ -513,7 +470,6 @@ def main():
     with open(json_path, "w") as f:
         json.dump(out, f, indent=2, default=float)
 
-    # ---- Console summary -------------------------------------------------------
     print("\n=== PC1 thickness diagnostic ===")
     print(f"\n[Per-city listing density on zip]")
     print(f"  {'city':6s} {'n_zips':>7s} {'med/zip':>8s} {'mean':>6s}")

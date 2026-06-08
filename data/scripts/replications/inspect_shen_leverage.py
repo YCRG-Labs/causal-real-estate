@@ -33,11 +33,11 @@ REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "data" / "scripts"))
 sys.path.insert(0, str(REPO / "data" / "scripts" / "replications"))
 
-from causal_inference import (  # noqa: E402
+from causal_inference import (
     get_features_and_target,
     load_analysis_data,
 )
-from shen_2021 import (  # noqa: E402
+from shen_2021 import (
     _vectorize_doc2vec,
     _uniqueness_from_vectors,
     _knn_peers,

@@ -15,9 +15,6 @@ CENSUS_DIR = RAW_DIR / "census"
 CENSUS_API_BASE = f"https://api.census.gov/data/{CENSUS_YEAR}/acs/acs5"
 TIGER_BASE = f"https://www2.census.gov/geo/tiger/TIGER{CENSUS_YEAR}/BG"
 
-# Census API: free key from https://api.census.gov/data/key_signup.html
-# Without a key, the API rate-limits aggressively and may return HTML error
-# pages instead of JSON. Set CENSUS_API_KEY env var to authenticate.
 CENSUS_API_KEY = os.environ.get("CENSUS_API_KEY", "").strip()
 
 
@@ -27,8 +24,6 @@ def _get_with_retry(url: str, attempts: int = 5, base_delay: float = 2.0):
         try:
             resp = requests.get(url, timeout=60)
             resp.raise_for_status()
-            # Validate JSON before returning (Census sometimes returns HTML
-            # error pages with HTTP 200 when rate-limited).
             try:
                 return resp.json()
             except ValueError:

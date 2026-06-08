@@ -27,7 +27,7 @@ Usage:
   python baur_2023.py --n 200            # subset for smoke tests
 """
 from __future__ import annotations
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); import _silence  # noqa: F401
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); import _silence
 
 import argparse
 import json
@@ -53,7 +53,7 @@ def _try_import_lightgbm():
     """Return a callable ((X_tr, y_tr) -> fitted model) for LightGBM if
     importable, otherwise None."""
     try:
-        import lightgbm as lgb  # noqa: F401
+        import lightgbm as lgb
         return "lightgbm"
     except Exception:
         return None

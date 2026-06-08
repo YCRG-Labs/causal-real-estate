@@ -43,7 +43,6 @@ def _eta_from_dgp(dgp: str) -> float:
     """Map dgp label to a numeric effect-size eta."""
     if dgp == "scm0":
         return 0.0
-    # 'scm1_0.05' -> 0.05
     return float(dgp.split("_")[1])
 
 

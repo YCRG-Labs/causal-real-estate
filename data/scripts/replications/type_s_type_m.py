@@ -33,14 +33,6 @@ from scipy import stats
 
 REPO = Path(__file__).resolve().parents[3]
 
-# Shen & Ross (2021), "Information Value of Property Description: A Machine
-# Learning Approach," J. Urban Econ. 121:103299.  Verified against the
-# published abstract: a one-standard-deviation increase in listing uniqueness
-# raises sale price by 15% in the hedonic price model and by 10% in the
-# repeat-sales model.  This replication is a cross-sectional hedonic DML, so
-# the anchor is the hedonic figure, converted to log points via ln(1.15) =
-# 0.1398.  (The conservative repeat-sales figure maps to ln(1.10) = 0.0953 and
-# can be supplied through --theta_true.)
 SHEN_PUBLISHED_THETA = 0.140
 
 
@@ -52,20 +44,15 @@ def retrodesign(theta_true: float, s: float, alpha: float = 0.05):
     z_crit = stats.norm.ppf(1 - alpha / 2)
     abs_theta = abs(theta_true)
 
-    # Power: P(|θ̂| > z*s | θ_true) under N(θ_true, s²).
     upper = 1 - stats.norm.cdf(z_crit - abs_theta / s)
     lower = stats.norm.cdf(-z_crit - abs_theta / s)
     power = upper + lower
 
-    # Type-S: probability the significant estimate has the wrong sign.
     if power <= 0:
         return dict(power=0.0, type_s=float("nan"),
                     type_m=float("nan"), z_crit=z_crit)
     type_s = lower / power if abs_theta > 0 else 0.5
 
-    # Type-M: E[|θ̂| | |θ̂| > z*s, θ_true] / |θ_true|.
-    # Compute via direct numerical integration over the truncated
-    # normal tails.
     grid = np.linspace(-20, 20, 20001) * s + theta_true
     if grid.size == 0 or abs_theta == 0:
         type_m = float("nan")

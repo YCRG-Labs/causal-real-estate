@@ -22,8 +22,8 @@ import numpy as np
 
 warnings.filterwarnings("ignore")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from simulation.dgp import fit_generator, load_real_pairs, sample_scm0  # noqa: E402
-from causal_inference import dml_continuous_treatment  # noqa: E402
+from simulation.dgp import fit_generator, load_real_pairs, sample_scm0
+from causal_inference import dml_continuous_treatment
 
 
 def main() -> int:

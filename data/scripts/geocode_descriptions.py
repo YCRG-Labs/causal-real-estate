@@ -32,18 +32,14 @@ def normalize_address(addr):
     if not isinstance(addr, str) or not addr.strip():
         return ""
     addr = addr.upper().strip()
-    # Strip unit/apt/suite/floor designators
     addr = re.sub(r"\s*[#,]\s*(UNIT|APT|STE|SUITE|FL|FLOOR|RM|ROOM|PH)?\s*\S*$", "", addr)
     addr = re.sub(r"\s+(UNIT|APT|STE|SUITE|FL|FLOOR|RM|ROOM|PH)\s+\S*$", "", addr)
-    # Expand direction abbreviations
     addr = re.sub(r"\bN\b", "NORTH", addr)
     addr = re.sub(r"\bS\b", "SOUTH", addr)
     addr = re.sub(r"\bE\b", "EAST", addr)
     addr = re.sub(r"\bW\b", "WEST", addr)
-    # Expand street type abbreviations
     for short, full in SUFFIXES.items():
         addr = re.sub(rf"\b{short.upper()}\b", full.upper(), addr)
-    # Collapse whitespace, strip trailing periods
     addr = re.sub(r"\s+", " ", addr).strip().rstrip(".")
     return addr
 
@@ -65,7 +61,6 @@ def build_boston_lookup():
     assess["norm_addr"] = assess["raw_addr"].apply(normalize_address)
     assess = assess[assess["norm_addr"].str.len() > 3]
 
-    # Get parcel geometries
     parcels = None
     for suffix in ["micro_geo", "amenities", "crime", "census"]:
         p = PROCESSED_DIR / f"boston_parcels_{suffix}.gpkg"
@@ -171,14 +166,12 @@ def geocode_city(city):
         if not norm:
             continue
 
-        # Exact match
         if norm in lookup:
             df.loc[idx, "latitude"] = lookup[norm][0]
             df.loc[idx, "longitude"] = lookup[norm][1]
             matched_exact += 1
             continue
 
-        # Prefix match: try street number + first word of street name
         parts = norm.split()
         if len(parts) >= 2:
             prefix = parts[0] + " " + parts[1]
@@ -191,7 +184,6 @@ def geocode_city(city):
 
         unmatched.append(norm)
 
-    # Fallback: assign zip-centroid for any remaining unmatched
     import pgeocode
     nomi = pgeocode.Nominatim("us")
     fallback = 0

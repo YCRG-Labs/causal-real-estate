@@ -72,20 +72,17 @@ DEFAULT_RESULTS_DIR = (
 )
 
 
-# ---------------------------------------------------------------------------
-# DGP
-# ---------------------------------------------------------------------------
 
 @dataclass
 class DGPConfig:
     n: int = 348
     d: int = 768
     tau: float = 0.10
-    length_scale: float = 0.15        # Matern length-scale (units of [0,1])
-    nu: float = 2.5                   # Matern smoothness (DSR / Wiecha 2025)
-    sigma_nu: float = 0.30            # outcome noise SD
-    sparse_k: int = 50                # support size of v_dir
-    coord_seed: int = 20260529        # one fixed coords map across reps
+    length_scale: float = 0.15
+    nu: float = 2.5
+    sigma_nu: float = 0.30
+    sparse_k: int = 50
+    coord_seed: int = 20260529
 
 
 def _sparse_unit_loading(d: int, k: int, rng: np.random.Generator) -> np.ndarray:
@@ -155,7 +152,6 @@ def make_spatial_dgp(
     orthogonal to v_dir so the causal signal lives on the deconfounded
     axis (Cevid-Buhlmann spectral deconfounding architecture).
     """
-    # --- spatial confounder
     if coords is None:
         coords = rng.uniform(size=(n, 2))
     U = _matern_field(coords, cfg.length_scale, cfg.nu, rng)
@@ -165,21 +161,16 @@ def make_spatial_dgp(
     else:
         u_dir = U / U_norm
 
-    # --- representation T = spike + noise
     if v_dir is None:
         v_dir = _sparse_unit_loading(d, cfg.sparse_k, rng)
-    # Noise scale 1/sqrt(n) so that the bulk singular values follow
-    # Marchenko-Pastur with edge 1 + sqrt(d/n); spike detectable above BBP.
     sigma_E = 1.0 / np.sqrt(n)
     E_noise = sigma_E * rng.standard_normal((n, d))
     T = spike_strength * np.outer(u_dir, v_dir) + E_noise
 
-    # --- orthogonal axis (the deconfounded direction)
     v_perp_raw = rng.standard_normal(d)
-    v_perp_raw -= np.dot(v_perp_raw, v_dir) * v_dir   # Gram-Schmidt
+    v_perp_raw -= np.dot(v_perp_raw, v_dir) * v_dir
     v_perp = v_perp_raw / (np.linalg.norm(v_perp_raw) + 1e-12)
 
-    # --- outcome with confounder + causal axis
     nu_noise = cfg.sigma_nu * rng.standard_normal(n)
     Y = U + tau * (T @ v_perp) + nu_noise
 
@@ -190,9 +181,6 @@ def make_spatial_dgp(
     }
 
 
-# ---------------------------------------------------------------------------
-# Estimators
-# ---------------------------------------------------------------------------
 
 def _top_k_pcs(T: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
     """Top-k right singular directions and corresponding scores.
@@ -202,11 +190,9 @@ def _top_k_pcs(T: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
     not interested in an intercept on Y here because OLS will add one).
     """
     Tc = T - T.mean(axis=0, keepdims=True)
-    # Randomized SVD would be faster for d=768 but full SVD on n=348 is cheap
-    # (n is the binding dim, full_matrices=False gives the thin SVD).
     U_, s, Vt = np.linalg.svd(Tc, full_matrices=False)
-    V_k = Vt[:k].T                      # (d, k)
-    scores = U_[:, :k] * s[:k]          # (n, k)
+    V_k = Vt[:k].T
+    scores = U_[:, :k] * s[:k]
     return scores, V_k
 
 
@@ -221,14 +207,14 @@ def estimate_pc_bias(
     between/within ratio when the top PC aligns with the U-driven direction.
     """
     scores, V_k = _top_k_pcs(T, k)
-    X = np.column_stack([np.ones(len(Y)), scores])    # (n, 1+k)
+    X = np.column_stack([np.ones(len(Y)), scores])
     XtX_inv = np.linalg.inv(X.T @ X)
     beta = XtX_inv @ X.T @ Y
     resid = Y - X @ beta
     n, p = X.shape
     sigma2 = float(resid @ resid) / max(n - p, 1)
     se = np.sqrt(np.diag(sigma2 * XtX_inv))
-    theta = float(beta[1])              # PC1 coefficient
+    theta = float(beta[1])
     se_theta = float(se[1])
     ci_lo = theta - 1.96 * se_theta
     ci_hi = theta + 1.96 * se_theta
@@ -256,7 +242,6 @@ def _matern_smoother(
     kernel = Matern(length_scale=length_scale, nu=nu)
     K = kernel(coords)
     A = K + ridge * np.eye(n)
-    # Solve A alpha = Y, then Y_hat = K alpha.
     alpha = np.linalg.solve(A, Y)
     return K @ alpha
 
@@ -302,26 +287,21 @@ def estimate_residual_subspace(
         test = np.where(fold_idx == f)[0]
         if len(train) < 2 or len(test) < 1:
             continue
-        # Matern kernel between train and (train, test) blocks.
         kernel = Matern(length_scale=length_scale, nu=nu)
         K_tr = kernel(coords[train])
         K_te = kernel(coords[test], coords[train])
         A = K_tr + ridge * np.eye(len(train))
-        # Y residual on test fold.
         alpha_Y = np.linalg.solve(A, Y[train])
         Y_res[test] = Y[test] - K_te @ alpha_Y
-        # T residual on test fold (vectorised over the d columns).
-        alpha_T = np.linalg.solve(A, T[train])    # (n_train, d)
+        alpha_T = np.linalg.solve(A, T[train])
         T_res[test] = T[test] - K_te @ alpha_T
 
-    # Direction estimate from residual-T's top PC.
     Tc_res = T_res - T_res.mean(axis=0, keepdims=True)
     _, s, Vt = np.linalg.svd(Tc_res, full_matrices=False)
     v_perp_hat = Vt[0]
     v_perp_hat /= np.linalg.norm(v_perp_hat) + 1e-12
 
-    score = T_res @ v_perp_hat            # (n,)
-    # Final OLS: Y_res = alpha + theta * score + eps.
+    score = T_res @ v_perp_hat
     X = np.column_stack([np.ones(n), score])
     XtX_inv = np.linalg.inv(X.T @ X)
     beta = XtX_inv @ X.T @ Y_res
@@ -329,9 +309,8 @@ def estimate_residual_subspace(
     p = X.shape[1]
     sigma2 = float(resid @ resid) / max(n - p, 1)
     se_classical = float(np.sqrt((sigma2 * XtX_inv)[1, 1]))
-    # HC1 sandwich (White) standard error.
-    h = (X * (resid[:, None] ** 2)) @ XtX_inv      # used below
-    XeeX = (X * (resid[:, None] ** 2)).T @ X        # (p, p) meat
+    h = (X * (resid[:, None] ** 2)) @ XtX_inv
+    XeeX = (X * (resid[:, None] ** 2)).T @ X
     V_hc1 = XtX_inv @ XeeX @ XtX_inv * (n / max(n - p, 1))
     se_hc1 = float(np.sqrt(V_hc1[1, 1]))
     theta = float(beta[1])
@@ -345,9 +324,6 @@ def estimate_residual_subspace(
     }
 
 
-# ---------------------------------------------------------------------------
-# Spatial HAC (Conley 1999 / Bester-Conley-Hansen 2011 / SWM 2026)
-# ---------------------------------------------------------------------------
 
 def conley_spatial_hac_se(
     X: np.ndarray, resid: np.ndarray, coords: np.ndarray,
@@ -380,12 +356,10 @@ def conley_spatial_hac_se(
     n, p = X.shape
     e = resid.astype(np.float64).copy()
     if fold_idx is not None:
-        # Salerno-Wu-McCormick fold-centering: subtract within-fold mean.
         for f in np.unique(fold_idx):
             sel = fold_idx == f
             e[sel] -= e[sel].mean()
 
-    # Pairwise distance matrix.
     diff = coords[:, None, :] - coords[None, :, :]
     dist = np.sqrt((diff ** 2).sum(axis=2))
 
@@ -396,9 +370,8 @@ def conley_spatial_hac_se(
     else:
         raise ValueError(f"Unknown kernel {kernel}")
 
-    # Score matrix s_i = X_i * e_i, then meat = sum_ij W_ij s_i s_j'.
-    S = X * e[:, None]                                # (n, p)
-    meat = S.T @ W @ S                                # (p, p)
+    S = X * e[:, None]
+    meat = S.T @ W @ S
 
     bread = np.linalg.inv(X.T @ X)
     V = bread @ meat @ bread
@@ -421,7 +394,6 @@ def iid_bootstrap_se(
     iid is the foil this simulation is designed to indict).
     """
     n = T.shape[0]
-    # Original-sample point estimate for centering (Lam 2022 eq. 1).
     theta_hat_orig = float(estimator_fn(T, Y, coords)["theta"])
     thetas = np.empty(B)
     for b in range(B):
@@ -433,9 +405,6 @@ def iid_bootstrap_se(
     return se_cb, theta_hat_orig - t_quant * se_cb, theta_hat_orig + t_quant * se_cb
 
 
-# ---------------------------------------------------------------------------
-# One replicate
-# ---------------------------------------------------------------------------
 
 def _one_rep(
     rep_seed: int, spike_strength: float, cfg: DGPConfig,
@@ -453,15 +422,8 @@ def _one_rep(
     coords_local = draw["coords"]
     v_perp_true = draw["v_perp"]
 
-    # --- (1) PC1-OLS biased estimator.
     pc = estimate_pc_bias(T, Y, coords_local, k=1)
-    # Per the theorem the truth FOR THIS ESTIMAND is 0: tau lives entirely
-    # on v_perp, which is orthogonal to v_dir = top PC under high spike.
-    # We do NOT pin truth_pc=0 because under weak spike the alignment is
-    # not perfect; reporting raw theta lets us measure the dependence on
-    # spike strength.
 
-    # --- (2) Residual-subspace DML estimator.
     rs = estimate_residual_subspace(
         T, Y, coords_local,
         length_scale=cfg.length_scale, nu=cfg.nu, ridge=1e-3, n_folds=5,
@@ -470,14 +432,12 @@ def _one_rep(
     theta_rs = rs["theta"]
     se_rs_classical = rs["se_classical"]
     se_rs_hc1 = rs["se"]
-    # Spatial HAC SE with SWM-2026 fold-centering.
     fold_idx = np.arange(cfg.n) % 5
     se_rs_hac = conley_spatial_hac_se(
         rs["X"], rs["resid"], coords_local, bandwidth=hac_bandwidth,
         kernel="bartlett", coef_idx=1, fold_idx=fold_idx,
     )
 
-    # --- (3) IID bootstrap on residual-subspace estimator (foil).
     def _rs_fn(T_b, Y_b, coords_b):
         return estimate_residual_subspace(
             T_b, Y_b, coords_b,
@@ -493,18 +453,14 @@ def _one_rep(
         ci_boot_lo = np.nan
         ci_boot_hi = np.nan
 
-    # --- (4) Davis-Kahan diagnostic: sin-Theta(top-1 PC of T, v_dir).
     Tc = T - T.mean(axis=0, keepdims=True)
     _, _, Vt = np.linalg.svd(Tc, full_matrices=False)
     v1_hat = Vt[0]
-    # sin-Theta = sqrt(1 - <v1_hat, v_dir>^2).
     cos_th = abs(float(v1_hat @ v_dir))
     sin_theta_pc1 = np.sqrt(max(1.0 - cos_th ** 2, 0.0))
-    # Alignment of v_perp_hat with the true v_perp (causal axis).
     cos_vp = abs(float(rs["v_perp_hat"] @ v_perp_true))
     sin_theta_vperp = np.sqrt(max(1.0 - cos_vp ** 2, 0.0))
 
-    # --- (5) Between/within variance ratio: SS explained by U vs total.
     U = draw["U"]
     var_U = float(np.var(U, ddof=1))
     var_T_total = float(np.trace(np.cov(T.T)))
@@ -513,12 +469,10 @@ def _one_rep(
     return {
         "spike_strength": spike_strength,
         "rep_seed": rep_seed,
-        # PC1-OLS estimator (the biased one).
         "theta_pc1": pc["theta"],
         "se_pc1_iid": pc["se"],
         "ci_pc1_iid_lo": pc["ci_low"],
         "ci_pc1_iid_hi": pc["ci_high"],
-        # Residual-subspace estimator (the unbiased one).
         "theta_rs": theta_rs,
         "se_rs_classical": se_rs_classical,
         "se_rs_hc1": se_rs_hc1,
@@ -526,19 +480,13 @@ def _one_rep(
         "se_rs_hac": se_rs_hac,
         "ci_rs_boot_lo": ci_boot_lo,
         "ci_rs_boot_hi": ci_boot_hi,
-        # Davis-Kahan diagnostics.
         "sin_theta_pc1": sin_theta_pc1,
         "sin_theta_vperp": sin_theta_vperp,
-        # Between/within signal.
         "btw_within": btw_within,
-        # Truths (constant across reps; carried for downstream agg).
         "tau_true": cfg.tau,
     }
 
 
-# ---------------------------------------------------------------------------
-# Coverage sweep
-# ---------------------------------------------------------------------------
 
 def coverage_sweep(
     n_reps: int,
@@ -601,9 +549,6 @@ def coverage_sweep(
     return df
 
 
-# ---------------------------------------------------------------------------
-# Aggregation
-# ---------------------------------------------------------------------------
 
 def aggregate(df: pd.DataFrame, tau_true: float) -> pd.DataFrame:
     """One row per spike level: bias, SD, RMSE, coverage of each CI."""
@@ -612,8 +557,6 @@ def aggregate(df: pd.DataFrame, tau_true: float) -> pd.DataFrame:
         n = len(sub)
         row = {"spike_strength": lam, "n_reps_ok": n}
 
-        # PC1-OLS bias against tau_true. (The naive analyst would think the
-        # PC1 estimator targets tau; we record bias against tau and against 0.)
         row["bias_pc1_vs_tau"] = float(sub["theta_pc1"].mean() - tau_true)
         row["bias_pc1_vs_zero"] = float(sub["theta_pc1"].mean())
         row["sd_pc1"] = float(sub["theta_pc1"].std(ddof=1)) if n > 1 else np.nan
@@ -621,14 +564,12 @@ def aggregate(df: pd.DataFrame, tau_true: float) -> pd.DataFrame:
             np.sqrt(((sub["theta_pc1"] - tau_true) ** 2).mean())
         )
 
-        # Residual-subspace bias against tau_true.
         row["bias_rs_vs_tau"] = float(sub["theta_rs"].mean() - tau_true)
         row["sd_rs"] = float(sub["theta_rs"].std(ddof=1)) if n > 1 else np.nan
         row["rmse_rs"] = float(
             np.sqrt(((sub["theta_rs"] - tau_true) ** 2).mean())
         )
 
-        # Coverage of three CIs around tau_true (theta_rs +/- 1.96 * se).
         for name, se_col in [
             ("classical", "se_rs_classical"),
             ("hc1", "se_rs_hc1"),
@@ -639,7 +580,6 @@ def aggregate(df: pd.DataFrame, tau_true: float) -> pd.DataFrame:
             row[f"cov_{name}"] = float(((lo <= tau_true) & (tau_true <= hi)).mean())
             row[f"mean_ci_len_{name}"] = float((hi - lo).mean())
 
-        # Bootstrap coverage if computed.
         if "ci_rs_boot_lo" in sub.columns and sub["ci_rs_boot_lo"].notna().any():
             lo_b = sub["ci_rs_boot_lo"]
             hi_b = sub["ci_rs_boot_hi"]
@@ -651,7 +591,6 @@ def aggregate(df: pd.DataFrame, tau_true: float) -> pd.DataFrame:
             row["cov_iid_boot"] = np.nan
             row["mean_ci_len_iid_boot"] = np.nan
 
-        # Davis-Kahan diagnostics.
         row["mean_sin_theta_pc1"] = float(sub["sin_theta_pc1"].mean())
         row["mean_sin_theta_vperp"] = float(sub["sin_theta_vperp"].mean())
         row["mean_btw_within"] = float(sub["btw_within"].mean())
@@ -659,9 +598,6 @@ def aggregate(df: pd.DataFrame, tau_true: float) -> pd.DataFrame:
     return pd.DataFrame(out).sort_values("spike_strength").reset_index(drop=True)
 
 
-# ---------------------------------------------------------------------------
-# Figures
-# ---------------------------------------------------------------------------
 
 def plot_figures(agg: pd.DataFrame, cfg: DGPConfig, out_dir: Path) -> None:
     import matplotlib
@@ -671,7 +607,6 @@ def plot_figures(agg: pd.DataFrame, cfg: DGPConfig, out_dir: Path) -> None:
     lam = agg["spike_strength"].to_numpy()
     bbp = (cfg.d / cfg.n) ** 0.25
 
-    # --- Figure 1: coverage vs spike strength.
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
     ax.plot(lam, agg["cov_classical"], "o-", label="iid OLS CI", color="#d62728")
     ax.plot(lam, agg["cov_hc1"], "s-", label="HC1 (White) CI", color="#ff7f0e")
@@ -696,7 +631,6 @@ def plot_figures(agg: pd.DataFrame, cfg: DGPConfig, out_dir: Path) -> None:
     plt.close(fig)
     print(f"  wrote {out_dir/'fig_coverage.png'}")
 
-    # --- Figure 2: bias of PC1-OLS vs residual-subspace.
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
     ax.plot(lam, agg["bias_pc1_vs_tau"], "o-",
             label=r"PC1-OLS bias vs $\tau$", color="#d62728")
@@ -715,7 +649,6 @@ def plot_figures(agg: pd.DataFrame, cfg: DGPConfig, out_dir: Path) -> None:
     plt.close(fig)
     print(f"  wrote {out_dir/'fig_bias.png'}")
 
-    # --- Figure 3: sin-Theta(top-1 PC, v_dir) vs spike strength.
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
     ax.plot(lam, agg["mean_sin_theta_pc1"], "o-",
             label=r"$\sin\Theta(\hat v_1, v_{\rm dir})$ (top PC vs spike loading)",
@@ -723,9 +656,6 @@ def plot_figures(agg: pd.DataFrame, cfg: DGPConfig, out_dir: Path) -> None:
     ax.plot(lam, agg["mean_sin_theta_vperp"], "D-",
             label=r"$\sin\Theta(\hat v_\perp, v_\perp)$ (residual PC vs causal axis)",
             color="#2ca02c")
-    # Davis-Kahan-Yu-Wang-Samworth upper bound (rectangular): up to
-    # constants, sin-Theta <= C * sigma_E * sqrt(d) / lambda_eff. Plot
-    # the leading-order rate sigma_E sqrt(d) / lambda for reference.
     rate = 1.0 / np.sqrt(cfg.n) * np.sqrt(cfg.d) / np.maximum(lam, 1e-6)
     ax.plot(lam, np.minimum(rate, 1.0), "--", color="gray",
             label=r"Yu-Wang-Samworth rate $\sigma_E \sqrt{d}/\lambda$")
@@ -745,9 +675,6 @@ def plot_figures(agg: pd.DataFrame, cfg: DGPConfig, out_dir: Path) -> None:
     print(f"  wrote {out_dir/'fig_davis_kahan.png'}")
 
 
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
 
 def main():
     ap = argparse.ArgumentParser(

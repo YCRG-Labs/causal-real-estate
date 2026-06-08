@@ -18,7 +18,7 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from city_downloaders._helpers import arcgis_rest_query, canonicalize_crime, write_geojson_from_arcgis_chunks, write_parquet  # noqa: E402
+from city_downloaders._helpers import arcgis_rest_query, canonicalize_crime, write_geojson_from_arcgis_chunks, write_parquet
 
 SLUG = "portland"
 PARCEL_URL = "https://services5.arcgis.com/x7DNZL1YqNQVNykA/arcgis/rest/services/Multnomah_County_Taxlot_Parcels/FeatureServer/0"
@@ -39,7 +39,7 @@ def download_parcels(out_dir: Path) -> Path:
 def download_crime(out_dir: Path, token: str | None = None) -> Path:
     out_path = out_dir / f"{SLUG}_crime.parquet"
     try:
-        from tableauscraper import TableauScraper  # type: ignore
+        from tableauscraper import TableauScraper
     except ImportError:
         print(f"  [{SLUG}] tableauscraper not installed; writing empty crime parquet (document as limitation)", file=sys.stderr)
         empty = pd.DataFrame(columns=["report_date", "offense_category", "latitude", "longitude", "crime_category"])

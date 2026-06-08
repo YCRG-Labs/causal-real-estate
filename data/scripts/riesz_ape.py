@@ -95,8 +95,6 @@ def riesz_ape(T, X, Y, target_direction=None, k_folds=5,
     X = StandardScaler().fit_transform(X)
 
     if target_direction is None:
-        # Default: PC1 of T after partialling X (residual direction with
-        # largest residual variation given confounders).
         ridge = lambda: RidgeCV(alphas=np.logspace(-3, 3, 13))
         T_resid = np.column_stack([
             T[:, j] - _cross_fit_predict(X, T[:, j], ridge, k=k_folds, seed=seed)

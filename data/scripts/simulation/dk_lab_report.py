@@ -25,7 +25,6 @@ TAU_TRUE = 0.10
 def _coverage_columns(df: pd.DataFrame) -> dict:
     """For each candidate method, build a coverage-by-spike series."""
     methods = {}
-    # Symmetric 1.96 SE
     for nm in ["classical", "hc1", "swm_v_off_only", "swm_fix", "swm_sweep",
                "conley_lehner", "fixed_b"]:
         col = f"se_{nm}"
@@ -35,11 +34,9 @@ def _coverage_columns(df: pd.DataFrame) -> dict:
         lo = df["theta_rs"] - 1.96 * se
         hi = df["theta_rs"] + 1.96 * se
         methods[nm] = (lo, hi)
-    # BCH t with df=4
     t4 = float(stats.t.ppf(0.975, df=4))
     methods["bch_cluster"] = (df["theta_rs"] - t4 * df["se_bch"],
                               df["theta_rs"] + t4 * df["se_bch"])
-    # Self-normalized: stored CI
     if "ci_sn_lo" in df.columns:
         methods["self_normalized"] = (df["ci_sn_lo"], df["ci_sn_hi"])
     if "ci_wcb_lo" in df.columns:
@@ -64,7 +61,6 @@ def main():
     df = pd.read_csv(args.raw)
     methods = _coverage_columns(df)
 
-    # Add Lam-2022 iid bootstrap if provided.
     lam_cov: dict[float, float] | None = None
     if args.lam_boot_raw is not None and args.lam_boot_raw.exists():
         lam = pd.read_csv(args.lam_boot_raw)
@@ -76,7 +72,6 @@ def main():
                     ((lo <= TAU_TRUE) & (TAU_TRUE <= hi)).mean()
                 )
 
-    # Build the coverage table
     rows = []
     for lamval, sub in df.groupby("spike_strength"):
         row = {"lambda": float(lamval), "n_reps": len(sub)}
@@ -87,8 +82,6 @@ def main():
             row[f"cov_{nm}"] = float(((lo_g <= TAU_TRUE) & (TAU_TRUE <= hi_g)).mean())
         if lam_cov is not None and float(lamval) in lam_cov:
             row["cov_lam_iid_boot"] = lam_cov[float(lamval)]
-        # Also coverage at truth=0 (the "true" estimand because v_perp_hat is
-        # essentially orthogonal to v_perp -- target direction is ~zero effect).
         for nm, (lo_arr, hi_arr) in methods.items():
             mask = (df["spike_strength"] == lamval)
             lo_g = lo_arr[mask].to_numpy()
@@ -98,7 +91,6 @@ def main():
     table = pd.DataFrame(rows).sort_values("lambda").reset_index(drop=True)
     table.to_csv(args.out_dir / "candidate_coverage_table.csv", index=False)
 
-    # Summary across all spikes
     keep_cov = [c for c in table.columns if c.startswith("cov_") and not c.startswith("cov0_")]
     summary = (
         table[keep_cov].mean().rename("mean_coverage_across_spikes").to_frame()
@@ -111,8 +103,6 @@ def main():
     print("=== Coverage summary (averaged across 15 spikes) ===")
     print(summary.to_string())
 
-    # Build the appendix figure: top-3 methods + the SWM headline.
-    # Always include swm_v_off_only as the headline. Add the top-2 other.
     headline = "swm_v_off_only"
     rest = [m for m in summary.index.tolist() if m != f"cov_{headline}"]
     top = rest[:3]

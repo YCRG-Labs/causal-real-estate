@@ -36,18 +36,18 @@ RAW_DIR = REPO_ROOT / "data" / "raw"
 @dataclass(frozen=True)
 class ParcelSource:
     url: str
-    fmt: str           # "geojson", "shapefile", "csv", "arcgis_rest"
-    crs: int           # source CRS as EPSG code; reproject to 4326 in pipeline
-    coverage: str      # what the file contains; pipeline filters to city polygon
+    fmt: str
+    crs: int
+    coverage: str
     note: str = ""
 
 
 @dataclass(frozen=True)
 class CrimeSource:
     url: str
-    fmt: str           # "socrata_json", "arcgis_rest", "csv_download", "tableau", "carto_sql"
-    has_latlon: bool   # True for incident-level (Chicago, Seattle); False for block-level (Houston)
-    has_qol: bool      # False for primary-offense-only feeds (Phoenix)
+    fmt: str
+    has_latlon: bool
+    has_qol: bool
     note: str = ""
 
 
@@ -57,22 +57,16 @@ class CityConfig:
     display_name: str
     state: str
     state_fips: str
-    county_fips: tuple[str, ...]      # multiple if city spans counties (Atlanta)
+    county_fips: tuple[str, ...]
     redfin_city_id: str
     redfin_state_slug: str
     redfin_name_slug: str
     parcel: ParcelSource
     crime: CrimeSource
-    transit_gtfs_mdb: Optional[str]   # Mobility Database feed id (mdb-XXX)
-    status: str                       # "existing", "ready", "ready_with_friction", "ready_with_caveat"
-    tier: str                         # mechanism prediction: "pc1_predicted", "shen_predicted", "null_predicted"
+    transit_gtfs_mdb: Optional[str]
+    status: str
+    tier: str
     notes: list[str] = field(default_factory=list)
-    # ZIP shards for the per-zipcode discovery loop in
-    # scrape_redfin_async.fetch_city_index when expanding past the
-    # 350-listing-per-city Redfin search cap.  Populated lazily from
-    # the already-scraped parquet's `zip` column via the helper script
-    # `extract_zip_shards.py`; an empty tuple falls back to the legacy
-    # /city/.../ search endpoint with the 350-cap.
     zip_codes: tuple[str, ...] = field(default_factory=tuple)
 
     @property
@@ -81,7 +75,6 @@ class CityConfig:
 
 
 CITIES: dict[str, CityConfig] = {
-    # ------------------------------------------------------------------ existing
     "sf": CityConfig(
         slug="sf",
         display_name="San Francisco",
@@ -106,7 +99,7 @@ CITIES: dict[str, CityConfig] = {
         slug="nyc",
         display_name="New York",
         state="NY", state_fips="36",
-        county_fips=("061", "047", "005", "081", "085"),  # Manhattan, Brooklyn, Bronx, Queens, Staten Island
+        county_fips=("061", "047", "005", "081", "085"),
         redfin_city_id="30749", redfin_state_slug="NY", redfin_name_slug="New-York",
         parcel=ParcelSource(
             url="https://data.cityofnewyork.us/resource/64uk-42ks.geojson",
@@ -142,7 +135,6 @@ CITIES: dict[str, CityConfig] = {
         notes=["Null on both axes confirmed"],
     ),
 
-    # ------------------------------------------------------------------ new (dense urban tier)
     "dc": CityConfig(
         slug="dc",
         display_name="Washington DC",
@@ -212,7 +204,6 @@ CITIES: dict[str, CityConfig] = {
         ],
     ),
 
-    # ------------------------------------------------------------------ new (mid-tight tier)
     "seattle": CityConfig(
         slug="seattle",
         display_name="Seattle",
@@ -281,7 +272,6 @@ CITIES: dict[str, CityConfig] = {
         ],
     ),
 
-    # ------------------------------------------------------------------ new (sprawling tier)
     "atlanta": CityConfig(
         slug="atlanta",
         display_name="Atlanta",
@@ -367,11 +357,11 @@ def get_city(slug: str) -> CityConfig:
 def list_ready(include_existing: bool = True) -> list[CityConfig]:
     """Return cities in canonical scrape order: existing first, then new cities ranked by data quality."""
     order = [
-        "sf", "nyc", "boston",        # existing
-        "dc", "philadelphia", "chicago",  # cleanest open data
-        "denver", "seattle",           # next-cleanest
-        "atlanta", "portland",         # ready with friction
-        "phoenix", "dallas",           # ready with caveats / new substitution
+        "sf", "nyc", "boston",
+        "dc", "philadelphia", "chicago",
+        "denver", "seattle",
+        "atlanta", "portland",
+        "phoenix", "dallas",
     ]
     cities = [CITIES[s] for s in order]
     if not include_existing:

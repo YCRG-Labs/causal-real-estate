@@ -71,10 +71,10 @@ Maronna, Martin & Yohai (2006) "Robust Statistics: Theory and Methods,"
 Rubin (1981) "The Bayesian bootstrap." Annals of Statistics 9(1):130-134.
   (Dirichlet weights for the bootstrap sensitivity bands.)
 """
-import sys, os  # noqa: E401
+import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
-    import _silence  # noqa: F401
+    import _silence
 except Exception:
     pass
 
@@ -100,9 +100,6 @@ from causal_inference import load_analysis_data, get_features_and_target
 from fast_bootstrap_dml_v2 import _make_lgbm, _pc1_randomized, _dml_core_fast
 
 
-# ---------------------------------------------------------------------------
-# Cross-fit residualisation reused from the core estimator.
-# ---------------------------------------------------------------------------
 
 def _residualize(T, conf_s, Y, pc1, k_folds: int, seed: int) -> tuple:
     n = len(Y)
@@ -118,9 +115,6 @@ def _residualize(T, conf_s, Y, pc1, k_folds: int, seed: int) -> tuple:
     return Y_resid, T_resid
 
 
-# ---------------------------------------------------------------------------
-# Influence and leverage.
-# ---------------------------------------------------------------------------
 
 def compute_influence_and_leverage(T_resid: np.ndarray, Y_resid: np.ndarray,
                                    top_k: int = 10) -> dict:
@@ -172,15 +166,11 @@ def compute_influence_and_leverage(T_resid: np.ndarray, Y_resid: np.ndarray,
         "theta_hat": theta, "se_IF": se_if, "denom_T_resid_sq": denom,
         "IC": IC, "h": h,
         "IC_share_scaled": ic_share_scaled,
-        # deprecated aliases (kept for backwards compatibility with notebooks)
         "cook": ic_share_scaled,
         "top_idx": top_idx, "summary": summary, "n": n,
     }
 
 
-# ---------------------------------------------------------------------------
-# Sensitivity curve theta_{-k}.
-# ---------------------------------------------------------------------------
 
 def theta_minus_top_k(T: np.ndarray, conf: np.ndarray, Y: np.ndarray,
                       k_list=(1, 2, 5, 10, 20), k_folds: int = 5,
@@ -235,9 +225,6 @@ def theta_minus_top_k(T: np.ndarray, conf: np.ndarray, Y: np.ndarray,
     return pd.DataFrame(rows)
 
 
-# ---------------------------------------------------------------------------
-# Huber-trimmed DML refit.
-# ---------------------------------------------------------------------------
 
 def _huber_psi(u: np.ndarray, c: float) -> np.ndarray:
     """Huber psi function: rho'(u) = u if |u|<=c else c sign(u)."""
@@ -281,18 +268,15 @@ def trimmed_dml_huber(T: np.ndarray, conf: np.ndarray, Y: np.ndarray,
         raise RuntimeError("E[T_resid^2] ~ 0; estimator ill-conditioned.")
     theta_ols = float(np.mean(T_resid * Y_resid)) / denom
 
-    # robust scale on OLS residuals
     resid_ols = Y_resid - theta_ols * T_resid
     mad = float(np.median(np.abs(resid_ols - np.median(resid_ols))))
     sigma_hat = mad / 0.6745 if mad > 0 else float(np.std(resid_ols, ddof=1))
     if sigma_hat <= 0:
         sigma_hat = 1.0
 
-    # IRLS
     theta = theta_ols
     for it in range(max_iter):
         u = (Y_resid - theta * T_resid) / sigma_hat
-        # Huber weights w_i = psi(u_i) / u_i, with w_i=1 at u_i=0.
         with np.errstate(divide="ignore", invalid="ignore"):
             w = np.where(np.abs(u) <= c, 1.0, c / np.maximum(np.abs(u), 1e-12))
         num = float(np.sum(w * T_resid * Y_resid))
@@ -310,12 +294,10 @@ def trimmed_dml_huber(T: np.ndarray, conf: np.ndarray, Y: np.ndarray,
             break
         theta = theta_new
 
-    # asymptotic Huber SE (Maronna, Martin, Yohai 2006, Theorem 4.7):
-    # Var(theta_HUB) ≈ sigma^2 * E[psi(u)^2] / (E[psi'(u)])^2 / sum T_tilde^2.
     u = (Y_resid - theta * T_resid) / sigma_hat
     psi = _huber_psi(u, c)
     E_psi_sq = float(np.mean(psi ** 2))
-    E_psi_prime = float(np.mean(np.abs(u) <= c))   # rho'' indicator
+    E_psi_prime = float(np.mean(np.abs(u) <= c))
     if E_psi_prime <= 0:
         warnings.warn("All Huber observations clipped; falling back to MAD SE.")
         se_huber = float(np.sqrt(np.var(psi * T_resid, ddof=1) / max(1, n)) *
@@ -335,9 +317,6 @@ def trimmed_dml_huber(T: np.ndarray, conf: np.ndarray, Y: np.ndarray,
     }
 
 
-# ---------------------------------------------------------------------------
-# Dirichlet bootstrap bands on the sensitivity curve.
-# ---------------------------------------------------------------------------
 
 def dirichlet_bootstrap_bands(T: np.ndarray, conf: np.ndarray, Y: np.ndarray,
                               k_list=(1, 2, 5, 10, 20), B: int = 50,
@@ -362,17 +341,12 @@ def dirichlet_bootstrap_bands(T: np.ndarray, conf: np.ndarray, Y: np.ndarray,
 
     for b in range(B):
         w = rng.dirichlet(np.ones(n)) * n
-        # weighted residualisation using core estimator
         res = _dml_core_fast(T, conf, Y, k_folds=k_folds, seed=seed + 1 + b,
                              cross_fit_pca=False, weights=w)
         if res is None:
             continue
         theta_b, _ = res
         boots[0].append(theta_b)
-        # weighted IC for ranking, drop top-k, recompute weighted theta
-        # using already-cross-fit (T_resid, Y_resid) is impossible because
-        # _dml_core_fast does not surface them when weights are supplied.
-        # Recompute residuals once with sample_weight=w via the same loop.
         Y_resid_w = np.zeros(n); T_resid_w = np.zeros(n)
         kf = KFold(n_splits=k_folds, shuffle=True, random_state=seed + 1 + b)
         for tr, te in kf.split(np.arange(n)):
@@ -386,7 +360,6 @@ def dirichlet_bootstrap_bands(T: np.ndarray, conf: np.ndarray, Y: np.ndarray,
             continue
         theta_w = float(np.average(T_resid_w * Y_resid_w, weights=w)) / denom_w
         IC_w = ((Y_resid_w - theta_w * T_resid_w) * T_resid_w) / denom_w
-        # weighted |IC| ranking: scaling by w_i emphasises high-weight rows
         order = np.argsort(-np.abs(IC_w) * w)
         for k in k_list:
             drop = set(order[:k].tolist())
@@ -413,9 +386,6 @@ def dirichlet_bootstrap_bands(T: np.ndarray, conf: np.ndarray, Y: np.ndarray,
     return pd.DataFrame(out_rows)
 
 
-# ---------------------------------------------------------------------------
-# Plotting.
-# ---------------------------------------------------------------------------
 
 def plot_leverage(T, conf, Y, out_path: Path, city: str = "city",
                   k_list=(1, 2, 5, 10, 20), B_boots: int = 0,
@@ -483,9 +453,6 @@ def plot_leverage(T, conf, Y, out_path: Path, city: str = "city",
     return out_path
 
 
-# ---------------------------------------------------------------------------
-# City driver.
-# ---------------------------------------------------------------------------
 
 def _run_city(city: str, plot: bool = False, B_boots: int = 0,
               huber_c: float = 1.345, k_folds: int = 5, seed: int = 0) -> dict | None:
@@ -555,9 +522,6 @@ def _run_city(city: str, plot: bool = False, B_boots: int = 0,
     return out
 
 
-# ---------------------------------------------------------------------------
-# Self test: synthetic Gaussian residuals + a planted outlier.
-# ---------------------------------------------------------------------------
 
 def _self_test(seed: int = 0) -> None:
     print("== diagnose_leverage self-test ==")
@@ -565,7 +529,6 @@ def _self_test(seed: int = 0) -> None:
     n = 500; theta_true = 0.4
     T = rng.normal(size=n)
     Y = theta_true * T + rng.normal(scale=0.5, size=n)
-    # plant a clean-data DML estimate by hand
     denom = float(np.mean(T ** 2))
     theta_ols = float(np.mean(T * Y) / denom)
     diag = compute_influence_and_leverage(T, Y, top_k=5)
@@ -575,27 +538,19 @@ def _self_test(seed: int = 0) -> None:
     print(f"  IC identity:   theta = E_n[T Y] / E_n[T^2] = {diag['theta_hat']:.4f}  OK")
     print(f"  se_IF identity: sqrt(Var(IC)/n) = {diag['se_IF']:.4f}  OK")
 
-    # huber recovers OLS when residuals are Gaussian (within 1%)
-    # plant outliers and check Huber pulls toward theta_true
     Y_dirty = Y.copy()
     bad_idx = rng.choice(n, 25, replace=False)
-    Y_dirty[bad_idx] += 10.0  # large positive shock
-    # naive OLS biased upward
+    Y_dirty[bad_idx] += 10.0
     theta_ols_dirty = float(np.mean(T * Y_dirty) / np.mean(T ** 2))
     huber = trimmed_dml_huber(
         T=T.reshape(-1, 1), conf=np.column_stack([T, T ** 2]),
         Y=Y_dirty, c=1.345, k_folds=5, seed=seed,
     )
-    # the synthetic check uses 1-D T with conf=[T, T^2], so the cross-fit
-    # residualisation reduces both to (approx) zero noise; what we really
-    # want is to verify Huber converged on the residual-on-residual problem.
     assert huber["converged"], huber
     assert huber["n_clipped"] >= 0 and huber["sigma_hat"] > 0
     print(f"  Huber IRLS converged in {huber['iters']} iters, "
           f"clipped {huber['n_clipped']}/{n} obs.")
 
-    # sensitivity drops theta toward zero when top-|IC| rows are removed
-    # under no-signal data
     T2 = rng.normal(size=n); Y2 = rng.normal(size=n)
     sens = theta_minus_top_k(
         T=T2.reshape(-1, 1), conf=rng.normal(size=(n, 3)), Y=Y2,

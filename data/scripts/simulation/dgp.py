@@ -35,7 +35,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-# Default location of the real (E, z) pairs we fit the generator on.
 DEFAULT_REAL_PARQUET = (
     Path(__file__).resolve().parents[3]
     / "release" / "data" / "sf" / "embeddings_mpnet.parquet"
@@ -45,10 +44,10 @@ DEFAULT_REAL_PARQUET = (
 @dataclass
 class _BinParams:
     """Per-bin Gaussian parameters for low-rank N(mu, U U^T + sigma^2 I)."""
-    mu: np.ndarray            # (d,)
-    U: np.ndarray             # (d, k) low-rank loadings
-    sigma2: float             # isotropic residual variance
-    n_train: int              # training rows from this bin
+    mu: np.ndarray
+    U: np.ndarray
+    sigma2: float
+    n_train: int
 
 
 @dataclass
@@ -62,14 +61,14 @@ class GaussianMixtureGenerator:
     distribution `bin_freq` (or from a supplied population). Used in place of
     a normalizing flow for transparency and dependency-light deployment.
     """
-    bins: np.ndarray                                # (B,) sorted bin labels
+    bins: np.ndarray
     params: dict[int, _BinParams] = field(default_factory=dict)
-    bin_freq: np.ndarray | None = None              # (B,) marginal P(z)
+    bin_freq: np.ndarray | None = None
     embedding_dim: int = 0
     low_rank: int = 10
-    population_mean: np.ndarray | None = None       # (d,) global mean
-    population_cov_diag: np.ndarray | None = None   # (d,) global var (fallback)
-    pc1_direction: np.ndarray | None = None         # (d,) population PC1 (unit)
+    population_mean: np.ndarray | None = None
+    population_cov_diag: np.ndarray | None = None
+    pc1_direction: np.ndarray | None = None
 
     def sample_E(self, z: np.ndarray, rng: np.random.Generator) -> np.ndarray:
         """Sample one embedding per supplied bin label z[i]."""
@@ -82,7 +81,6 @@ class GaussianMixtureGenerator:
                 continue
             p = self.params.get(int(b))
             if p is None:
-                # Fallback to global params for unseen bin
                 E[idx] = (
                     self.population_mean
                     + rng.standard_normal((len(idx), d))
@@ -90,14 +88,13 @@ class GaussianMixtureGenerator:
                 )
                 continue
             k = p.U.shape[1]
-            f = rng.standard_normal((len(idx), k))     # latent factors
+            f = rng.standard_normal((len(idx), k))
             eps = rng.standard_normal((len(idx), d)) * np.sqrt(p.sigma2)
             E[idx] = p.mu + f @ p.U.T + eps
         return E
 
     def sample_z(self, n: int, rng: np.random.Generator) -> np.ndarray:
         if self.bin_freq is None:
-            # Uniform fallback if marginal not set
             return rng.choice(self.bins, size=n, replace=True)
         return rng.choice(self.bins, size=n, replace=True, p=self.bin_freq)
 
@@ -119,10 +116,7 @@ def fit_generator(
     pop_mean = real_E.mean(axis=0)
     pop_cov_diag = real_E.var(axis=0, ddof=1) + 1e-8
 
-    # Population PC1 direction (unit vector) -- used for SCM_1 projection.
     centered = real_E - pop_mean
-    # SVD on centered data; first right-singular vector = first PC direction.
-    # Cap rank to avoid huge SVD when d is large but n is small.
     rank_cap = min(centered.shape[0], centered.shape[1], 32)
     _, _, Vt = np.linalg.svd(centered, full_matrices=False)
     pc1 = Vt[0]
@@ -134,7 +128,6 @@ def fit_generator(
         n_b = len(idx)
         E_b = real_E[idx]
         if n_b < min_bin_n:
-            # Use population mean and diagonal var as proxy
             params[int(b)] = _BinParams(
                 mu=pop_mean.copy(),
                 U=np.zeros((d, 0)),
@@ -144,14 +137,11 @@ def fit_generator(
             continue
         mu_b = E_b.mean(axis=0)
         Eb_c = E_b - mu_b
-        # Low-rank truncated SVD: U = V_k * sqrt(s_k^2 / (n-1))
         rk = max(1, min(low_rank, n_b - 1, d))
         u, s, vt = np.linalg.svd(Eb_c, full_matrices=False)
-        # Top-k components scaled to standard-deviation loadings.
         s_k = s[:rk]
-        Vk = vt[:rk]                                     # (rk, d)
-        loadings = (Vk.T * (s_k / np.sqrt(max(n_b - 1, 1))))  # (d, rk)
-        # Residual variance: average over remaining singular values^2 / (n-1)
+        Vk = vt[:rk]
+        loadings = (Vk.T * (s_k / np.sqrt(max(n_b - 1, 1))))
         if len(s) > rk:
             resid = float(np.sum(s[rk:] ** 2) / max(n_b - 1, 1) / d)
         else:
@@ -173,9 +163,6 @@ def fit_generator(
     )
 
 
-# ---------------------------------------------------------------------------
-# Confounder (W) generator: nonlinear transforms of z + noise
-# ---------------------------------------------------------------------------
 
 def _z_to_score(z: np.ndarray, bins: np.ndarray) -> np.ndarray:
     """Map raw bin labels to a deterministic real-valued z-score in [-1, 1].
@@ -188,7 +175,7 @@ def _z_to_score(z: np.ndarray, bins: np.ndarray) -> np.ndarray:
     rank = {int(b): i for i, b in enumerate(sorted_bins)}
     B = max(len(sorted_bins) - 1, 1)
     out = np.array([rank[int(b)] / B for b in z], dtype=np.float64)
-    return 2.0 * out - 1.0   # rescale to [-1, 1]
+    return 2.0 * out - 1.0
 
 
 def _generate_W(
@@ -201,25 +188,21 @@ def _generate_W(
     """
     n = len(z_score)
     cols = [
-        z_score + 0.5 * rng.standard_normal(n),           # ~ income
+        z_score + 0.5 * rng.standard_normal(n),
         np.sin(np.pi * z_score) + 0.4 * rng.standard_normal(n),
         np.cos(2.0 * z_score) + 0.4 * rng.standard_normal(n),
         z_score ** 2 - 0.5 + 0.5 * rng.standard_normal(n),
         np.tanh(2.0 * z_score) + 0.3 * rng.standard_normal(n),
     ]
     while len(cols) < n_dim:
-        # Pad with random linear combos + noise (noise-only columns)
         cols.append(rng.standard_normal(n))
     return np.column_stack(cols[:n_dim])
 
 
-# ---------------------------------------------------------------------------
-# SCM_0 and SCM_1 samplers
-# ---------------------------------------------------------------------------
 
-DEFAULT_ALPHA = 0.6      # location -> log-price slope
-DEFAULT_BETA_W = 0.4     # confounder -> log-price slope on first W column
-DEFAULT_NOISE_SD = 0.3   # epsilon SD for log-price
+DEFAULT_ALPHA = 0.6
+DEFAULT_BETA_W = 0.4
+DEFAULT_NOISE_SD = 0.3
 
 
 def sample_scm0(
@@ -284,9 +267,6 @@ def calibrate_beta_direct(
     var_proj = float(np.var(proj, ddof=1))
     if var_proj <= 1e-12:
         return 0.0
-    # Variance contribution v of (b * proj) is b^2 * Var(proj). To make
-    # v / Var(Y_full) = target, with Var(Y_full) = Var(Y0) + v, solve for b:
-    #   b^2 = target / (1 - target) * Var(Y0) / Var(proj)
     b2 = (target_var_share / (1.0 - target_var_share)) * var_Y0 / var_proj
     return float(np.sqrt(max(b2, 0.0)))
 

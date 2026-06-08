@@ -12,7 +12,7 @@ Usage:
     python generate_embeddings_modern.py --model modernbert_embed_large --matryoshka_dim 256
 """
 
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence
 import argparse
 import json
 import sys

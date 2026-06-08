@@ -32,17 +32,16 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
-from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401
+from sklearn.ensemble import GradientBoostingRegressor
 import sys, os as _os
 sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
 from booster import make_regressor
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 
-# Make sibling scripts importable as flat modules to mirror negative_controls.py.
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))                # counterfactual/ for local imports
-sys.path.insert(0, str(HERE.parent))         # scripts/ for causal_inference, config
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))
 
 from causal_inference import (
     get_features_and_target,
@@ -50,7 +49,7 @@ from causal_inference import (
 )
 from config import EMBEDDING_DIM, EMBEDDING_MODEL, PROCESSED_DIR, RAW_DIR
 
-from generator import GenerationResult, MockGenerator, AsyncMockGenerator, make_async_generator, make_generator  # noqa: F401
+from generator import GenerationResult, MockGenerator, AsyncMockGenerator, make_async_generator, make_generator
 from prompts import SUBMARKET_HINTS, style_stripped_blocks, style_swap_blocks
 from slot_extractor import extract_slots
 from validator import (
@@ -61,11 +60,10 @@ from validator import (
 )
 
 
-# ---------- data structures --------------------------------------------------
 
 @dataclass
 class RewriteRecord:
-    arm: str                       # "style_swap:<submarket>" or "style_stripped"
+    arm: str
     target_submarket: Optional[str]
     target_zip: Optional[int]
     rewritten_text: str
@@ -86,14 +84,13 @@ class ListingRecord:
     rewrites: list[RewriteRecord] = field(default_factory=list)
 
 
-# ---------- DML re-fit (no print spam) ---------------------------------------
 
 @dataclass
 class DMLArtifacts:
     pca: PCA
     pc1_mean: float
     pc1_std: float
-    model_y_full: object  # GradientBoostingRegressor | lightgbm.LGBMRegressor
+    model_y_full: object
     conf_scaler: StandardScaler
     theta: float
     se: float
@@ -166,7 +163,6 @@ def fit_dml_artifacts(
     )
 
 
-# ---------- sentence-transformers re-encoder ---------------------------------
 
 _ENCODER_CACHE: dict = {}
 
@@ -195,7 +191,6 @@ def encode_texts(texts: list[str], batch_size: int = 128) -> np.ndarray:
                           convert_to_numpy=True)
 
 
-# ---------- predicted log-price helpers --------------------------------------
 
 def pc1_norm_from_emb(art: DMLArtifacts, emb: np.ndarray) -> float:
     """Project one embedding through the trained PCA and standardize PC1 with
@@ -213,7 +208,6 @@ def conf_only_logprice(art: DMLArtifacts, listing_conf_s: np.ndarray) -> float:
     return float(art.model_y_full.predict(listing_conf_s.reshape(1, -1))[0])
 
 
-# ---------- bootstrap CIs -----------------------------------------------------
 
 def bootstrap_mean_ci(values: np.ndarray, n_boot: int = 2000, seed: int = 42,
                       alpha: float = 0.05) -> tuple[float, float, float]:
@@ -221,7 +215,6 @@ def bootstrap_mean_ci(values: np.ndarray, n_boot: int = 2000, seed: int = 42,
         return float("nan"), float("nan"), float("nan")
     rng = np.random.default_rng(seed)
     n = len(values)
-    # Vectorized: draw all B*n indices at once, take row-means in one shot.
     boot_idx = rng.integers(0, n, size=(n_boot, n))
     boots = values[boot_idx].mean(axis=1)
     return (float(values.mean()),
@@ -252,7 +245,6 @@ def cluster_bootstrap_mean_ci(clusters: list, n_boot: int = 2000, seed: int = 42
             float(np.quantile(boots, 1 - alpha / 2)))
 
 
-# ---------- pipeline orchestration -------------------------------------------
 
 def _load_city_descriptions(city: str, emb_df: pd.DataFrame) -> pd.DataFrame:
     """Pull (description, zip, address) from the city's embeddings parquet.
@@ -287,13 +279,6 @@ def _load_city_descriptions(city: str, emb_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# SF-specific zip→submarket map preserved from the 3-city pilot. For the 11
-# new cities we have submarket vocabularies (prompts.SUBMARKET_HINTS[city])
-# but no curated zip-to-submarket mapping; the new-city style-swap arm picks
-# k=3 alternative submarkets at random from the city's pool, losing the
-# "originally was X" precision but retaining the validator's discriminator
-# check on the target submarket. Defensible scope choice given the JBES
-# revision timeline; can be tightened in a v2 with hand-curated mappings.
 _SF_ZIP_TO_SUBMARKET = {
     94110: "Mission District", 94103: "SoMa", 94114: "Castro",
     94131: "Noe Valley", 94121: "Richmond", 94122: "Sunset",
@@ -349,15 +334,9 @@ def _assemble_result(
     Called both for the final write and for the every-25-listings checkpoints,
     so a partial file is always a valid, self-consistent JSON with fewer rows.
     """
-    # 7. aggregate per-arm causal effects
     per_arm: dict[str, dict] = {}
     for arm_kind in ("style_stripped", "style_swap"):
         if arm_kind == "style_swap":
-            # The style-swap arm has up to 3 correlated rewrites per listing
-            # (same confounders, baseline, and source text). Bootstrap at the
-            # LISTING level: resample listings and carry all their swap deltas,
-            # so the CI reflects the clustering instead of treating the rewrites
-            # as independent draws.
             clusters: list[list[float]] = []
             for L in listings_out:
                 cl = [rw.delta_logprice for rw in L.rewrites
@@ -369,8 +348,6 @@ def _assemble_result(
             mean, lo, hi = (cluster_bootstrap_mean_ci(clusters)
                             if n_valid > 0 else (float("nan"),) * 3)
         else:
-            # Style-stripped (NDE): exactly one rewrite per listing, so the
-            # listing-level and i.i.d. bootstraps coincide; keep it i.i.d.
             deltas = [rw.delta_logprice
                       for L in listings_out for rw in L.rewrites
                       if rw.validation["overall_pass"] and rw.arm == "style_stripped"]
@@ -386,7 +363,6 @@ def _assemble_result(
             "pct_change_implied": (float(np.exp(mean) - 1) * 100) if not np.isnan(mean) else float("nan"),
         }
 
-    # 8. validation pass rates
     n_total = sum(len(L.rewrites) for L in listings_out)
     pass_rates = {
         "slot_preserved": sum(1 for L in listings_out for r in L.rewrites if r.validation["slot_preserved"]) / max(n_total, 1),
@@ -395,7 +371,6 @@ def _assemble_result(
         "overall_pass":    sum(1 for L in listings_out for r in L.rewrites if r.validation["overall_pass"]) / max(n_total, 1),
     }
 
-    # 9. cache + cost stats from generator (real API only)
     usage_summary: dict | None = None
     if not isinstance(generator, MockGenerator):
         u = generator.usage
@@ -409,7 +384,6 @@ def _assemble_result(
             "estimated_cost_usd_sonnet35": u.estimated_cost_usd(),
         }
 
-    # 10. assemble JSON
     return {
         "city": city,
         "n_listings_requested": int(n_listings),
@@ -458,7 +432,6 @@ async def run_pipeline(
     import asyncio
     print(f"\n=== Counterfactual pipeline: {city} (n_listings={n_listings}) ===")
 
-    # 1. load SF embeddings + parcels for the production DML refit
     loaded = load_analysis_data(city)
     if loaded is None:
         raise FileNotFoundError(f"No analysis data found for city={city}")
@@ -469,11 +442,9 @@ async def run_pipeline(
     T, confounders, Y, meta = feats
     print(f"  DML training set: N={len(Y):,}, text_dim={T.shape[1]}, conf_dim={confounders.shape[1]}")
 
-    # 2. fit DML artifacts (PCA, conf-scaler, model_y, theta)
     art = fit_dml_artifacts(T, confounders, Y, n_pca=n_pca)
     print(f"  Fitted DML θ = {art.theta:+.4f} (SE {art.se:.4f}, n_pca={art.pca.n_components_})")
 
-    # 3. attribute classifier on raw description text
     city_desc = _load_city_descriptions(city, emb_df)
     print(f"  Raw {city} descriptions: {len(city_desc)}")
     fit_zip_classifier(
@@ -482,13 +453,11 @@ async def run_pipeline(
     )
     print(f"  Fitted zip-as-label TF-IDF + LogisticRegressionCV classifier")
 
-    # 4. select listings for the experiment
     rng = np.random.default_rng(seed)
     n_pick = min(n_listings, len(city_desc))
     pick_idx = rng.choice(len(city_desc), size=n_pick, replace=False)
     pick_idx.sort()
 
-    # 5. align listings to confounder rows (best-effort; missing → use mean conf)
     conf_s_full = art.conf_scaler.transform(confounders)
     mean_conf_s = conf_s_full.mean(axis=0)
 
@@ -500,20 +469,11 @@ async def run_pipeline(
             except Exception:
                 pass
 
-    # The generator is normally built ONCE in main() and passed in so the vLLM
-    # engine (and its prefix cache) survives across all cities. Fall back to
-    # building our own only when called directly (e.g. the smoke test).
     if generator is None:
         generator = make_async_generator(force_mock=force_mock,
                                          use_vllm=use_vllm, vllm_model=vllm_model)
     print(f"  Generator: {type(generator).__name__}")
 
-    # ---- Pass 1: build the arms + per-listing metadata for EVERY listing and
-    # flatten every arm across every listing into a single batch. Generation
-    # then happens in one generate_blocks_batch() call so vLLM's continuous
-    # batcher processes the whole city at once (instead of 4 arms × n_pick
-    # separate calls) and the prefix cache stays warm. We record the flat index
-    # span [start:end) that each listing owns so the results realign exactly.
     listing_meta: list[dict] = []
     all_items: list[dict] = []
     for li in pick_idx:
@@ -536,9 +496,6 @@ async def run_pipeline(
             style_stripped_blocks(original_text, slots),
         ))
 
-        # confounder vector: use the listing's matched conf row if we can; else
-        # mean. conf_base = model_y(conf) is the confounder-only prediction; the
-        # text contributions (original + rewrite) are added on top in Pass 2.
         conf_key = (addr.strip().lower(), zip_int)
         if conf_key in addr_zip_to_row and addr_zip_to_row[conf_key] < len(conf_s_full):
             listing_conf_s = conf_s_full[addr_zip_to_row[conf_key]]
@@ -548,9 +505,6 @@ async def run_pipeline(
 
         start = len(all_items)
         for _arm_name, _target_sub, blocks in arms:
-            # original_text is carried so the asyncio.gather fallback (mock /
-            # async Anthropic) can echo it back exactly as before; the vLLM
-            # batch path ignores the extra key.
             all_items.append({
                 "system": blocks["system"],
                 "user": blocks["user"],
@@ -572,9 +526,6 @@ async def run_pipeline(
 
     print(f"\n  Generating {n_pick} listings × ~4 variants "
           f"({len(all_items)} prompts) in one batch ...")
-    # Single generation call for the whole city. Generators that expose a batch
-    # surface (vLLM) continuous-batch on the GPU; generators without one (mock /
-    # async Anthropic) fan the identical prompts out through one asyncio.gather.
     if hasattr(generator, "generate_blocks_batch"):
         flat_results = await generator.generate_blocks_batch(all_items)
     else:
@@ -588,20 +539,8 @@ async def run_pipeline(
             for it in all_items
         ], return_exceptions=False)
 
-    # ---- Pass 2: encode, validate, score, and build ListingRecords from the
-    # flat results, realigned per listing. The accumulating result is flushed to
-    # out_path every 25 listings so a crash loses at most ~25 listings, not the
-    # whole city.
-    #
-    # Collect every text to embed in ONE flat list (each listing's original text
-    # followed by its rewrites) and run a single batched encode, instead of one
-    # encode_texts() call per listing. The encoder batches internally and each
-    # text's embedding depends only on that text, so this is order-preserving and
-    # numerically equivalent to the per-listing calls, just far fewer of them.
-    # The original is encoded the SAME way as the rewrites so the within-listing
-    # PC1 contrast cancels any encoding offset (an unchanged rewrite -> Δ = 0).
     encode_inputs: list[str] = []
-    listing_spans: list[tuple[int, int, int]] = []  # (orig_idx, rw_start, rw_end)
+    listing_spans: list[tuple[int, int, int]] = []
     for meta in listing_meta:
         arm_results = flat_results[meta["start"]:meta["end"]]
         orig_idx = len(encode_inputs)
@@ -627,10 +566,6 @@ async def run_pipeline(
 
         listing_conf_s = meta["listing_conf_s"]
         conf_base = meta["conf_base"]
-        # Factual baseline = model_y(conf) + theta * pc1(original text). Anchoring
-        # on the ORIGINAL listing's own PC1 (not the corpus mean) makes delta the
-        # within-listing change caused by the rewrite, theta * (pc1_rewrite -
-        # pc1_original), rather than the rewrite's deviation from the corpus mean.
         pc1_original_norm = pc1_norm_from_emb(art, all_embs[orig_idx])
         pred_baseline = conf_base + art.theta * pc1_original_norm
         rec = ListingRecord(
@@ -672,7 +607,6 @@ async def run_pipeline(
             )
             print(f"    checkpoint written ({n_done + 1}/{n_pick}) -> {out_path}")
 
-    # 7-10. aggregate per-arm effects, pass rates, usage; assemble + write JSON.
     out = _assemble_result(
         city, n_listings, listings_out, art, generator, skip_perplexity,
     )
@@ -726,12 +660,6 @@ def main():
     import asyncio
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Build the generator ONCE, before the city loop, and reuse it across every
-    # city. Previously run_pipeline() built its own per city, so --all_12 loaded
-    # the 32B vLLM engine 12 times; a single resident engine also keeps its
-    # prefix cache warm across cities. reset_caches() (per city below) only
-    # clears the validator/encoder caches and never touches this generator.
-    # Skip the load entirely when every requested city already has output.
     pending = [c for c in cities
                if args.force_redo or not (args.out_dir / f"{c}.json").exists()]
     generator = None

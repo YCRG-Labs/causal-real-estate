@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import chi2
 from sklearn.decomposition import PCA
-from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401
+from sklearn.ensemble import GradientBoostingRegressor
 from booster import make_regressor
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
@@ -188,7 +188,6 @@ def blp_heterogeneity_test(
 
 
 def _stability_one_seed(s: int, pc1: np.ndarray, W: np.ndarray, Y: np.ndarray) -> float:
-    # inner_n_jobs=1: outer joblib already parallelizes over seeds.
     Y_r, T_r, _ = cross_fit_residuals(pc1, W, Y, seed=s, inner_n_jobs=1)
     theta, _ = dml_theta_and_psi(Y_r, T_r)
     return float(theta)
@@ -230,21 +229,18 @@ def run_cate(city: str, n_seeds: int = 50) -> dict:
     if not meta["has_rich_confounders"]:
         return {"city": city, "error": "rich confounders required"}
 
-    # Project T → PC1 (z-scored); standardize confounders
     pca = PCA(n_components=min(50, T.shape[1], T.shape[0] - 1), random_state=42)
     T_pca = pca.fit_transform(T)
     pc1 = T_pca[:, 0]
     pc1 = (pc1 - pc1.mean()) / (pc1.std() if pc1.std() > 0 else 1.0)
     Ws = StandardScaler().fit_transform(W)
 
-    # Cross-fit residuals once at seed=42 (for headline + stratification)
     Y_resid, T_resid, Y_oof_pred = cross_fit_residuals(pc1, Ws, Y, seed=42)
     theta, psi = dml_theta_and_psi(Y_resid, T_resid)
     se = float(np.sqrt(np.var(psi, ddof=1) / len(Y)))
     print(f"  overall θ = {theta:+.4f}, SE = {se:.4f}, "
           f"95% CI = [{theta-1.96*se:+.4f}, {theta+1.96*se:+.4f}]")
 
-    # Stratifier 1: predicted-price quartile (pre-treatment proxy)
     print("\n  CATE by predicted-price quartile (OOF μ̂(W)):")
     cells_pp = quartile_cells(psi, Y_oof_pred, "predicted_price_q", theta)
     for c in cells_pp:
@@ -256,14 +252,12 @@ def run_cate(city: str, n_seeds: int = 50) -> dict:
         print(f"    BLP heterogeneity Wald = {blp_pp['stat_wald']:.2f} "
               f"(df={blp_pp['df']}), p = {blp_pp['p_value']:.3f}")
 
-    # Stratifier 2: description-length quartile
     desc_len = None
     if "description" in emb_df.columns:
         d = emb_df["description"].fillna("").astype(str).str.len().values
         if len(d) >= len(Y):
             desc_len = d[: len(Y)].astype(float)
     if desc_len is None:
-        # fallback: embedding L2 norm (correlates with description complexity)
         desc_len = np.linalg.norm(T, axis=1).astype(float)
 
     print("\n  CATE by description-length quartile (pre-treatment proxy):")

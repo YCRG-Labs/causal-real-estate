@@ -21,7 +21,7 @@ import requests
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from city_downloaders._helpers import DEFAULT_HEADERS, canonicalize_crime, write_parquet  # noqa: E402
+from city_downloaders._helpers import DEFAULT_HEADERS, canonicalize_crime, write_parquet
 
 SLUG = "phoenix"
 PARCEL_URL = "https://www.arcgis.com/sharing/rest/content/items/c937f17330f64e64abd41976fc8bb17f/data"

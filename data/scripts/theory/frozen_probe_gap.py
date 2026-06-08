@@ -51,9 +51,6 @@ from sklearn.neural_network import MLPClassifier
 RESULTS_DIR = Path(__file__).resolve().parents[3] / "results" / "theory"
 
 
-# ---------------------------------------------------------------------------
-# Variational MI bound from a fitted classifier
-# ---------------------------------------------------------------------------
 
 def variational_mi_lower_bound(clf, Z: np.ndarray, C: np.ndarray) -> float:
     """V_Φ(Z; C) = H(C) − CE_Φ(D̂(Z), C), in nats.
@@ -77,9 +74,6 @@ def entropy_binary(p: float) -> float:
     return -(p * math.log(p + eps) + (1 - p) * math.log(1 - p + eps))
 
 
-# ---------------------------------------------------------------------------
-# Experiment 1: static gap, XOR
-# ---------------------------------------------------------------------------
 
 def experiment_1_static_xor(n: int = 4000, n_trials: int = 5, seed: int = 42) -> dict:
     """Fixed DGP, vary classifier class, measure V_Φ.
@@ -93,7 +87,7 @@ def experiment_1_static_xor(n: int = 4000, n_trials: int = 5, seed: int = 42) ->
     }
     """
     rng = np.random.default_rng(seed)
-    h_c = math.log(2)  # exactly 1 bit = log(2) nats for balanced Bernoulli
+    h_c = math.log(2)
 
     v_lin = []; acc_lin = []
     v_mlp = []; acc_mlp = []
@@ -136,9 +130,6 @@ def experiment_1_static_xor(n: int = 4000, n_trials: int = 5, seed: int = 42) ->
     }
 
 
-# ---------------------------------------------------------------------------
-# Experiment 2: dynamic gap, gradient-reversal training
-# ---------------------------------------------------------------------------
 
 class GradientReversal(torch.autograd.Function):
     @staticmethod
@@ -199,7 +190,7 @@ def make_dgp_continuous(n: int, d: int = 10, seed: int = 0):
     """
     rng = np.random.default_rng(seed)
     X = rng.normal(size=(n, d)).astype(np.float32)
-    C = (np.sign(X[:, 0] * X[:, 1]) > 0).astype(np.int64)  # {0,1}
+    C = (np.sign(X[:, 0] * X[:, 1]) > 0).astype(np.int64)
     Y = (0.5 * X[:, 2] + 0.1 * rng.normal(size=n)).astype(np.float32)
     return X, C, Y
 
@@ -232,12 +223,9 @@ def experiment_2_dynamic_grl(
         optE.zero_grad(); optP.zero_grad(); optD.zero_grad()
 
         Z = enc(Xt)
-        # Predictor uses Z directly (forward signal)
         Y_hat = pred(Z)
         loss_pred = F.mse_loss(Y_hat, Yt)
 
-        # Discriminator sees grad-reversed Z; minimizing CE on D
-        # maximizes the reversed CE on E (so E tries to fool D)
         Z_rev = grad_reverse(Z, lambd)
         logits = disc(Z_rev)
         loss_disc = F.cross_entropy(logits, Ct)
@@ -252,22 +240,18 @@ def experiment_2_dynamic_grl(
         history["loss_disc"].append(float(loss_disc.item()))
         history["disc_acc"].append(float(disc_acc))
 
-    # ---- Evaluation: live discriminator vs frozen probe on the same Z ----
     enc.eval()
     with torch.no_grad():
         Z_final = enc(Xt).cpu().numpy()
 
-    # Live discriminator: just the last D's accuracy (already in history)
     live_acc = float(np.mean(history["disc_acc"][-10:]))
 
-    # Frozen MLP probe: train fresh from scratch on (Z_final, C)
     probe_mlp = MLPClassifier(
         hidden_layer_sizes=(32, 32), max_iter=3000, random_state=seed
     ).fit(Z_final, C)
     probe_acc = float(probe_mlp.score(Z_final, C))
     probe_v_phi = variational_mi_lower_bound(probe_mlp, Z_final, C)
 
-    # Frozen LINEAR probe (matched-capacity to live D): should also be at chance
     probe_lin = LogisticRegression(max_iter=2000).fit(Z_final, C)
     probe_lin_acc = float(probe_lin.score(Z_final, C))
     probe_lin_v_phi = variational_mi_lower_bound(probe_lin, Z_final, C)
@@ -295,9 +279,6 @@ def experiment_2_dynamic_grl(
     }
 
 
-# ---------------------------------------------------------------------------
-# Experiment 3: capacity ladder
-# ---------------------------------------------------------------------------
 
 def experiment_3_capacity_ladder(n: int = 4000, n_trials: int = 3, seed: int = 42) -> dict:
     """Vary classifier capacity from linear to deep MLP; measure V_Φ on XOR."""
@@ -341,9 +322,6 @@ def experiment_3_capacity_ladder(n: int = 4000, n_trials: int = 3, seed: int = 4
     return out
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 def main():
     ap = argparse.ArgumentParser()

@@ -32,7 +32,7 @@ import sys, os, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 try:
-    import _silence  # noqa: F401
+    import _silence
 except Exception:
     pass
 
@@ -44,9 +44,9 @@ D, NU = 2, 2.5
 RHOS = (0.01, 0.03, 0.05, 0.10, 0.15, 0.25)
 NS = (348, 1000, 2000)
 LAMBDAS = np.logspace(-4, -1, 10)
-PRED_GAP = D / (2 * NU + D)   # 2/7 = 0.2857
-PRED_BIAS = 2 * NU / (2 * NU + D)  # 5/7 = 0.7143
-PRED_MU_SLOPE = -(2 * NU + D) / D  # -3.5
+PRED_GAP = D / (2 * NU + D)
+PRED_BIAS = 2 * NU / (2 * NU + D)
+PRED_MU_SLOPE = -(2 * NU + D) / D
 
 ROOT = Path(__file__).resolve().parents[3]
 OUT_JSON = ROOT / "results" / "diagnostics" / "widom_rho_sweep.json"
@@ -134,7 +134,6 @@ with open(OUT_JSON, "w") as f:
     json.dump(results, f, indent=2)
 print(f"\nJSON -> {OUT_JSON}")
 
-# Plot: 2 panels
 try:
     import matplotlib
     matplotlib.use("Agg")
@@ -142,7 +141,6 @@ try:
 
     fig, ax = plt.subplots(1, 2, figsize=(13, 5))
 
-    # Panel A: gap slope and bias slope vs rho, for each n
     colors = {348: "C0", 1000: "C1", 2000: "C2"}
     for n in NS:
         rhos_n = [r["rho"] for r in results["sweep"] if r["n"] == n]
@@ -159,7 +157,6 @@ try:
     ax[0].legend(fontsize=7, ncol=2, loc="best")
     ax[0].grid(alpha=0.3)
 
-    # Panel B: log mu_k vs log k for each rho at n=2000
     k_max = 200
     for rho in RHOS:
         mu = spec_cache[(2000, rho)][:k_max]

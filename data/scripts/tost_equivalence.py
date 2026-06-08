@@ -41,11 +41,11 @@ class TOSTResult:
     delta: float
     alpha: float
     df: float | None
-    p_lower: float       # one-sided p-value: H0_L: theta <= -delta
-    p_upper: float       # one-sided p-value: H0_U: theta >= +delta
-    tost_p_value: float  # max(p_lower, p_upper)
-    ci_two_sided: tuple[float, float]    # (1 - 2 alpha) CI
-    ci_traditional: tuple[float, float]  # (1 - alpha) CI
+    p_lower: float
+    p_upper: float
+    tost_p_value: float
+    ci_two_sided: tuple[float, float]
+    ci_traditional: tuple[float, float]
     rejects_equivalence_null: bool
     interpretation: str
 
@@ -67,11 +67,11 @@ def tost(theta_hat: float, se: float, delta: float,
         q_low = dist.ppf(alpha)
         q_high = dist.ppf(1 - alpha)
         q_two = dist.ppf(1 - alpha / 2)
-        q_trad = dist.ppf(1 - alpha / 2)  # standard 95% (when alpha=0.05 -> 0.975)
-        z_l = (theta_hat - (-delta)) / se  # test H0_L: theta <= -delta
-        z_u = (theta_hat - delta) / se     # test H0_U: theta >= +delta
-        p_lower = 1 - dist.cdf(z_l)        # reject -> theta > -delta
-        p_upper = dist.cdf(z_u)            # reject -> theta < +delta
+        q_trad = dist.ppf(1 - alpha / 2)
+        z_l = (theta_hat - (-delta)) / se
+        z_u = (theta_hat - delta) / se
+        p_lower = 1 - dist.cdf(z_l)
+        p_upper = dist.cdf(z_u)
     else:
         dist = stats.t(df=df)
         q_low = dist.ppf(alpha)
@@ -86,15 +86,12 @@ def tost(theta_hat: float, se: float, delta: float,
     tost_p = float(max(p_lower, p_upper))
     rejects = tost_p < alpha
 
-    # (1 - 2 alpha) two-sided CI (= 90% CI when alpha=0.05): equivalent
-    # criterion -- equivalence holds iff this CI lies fully inside +/- delta.
     if df is None:
         q = stats.norm.ppf(1 - alpha)
     else:
         q = stats.t(df=df).ppf(1 - alpha)
     ci_two_sided = (theta_hat - q * se, theta_hat + q * se)
 
-    # Traditional (1 - alpha) CI for context (95% at alpha=0.05).
     ci_trad = (theta_hat - q_trad * se, theta_hat + q_trad * se)
 
     if rejects:
@@ -127,7 +124,7 @@ def tost_from_dml_result(dml_result: dict, delta: float = 0.01,
     """
     theta = dml_result.get("theta")
     se = dml_result.get("se_cb") or dml_result.get("se") or dml_result.get("se_if")
-    df = dml_result.get("B")  # cheap bootstrap df = B (Lam 2022)
+    df = dml_result.get("B")
     if theta is None or se is None:
         raise KeyError("dml_result must contain 'theta' and 'se'/'se_cb'/'se_if'")
     return tost(theta, se, delta=delta, alpha=alpha, df=df)
@@ -145,7 +142,6 @@ def main():
     args = ap.parse_args()
 
     if args.inp is None:
-        # demo
         demo = tost(theta_hat=-0.001, se=0.025, delta=args.delta,
                     alpha=args.alpha, df=50)
         print(json.dumps(demo.__dict__, indent=2, default=str))

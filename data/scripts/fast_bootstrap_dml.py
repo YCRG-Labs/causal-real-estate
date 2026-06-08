@@ -39,10 +39,8 @@ References:
     Estimation with Observational Network Data using ML" arXiv:2206.14591
     (spatial-buffered K-fold).
 """
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence
 import os
-# CRITICAL: set thread caps BEFORE any numerical library imports. OpenMP reads
-# OMP_NUM_THREADS once on first call and ignores later changes.
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
@@ -106,15 +104,15 @@ def _make_lgbm():
     import lightgbm as lgb
     return lgb.LGBMRegressor(
         n_estimators=200,
-        num_leaves=8,            # default 31 over-leafs at n=280
+        num_leaves=8,
         min_data_in_leaf=30,
-        max_bin=63,              # default 255; small n + few features
+        max_bin=63,
         learning_rate=0.05,
         feature_fraction=0.8,
         bagging_fraction=0.8,
         bagging_freq=1,
         force_col_wise=True,
-        n_jobs=1,                # critical: defer threading to outer joblib
+        n_jobs=1,
         verbose=-1,
         random_state=42,
     )
@@ -216,7 +214,7 @@ def _boot_rep(T, conf, Y, rng_seed, mode="efron", cross_fit_pca=False):
         res = _dml_core_fast(T[idx], conf[idx], Y[idx], seed=rng_seed,
                              cross_fit_pca=cross_fit_pca, weights=None)
     elif mode == "dirichlet":
-        w = rng.dirichlet(np.ones(n)) * n  # E[w_i]=1, sum=n
+        w = rng.dirichlet(np.ones(n)) * n
         res = _dml_core_fast(T, conf, Y, seed=rng_seed,
                              cross_fit_pca=False, weights=w)
     else:
@@ -300,22 +298,18 @@ def fast_dml(city, B=50, k_folds=5, parallel=True, mode="efron",
     boots = np.array([b for b in boots if not np.isnan(b)])
     t_boot = time.time() - t2
 
-    # Cheap Bootstrap t-pivot CI (Lam 2022): centered at θ̂, divisor B not B-1
     se_cb = float(np.sqrt(np.mean((boots - theta_hat) ** 2)))
     t_q = stats.t.ppf(0.975, df=len(boots))
     ci_low = theta_hat - t_q * se_cb
     ci_high = theta_hat + t_q * se_cb
     mde = (1.96 + 0.84) * se_cb
 
-    # ------------------- spatial HAC inference (#28) ----------------------
     spatial_hac_block = None
     if spatial_hac and Y_resid_main is not None and coords is not None:
         denom_main = float(np.mean(T_resid_main ** 2))
         if denom_main > 1e-12:
-            # IF score psi_i = (Y_tilde - theta * T_tilde) * T_tilde / E[T_tilde^2]
             psi = ((Y_resid_main - theta_hat * T_resid_main)
                    * T_resid_main) / denom_main
-            # Conley HAC SE on the scaled scores (Var(theta) = (1/n^2) sum w_ij psi_i psi_j)
             se_hac = spatial_hac_se(psi, coords, bandwidth_quantile=bandwidth_quantile)
             jk = salerno_jackknife_hac(psi, fold_ids_main, coords,
                                        bandwidth_quantile=bandwidth_quantile)

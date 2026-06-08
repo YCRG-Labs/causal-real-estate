@@ -1,4 +1,4 @@
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence
 import sys
 import re
 import numpy as np
@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
-from sklearn.ensemble import GradientBoostingRegressor  # noqa: F401
+from sklearn.ensemble import GradientBoostingRegressor
 from booster import make_regressor
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.metrics import r2_score
@@ -761,10 +761,6 @@ def main():
     print(f"EXTENDED ANALYSIS: {primary.upper()}")
     print(f"{'#'*60}")
 
-    # Load rich confounders directly from causal_inference pipeline,
-    # bypassing the fragile df.attrs mechanism which silently drops
-    # confounders when row counts diverge between load_city and
-    # get_features_and_target filtering.
     rich_conf = None
     try:
         from causal_inference import load_analysis_data, get_features_and_target
@@ -774,8 +770,6 @@ def main():
             _feat = get_features_and_target(_emb_df, _parcels)
             if _feat is not None:
                 _T_ci, _rich_conf, _Y_ci, _meta = _feat
-                # Use the CI pipeline's own T and Y (which are row-aligned
-                # with the confounder matrix) for the CI test.
                 T_for_ci, Y_for_ci = _T_ci, _Y_ci
                 rich_conf = _rich_conf
                 print(f"  Rich confounders loaded: {rich_conf.shape[1]} features, "

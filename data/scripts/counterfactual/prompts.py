@@ -27,10 +27,6 @@ from __future__ import annotations
 import json
 from typing import Optional
 
-# Style lexicons keyed to (city, submarket), used as control codes for the
-# style-swap counterfactual arm. The eight SF entries are the originals from
-# the SF-only pilot; the other eleven cities were drafted by three research
-# agents with verified landmarks and transit lines (commit log: 2026-05-31).
 SUBMARKET_HINTS: dict[str, dict[str, str]] = {
     "sf": {
         "Mission District": (
@@ -224,8 +220,6 @@ _VERIFY_STEP = (
     "final JSON object."
 )
 
-# Quality and pitfall guidance shared by both system prompts. Pulled out so it
-# is part of the cached prefix and not part of the per-call user content.
 _QUALITY_CRITERIA = (
     "QUALITY CRITERIA — a successful counterfactual rewrite:\n"
     "  - Numeric facts: every value in the slot-fact JSON appears unchanged.\n"
@@ -317,9 +311,6 @@ def _format_slots(slot_dict: dict[str, Optional[float]]) -> str:
     return json.dumps({k: v for k, v in slot_dict.items()}, indent=2)
 
 
-# ---------------------------------------------------------------------------
-# Cacheable system / variable user split (preferred)
-# ---------------------------------------------------------------------------
 
 def style_swap_system() -> str:
     """Constant instruction template for style_swap. Cacheable.
@@ -446,9 +437,6 @@ def style_stripped_blocks(
     }
 
 
-# ---------------------------------------------------------------------------
-# Legacy single-string prompts (kept for backward compat; uncached)
-# ---------------------------------------------------------------------------
 
 def style_swap_prompt(
     target_submarket: str,

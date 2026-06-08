@@ -13,7 +13,7 @@ Usage:
     python redfin_dof_crosscheck.py [--out results/dedup_rerun/redfin_dof.json]
 """
 from __future__ import annotations
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence
 import argparse
 import json
 from pathlib import Path
@@ -53,9 +53,7 @@ def load_dof():
     df["dof_price"] = pd.to_numeric(df["dof_price"], errors="coerce")
     df["BBL"] = pd.to_numeric(df["BBL"], errors="coerce").astype("Int64")
     df["sale_date"] = pd.to_datetime(df["sale_date"], errors="coerce")
-    # arm's-length sales only: drop $0 and $1 nominal transfers
     df = df[(df["dof_price"].notna()) & (df["dof_price"] > 1000)]
-    # residential only
     res_classes = ("01 ", "02 ", "03 ", "09 ", "10 ", "12 ", "13 ", "15 ")
     df = df[df["bld_class"].fillna("").str.startswith(res_classes)]
     return df
@@ -67,10 +65,6 @@ def crosscheck():
     print(f"Redfin NYC descriptions: {len(rf)}  with BBL: {rf['BBL'].notna().sum()}")
     print(f"DOF Rolling Sales arms-length residential: {len(dof)}")
 
-    # Many DOF rows per BBL (different sales over time); for each Redfin
-    # description we take the DOF sale closest in absolute price ratio
-    # (a conservative match — the listing is presumably the most recent sale).
-    # Alternative match: most recent DOF sale per BBL.
     dof_sorted = dof.sort_values("sale_date", ascending=False)
     dof_latest = dof_sorted.groupby("BBL").first().reset_index()
     print(f"Unique BBLs in DOF: {len(dof_latest)}")

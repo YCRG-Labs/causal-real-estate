@@ -99,8 +99,6 @@ def lift_nco_from_property(
     """
     if target not in property_cols:
         return None
-    # confounder layout: [lat, lon, *property_cols, *contextual_cols]
-    # so property_cols start at index 2
     PROP_OFFSET = 2
     target_idx = PROP_OFFSET + property_cols.index(target)
     Y_placebo = confounders[:, target_idx].copy()
@@ -153,8 +151,6 @@ def schuemie_calibration(
     sigma_emp = float(thetas.std(ddof=1))
     nominal_se_med = float(np.median(ses))
     sigma_inflation = sigma_emp / nominal_se_med if nominal_se_med > 0 else float("nan")
-    # Schuemie 2014 eq. 4 / OHDSI EmpiricalCalibration:
-    # z = (theta_focal - mu_null) / sqrt(sigma_null^2 + se_focal^2)
     z_cal = (focal.theta - mu) / np.sqrt(sigma_emp ** 2 + focal.se ** 2)
     p_cal = float(2 * (1 - stats.norm.cdf(abs(z_cal))))
     z_nom = focal.theta / focal.se if focal.se > 0 else float("nan")
@@ -191,14 +187,12 @@ def run_negative_controls(city: str, n_nce: int = 30, seed: int = 42) -> dict:
 
     available_property_cols = [c for c in PROPERTY_COLS if c in parcels.columns]
 
-    # ---- focal: real DML on log-price ----
     focal_raw = _silent_dml(T, confounders, Y)
     focal = _to_result("real (log-price)", len(Y), focal_raw)
     print(f"\n  focal estimate: θ={focal.theta:+.4f}  se={focal.se:.4f}  "
           f"95%CI=[{focal.ci_low:+.4f}, {focal.ci_high:+.4f}]  "
           f"{'contains 0' if focal.contains_zero else 'EXCLUDES 0'}")
 
-    # ---- NCO panel ----
     print("\n  NCO panel (placebo outcomes):")
     nco_results: list[DMLResult] = []
     for nco_target in ("lot_area_sqft", "year_built"):
@@ -219,12 +213,10 @@ def run_negative_controls(city: str, n_nce: int = 30, seed: int = 42) -> dict:
         print(f"    {nco_target}: θ={res.theta:+.4f}  se={res.se:.4f}  "
               f"95%CI=[{res.ci_low:+.4f}, {res.ci_high:+.4f}]  {flag}")
 
-    # ---- NCE panel (parallelized over k) ----
     print(f"\n  NCE panel (placebo treatments, {n_nce} draws each, parallel):")
     strata = meta["zip_labels"]
 
     def _one_nce(k: int):
-        # Per-job seeded rng so reproducibility holds without sharing state.
         rng_k = np.random.default_rng(seed * 100003 + k)
         T_perm = permute_treatment(T, rng_k)
         raw_rand = _silent_dml(T_perm, confounders, Y)
@@ -257,7 +249,6 @@ def run_negative_controls(city: str, n_nce: int = 30, seed: int = 42) -> dict:
     _summary("random row-perm  ", nce_random)
     _summary("stratified perm  ", nce_strata)
 
-    # ---- Schuemie empirical calibration ----
     print("\n  Schuemie empirical calibration (against random row-perm panel):")
     cal = schuemie_calibration(nce_random, focal)
     if "error" not in cal:

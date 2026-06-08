@@ -29,7 +29,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 try:
-    import _silence  # noqa: F401
+    import _silence
 except Exception:
     pass
 
@@ -39,7 +39,7 @@ from sklearn.gaussian_process.kernels import Matern
 
 D, NU, RHO = 2, 2.5, 0.15
 LAMBDAS = np.logspace(-4, -1, 10)
-PRED_GAP, PRED_BIAS = D / (2 * NU + D), 2 * NU / (2 * NU + D)   # 2/7, 5/7
+PRED_GAP, PRED_BIAS = D / (2 * NU + D), 2 * NU / (2 * NU + D)
 OUT_DIR = Path(__file__).resolve().parents[3] / "results" / "simulation" / "widom"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 

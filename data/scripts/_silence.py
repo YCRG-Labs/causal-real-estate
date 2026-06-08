@@ -15,7 +15,6 @@ Imported (often as `import _silence  # noqa: F401`) by every entry-point
 script in this directory to keep stdout/stderr clean for paste.
 """
 import os
-# must precede every native-extension import
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
@@ -25,13 +24,11 @@ os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 
 import warnings
 
-# the sklearn validation warning that floods nuisance-fit logs
 warnings.filterwarnings(
     "ignore",
     message=".*does not have valid feature names.*",
     category=UserWarning,
 )
-# a few other low-value warnings that show up in our pipeline
 warnings.filterwarnings(
     "ignore",
     message=".*The least populated class in y.*",

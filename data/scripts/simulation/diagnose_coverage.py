@@ -54,9 +54,6 @@ def main() -> int:
     if tp.exists():
         truths = json.loads(tp.read_text())
     if args.scm0_truth is not None:
-        # DML-specific: the +0.0073 estimand was measured for DML's PC1 partial
-        # effect. DR's binarized-treatment scm0 estimand is a different quantity
-        # (already calibrated at ~0), so leave it untouched.
         for k in list(truths.keys()):
             if k.endswith("|scm0") and k.startswith("DML"):
                 truths[k] = args.scm0_truth
@@ -80,7 +77,6 @@ def main() -> int:
 
         cov_stored = float(np.mean((lo <= truth) & (truth <= hi)))
         cov_from_se = float(np.mean(np.abs(theta - truth) <= z * se))
-        # coverage you'd get with a CORRECTLY-sized SE = the empirical SD:
         cov_if_se_were_empsd = float(np.mean(np.abs(theta - truth) <= z * emp_sd))
 
         rows.append({

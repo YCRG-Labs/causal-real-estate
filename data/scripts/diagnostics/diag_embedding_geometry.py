@@ -58,7 +58,7 @@ References (carried by the json):
 import sys, os, json, warnings
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
-    import _silence  # noqa: F401
+    import _silence
 except Exception:
     pass
 
@@ -100,8 +100,6 @@ def _load_city(city: str):
 def _eig_spectrum(T: np.ndarray):
     Tc = T - T.mean(axis=0, keepdims=True)
     n, d = Tc.shape
-    # We want the eigenvalues of the d x d covariance Sigma_T.
-    # Use the SVD: T_c = U S V^T, lambda_k = s_k^2 / (n-1).
     s = np.linalg.svd(Tc, full_matrices=False, compute_uv=False)
     lam = (s ** 2) / max(n - 1, 1)
     return lam, s, Tc
@@ -114,7 +112,6 @@ def _effective_ranks(lam: np.ndarray, d: int):
     op = float(lam.max())
     r_V = tr / op if op > 0 else 0.0
     r_F = (tr ** 2) / fro2 if fro2 > 0 else 0.0
-    # Roy-Vetterli entropy-based
     p = lam / max(tr, 1e-12)
     p = p[p > 0]
     H = float(-(p * np.log(p)).sum())
@@ -134,7 +131,6 @@ def _decay_slope(lam: np.ndarray, kmax: int = 50):
     k = np.arange(1, min(kmax, len(lam)) + 1)
     lk = np.log(np.maximum(lam[: len(k)], 1e-30))
     x = np.log(k)
-    # OLS slope
     a, b = np.polyfit(x, lk, 1)
     return float(a), float(b), k.tolist(), lk.tolist()
 
@@ -156,11 +152,9 @@ def _anisotropy(lam: np.ndarray, d: int, Tc: np.ndarray):
     lam_full[: len(lam)] = lam
     aniso_F = float(np.sqrt(((lam_full - iso) ** 2).sum())
                     / max(np.sqrt((lam_full ** 2).sum()), 1e-12))
-    # Ethayarajh mean-cosine
     n = Tc.shape[0]
     norms = np.linalg.norm(Tc, axis=1, keepdims=True)
     Z = Tc / np.maximum(norms, 1e-12)
-    # subsample if huge
     m = min(500, n)
     idx = RNG.choice(n, size=m, replace=False)
     Zs = Z[idx]
@@ -182,7 +176,6 @@ def _topwords_per_pc(desc, scores: np.ndarray, top_n: int = TOPN_WORDS):
         sd = s.std()
         if sd > 0:
             s = s / sd
-        # column-wise correlation w/ standardized TF-IDF cols
         Xc = X - X.mean(axis=0, keepdims=True)
         sdcol = Xc.std(axis=0)
         ok = sdcol > 0
@@ -212,7 +205,6 @@ def _kmeans_price(T: np.ndarray, Y_log: np.ndarray, k: int = K_CLUSTERS):
         rows.append({"cluster": c, "n": n_c,
                       "mean_logp": float(Y_log[sel].mean()),
                       "sd_logp": float(Y_log[sel].std()) if n_c > 1 else 0.0})
-    # ANOVA-style between/within
     total_var = float(Y_log.var())
     within = []
     for c in range(k):
@@ -237,7 +229,7 @@ def _project_pc1(T_a: np.ndarray, T_b: np.ndarray, ks=(1, 5, 20)):
     pc1_a = Vta[0]
     out = {}
     for k in ks:
-        Vb = Vtb[:k].T  # d x k
+        Vb = Vtb[:k].T
         proj = Vb @ (Vb.T @ pc1_a)
         residual = pc1_a - proj
         out[f"k_{k}"] = {
@@ -255,11 +247,6 @@ def _davis_kahan_check(lam: np.ndarray):
     spike = float(lam_sorted[0] / lam_sorted[1])
     bulk_mean = float(lam_sorted[1:].mean())
     spike_over_bulk = float(lam_sorted[0] / bulk_mean) if bulk_mean > 0 else None
-    # Yu-Wang-Samworth 2015 Thm 2 sin-Theta bound surrogate:
-    # for a spike model lambda*v v^T + sigma^2 I with n samples,
-    # sin Theta <= C * sqrt(sigma^2 d / (n * lambda^2)) when lambda >> sigma^2.
-    # We compute the ratio lambda / (lambda - 1) which controls the
-    # finite-sample eigenvector consistency (BBP transition at lambda=1).
     if spike > 1.0:
         sin_theta_proxy = float(1.0 / np.sqrt(max(spike - 1.0, 1e-9)))
     else:
@@ -285,11 +272,9 @@ def main():
         slope, intercept, ks, lks = _decay_slope(lam, kmax=50)
         ani = _anisotropy(lam, d, Tc)
 
-        # Top-5 PC scores (rows in PC space).
         n_top = min(TOPK_PC, min(n, d) - 1)
         svd = TruncatedSVD(n_components=n_top, random_state=SEED)
         pc_scores = svd.fit_transform(Tc)
-        # PR is on the score (column) vectors, i.e. per-listing loadings.
         pr = [_participation_ratio(pc_scores[:, k]) for k in range(n_top)]
 
         top_words = _topwords_per_pc(desc, pc_scores, top_n=TOPN_WORDS)
@@ -311,10 +296,9 @@ def main():
         }
         spectra[city] = (ks, lks, lam[:50].tolist())
         pc_loadings[city] = top_words
-        pc1_vecs[city] = (T,)  # store raw for cross-projection step
+        pc1_vecs[city] = (T,)
         cluster_info[city] = km_info
 
-    # Cross-projection (Tc only; recompute SVD)
     cross = {}
     for a in CITIES:
         for b in CITIES:
@@ -356,7 +340,6 @@ def main():
                                                                 indent=2,
                                                                 default=str))
 
-    # 3-panel figure: eigenvalue decay, top-words text panel, cluster price box.
     fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
     colors = {"sf": "#1f77b4", "nyc": "#d62728", "boston": "#2ca02c"}
     for city in CITIES:
@@ -370,7 +353,6 @@ def main():
     axes[0].legend(fontsize=8)
     axes[0].grid(alpha=0.3)
 
-    # Panel 2: top words per PC, per city (sketchy text panel)
     axes[1].axis("off")
     rows = []
     for city in CITIES:
@@ -385,7 +367,6 @@ def main():
                   verticalalignment="top")
     axes[1].set_title("Top words per PC1-3")
 
-    # Panel 3: KMeans cluster log-price boxplot per city
     bxdata = []
     bxlab = []
     for city in CITIES:
@@ -407,7 +388,6 @@ def main():
     fig.savefig(OUT / "embedding_geometry.png", dpi=160)
     plt.close(fig)
 
-    # Short stdout summary so the agent shell shows verification.
     print("=== embedding_geometry.py summary ===")
     for city in CITIES:
         c = per_city[city]

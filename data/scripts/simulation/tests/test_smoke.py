@@ -18,14 +18,14 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from simulation.dgp import (  # noqa: E402
+from simulation.dgp import (
     calibrate_beta_direct,
     fit_generator,
     load_real_pairs,
     sample_scm0,
     sample_scm1,
 )
-from simulation.estimators import (  # noqa: E402
+from simulation.estimators import (
     adversarial_estimator,
     dml_estimator,
     dr_estimator,
@@ -66,14 +66,12 @@ def test_dml_scm1_recovers_truth(gen):
     eta = 0.10
     beta = calibrate_beta_direct(gen, eta, n_pop=5000)
 
-    # Population-scale truth on the DML estimand.
     rng_truth = np.random.default_rng(2026)
     E, _, W, Y = sample_scm1(gen, None, n=5000, beta_direct=beta, rng=rng_truth)
     truth_res = dml_estimator(E, W, Y)
     truth = truth_res.theta
     print(f"  SCM_1(0.10) calibrated beta={beta:.4f}, truth_theta={truth:+.4f}")
 
-    # Replicate at N=500
     rng = np.random.default_rng(11)
     E, _, W, Y = sample_scm1(gen, None, n=500, beta_direct=beta, rng=rng)
     res = dml_estimator(E, W, Y)
@@ -81,8 +79,6 @@ def test_dml_scm1_recovers_truth(gen):
           f"CI=[{res.ci_low:+.4f}, {res.ci_high:+.4f}]  truth={truth:+.4f}")
 
     assert np.isfinite(res.theta)
-    # Smoke tolerance: allow +/- 0.05 around the population truth (this is
-    # one replicate at N=500; we expect order-of-MC-SE deviation).
     assert abs(res.theta - truth) <= 0.05, (
         f"theta_hat={res.theta:+.4f} too far from truth={truth:+.4f} "
         f"(diff={res.theta - truth:+.4f}); smoke tolerance is +/- 0.05."

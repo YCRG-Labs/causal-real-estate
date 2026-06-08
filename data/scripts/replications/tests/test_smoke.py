@@ -14,12 +14,11 @@ from pathlib import Path
 
 import pytest
 
-# Make `replications` importable regardless of how pytest is launched.
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from replications.baur_2023 import run_baur  # noqa: E402
-from replications.shen_2021 import run_shen  # noqa: E402
+from replications.baur_2023 import run_baur
+from replications.shen_2021 import run_shen
 
 N_SUBSET = 200
 
@@ -74,7 +73,7 @@ def test_baur_structure(baur_result, tmp_path_factory):
             assert k in cv, f"{cv_key} missing {k}"
         assert cv["mae"] > 0
         assert 0 <= cv["mape"]
-        assert cv["rmse"] >= cv["mae"] / 10  # rough sanity
+        assert cv["rmse"] >= cv["mae"] / 10
 
     gain = r["predictive_gain"]
     for k in ("delta_mae", "delta_mape", "delta_rmse"):

@@ -34,7 +34,7 @@ Usage:
   python sensitivity.py --city sf --n_mc 50000 --out results/sensitivity/sf.json
 """
 from __future__ import annotations
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence
 
 import argparse
 import json
@@ -99,7 +99,6 @@ def robustness_value_point(theta: float, S: float) -> float:
     b = theta ** 2
     if b == 0:
         return 0.0
-    # S^2 * x^2 + b * x - b = 0  where x = RV^2
     disc = b ** 2 + 4 * a * b
     rv2 = (-b + np.sqrt(disc)) / (2 * a)
     rv2 = max(0.0, min(rv2, 1.0))
@@ -125,7 +124,7 @@ def evalue_point(theta: float, sd_Y: float) -> float:
     """
     rr = float(np.exp(0.91 * abs(theta) / sd_Y))
     if rr < 1:
-        rr = 1 / rr  # standard inversion for protective effects
+        rr = 1 / rr
     return float(rr + np.sqrt(rr * (rr - 1)))
 
 
@@ -136,9 +135,6 @@ def evalue_ci(theta: float, se: float, sd_Y: float, alpha: float = 0.05) -> floa
     bound_hi = theta + z * se
     if bound_lo <= 0 <= bound_hi:
         return 1.0
-    # VanderWeele-Ding 2017: E-value of a CI uses the bound *nearer* the null.
-    # CI excludes 0 (we returned 1.0 otherwise), so both bounds share theta's sign.
-    # Nearer-null = smaller |bound|: bound_lo when theta>0, bound_hi when theta<0.
     bound = bound_lo if theta > 0 else bound_hi
     rr = float(np.exp(0.91 * abs(bound) / sd_Y))
     if rr < 1:
@@ -204,7 +200,6 @@ def benchmark_against_observed(
         denom = float(np.sum(wj ** 2))
         if denom <= 0:
             continue
-        # R² = 1 - SSR/SST for the simple OLS of resid on wj
         beta_y = float(np.sum(wj * Y_resid) / denom)
         ssr_y = float(np.sum((Y_resid - beta_y * wj) ** 2))
         sst_y = float(np.sum(Y_resid ** 2))
@@ -267,7 +262,6 @@ def run_sensitivity(city: str, n_mc: int = 50000, threshold: float = 0.05) -> di
         return {"city": city, "error": "rich confounders required"}
     print(f"  N={len(Y):,}, embedding dim={T.shape[1]}, confounders={W.shape[1]}")
 
-    # Reproduce the headline DML estimate
     pca = PCA(n_components=min(50, T.shape[1], T.shape[0] - 1), random_state=42)
     T_pca = pca.fit_transform(T)
     pc1 = T_pca[:, 0]
@@ -280,7 +274,6 @@ def run_sensitivity(city: str, n_mc: int = 50000, threshold: float = 0.05) -> di
     print(f"  θ̂ = {theta:+.4f}, SE = {se:.4f}, sd(Y) = {sd_Y:.4f}")
     print(f"  95% CI = [{theta-1.96*se:+.4f}, {theta+1.96*se:+.4f}]")
 
-    # OVB-DML scaling
     S = ovb_dml_scaling(Y_resid, T_resid, theta)
     print(f"\n  [1] OVB-DML scaling (CCNSS 2022): S = {S:.4f}")
     rv = robustness_value_point(theta, S)
@@ -291,7 +284,6 @@ def run_sensitivity(city: str, n_mc: int = 50000, threshold: float = 0.05) -> di
     print(f"      Interpretation: an unmeasured confounder with partial R² >= {rv:.2f}"
           f" with BOTH treatment and outcome would be needed to drive |θ̂| to 0.")
 
-    # E-values
     ev_pt = evalue_point(theta, sd_Y)
     ev_ci = evalue_ci(theta, se, sd_Y, alpha=0.05)
     print(f"\n  [2] E-values (continuous T via Chinn-VanderWeele):")
@@ -300,7 +292,6 @@ def run_sensitivity(city: str, n_mc: int = 50000, threshold: float = 0.05) -> di
     if ev_pt <= 1.05:
         print(f"      → effect size is essentially null on the RR scale; E-value collapses to 1")
 
-    # Benchmark against observed covariates
     print(f"\n  [3] Plausibility benchmarks (top observed covariates by joint partial R²):")
     bench = benchmark_against_observed(Y_resid, T_resid, Ws, k_top=5)
     for b in bench:
@@ -314,7 +305,6 @@ def run_sensitivity(city: str, n_mc: int = 50000, threshold: float = 0.05) -> di
               f"be {'comparable to' if rv < max_obs else 'STRONGER than'} the strongest observed "
               f"covariate on both sides.")
 
-    # Bayesian sensitivity
     bsa = bayesian_sensitivity(theta, S, threshold=threshold, n_mc=n_mc)
     print(f"\n  [4] Bayesian sensitivity (Beta({bsa['prior_a']},{bsa['prior_b']}) priors, "
           f"prior mean η = {bsa['prior_mean']:.2f}):")

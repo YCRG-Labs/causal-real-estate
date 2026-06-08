@@ -48,7 +48,6 @@ def test_smoke_n2_mock():
         assert out_path.exists(), "expected output JSON to be written"
         on_disk = json.loads(out_path.read_text())
 
-        # ---- top-level shape ----
         for key in (
             "city", "n_listings_requested", "n_listings_processed",
             "n_rewrites_total", "used_mock_generator", "dml",
@@ -62,15 +61,12 @@ def test_smoke_n2_mock():
         assert on_disk["city"] == "sf"
         assert on_disk["used_mock_generator"] is True
         assert on_disk["n_listings_processed"] == 2
-        # 2 listings × 4 variants
         assert on_disk["n_rewrites_total"] == 8
         assert len(on_disk["listings"]) == 2
 
-        # ---- DML block ----
         for k in ("theta", "se", "n_pca"):
             assert k in on_disk["dml"]
 
-        # ---- per-listing shape ----
         for L in on_disk["listings"]:
             for key in ("listing_idx", "address", "zip", "slots", "rewrites"):
                 assert key in L
@@ -90,39 +86,25 @@ def test_smoke_n2_mock():
                     "classifier_flipped_toward_target", "overall_pass",
                 ):
                     assert vkey in rw["validation"]
-                # MockGenerator returns the original verbatim, so slot
-                # preservation MUST hold
                 assert rw["validation"]["slot_preserved"] is True
-                # Mock returns the raw description; the production embeddings
-                # were built from a cleaned/lowercased version of that text,
-                # so the re-encoded "rewrite" gives a slightly different PC1
-                # than the training embedding. Delta should still be tiny —
-                # well under 1% in log-price (~0.01).
                 assert abs(rw["delta_logprice"]) < 0.01, (
                     f"mock should produce ~zero delta (text unchanged), "
                     f"got {rw['delta_logprice']}"
                 )
 
-        # ---- validation pass rates ----
         rates = on_disk["validation_pass_rates"]
         for k in ("slot_preserved", "ppl_ok",
                   "classifier_flipped_toward_target", "overall_pass"):
             assert k in rates
             assert 0.0 <= rates[k] <= 1.0
-        # under mock, slot preservation is always 1.0
         assert rates["slot_preserved"] == 1.0
-        # classifier flip cannot happen for unchanged text → 0
         assert rates["classifier_flipped_toward_target"] == 0.0
 
-        # ---- aggregate effect blocks ----
         for arm in ("natural_direct_effect_style_stripped", "total_effect_style_swap"):
             block = on_disk[arm]
             for k in ("n_valid", "mean_delta_logprice", "ci_low", "ci_high",
                       "pct_change_implied"):
                 assert k in block
-            # mock → all valid (slot-preserved, ppl skipped); mean delta
-            # is close to zero but not bit-exact because the production
-            # embedding was built from a cleaned variant of the text
             assert block["n_valid"] > 0
             assert abs(block["mean_delta_logprice"]) < 0.01
 

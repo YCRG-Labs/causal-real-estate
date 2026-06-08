@@ -11,7 +11,7 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from city_downloaders._helpers import arcgis_rest_query, canonicalize_crime, socrata_query, write_geojson_from_arcgis_chunks, write_parquet  # noqa: E402
+from city_downloaders._helpers import arcgis_rest_query, canonicalize_crime, socrata_query, write_geojson_from_arcgis_chunks, write_parquet
 
 SLUG = "seattle"
 PARCEL_URL = "https://services.arcgis.com/Ej0PsM5Aw677QF1W/arcgis/rest/services/PARCEL_ADDRESS_PUB_AREA_3069/FeatureServer/0"

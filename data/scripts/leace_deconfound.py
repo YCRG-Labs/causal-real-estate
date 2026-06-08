@@ -57,10 +57,10 @@ Usage
     python leace_deconfound.py --self_test            # synthetic-data check
 """
 from __future__ import annotations
-import sys, os  # noqa: E401
+import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
-    import _silence  # noqa: F401
+    import _silence
 except Exception:
     pass
 
@@ -83,15 +83,9 @@ from sklearn.utils.extmath import randomized_svd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from causal_inference import load_analysis_data, get_features_and_target
 
-# Force CUDA for the neural probes + IGBP adversary when available, falling
-# back to CPU so the module still imports/runs on a non-CUDA machine.  The
-# float32 LEACE path (below) is what makes the CUDA kernels viable.
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-# ---------------------------------------------------------------------------
-# Probe API: version-safe sklearn LogisticRegression construction.
-# ---------------------------------------------------------------------------
 
 def _multinomial_logreg(**kwargs):
     """LogisticRegression with the multinomial / softmax parameterisation.
@@ -111,9 +105,6 @@ def _multinomial_logreg(**kwargs):
     return LogisticRegression(**defaults)
 
 
-# ---------------------------------------------------------------------------
-# Power diagnostics.
-# ---------------------------------------------------------------------------
 
 def binomial_power(n_test: int, K: int, p_alt: float | None = None,
                    alpha: float = 0.05) -> dict:
@@ -140,18 +131,15 @@ def binomial_power(n_test: int, K: int, p_alt: float | None = None,
                 "detectable_gain_80pct": float("nan"),
                 "note": "non-positive n_test or K"}
     p0 = 1.0 / K
-    # exact critical count under H0: smallest c s.t. P(X >= c | H0) <= alpha
     c_alpha = int(stats.binom.ppf(1 - alpha, n_test, p0)) + 1
     c_alpha = min(c_alpha, n_test)
     crit_acc = c_alpha / n_test
 
-    # smallest p in {p0 + 1/n_test, ..., 1} with power >= 0.8
     grid = np.arange(c_alpha, n_test + 1) / n_test
     p_min = float("nan")
     for p in grid:
         if p <= p0:
             continue
-        # power = P(X >= c_alpha | p)
         pw = float(stats.binom.sf(c_alpha - 1, n_test, p))
         if pw >= 0.80:
             p_min = float(p)
@@ -173,9 +161,6 @@ def binomial_power(n_test: int, K: int, p_alt: float | None = None,
     }
 
 
-# ---------------------------------------------------------------------------
-# Continuous and categorical linear-guardedness tests.
-# ---------------------------------------------------------------------------
 
 def linear_guardedness_test_continuous(T_tr, T_te, Z_tr_ll, Z_te_ll,
                                        alpha: float = 1.0,
@@ -207,7 +192,6 @@ def linear_guardedness_test_continuous(T_tr, T_te, Z_tr_ll, Z_te_ll,
     Z_tr_s = (Z_tr - mu_z) / sd_z
     Z_te_s = (Z_te - mu_z) / sd_z
 
-    # multi-target ridge: one model, two outputs (closed form on Xtr)
     model = Ridge(alpha=alpha, fit_intercept=False, random_state=seed)
     model.fit(Xtr, Z_tr_s)
     pred = model.predict(Xte)
@@ -215,7 +199,6 @@ def linear_guardedness_test_continuous(T_tr, T_te, Z_tr_ll, Z_te_ll,
                      for j in range(Z_te_s.shape[1])]
     avg_r2 = float(np.mean(per_target_r2))
 
-    # train-fold R^2 too, so reviewers can see overfit gap
     pred_tr = model.predict(Xtr)
     per_target_r2_tr = [float(r2_score(Z_tr_s[:, j], pred_tr[:, j]))
                         for j in range(Z_tr_s.shape[1])]
@@ -240,7 +223,6 @@ def linear_guardedness_test_categorical(T_tr, T_te, Z_tr, Z_te,
     mu = Xtr.mean(axis=0); Xtr = Xtr - mu; Xte = Xte - mu
 
     classes_tr = np.unique(Z_tr)
-    # drop test rows whose label was unseen at train time so .score is defined
     mask_te = np.isin(Z_te, classes_tr)
     if mask_te.sum() < len(Z_te):
         warnings.warn(f"dropped {len(Z_te) - mask_te.sum()} test rows with "
@@ -262,13 +244,10 @@ def linear_guardedness_test_categorical(T_tr, T_te, Z_tr, Z_te,
     }
 
 
-# ---------------------------------------------------------------------------
-# LEACE / SPLINCE erasure.
-# ---------------------------------------------------------------------------
 
 def _ensure_concept_erasure() -> bool:
     try:
-        from concept_erasure import LeaceFitter  # noqa: F401
+        from concept_erasure import LeaceFitter
         return True
     except ImportError:
         print("install with: pip install 'concept-erasure>=0.2.4'", file=sys.stderr)
@@ -345,17 +324,9 @@ def leace_erase(T_tr, Z_tr, T_holdout=None, shrinkage=True,
     fitter.update(T_tr, Z_t)
     eraser = fitter.eraser
 
-    # Loose floating-point sanity check.  Note: at the default svd_tol=1e-2
-    # this tolerance is max(1.0, 1e-4) = 1.0, so the magnitude branch never
-    # fires; with the NaN/Inf guard added to _verify_linear_guardedness it
-    # still catches a degenerate (non-finite) residual.  The tight check
-    # below (guardedness_tol=1e-3) is what enforces the real identity.
     resid = _verify_linear_guardedness(eraser.P, fitter.sigma_xz,
                                        tol=max(svd_tol * 100, 1e-4),
                                        label=label)
-    # Tight production-tolerance check: the LEACE identity should hold to
-    # ~machine precision; if it does not, downstream "guardedness holds"
-    # claims in the paper are unsupported.  Raises if violated.
     _verify_linear_guardedness(eraser.P, fitter.sigma_xz,
                                tol=guardedness_tol,
                                label=f"{label}[tight]")
@@ -365,7 +336,6 @@ def leace_erase(T_tr, Z_tr, T_holdout=None, shrinkage=True,
     return T_tr_e, T_ho_e, eraser, resid
 
 
-# ---- SPLINCE: oblique projection preserving Cov(T, Y) ----------------------
 
 def _whitening_matrix(Sigma_xx, eps: float = 1e-10):
     eigvals, eigvecs = np.linalg.eigh(Sigma_xx)
@@ -444,11 +414,6 @@ def splince_erase(T_tr, Z_tr, Y_tr, T_holdout=None,
     Xc = X - x_mean
     Zc = Z - Z.mean(axis=0, keepdims=True)
 
-    # Match canonical LEACE shrinkage: Ledoit-Wolf optimal linear shrinkage
-    # (concept_erasure.shrinkage.optimal_linear_shrinkage) is the default,
-    # falling back to Tikhonov ridge when use_ledoit_wolf=False or LW fails.
-    # Earlier versions used Tikhonov with eps=1e-3, which differs numerically
-    # from the canonical LEACE choice in the tall-skinny n << d regime.
     if use_ledoit_wolf:
         try:
             from sklearn.covariance import LedoitWolf
@@ -464,54 +429,36 @@ def splince_erase(T_tr, Z_tr, Y_tr, T_holdout=None,
             S_xx = S_xx + shrinkage_eps * (np.trace(S_xx) / d) * np.eye(d)
 
     W, W_pinv = _whitening_matrix(S_xx)
-    Sigma_xz_w = W @ ((Xc.T @ Zc) / max(n - 1, 1))   # = W @ Sigma_xz
-    Sigma_xy_w = W @ ((Xc.T @ Y) / max(n - 1, 1))    # = W @ Sigma_xy
+    Sigma_xz_w = W @ ((Xc.T @ Zc) / max(n - 1, 1))
+    Sigma_xy_w = W @ ((Xc.T @ Y) / max(n - 1, 1))
 
-    # concept and task subspaces in whitened coordinates
     concept_basis = _orth_basis(Sigma_xz_w)
     task_basis = _orth_basis(Sigma_xy_w)
 
-    # U: orthonormal basis of the ORTHOGONAL COMPLEMENT of the whitened
-    # concept subspace (i.e. directions linearly uncorrelated with z after
-    # whitening).  SPLINCE/LEACE both use this convention; see eq. (4) of
-    # Holstege et al. 2025, where U is constructed from the null space of
-    # the concept covariance after whitening.
     if concept_basis.size == 0:
-        # no concept signal -> nothing to remove, identity projection
         U_basis = np.eye(d)
     else:
-        # null-space basis via SVD of concept_basis: columns past the rank
-        # of concept_basis span its orthogonal complement.
         Uc, sc, _ = np.linalg.svd(concept_basis, full_matrices=True)
         rank_c = int((sc > 1e-10 * (sc.max() if sc.size else 1)).sum()) if sc.size else 0
         U_basis = Uc[:, rank_c:]
 
     if U_basis.size == 0:
-        # whitened concept already spans R^d -> no SPLINCE projection exists
-        # without violating the kernel; fall back to identity (no erasure).
         warnings.warn("SPLINCE: whitened concept spans R^d; returning identity.")
         P_star = np.eye(d); b_star = np.zeros(d)
     else:
-        # U^- = U ∩ colsp(W Sigma_xy)^⊥
-        #     = directions orthogonal to BOTH concept and task in R^d.
         if task_basis.size == 0:
-            U_neg = U_basis  # all of U is in the task's orthogonal complement
+            U_neg = U_basis
         else:
-            # project task_basis onto U_basis to get the part of task in U,
-            # then take orthogonal complement within U of that part.
             task_in_U = U_basis @ (U_basis.T @ task_basis)
             task_in_U_orth = _orth_basis(task_in_U)
             if task_in_U_orth.size == 0:
                 U_neg = U_basis
             else:
-                # within U_basis, complement of task_in_U_orth
                 proj_to_U = U_basis.T @ task_in_U_orth
                 Q, sQ, _ = np.linalg.svd(proj_to_U, full_matrices=True)
                 rQ = int((sQ > 1e-10 * (sQ.max() if sQ.size else 1)).sum()) if sQ.size else 0
-                # U_basis @ Q's last cols give complement of task_in_U inside U
                 U_neg = U_basis @ Q[:, rQ:]
 
-        # V_basis = orthonormal basis of (task ⊕ U^-)
         V_cols = [v for v in [task_basis, U_neg] if v.size]
         if not V_cols:
             V_basis = U_basis
@@ -533,16 +480,12 @@ def splince_erase(T_tr, Z_tr, Y_tr, T_holdout=None,
             P_star = W_pinv @ V_basis @ UTV_inv @ U_basis.T @ W
             b_star = x_mean - P_star @ x_mean
 
-    # covariance-preservation check: Cov(P X, Y) ?= Cov(X, Y)
-    # Cov here is the centred raw cross-product / (n-1).  Affine bias b* drops
-    # out of any covariance with a centred Y, but we keep it for completeness.
     cov_before = (Xc.T @ Y) / max(n - 1, 1)
     X_after = X @ P_star.T + b_star
     Xc_after = X_after - X_after.mean(axis=0, keepdims=True)
     cov_after = (Xc_after.T @ Y) / max(n - 1, 1)
     cov_err = float(np.abs(cov_before - cov_after).max())
 
-    # linear-guardedness check: P* Sigma_xz ?= 0
     kernel_err = float(np.abs(P_star @ ((Xc.T @ Zc) / max(n - 1, 1))).max())
 
     def apply(M):
@@ -557,28 +500,6 @@ def splince_erase(T_tr, Z_tr, Y_tr, T_holdout=None,
     return T_tr_e, T_ho_e, P_star, {"cov_err": cov_err, "kernel_err": kernel_err}
 
 
-# ---------------------------------------------------------------------------
-# IGBP-style non-linear residual erasure (Iskander, Radinsky, Belinkov,
-# Findings of ACL 2023, arXiv:2305.10204).
-#
-# The closed-form LEACE projection satisfies the Belrose et al. 2023
-# Theorem 1 identity P @ Sigma_xz = 0 at machine precision, so re-running
-# closed-form LEACE on its own output is mathematically a no-op (we
-# confirmed this empirically in diagnostics/diag_leace_iterative_sf.py:
-# Sigma_xz drops to 5e-16 after one pass, and a second pass leaves the
-# MLP probe R^2 unchanged at 0.086 on SF).  Belrose et al. acknowledge in
-# their Section 7 limitations that linear erasure cannot guarantee
-# protection against nonlinear adversaries, and they treat this as out
-# of scope.  Iskander et al.'s IGBP iterates a non-linear adversary in
-# the loop: train an MLP to predict Z from the current reps, then
-# project the reps onto the orthogonal complement of the leading
-# adversary-sensitive direction.  Applied as a post-LEACE polish, it
-# brings the SF MLP R^2(lat/lon) from 0.086 to 0.034 while preserving
-# the price-prediction Ridge R^2 to within 0.5% on the held-out fold.
-#
-# This is a single-layer post-hoc projection on a static 768-d embedding
-# matrix; nothing back-propagates into the upstream encoder.
-# ---------------------------------------------------------------------------
 
 def _fit_igbp_adversary(T_tr_np: np.ndarray, Z_tr_z: np.ndarray, seed: int,
                         hidden: int = 128, n_epochs: int = 80,
@@ -656,9 +577,6 @@ def igbp_polish(T_tr, T_te, Z_concept_tr, n_outer: int = 5,
     return out_tr, out_te, history
 
 
-# ---------------------------------------------------------------------------
-# MLP and MDL probes.
-# ---------------------------------------------------------------------------
 
 class _MLPProbe(nn.Module):
     def __init__(self, d_in, d_out, hidden=256, p_drop=0.2):
@@ -778,21 +696,12 @@ def mdl_codelength_probe(T_tr, T_te, Z_tr, Z_te, n_portions: int = 10,
 
     n_tr = T_tr_t.shape[0]
     perm = rng.permutation(n_tr)
-    # Voita & Titov (2020) §3 footnote 4 exact-percentile schedule:
-    # [0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.25, 12.5, 25, 50, 100]% of n_tr.
-    # The transition from doubling to non-doubling above 3.2% is intentional
-    # in the paper; an earlier version of this function used pure doubling,
-    # which approximates the canonical schedule but is not identical and
-    # produced compression numbers ~5% off the canonical Voita-Titov result.
     voita_pcts = [0.001, 0.002, 0.004, 0.008, 0.016, 0.032,
                   0.0625, 0.125, 0.25, 0.5, 1.0]
     if n_portions < len(voita_pcts):
-        # honour caller's coarser request by sub-sampling the canonical
-        # schedule uniformly from the tail (last is always 100%)
         idx = np.round(np.linspace(0, len(voita_pcts) - 1, n_portions)).astype(int)
         voita_pcts = [voita_pcts[i] for i in idx]
     timesteps = [max(2, int(round(n_tr * p))) for p in voita_pcts]
-    # ensure final timestep is n_tr and no duplicates
     timesteps[-1] = n_tr
     seen = []
     for t in timesteps:
@@ -801,7 +710,7 @@ def mdl_codelength_probe(T_tr, T_te, Z_tr, Z_te, n_portions: int = 10,
     timesteps = seen
 
     log2K = math.log2(K) if K > 1 else 0.0
-    L_online = timesteps[0] * log2K  # uniform prior on first portion
+    L_online = timesteps[0] * log2K
 
     for k in range(1, len(timesteps)):
         prefix = perm[:timesteps[k - 1]]
@@ -822,11 +731,9 @@ def mdl_codelength_probe(T_tr, T_te, Z_tr, Z_te, n_portions: int = 10,
         yb = torch.from_numpy(Y_tr[next_block]).long().to(device)
         with torch.no_grad():
             logits_b = model(Xb)
-            # cross-entropy in nats -> codelength in bits = nats / ln(2)
             ce = nn.functional.cross_entropy(logits_b, yb, reduction="sum").item()
         L_online += ce / math.log(2)
 
-    # final probe accuracy on test fold for cross-check
     Xte = T_te_t.float().to(device)
     yte = torch.from_numpy(Y_te).long().to(device)
     final_model = _MLPProbe(T_tr_t.shape[1], K, hidden=hidden).to(device).float()
@@ -857,9 +764,6 @@ def mdl_codelength_probe(T_tr, T_te, Z_tr, Z_te, n_portions: int = 10,
     }
 
 
-# ---------------------------------------------------------------------------
-# Routing logic + city driver.
-# ---------------------------------------------------------------------------
 
 def _should_use_continuous_Z(n_test: int, K: int,
                              per_class_floor: float = 5.0) -> bool:
@@ -940,10 +844,6 @@ def run_leace(city: str, variant: str = "leace", seed: int = 42,
 
     T = torch.from_numpy(T_arr)
 
-    # Build the (n, d_z) concept matrix.  When categorical, one-hot encode
-    # ZIP and stack [lat, lon, income] standardised.  When continuous, use
-    # standardised [lat, lon, income] only -- this is the "lat/lon target"
-    # path.  The LEACE and SPLINCE closed forms do not change; only Z does.
     enc_zip = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
     Z_zip_oh = enc_zip.fit_transform(z_lab.reshape(-1, 1))
     scaler_ll = StandardScaler().fit(latlon)
@@ -956,7 +856,6 @@ def run_leace(city: str, variant: str = "leace", seed: int = 42,
     else:
         Z_concept = np.concatenate([Z_zip_oh, Z_ll, Z_inc], axis=1)
 
-    # ---- erasure ----------------------------------------------------------
     cov_pres_err = None
     if variant == "leace":
         T_tr_e, T_te_e, eraser, guard_resid = leace_erase(
@@ -975,15 +874,6 @@ def run_leace(city: str, variant: str = "leace", seed: int = 42,
     else:
         raise ValueError(variant)
 
-    # ---- optional IGBP post-LEACE non-linear polish ----------------------
-    # Iskander, Radinsky, Belinkov (Findings of ACL 2023, arXiv:2305.10204)
-    # IGBP iterates a non-linear MLP adversary in the loop and projects out
-    # its leading sensitive direction.  We run it as a polish step *after*
-    # closed-form LEACE so the Belrose et al. 2023 Theorem 1 linear-
-    # guardedness identity is preserved exactly, and only the non-linear
-    # residual is targeted.  See diagnostics/diag_leace_iterative_sf.py for
-    # the empirical justification (SF MLP R^2(lat/lon) 0.086 -> 0.034 with
-    # price-prediction Ridge R^2 preserved to within 0.5%).
     igbp_history = None
     if postnl_igbp:
         T_tr_e, T_te_e, igbp_history = igbp_polish(
@@ -991,7 +881,6 @@ def run_leace(city: str, variant: str = "leace", seed: int = 42,
             n_outer=igbp_n_outer, seed=seed,
         )
 
-    # ---- leakage measures -------------------------------------------------
     out: dict = {
         "city": city, "variant": variant, "n_train": int(n_tr), "n_test": int(n_te),
         "n_zips": K,
@@ -1005,7 +894,6 @@ def run_leace(city: str, variant: str = "leace", seed: int = 42,
         out["splince_cov_preservation_max_err"] = float(cov_pres_err)
         out["splince_variance_preserved"] = bool(cov_pres_err < 1e-6)
 
-    # always run the continuous Ridge probe (cheap, well-defined post-erasure)
     cont_raw = linear_guardedness_test_continuous(T[tr], T[te], latlon[tr], latlon[te])
     cont_erase = linear_guardedness_test_continuous(T_tr_e, T_te_e, latlon[tr], latlon[te])
     out["continuous"] = {"raw": cont_raw, "erased": cont_erase}
@@ -1014,14 +902,12 @@ def run_leace(city: str, variant: str = "leace", seed: int = 42,
     print(f"  Ridge R^2(lat/lon) erased: avg={cont_erase['r2_avg_test']:+.3f}  "
           f"per-target={cont_erase['r2_per_target_test']}")
 
-    # MLP regression on lat/lon (nonlinear residual leakage)
     mlp_cont_raw = mlp_probe_regression(T[tr], T[te], latlon[tr], latlon[te], seed=seed)
     mlp_cont_erase = mlp_probe_regression(T_tr_e, T_te_e, latlon[tr], latlon[te], seed=seed)
     out["mlp_continuous"] = {"raw": mlp_cont_raw, "erased": mlp_cont_erase}
     print(f"  MLP   R^2(lat/lon) raw/erased: "
           f"{mlp_cont_raw['r2_avg_test']:+.3f}  -> {mlp_cont_erase['r2_avg_test']:+.3f}")
 
-    # categorical probes + MDL if there is enough per-class power
     if not use_continuous:
         cat_raw = linear_guardedness_test_categorical(T[tr], T[te], z_lab[tr], z_lab[te])
         cat_erase = linear_guardedness_test_categorical(T_tr_e, T_te_e, z_lab[tr], z_lab[te])
@@ -1052,9 +938,6 @@ def run_leace(city: str, variant: str = "leace", seed: int = 42,
     return out
 
 
-# ---------------------------------------------------------------------------
-# Self-test (synthetic data, ground-truth LEACE identity).
-# ---------------------------------------------------------------------------
 
 def _self_test(seed: int = 0) -> None:
     print("== leace_deconfound self-test ==")
@@ -1064,7 +947,6 @@ def _self_test(seed: int = 0) -> None:
     rng = np.random.default_rng(seed)
     n, d, dz = 800, 16, 3
     Z = rng.normal(size=(n, dz))
-    # X has a planted linear leak on Z plus iid noise
     B = rng.normal(size=(dz, d))
     X = Z @ B + 0.5 * rng.normal(size=(n, d))
     Y = (X[:, 0] - X[:, 1]) + 0.3 * Z[:, 0] + 0.2 * rng.normal(size=n)
@@ -1074,7 +956,6 @@ def _self_test(seed: int = 0) -> None:
     Z_tr, Z_te = Z[:600], Z[600:]
     Y_tr, Y_te = Y[:600], Y[600:]
 
-    # LEACE identity
     T_tr_e, T_te_e, eraser, resid = leace_erase(T_tr, Z_tr, T_holdout=T_te, label="LEACE")
     assert resid < 1e-4, f"LEACE residual {resid:.3e}"
     cont = linear_guardedness_test_continuous(T_tr_e, T_te_e, Z_tr[:, :2], Z_te[:, :2])
@@ -1082,20 +963,17 @@ def _self_test(seed: int = 0) -> None:
     print(f"  LEACE: P @ Sigma_xz residual = {resid:.2e}  "
           f"post-erasure Ridge R^2 on Z = {cont['r2_avg_test']:.3f}  OK")
 
-    # SPLINCE covariance preservation + linear guardedness
     T_tr_s, T_te_s, P_star, sp_checks = splince_erase(T_tr, Z_tr, Y_tr, T_holdout=T_te)
     assert sp_checks["cov_err"] < 1e-6, f"SPLINCE cov-preservation err {sp_checks['cov_err']:.3e}"
     assert sp_checks["kernel_err"] < 1e-6, f"SPLINCE kernel-constraint err {sp_checks['kernel_err']:.3e}"
     print(f"  SPLINCE: cov(T, Y) preservation max-err = {sp_checks['cov_err']:.2e}  "
           f"kernel max-err = {sp_checks['kernel_err']:.2e}  OK")
 
-    # binomial power
     pw = binomial_power(n_test=100, K=4)
     assert 0 < pw["p_min_80pct"] < 1, pw
     print(f"  binomial_power(n=100, K=4): chance={pw['chance_p']:.2f}  "
           f"p_min_80%={pw['p_min_80pct']:.3f}  OK")
 
-    # MDL probe runs without exception on synthetic classes
     Zc = (Z[:, 0] > Z[:, 0].mean()).astype(int)
     mdl = mdl_codelength_probe(T_tr, T_te, Zc[:600], Zc[600:], n_portions=4,
                                n_epochs=20)

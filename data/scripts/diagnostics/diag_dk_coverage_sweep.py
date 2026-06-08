@@ -60,11 +60,6 @@ from scipy import stats
 
 TAU_TRUE = 0.10
 
-# Method labels -> (column for SE, type) where type encodes how the CI is built.
-# "z"        -> theta +/- 1.96 * se
-# "t<K-1>"   -> theta +/- t(0.975, K-1) * se   (BCH with K=5 folds)
-# "stored"   -> ci_*_lo / ci_*_hi columns from raw
-# "fb"       -> fixed-b critical value approximated by t(0.975, 1/b - 1)
 METHOD_SPEC = [
     ("classical",       "se_classical",         "z",       "Classical OLS"),
     ("hc1",             "se_hc1",               "z",       "HC1 / White"),
@@ -92,7 +87,7 @@ def _coverage_for_method(df: pd.DataFrame, label: str, se_col: str | None,
         lo = df["theta_rs"] - tq * df[se_col]
         hi = df["theta_rs"] + tq * df[se_col]
     elif ci_type == "fb":
-        tq = float(stats.t.ppf(0.975, df=1))  # b=0.5 -> df=1
+        tq = float(stats.t.ppf(0.975, df=1))
         lo = df["theta_rs"] - tq * df[se_col]
         hi = df["theta_rs"] + tq * df[se_col]
     elif ci_type == "stored":
@@ -119,7 +114,6 @@ def _decompose_v_jk(df: pd.DataFrame) -> dict:
     v_off = df["v_off"]
     v_between = df["v_between"]
     v_total = v_off + v_between
-    # Mask out the 2.25-lambda row with the >7 ratio outlier (numerical blowup).
     safe = v_total.abs() > 1e-12
     ratio = (v_off[safe] / v_total[safe]).clip(lower=-10.0, upper=10.0)
     return {
@@ -224,7 +218,6 @@ def _plot_two_panel(rho_mat: pd.DataFrame, marg: pd.DataFrame, out_path: Path,
     ax1.legend(loc="upper right", fontsize=7, ncol=2)
     ax1.grid(alpha=0.3)
 
-    # right: bar of marginal-coverage across-spikes at the headline rho
     marg_sorted = marg.sort_values("coverage_all_spikes", ascending=False)
     bar_colors = ["#2ca02c" if c >= 0.93 else
                   ("#ffbb33" if c >= 0.80 else "#d62728")
@@ -271,28 +264,23 @@ def main() -> int:
     print(f"[diag] loaded {len(raw)} rows, "
           f"{raw['spike_strength'].nunique()} spikes")
 
-    # Step 1. Per-method marginal coverage on the existing 500-rep raw.
     marg = _table_per_method(raw)
     print("\n=== Marginal coverage across all spikes (rho=0.15 headline) ===")
     print(marg.to_string(index=False))
 
-    # Per-method, per-spike for the matrix plot column.
     per_spike = _table_per_method_per_spike(raw)
     per_spike.to_csv(args.out_dir / "dk_coverage_per_spike.csv", index=False)
 
-    # Step 2. V_JK decomposition.
     decomp = _decompose_v_jk(raw)
     print("\n=== V_JK = V_off + V_between decomposition ===")
     for k, v in decomp.items():
         print(f"  {k:40s} {v:.4g}")
 
-    # Step 3. Empirical vs theoretical fold-mean variance.
     fold_check = _empirical_vs_theoretical_fold_var(raw)
     print("\n=== Empirical fold-mean SD vs theoretical (iid scores) ===")
     for k, v in fold_check.items():
         print(f"  {k:40s} {v:.4g}")
 
-    # Step 4. Rho sweep -- run if not present and not skipped.
     if not args.skip_sweep:
         existing = list(args.rho_dir.glob("dk_lab_raw_rho*.csv")) if args.rho_dir.exists() else []
         if len(existing) < 5:
@@ -314,7 +302,6 @@ def main() -> int:
         pivot = rho_mat.pivot(index="method", columns="rho", values="coverage")
         print(pivot.to_string())
 
-    # Step 5. JSON output.
     out_json = {
         "config": {
             "raw_path": str(args.raw),
@@ -345,7 +332,6 @@ def main() -> int:
         json.dump(out_json, f, indent=2, default=float)
     print(f"\n[diag] wrote {out_json_path}")
 
-    # Step 6. Two-panel figure.
     out_png = args.out_dir / "fig_dk_coverage_sweep.png"
     _plot_two_panel(rho_mat, marg, out_png,
                     title_extra=" (Salerno-Wu-McCormick 2026 stress test, JBES appendix)")

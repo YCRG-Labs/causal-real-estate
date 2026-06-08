@@ -95,7 +95,7 @@ References (same as v1 plus):
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import _silence  # noqa: F401  -- sets OMP/MKL/OPENBLAS/VECLIB/NUMEXPR=1 + KMP_DUPLICATE_LIB_OK
+import _silence
 
 import json
 import time
@@ -113,26 +113,18 @@ from joblib import Parallel, delayed, parallel_config
 
 from config import PROCESSED_DIR, EMBEDDING_DIM
 
-# -----------------------------------------------------------------------------
-# (A) Slim parcels cache
-# -----------------------------------------------------------------------------
 
 _PARCEL_COLS = [
     "latitude", "longitude", "sale_price", "price", "crime_temporal_match",
-    # CENSUS_COLS
     "median_household_income", "pct_bachelors", "pct_white", "pct_black",
     "pct_asian", "pct_hispanic", "median_home_value", "median_gross_rent",
     "labor_force_participation", "pct_under_25", "pct_over_60",
-    # CRIME_COLS
     "crime_violent", "crime_property", "crime_quality_of_life", "crime_total",
-    # AMENITY_COLS
     "amenity_food_dining", "amenity_retail", "amenity_services",
     "amenity_recreation", "amenity_transportation", "amenity_education",
     "amenity_total", "amenity_diversity",
-    # MICRO_GEO_COLS
     "dist_park_m", "dist_transit_m", "dist_school_m",
     "dist_restaurant_m", "dist_retail_m", "dist_medical_m",
-    # PROPERTY_COLS
     "bedrooms", "bldg_area_sqft", "lot_area_sqft", "year_built",
 ]
 
@@ -257,9 +249,6 @@ def _build_features(city: str, use_cache: bool = True, drop_crime: bool = False)
     T = T[valid]
     conf = confounders[valid].astype(np.float64, copy=False)
     Y_log = np.log(Y[valid])
-    # Lat/lon coords needed for spatial HAC and buffered K-fold. NaNs in either
-    # column are tolerated by the downstream coord users (cKDTree drops NaN rows
-    # at construction) but we propagate the same `valid` filter for alignment.
     coords = np.column_stack([lat[valid], lon[valid]]).astype(np.float64)
     meta = {
         "n_confounders": conf.shape[1],
@@ -270,9 +259,6 @@ def _build_features(city: str, use_cache: bool = True, drop_crime: bool = False)
     return T, conf, Y_log, coords, meta
 
 
-# -----------------------------------------------------------------------------
-# (H) PC1 via randomized SVD (f32 internally, f64 output)
-# -----------------------------------------------------------------------------
 
 def _pc1(T: np.ndarray, seed: int = 0, weights=None) -> np.ndarray:
     if weights is None:
@@ -296,9 +282,6 @@ def _pc1(T: np.ndarray, seed: int = 0, weights=None) -> np.ndarray:
     return (pc1 - mean) / sd
 
 
-# -----------------------------------------------------------------------------
-# (B) Nuisance learners
-# -----------------------------------------------------------------------------
 
 _RIDGE_ALPHAS = np.logspace(-3, 3, 25)
 
@@ -312,10 +295,8 @@ def _ridge_oof_predict(X_tr, y_tr, X_te, sample_weight=None):
     return m.predict(X_te)
 
 
-# (C) Custom GCV ridge: single SVD per fold, sweep alphas in O(K * n)
 def _svd_ridge_oof_predict(X_tr, y_tr, X_te, sample_weight=None):
     if sample_weight is not None:
-        # weighted GCV: scale rows then drop back at predict time
         w = np.sqrt(sample_weight)
         X_tr_w = X_tr * w[:, None]
         y_tr_w = y_tr * w
@@ -379,7 +360,6 @@ def _stacked_oof_predict(X_tr, y_tr, X_te, sample_weight=None):
             bagging_freq=1, force_col_wise=True, n_jobs=1, verbose=-1,
             random_state=42)),
     ]
-    # RBF kernel ridge with median-distance heuristic (subsample for speed)
     sub = X_tr[: min(len(X_tr), 200)]
     d = pdist(sub)
     med = float(np.median(d)) if d.size else 1.0
@@ -403,7 +383,6 @@ def _stacked_oof_predict(X_tr, y_tr, X_te, sample_weight=None):
             m.fit(X_tr[idx_fit], y_tr[idx_fit])
         Z_meta[:, j] = m.predict(X_tr[idx_meta])
         preds_te[:, j] = m.predict(X_te)
-    # NNLS-1: w >= 0, sum to 1.  WLS scaling on rows under sample_weight.
     if sample_weight is None:
         w_nnls, _ = nnls(Z_meta, y_tr[idx_meta])
     else:
@@ -425,9 +404,6 @@ _LEARNERS = {
 }
 
 
-# -----------------------------------------------------------------------------
-# DML core
-# -----------------------------------------------------------------------------
 
 def _dml_core(T, conf_s, Y, learner_fn=None, seed=0, k_folds=5, weights=None,
               splits=None, return_residuals=False, cross_fit_pca=False,
@@ -456,8 +432,6 @@ def _dml_core(T, conf_s, Y, learner_fn=None, seed=0, k_folds=5, weights=None,
     if legacy_kwargs:
         warnings.warn(
             f"v2 _dml_core: ignoring v1-only kwargs {list(legacy_kwargs.keys())}.")
-    # v1-compat: legacy callers (diagnose_leverage) omit learner_fn entirely
-    # because v1's _dml_core_fast hardcoded LightGBM. Preserve that semantic.
     if learner_fn is None:
         learner_fn = _lgbm_oof_predict
     n = len(Y)
@@ -509,9 +483,6 @@ def _boot_rep(T, conf_s, Y, seed, learner_name, mode):
     return res[0] if res is not None else np.nan
 
 
-# -----------------------------------------------------------------------------
-# Per-city driver
-# -----------------------------------------------------------------------------
 
 def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
              learner="ridge", drop_crime=False, profile=False, use_cache=True,
@@ -530,15 +501,11 @@ def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
     print(f"\n[{city}] n={n}  text_dim={T.shape[1]}  confounders={conf.shape[1]}  "
           f"rich={meta['has_rich_confounders']}  learner={learner} mode={mode}")
 
-    # (D) precompute standardization
     t1 = time.perf_counter()
     scaler = StandardScaler().fit(conf)
     conf_s = scaler.transform(conf).astype(np.float64, copy=False)
     timings["standardize"] = time.perf_counter() - t1
 
-    # Optional spatial-buffered K-fold (Emmenegger et al. 2025 arXiv:2206.14591).
-    # Drops training points within r_n of any eval point, mitigating spillover
-    # bias under spatial dependence at the cost of training-set size.
     point_splits = None
     if buffered_kfold_flag:
         from spatial_se import buffered_kfold
@@ -552,7 +519,6 @@ def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
                   f"falling back to random KFold")
             buffered_kfold_flag = False
 
-    # Point estimate (residuals surfaced for spatial HAC / leverage)
     t1 = time.perf_counter()
     main = _dml_core(T, conf_s, Y, _LEARNERS[learner], seed=0, k_folds=k_folds,
                      splits=point_splits, return_residuals=True)
@@ -564,23 +530,14 @@ def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
     print(f"  point: theta = {theta_hat:.4f}  (IF SE {se_str}, "
           f"{timings['point']*1000:.0f}ms)")
 
-    # Spatial-honest inference (Salerno-Wu-McCormick 2026 arXiv:2603.11368 +
-    # Conley 1999). Computed from the SAME residuals used for the point
-    # estimate so the IF score and the HAC variance are coherent.
     spatial_block = None
     if spatial_hac:
-        # IM-2010 self-normalized cluster-t becomes the HEADLINE per the DK stress
-        # test (0.73 coverage vs 0.50 for plain Salerno + z=1.96). Salerno-JK SE
-        # paired with BCH-2011 t_{K-1} is the bandwidth-robustness margin; plain
-        # Salerno-JK + z is kept for back-compatibility.
         from spatial_se import (spatial_hac_se, salerno_jackknife_hac,
                                  bandwidth_sensitivity_sweep,
                                  ibragimov_muller_self_normalized_ci,
                                  salerno_jackknife_t_critical)
         denom = float(np.mean(T_resid * T_resid))
         psi = (Y_resid - theta_hat * T_resid) * T_resid / denom + theta_hat
-        # NOTE: shift by theta_hat so the IM-2010 fold-mean centers reproduce the
-        # point estimate. Conley/Salerno are scale-invariant under this shift.
         good = ~(np.isnan(coords[:, 0]) | np.isnan(coords[:, 1]))
         if good.sum() < n:
             print(f"  [warn] spatial HAC restricted to {good.sum()}/{n} rows")
@@ -617,14 +574,11 @@ def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
         print(f"  spatial HAC | Conley={conley:.4f}  Salerno JK={jk['se']:.4f}  "
               f"sweep max={sweep['max']:.4f}")
 
-    # Bootstrap
     if parallel is None:
-        # auto: ridge is fast enough sequential; lgbm benefits from parallel
         parallel = (learner == "lgbm")
     t1 = time.perf_counter()
     seeds = list(range(1, B + 1))
     if parallel:
-        # batch_size=4 chosen by bench: pickling overhead ~ rep cost at bs=1
         with parallel_config(backend="loky", inner_max_num_threads=1):
             boots = Parallel(n_jobs=-1, batch_size=4)(
                 delayed(_boot_rep)(T, conf_s, Y, s, learner, mode) for s in seeds
@@ -634,7 +588,6 @@ def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
     boots = np.array([b for b in boots if not np.isnan(b)])
     timings["bootstrap"] = time.perf_counter() - t1
 
-    # Cheap bootstrap CI (Lam 2022)
     se_cb = float(math.sqrt(np.mean((boots - theta_hat) ** 2)))
     t_q = float(stats.t.ppf(0.975, df=len(boots)))
     ci_low = theta_hat - t_q * se_cb
@@ -655,9 +608,6 @@ def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
               f"point={timings['point']*1000:.0f}ms  "
               f"boot={timings['bootstrap']*1000:.0f}ms")
 
-    # ---- (#30) OVB-DML "Long Story Short" (CINS 2022 PLM Cor. 1) --------------
-    # Closed-form RV / RVa from the already-computed residuals; sub-millisecond.
-    # Honest SE preference: Salerno HAC > cheap bootstrap > IF.
     ovb_block = None
     if ovb_dml_flag:
         from sensitivity import ovb_block_from_residuals
@@ -677,9 +627,6 @@ def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
               f"max eta2_T={ovb_block['max_eta2_T_observed']:.4f}  "
               f"({ovb_block['wall_sec']*1000:.1f}ms)")
 
-    # ---- (#31) Schuirmann TOST equivalence ------------------------------------
-    # df = B for cheap bootstrap pivot (Lam 2022 Thm 1). Pre-committed delta on
-    # the log-price scale (~delta * 100% price effect at the linear order).
     tost_block = None
     if tost_flag:
         from tost_equivalence import tost as _tost_fn
@@ -700,17 +647,12 @@ def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
         print(f"  TOST: p={_r.tost_p_value:.4f}  delta={_r.delta:.3f}  "
               f"{equiv}  ({tost_block['wall_sec']*1000:.2f}ms)")
 
-    # ---- (#29) Riesz APE + omnibus joint null ---------------------------------
-    # Riesz uses the same PC1 direction as the headline theta so theta_ape is
-    # on a comparable scale.  Ridge outcome learner is mandatory: GBM default
-    # is a 12 s per-call bottleneck per audit; ridge brings it to ~250 ms.
     riesz_block = None
     omnibus_block = None
     if riesz_ape_flag or omnibus_joint_null_flag:
         _ridge_outcome = lambda: RidgeCV(alphas=_RIDGE_ALPHAS)
     if riesz_ape_flag:
         from riesz_ape import riesz_ape as _riesz_ape
-        # Recompute PC1 direction (cheap) for target_direction
         Tc_dir = (T - T.mean(axis=0, keepdims=True)).astype(np.float32, copy=False)
         _, _, Vt_dir = randomized_svd(Tc_dir, n_components=1, n_iter=7,
                                       n_oversamples=10, random_state=0)
@@ -722,7 +664,6 @@ def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
                                      outcome_learner=_ridge_outcome,
                                      k_folds=k_folds, seed=0)
         except TypeError:
-            # older signature without outcome_learner kwarg
             riesz_block = _riesz_ape(T, conf_s, Y,
                                      target_direction=v_pc1_direction,
                                      k_folds=k_folds, seed=0)
@@ -734,8 +675,6 @@ def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
     if omnibus_joint_null_flag:
         from riesz_ape import omnibus_joint_null as _omni
         t1 = time.perf_counter()
-        # Ridge for BOTH outcome and treat learners brings per-call cost from
-        # ~6.5 s to ~0.6 s at n=350, d=30 (audit-profile measurement).
         try:
             omnibus_block = _omni(T, conf_s, Y, K=5, B=999,
                                   outcome_learner=_ridge_outcome,
@@ -771,14 +710,11 @@ def fast_dml(city, B=50, k_folds=5, parallel=None, mode="efron",
     }
 
 
-# -----------------------------------------------------------------------------
-# CLI
-# -----------------------------------------------------------------------------
 
 def main():
     argv = sys.argv[1:]
     B = 50
-    parallel = None  # auto
+    parallel = None
     mode = "efron"
     learner = "ridge"
     drop_crime = False
@@ -849,7 +785,6 @@ def main():
 
     t_all = time.perf_counter()
     rows = []
-    # (F) warm-start the loky pool once across cities if any city needs parallel
     with parallel_config(backend="loky", inner_max_num_threads=1):
         for c in cities:
             r = fast_dml(c, B=B, parallel=parallel, mode=mode, learner=learner,
@@ -879,12 +814,6 @@ if __name__ == "__main__":
     main()
 
 
-# ---------------------------------------------------------------------------
-# Compatibility aliases for downstream scripts (diagnose_leverage, etc.) that
-# were written against the v1 API. These delegate to the same v2 internals; no
-# duplication. Kept here so v2 is a drop-in for `from fast_bootstrap_dml_v2
-# import _make_lgbm, _pc1_randomized, _dml_core_fast`.
-# ---------------------------------------------------------------------------
 
 _pc1_randomized = _pc1
 _dml_core_fast = _dml_core

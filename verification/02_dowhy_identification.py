@@ -24,7 +24,7 @@ import pandas as pd
 
 warnings.filterwarnings("ignore")
 
-from dowhy import CausalModel  # noqa: E402
+from dowhy import CausalModel
 
 RESULTS = Path(__file__).parent / "results"
 RESULTS.mkdir(exist_ok=True)

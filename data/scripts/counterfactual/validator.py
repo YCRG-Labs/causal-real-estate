@@ -44,7 +44,6 @@ class ValidationResult:
     notes: list[str] = field(default_factory=list)
 
 
-# ---------- perplexity (GPT-2) ----------------------------------------------
 
 _PPL_CACHE: dict = {}
 
@@ -52,7 +51,6 @@ _PPL_CACHE: dict = {}
 def _load_gpt2():
     if "model" in _PPL_CACHE:
         return _PPL_CACHE["model"], _PPL_CACHE["tok"]
-    # Suppress chatty HF download logs during model load.
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
         from transformers import GPT2LMHeadModel, GPT2TokenizerFast
         import torch
@@ -80,7 +78,6 @@ def perplexity(text: str, max_tokens: int = 512) -> float:
     return float(math.exp(min(out.loss.item(), 50.0)))
 
 
-# ---------- attribute classifier (zip from text) -----------------------------
 
 _CLF_CACHE: dict = {}
 
@@ -143,7 +140,6 @@ def reset_caches() -> None:
     _CLF_CACHE.clear()
 
 
-# ---------- main validation entry point --------------------------------------
 
 def validate_rewrite(
     original_text: str,
@@ -159,7 +155,6 @@ def validate_rewrite(
     toward a specific target — only away from the original)."""
     notes: list[str] = []
 
-    # (a) slot preservation
     so = extract_slots(original_text)
     sr = extract_slots(rewritten_text)
     diffs = slots_match(so, sr)
@@ -168,7 +163,6 @@ def validate_rewrite(
         bad = [k for k, ok in diffs.items() if not ok]
         notes.append(f"slot mismatch: {bad}")
 
-    # (b) perplexity sanity
     if skip_perplexity:
         ppl_o = ppl_r = float("nan")
         ppl_ratio = float("nan")
@@ -185,7 +179,6 @@ def validate_rewrite(
         if not ppl_ok:
             notes.append(f"perplexity blew up: {ppl_ratio:.2f}x")
 
-    # (c) attribute classifier (must be pre-fit)
     orig_label = rew_label = None
     flipped = False
     if "pipe" in _CLF_CACHE:
@@ -203,7 +196,7 @@ def validate_rewrite(
     else:
         notes.append("classifier not fit; flip check skipped")
 
-    overall = slot_ok and ppl_ok  # classifier flip is a soft signal, not gate
+    overall = slot_ok and ppl_ok
     return ValidationResult(
         slot_preserved=slot_ok,
         slot_diffs=diffs,

@@ -1,5 +1,4 @@
 #!/bin/bash
-# Full-corpus LEACE + IGBP rerun (float32 + CUDA path) -> results/leace12_igbp
 set -u
 cd ~/causal-real-estate
 mkdir -p results/leace12_igbp

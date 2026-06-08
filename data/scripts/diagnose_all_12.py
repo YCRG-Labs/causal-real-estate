@@ -38,10 +38,10 @@ from sklearn.preprocessing import StandardScaler
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from fast_bootstrap_dml_v2 import (  # noqa: E402
+from fast_bootstrap_dml_v2 import (
     _build_features, _dml_core, _ridge_oof_predict, _pc1,
 )
-from diagnose_leverage import (  # noqa: E402
+from diagnose_leverage import (
     compute_influence_and_leverage, theta_minus_top_k, trimmed_dml_huber,
 )
 

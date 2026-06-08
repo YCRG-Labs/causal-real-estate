@@ -35,13 +35,13 @@ import requests
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from build_canonical_confounders import (  # noqa: E402
+from build_canonical_confounders import (
     CACHE_DIR, PROCESSED_DIR, RAW_DIR, BUFFER_M, HAVERSINE_R,
     OSM_AMENITY_TAGS, OSM_MICRO_TAGS,
     attach_census, attach_crime,
     _balltree_radius_indices, _balltree_nearest_distance,
 )
-from pipeline_dicts import STATE_FIPS, CITY_BBOXES  # noqa: E402
+from pipeline_dicts import STATE_FIPS, CITY_BBOXES
 
 print = functools.partial(print, flush=True)
 

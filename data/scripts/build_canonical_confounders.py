@@ -51,7 +51,7 @@ except Exception:
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from pipeline_dicts import (  # noqa: E402
+from pipeline_dicts import (
     STATE_FIPS, COUNTY_FIPS, CITY_BBOXES,
     CRIME_LATLON_FIELDS,
 )

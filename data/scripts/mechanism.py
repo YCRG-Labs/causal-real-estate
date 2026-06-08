@@ -32,7 +32,7 @@ Refs (full dossier in research/mechanism/research_notes.md):
   Eisenstein, O'Connor, Smith, Xing 2010 EMNLP — geographic lexical variation
 """
 from __future__ import annotations
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence  # noqa: F401
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence
 
 import argparse
 import json
@@ -58,11 +58,10 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 DATA_RAW_DIR = Path(__file__).resolve().parents[1] / "raw" / "descriptions"
 DATA_PROC_DIR = Path(__file__).resolve().parents[1] / "processed"
 
-# Heylighen-Dewaele Penn-Treebank POS classes (NLTK upenn_tagset).
 HD_NOUN = {"NN", "NNS", "NNP", "NNPS"}
 HD_ADJ = {"JJ", "JJR", "JJS"}
-HD_PREP = {"IN"}                         # IN covers prepositions and subord. conj.
-HD_ART = {"DT"}                          # determiners stand in for articles in PTB
+HD_PREP = {"IN"}
+HD_ART = {"DT"}
 HD_PRONOUN = {"PRP", "PRP$", "WP", "WP$"}
 HD_VERB = {"VB", "VBD", "VBG", "VBN", "VBP", "VBZ", "MD"}
 HD_ADV = {"RB", "RBR", "RBS", "WRB"}
@@ -107,7 +106,6 @@ def stylometric_features(text: str, function_words: list[str]) -> dict[str, floa
     n_sents = max(1, len(sentences))
 
     feats: dict[str, float] = {
-        # Readability indices (textstat)
         "flesch_reading_ease": textstat.flesch_reading_ease(text),
         "flesch_kincaid_grade": textstat.flesch_kincaid_grade(text),
         "gunning_fog": textstat.gunning_fog(text),
@@ -115,7 +113,6 @@ def stylometric_features(text: str, function_words: list[str]) -> dict[str, floa
         "automated_readability_index": textstat.automated_readability_index(text),
         "coleman_liau_index": textstat.coleman_liau_index(text),
 
-        # Surface
         "n_words": n_words,
         "n_sentences": n_sents,
         "mean_sentence_length": n_words / n_sents,
@@ -123,13 +120,11 @@ def stylometric_features(text: str, function_words: list[str]) -> dict[str, floa
         "type_token_ratio": n_unique / n_words,
         "log_n_words": math.log(n_words),
 
-        # Punctuation density
         "comma_per_word": text.count(",") / n_words,
         "semicolon_per_word": text.count(";") / n_words,
         "exclaim_per_word": text.count("!") / n_words,
         "question_per_word": text.count("?") / n_words,
 
-        # POS ratios
         "pos_noun_pct": 100 * sum(1 for t in pos_tags if t in HD_NOUN) / n_words,
         "pos_adj_pct": 100 * sum(1 for t in pos_tags if t in HD_ADJ) / n_words,
         "pos_verb_pct": 100 * sum(1 for t in pos_tags if t in HD_VERB) / n_words,
@@ -138,11 +133,9 @@ def stylometric_features(text: str, function_words: list[str]) -> dict[str, floa
         "pos_pronoun_pct": 100 * sum(1 for t in pos_tags if t in HD_PRONOUN) / n_words,
         "pos_det_pct": 100 * sum(1 for t in pos_tags if t in HD_ART) / n_words,
 
-        # Heylighen-Dewaele formality
         "formality_F": heylighen_dewaele_F(pos_tags),
     }
 
-    # Function-word frequency vector (Burrows-Delta-style)
     lower_tokens = [w.lower() for w in word_tokens]
     fw_counter = Counter(t for t in lower_tokens if t in function_words)
     for fw in function_words:
@@ -195,7 +188,6 @@ def classifier_accuracy(X: np.ndarray, y: np.ndarray, k_folds: int = 5) -> dict:
         Cs=10, max_iter=5000, cv=k_folds, multi_class="auto", n_jobs=-1
     )
     skf = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=42)
-    # Some folds may have classes absent; restrict to classes with >= k_folds members
     counts = pd.Series(y_enc).value_counts()
     keep = counts[counts >= k_folds].index
     mask = np.isin(y_enc, keep)
@@ -208,7 +200,7 @@ def classifier_accuracy(X: np.ndarray, y: np.ndarray, k_folds: int = 5) -> dict:
     scores = cross_val_score(clf, Xs_m, y_m, cv=skf, scoring="accuracy", n_jobs=-1)
 
     counts_m = pd.Series(y_m).value_counts(normalize=True)
-    random_baseline = float((counts_m ** 2).sum())  # majority-class proxy
+    random_baseline = float((counts_m ** 2).sum())
     uniform_baseline = 1.0 / len(keep)
     return {
         "accuracy": float(scores.mean()),
@@ -314,7 +306,6 @@ def run_mechanism_analysis(city: str, top_k: int = 100) -> dict:
     zips = df["zip"].fillna(0).astype(float).astype(int).astype(str).values
     print(f"  N={len(descriptions):,} descriptions, {len(np.unique(zips))} unique zip codes")
 
-    # 1. Stylometric features
     print("\n  [1] Building stylometric feature matrix...")
     fw_list = build_function_word_list(top_n=200)
     X_style, feat_names = build_stylometric_matrix(descriptions, fw_list)
@@ -327,13 +318,11 @@ def run_mechanism_analysis(city: str, top_k: int = 100) -> dict:
           f"-> {style_acc['ratio_uniform']:.1f}x random "
           f"(N={style_acc['n_obs']}, K={style_acc['n_classes']})")
 
-    # Full embedding classifier baseline (matches §5.1 of paper)
     print("\n  [3] Full-embedding zip classifier (baseline for comparison):")
     full_emb = load_full_embeddings(city)
     full_acc = None
     if full_emb is not None:
         E, _ = full_emb
-        # Align rows: emb parquet preserves original order from descriptions CSV
         n = min(len(descriptions), E.shape[0])
         full_acc = classifier_accuracy(E[:n], zips[:n])
         print(f"    accuracy = {full_acc['accuracy']:.3f} ± {full_acc['accuracy_sd']:.3f} "
@@ -342,7 +331,6 @@ def run_mechanism_analysis(city: str, top_k: int = 100) -> dict:
     else:
         print("    full embedding parquet not found")
 
-    # 2. Vocabulary MI ranking
     print("\n  [4] Vocabulary mutual information vs zip code:")
     mi_df = vocab_mutual_information(descriptions, zips, top_k=top_k)
     mi_df["category"] = categorize_top_words(mi_df["word"].tolist())

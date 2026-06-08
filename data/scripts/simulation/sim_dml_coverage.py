@@ -56,30 +56,16 @@ try:
 except ImportError:
     _HAS_VENN_ABERS = False
 
-# Ballinari & Bearth (2024) reference repo uses K=2 outer × J=2 inner
-# (run_simulation.py n_folds=2). With K=5 outer × J=2 inner the inner
-# calibration sub-fold has n/10 points which is too small for isotonic
-# regression to learn the PS tails — bias and variance explode (see
-# Brev grid 2026-06-02). For the calibrated AIPW path we hard-code
-# K_FOLDS_CAL=2 to faithfully replicate B&B Algorithm 1; the
-# uncalibrated DML path keeps its canonical K=5 default.
 K_FOLDS_CAL = 2
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 from threadpoolctl import threadpool_limits
 import warnings as _warnings
-# Cosmetic — venn-abers' calc_p0p1 emits one All-NaN RuntimeWarning per
-# degenerate gradient slice. Harmless but floods the log.
 _warnings.filterwarnings("ignore", category=RuntimeWarning,
                           module=r"venn_abers")
 
 REPO = Path(__file__).resolve().parents[3]
 RIDGE_ALPHAS = (0.01, 0.1, 1.0, 10.0, 100.0, 1000.0)
-# Fixed ridge alpha used inside the bootstrap loops (and the fast path
-# for dml_if). Picked from pilot RidgeCV runs on CCDDHNR which selected
-# alpha=10 in >90% of folds across n in {500, 1000, 2000}. Documented
-# in the paper appendix's pilot table. Per the speedup research, this
-# is 34x faster than RidgeCV at the (n, p=20) sizes we use.
 FIXED_ALPHA = 10.0
 
 
@@ -106,15 +92,10 @@ def make_plr_weak_overlap(n: int, dim_x: int = 20, alpha: float = 0.5,
     v = rng.standard_normal(n)
     zeta = rng.standard_normal(n)
     sig = lambda x: 1.0 / (1.0 + np.exp(-x))
-    # Push R²(D|X) to target by scaling m_0 against unit-variance noise.
-    # m_0 = c (x1 + 0.5 sig(x3)) → Var(m_0) ≈ c² (1 + 0.0625) ≈ 1.06 c².
-    # R²(D|X) = Var(m_0) / (Var(m_0) + 1) = target → c² = target / (1 - target) / 1.06.
     c = float(np.sqrt(target_R2_DX / (1 - target_R2_DX) / 1.06))
     m0 = c * (X[:, 0] + 0.5 * sig(X[:, 2]))
     D = m0 + 1.0 * v
     if nonlinear_g:
-        # Nonlinear g_0 with interactions; ridge cannot learn this from
-        # a small sample. Mirrors Bach/Schacht DGP4 "difficult outcome".
         g0 = (sig(X[:, 0]) + 0.5 * np.sin(X[:, 2])
               + 0.3 * X[:, 0] * X[:, 4]
               + 0.5 * (X[:, 1] ** 2 - 1))
@@ -161,13 +142,6 @@ def make_irm_dgp4(n: int, dim_x: int = 30, theta: float = 0.5,
     return Y, D, X
 
 
-# HGBM nuisance configuration. Per DoubleML's R default for non-linear
-# DML, max_depth=3 + 100 iters + early stopping. Tightened tol=1e-4
-# (default 1e-7 over-tunes at small n), capped max_bins (outcome 64,
-# binary classifier 32 — 30 smooth features don't need finer), and
-# categorical_features=[] skips sklearn's auto-detection pass. Net ~1.15x
-# vs default at n=500-2000, p=30 (sklearn HGBM issue #30662 small-data
-# benchmark).
 _HGBM_REG_KW = dict(max_depth=3, max_iter=100, learning_rate=0.1,
                      early_stopping=True, validation_fraction=0.1,
                      tol=1e-4, n_iter_no_change=5, max_bins=64,
@@ -182,11 +156,6 @@ def _fit_outcome(Xs_tr, Y_tr, learner, alpha):
     if learner == "ridge":
         return Ridge(alpha=alpha, solver="cholesky").fit(Xs_tr, Y_tr)
     if learner == "hgbm":
-        # sklearn HGBM deadlocks on first OpenMP fit inside cgroup
-        # containers (Brev/shadeform); OMP_NUM_THREADS env doesn't
-        # reliably defang because libgomp initialises before sklearn
-        # reads the env. threadpool_limits forces single-thread at fit
-        # time, after init — see sklearn #16016, #25822, #30662.
         with threadpool_limits(limits=1, user_api="openmp"):
             return HistGradientBoostingRegressor(**_HGBM_REG_KW).fit(Xs_tr, Y_tr)
     raise ValueError(f"unknown outcome learner: {learner}")
@@ -235,7 +204,7 @@ def _tune_aipw_once(Xs, Y, D, learner_outcome="ridge",
         alpha1 = float(RidgeCV(alphas=RIDGE_ALPHAS).fit(
             Xs[mask1], Y[mask1]).alpha_) if mask1.sum() >= 5 else 1.0
     else:
-        alpha0 = alpha1 = 0.0   # HGBM ignores; placeholder for signature
+        alpha0 = alpha1 = 0.0
     if learner_propensity == "logreg":
         try:
             lr_cv = LogisticRegressionCV(
@@ -245,7 +214,7 @@ def _tune_aipw_once(Xs, Y, D, learner_outcome="ridge",
         except Exception:
             C_lr = 1.0
     else:
-        C_lr = 0.0   # HGBM ignores
+        C_lr = 0.0
     return alpha0, alpha1, C_lr
 
 
@@ -269,7 +238,6 @@ def _aipw_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
     if Xs is None:
         Xs = StandardScaler().fit_transform(X)
     if alpha0 is None or alpha1 is None or C_lr is None:
-        # Lazy first-call tune so bare aipw_if(...) still works.
         alpha0_fb, alpha1_fb, C_lr_fb = _tune_aipw_once(
             Xs, Y, D,
             learner_outcome=learner_outcome,
@@ -282,7 +250,6 @@ def _aipw_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
     g0_hat = np.empty(n); g1_hat = np.empty(n); p_hat = np.empty(n)
     for tr, te in kf.split(np.arange(n)):
         D_tr = D[tr].astype(int)
-        # Propensity. Frozen-hyperparam fit for the chosen learner.
         try:
             m_p = _fit_propensity(Xs[tr], D_tr,
                                    learner=learner_propensity, C=C_lr)
@@ -290,7 +257,6 @@ def _aipw_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
         except Exception:
             p_te = np.full(len(te), float(D_tr.mean()))
         p_te = np.clip(p_te, 1e-3, 1 - 1e-3)
-        # Outcome under D=0 and D=1 separately.
         mask0 = D_tr == 0
         mask1 = D_tr == 1
         if mask0.sum() >= 5:
@@ -390,15 +356,6 @@ def aipw_pairs_boot(Y, D, X, n_boot=100, k_folds=5, seed=42,
     return theta_hat, se, lo, hi
 
 
-# ---------------------------------------------------------------------------
-# Ballinari & Bearth (2024) Propensity-Score Calibration
-# arXiv:2409.04874v2. Algorithm 1 (p. 8) embeds an inner J-fold partition of
-# each outer test fold to fit a calibrator on raw classifier outputs without
-# touching the outcome regression. Per their Table 2 the calibrated estimator
-# restores nominal coverage on DGP4 (isotonic 0.937, Venn-Abers 0.946) where
-# uncalibrated lasso DML coverage is 0.282. Only the propensity is
-# calibrated; outcome ridges are unchanged.
-# ---------------------------------------------------------------------------
 
 def _fit_calibrator(raw_ps, D, method="isotonic"):
     """B&B (2024) calibrator factory. Returns a callable f(raw) -> calibrated.
@@ -411,19 +368,10 @@ def _fit_calibrator(raw_ps, D, method="isotonic"):
     raw_ps = np.clip(np.asarray(raw_ps, dtype=float), 1e-6, 1 - 1e-6)
     D = np.asarray(D, dtype=int)
     if method == "isotonic":
-        # B&B (2024) src/calibration.py:121-140 uses y_min/y_max as the
-        # only clipping; the redundant outer np.clip in the prior draft
-        # double-floored at 0.001 and triggered AIPW IPW blowup whenever
-        # isotonic hit the boundary on small calibration sub-folds.
         iso = IsotonicRegression(out_of_bounds="clip", y_min=1e-3, y_max=1 - 1e-3)
         iso.fit(raw_ps, D)
         return lambda p: iso.transform(np.clip(p, 1e-6, 1 - 1e-6))
     if method == "venn_abers":
-        # B&B's headline calibrator (Theorem 1 asymptotic licence; Table 2
-        # bias 0.009, coverage 0.946 on Lasso/DGP4/N=2000). API per the
-        # `venn-abers` PyPI package: 2-column probability input, returns
-        # (p_prime, p0_p1) tuple with shape (n, 2) each. We feed in
-        # [1-raw, raw] and take p_prime[:, 1].
         if not _HAS_VENN_ABERS:
             raise ImportError(
                 "pip install venn-abers (required for --calibration venn_abers)"
@@ -517,7 +465,6 @@ def _aipw_calibrated_cross_fit(Y, D, X, k_folds=5, seed=42, Xs=None,
                                   ).predict(Xs[te])
         else:
             g1_te = np.full(len(te), float(Y[tr][mask1].mean()) if mask1.sum() else 0.0)
-        # Inner J-fold loop on the held-out indices for PS calibration.
         n_te = len(te)
         D_te = D[te].astype(int)
         perm = rng.permutation(n_te)
@@ -850,7 +797,6 @@ def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs,
         Y, D, X = make_plr_weak_overlap(n=n, alpha=theta_true, rng=rng)
     elif dgp == "irm_dgp4":
         Y, D, X = make_irm_dgp4(n=n, theta=theta_true, rng=rng)
-        # IRM uses the AIPW (ATE) score, not the PLR partialling-out.
         rows = []
         theta_if, se_if, psi = aipw_if(
             Y, D, X, k_folds=k_folds, seed=seed,
@@ -877,11 +823,6 @@ def run_one_rep(n, theta_true, rep, seed, n_boot_mult, n_boot_pairs,
             rows.append(RepResult(n, theta_true, rep, "dml_pairs_boot",
                                   theta_if, se_pb, lo_pb, hi_pb,
                                   lo_pb <= theta_true <= hi_pb))
-        # Calibrated counterparts (B&B 2024 PS calibration). Forced to
-        # K_FOLDS_CAL=2 (B&B Algorithm 1 spec) regardless of the user's
-        # --k_folds; with K=5 the inner J=2 calibration sub-folds have
-        # n/10 points which under-samples the PS tails and blows up the
-        # AIPW IPW term (Brev grid 2026-06-02).
         theta_cal, se_cal, psi_cal = aipw_cal_if(
             Y, D, X, k_folds=K_FOLDS_CAL, seed=seed, calibration=calibration,
             learner_outcome=learner_outcome,
@@ -1082,14 +1023,6 @@ def main():
     cells = [(n, theta) for n in args.n_grid for theta in args.theta_grid]
 
     if args.parallel_cells > 1:
-        # Cell-level multiprocessing with spawn start method. Bypasses
-        # the loky deadlock that's killed every joblib launch on this
-        # container, and the OpenMP-init-order issue that hangs HGBM at
-        # first fit. Each child process gets its own Python interpreter
-        # and its own libgomp; threadpool_limits inside _fit_propensity
-        # still caps each child to one OpenMP thread, so 4 cells on a
-        # 32-vCPU box use 4 vCPUs (12% util) — but it's 4x the cell
-        # throughput of the sequential dispatch we're escaping from.
         import multiprocessing as _mp
         import pickle as _pickle
         ctx = _mp.get_context("spawn")

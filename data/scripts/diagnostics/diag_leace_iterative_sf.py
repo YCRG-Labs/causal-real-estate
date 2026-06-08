@@ -57,12 +57,12 @@ import torch
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from leace_deconfound import (  # noqa: E402
+from leace_deconfound import (
     leace_erase,
     linear_guardedness_test_continuous,
     mlp_probe_regression,
 )
-from causal_inference import load_analysis_data, get_features_and_target  # noqa: E402
+from causal_inference import load_analysis_data, get_features_and_target
 
 REPO_ROOT = SCRIPTS_DIR.parent.parent
 RESULTS_DIR = REPO_ROOT / "results" / "diagnostics"
@@ -71,11 +71,6 @@ OUT_JSON = RESULTS_DIR / "leace_iterative_sf.json"
 OUT_PNG = RESULTS_DIR / "leace_iterative_sf.png"
 
 
-# ---------------------------------------------------------------------------
-# Data loader: replicates the leace_deconfound.run_leace front-half so we
-# get the exact same train/test split, T matrix and Z matrix used in the
-# headline numbers.
-# ---------------------------------------------------------------------------
 
 def _prepare_city(city: str, seed: int = 42) -> dict:
     loaded = load_analysis_data(city)
@@ -132,9 +127,6 @@ def _prepare_city(city: str, seed: int = 42) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# Probes.
-# ---------------------------------------------------------------------------
 
 def _mlp_r2(T_tr: np.ndarray, T_te: np.ndarray, lat_tr, lat_te,
             seed: int = 0) -> float:
@@ -197,14 +189,6 @@ def _mlp_r2_shuffled(T_tr_erased: np.ndarray, T_te_erased: np.ndarray,
     }
 
 
-# ---------------------------------------------------------------------------
-# Iteration: re-apply closed-form LEACE on the erased reps and watch
-# Sigma_xz, the Ridge R^2 and the MLP R^2.  We expect Sigma_xz to be at
-# machine zero after iter 1 (so subsequent iterations have nothing to
-# erase).  This is the empirical confirmation that "iterative LEACE in
-# the same layer" is a no-op, exactly as Belrose et al.'s Theorem 1
-# predicts.
-# ---------------------------------------------------------------------------
 
 def _sigma_xz_norm(T: np.ndarray, Z: np.ndarray) -> float:
     Xc = T - T.mean(axis=0); Zc = Z - Z.mean(axis=0)
@@ -220,7 +204,6 @@ def iterative_leace(prep: dict, n_iter: int = 10,
     T_tr_curr = T[tr].copy(); T_te_curr = T[te].copy()
     history = []
 
-    # iteration 0 = raw
     sig0 = _sigma_xz_norm(T_tr_curr, Z[tr])
     r2_ridge0 = _ridge_r2(T_tr_curr, T_te_curr, latlon[tr], latlon[te])
     r2_mlp0 = _mlp_r2(T_tr_curr, T_te_curr, latlon[tr], latlon[te], seed=seed)
@@ -257,9 +240,6 @@ def iterative_leace(prep: dict, n_iter: int = 10,
             "guardedness_residual": float(resid),
         })
 
-        # convergence: linear-guardedness identity already saturated at
-        # machine precision after one iter; we still run a few more to
-        # show the curve flatlines.
         if sig < 1e-10 and k >= 2:
             break
 
@@ -270,11 +250,6 @@ def iterative_leace(prep: dict, n_iter: int = 10,
     }
 
 
-# ---------------------------------------------------------------------------
-# Iterative gradient-based projection (Iskander, Radinsky, Belinkov,
-# Findings of ACL 2023, arXiv:2305.10204).  Faithful to Algorithm 1
-# under the simplifications described in the file header.
-# ---------------------------------------------------------------------------
 
 def _fit_mlp_adversary(T_tr: np.ndarray, Z_tr_z: np.ndarray, seed: int,
                        n_epochs: int = 80, hidden: int = 128,
@@ -336,7 +311,6 @@ def igbp_erase(prep: dict, n_outer: int = 5, n_inner: int = 80,
     for outer in range(1, n_outer + 1):
         adv = _fit_mlp_adversary(T_tr_curr, Z_tr_z, seed=seed + outer,
                                  n_epochs=n_inner)
-        # Per-row input-gradient: d L_row / d x_row
         T_tr_t = torch.from_numpy(T_tr_curr.astype(np.float64)).requires_grad_(True)
         Y_t = torch.from_numpy(Z_tr_z.astype(np.float64))
         pred = adv(T_tr_t)
@@ -346,12 +320,9 @@ def igbp_erase(prep: dict, n_outer: int = 5, n_inner: int = 80,
             g = torch.autograd.grad(loss_per_row[i], T_tr_t, retain_graph=True)[0][i]
             grads.append(g.detach().cpu().numpy().astype(np.float64))
         G = np.asarray(grads)
-        # Leading right-singular vector summarises the dominant
-        # adversary-sensitive direction across rows.
         _, _, Vt = np.linalg.svd(G, full_matrices=False)
         v = Vt[0]
         v = v / max(np.linalg.norm(v), 1e-12)
-        # Orthogonal projection that kills v
         P = np.eye(T_tr_curr.shape[1]) - np.outer(v, v)
         T_tr_curr = T_tr_curr @ P
         T_te_curr = T_te_curr @ P
@@ -369,9 +340,6 @@ def igbp_erase(prep: dict, n_outer: int = 5, n_inner: int = 80,
             "T_te_final": T_te_curr}
 
 
-# ---------------------------------------------------------------------------
-# Driver.
-# ---------------------------------------------------------------------------
 
 def run_diagnostic(cities: list[str], seed: int = 42,
                    n_iter_leace: int = 10, n_outer_igbp: int = 5,
@@ -388,7 +356,6 @@ def run_diagnostic(cities: list[str], seed: int = 42,
         print(f"  n={prep['n']}  n_unique_latlon={prep['n_unique_latlon']}  "
               f"n_zips={prep['n_zips']}")
 
-        # Step 1: iterative LEACE -------------------------------------------------
         print(f"  iterative LEACE ({n_iter_leace} iters)...")
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -399,7 +366,6 @@ def run_diagnostic(cities: list[str], seed: int = 42,
               f"  MLP R^2(lat/lon)={last['mlp_r2_latlon']:+.4f}"
               f"  Ridge R^2(price)={last['ridge_r2_price']:+.3f}")
 
-        # Step 2: shuffle sanity check on iter-1 erased reps ----------------------
         T_tr_iter1 = prep["T"][prep["tr"]].copy()
         T_te_iter1 = prep["T"][prep["te"]].copy()
         with warnings.catch_warnings():
@@ -424,7 +390,6 @@ def run_diagnostic(cities: list[str], seed: int = 42,
               f"shuffled mean={shuffled['mean']:+.4f}  "
               f"std={shuffled['std']:+.4f}  range=[{shuffled['min']:+.4f}, {shuffled['max']:+.4f}]")
 
-        # Step 3: IGBP comparison -------------------------------------------------
         print(f"  IGBP ({n_outer_igbp} outer iters)...")
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -435,7 +400,6 @@ def run_diagnostic(cities: list[str], seed: int = 42,
               f"MLP R^2(lat/lon)={last_igbp['mlp_r2_latlon']:+.4f}  "
               f"Ridge R^2(price)={last_igbp['ridge_r2_price']:+.3f}")
 
-        # RLACE / Kernelized: not pip-installable on this machine, see appendix.
         city_out["rlace"] = {"status": "skipped",
                              "reason": "shauli-ravfogel/rlace is a git-only repo, "
                                        "not pip-installable; see literature appendix"}
@@ -464,7 +428,6 @@ def make_plot(results: dict, out_path: Path) -> None:
         xs = [h["iter"] for h in hist]
         ys = [h["mlp_r2_latlon"] for h in hist]
         ax.plot(xs, ys, marker="o", color=palette.get(c, None), label=c.upper())
-        # shuffle baseline annotation
         sh = results["cities"][c]["shuffle_sanity"]["shuffled_distribution"]
         ax.axhline(sh["mean"], linestyle=":", color=palette.get(c, None), alpha=0.6)
     ax.axhline(0.02, linestyle="--", color="grey", alpha=0.6,

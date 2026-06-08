@@ -19,7 +19,7 @@ import requests
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from pipeline_dicts import CRIME_CROSSWALK  # noqa: E402
+from pipeline_dicts import CRIME_CROSSWALK
 
 USER_AGENT = "YCRG-Labs JBES-2026 research (jacobcrainic@icloud.com)"
 DEFAULT_HEADERS = {"User-Agent": USER_AGENT}

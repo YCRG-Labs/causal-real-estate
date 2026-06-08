@@ -1,8 +1,4 @@
 #!/bin/bash
-# Rerun the fast (CPU) statistical suite after the confounder winsorizer fix
-# (dc5d4a6) so Portland is clean everywhere and the pooled/cross-method numbers
-# are consistent. Baur is already current; counterfactual (GPU) is separate
-# (data/scripts/reruns/rerun_cf_n200.sh).
 set -u
 cd ~/causal-real-estate
 C="sf boston nyc dc philadelphia chicago seattle denver atlanta portland phoenix dallas"

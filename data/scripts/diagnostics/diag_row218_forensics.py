@@ -3,7 +3,7 @@ leave-one-fold-out. Output: results/diagnostics/row218_forensics.json + plots.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import _silence  # noqa: F401
+import _silence
 import json
 import warnings
 from pathlib import Path
@@ -40,11 +40,7 @@ def main():
     top10 = [int(i) for i in order[:10]]
     print(f"theta_hat={theta:+.4f}  denom={denom:.4f}  top-10 row indices: {top10}")
 
-    # 1) forensic dump on row 218 + the top-10 by |IC|
     emb_df = pd.read_parquet("data/processed/nyc_embeddings.parquet")
-    # _build_features filters rows; we need to align indices. fast path: just dump
-    # the SAME rows from the parquet by row index (best-effort; if v2 drops rows we
-    # report what the parquet says at that integer position).
     fields = [c for c in ["url", "address", "zip", "price", "latitude", "longitude",
                           "bedrooms", "bldg_area_sqft", "year_built", "description"]
               if c in emb_df.columns]
@@ -62,7 +58,6 @@ def main():
             rd["description"] = rd["description"][:400]
         rows_dump.append(rd)
 
-    # 2) leave-one-row-out theta sweep
     loo = []
     for k in [0, 1, 2, 3, 5, 10, 20, 30]:
         drop = set(order[:k].tolist())
@@ -78,7 +73,6 @@ def main():
                     "ci_low": float(th - 1.96 * se),
                     "ci_high": float(th + 1.96 * se)})
 
-    # 3) per-fold contribution: drop the fold containing row 218
     if 218 < n:
         fold_of_218 = int(fold_ids[218])
         keep = np.array([i for i in range(n) if fold_ids[i] != fold_of_218])
@@ -93,11 +87,7 @@ def main():
     else:
         loo_fold = None
 
-    # 4) Hampel redescending psi-function trimmed DML
-    # Hampel rho': psi(u) = u for |u|<=a; a*sgn(u) for a<|u|<=b;
-    # a*(c-|u|)/(c-b)*sgn(u) for b<|u|<=c; 0 for |u|>c. Standard {a=1.7,b=3.4,c=8.5}.
     def hampel_irls(Tr, Yr, breakdowns=(1.7, 3.4, 8.5), n_iter=20):
-        # iteratively reweight: theta solves sum w_i T_i (Y_i - T_i theta) = 0
         theta_h = float(np.sum(Tr * Yr) / np.sum(Tr * Tr))
         for _ in range(n_iter):
             u = Yr - theta_h * Tr
@@ -119,8 +109,6 @@ def main():
             if abs(new_theta - theta_h) < 1e-8:
                 theta_h = new_theta; break
             theta_h = new_theta
-        # asymptotic SE under Hampel psi (HRRS86 eq 4.2.9, p.105):
-        # V(theta) = E[psi^2] / (E[psi'])^2 * 1 / E[Tr^2]; n in denom
         u = Yr - theta_h * Tr
         sig = max(float(np.median(np.abs(u - np.median(u))) / 0.6745), 1e-6)
         r = u / sig
@@ -148,7 +136,6 @@ def main():
     th_h, se_h, n_clip, sig_h = hampel_irls(Tr, Yr)
     hampel = {"theta": th_h, "se": se_h, "n_clipped": n_clip, "sigma_hat": sig_h}
 
-    # 5) "Bonferroni IC trim": drop rows with |IC| > c * (sigma_IC * sqrt(2 log n))
     sd_IC = float(np.std(IC))
     bonf_cutoff = sd_IC * float(np.sqrt(2 * np.log(n)))
     keep = np.abs(IC) <= bonf_cutoff
@@ -161,7 +148,6 @@ def main():
     else:
         bonf = None
 
-    # 6) residual scatter plot
     fig, ax = plt.subplots(1, 2, figsize=(11, 4.5))
     ax[0].scatter(Tr, Yr, s=8, alpha=0.4)
     for r in top10:

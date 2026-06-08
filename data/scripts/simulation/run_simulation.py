@@ -33,15 +33,6 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-# Threading model (see git history for the saga). We do NOT pin OMP/BLAS in the
-# main process: that keeps the sequential path (--n_jobs 1) and the truth-
-# calibration phase on LightGBM's fast internal multi-threading. Oversubscription
-# under the parallel grid is prevented at the worker level by
-# parallel_config(inner_max_num_threads=1) (loky sets OMP_NUM_THREADS=1 in each
-# worker subprocess only). That env limit is now actually honored because
-# booster.make_regressor defaults n_jobs=None instead of passing n_jobs=-1, which
-# previously made LightGBM call omp_set_num_threads(all_cores) and override it ->
-# 4 workers x ~100 threads = the 355 sec/rep oversubscription.
 _NCORES = os.cpu_count() or 4
 
 import numpy as np
@@ -49,7 +40,7 @@ import pandas as pd
 from joblib import Parallel, delayed, parallel_config
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from simulation.dgp import (  # noqa: E402
+from simulation.dgp import (
     GaussianMixtureGenerator,
     calibrate_beta_direct,
     fit_generator,
@@ -57,7 +48,7 @@ from simulation.dgp import (  # noqa: E402
     sample_scm0,
     sample_scm1,
 )
-from simulation.estimators import ESTIMATORS, EstimateResult  # noqa: E402
+from simulation.estimators import ESTIMATORS, EstimateResult
 
 DEFAULT_RESULTS_DIR = (
     Path(__file__).resolve().parents[3] / "results" / "simulation"
@@ -70,8 +61,8 @@ EFFECT_SIZES = (0.01, 0.05, 0.10)
 class CellSpec:
     estimator: str
     N: int
-    dgp: str            # "scm0" | "scm1_0.01" | "scm1_0.05" | "scm1_0.10"
-    beta_direct: float  # 0.0 for SCM_0
+    dgp: str
+    beta_direct: float
 
 
 def _cell_label(spec: CellSpec) -> str:
@@ -113,12 +104,6 @@ def _draw_one(
     }
 
 
-# ---------------------------------------------------------------------------
-# Truth calibration: each estimator has a different estimand.
-# We pin the per-estimator "truth" to the sample-mean theta over a single
-# very large draw (n_truth_pop). This is the population-scale estimand
-# under the same DGP each replicate uses.
-# ---------------------------------------------------------------------------
 
 def calibrate_truths(
     gen: GaussianMixtureGenerator,
@@ -143,16 +128,6 @@ def calibrate_truths(
     n_truth_draws = 5
 
     def _one_cell(est: str, dgp_name: str, beta: float):
-        # Calibrate truth as the estimator's probability limit on big-N draws of
-        # the SAME DGP each replicate uses, for BOTH scm0 and scm1. scm0 is NOT
-        # enforced to 0: with the finite n_W confounder set the DGP leaves a
-        # residual estimand (~+0.007), so the CI must be assessed against the
-        # quantity the estimator actually targets, not the structural zero.
-        # Forcing truth=0 mislabels that residual as bias and destroys null-cell
-        # coverage (see check_scm0_truth.py). We AVERAGE n_truth_draws big-N
-        # draws because a single draw at n_truth_pop has Monte-Carlo SE
-        # comparable to the residual estimand itself, which would leave noise in
-        # the null-cell bias column.
         thetas = []
         for d in range(n_truth_draws):
             rng = np.random.default_rng(seed + 1000 * d)
@@ -171,9 +146,6 @@ def calibrate_truths(
         return f"{est}|{dgp_name}", float(np.mean(thetas))
 
     cells = [(est, dgp_name, beta) for est in estimators for dgp_name, beta in dgps]
-    # ALWAYS sequential: calibrate_truths is small (≤16 cells × ~5s each).
-    # Joblib's loky worker spawn overhead (~30-90s including torch+CUDA init in
-    # each subprocess) dwarfs the work it's supposed to parallelize.
     results = [_one_cell(e, d, b) for e, d, b in cells]
     truths = dict(results)
     for k, v in truths.items():
@@ -181,9 +153,6 @@ def calibrate_truths(
     return truths
 
 
-# ---------------------------------------------------------------------------
-# Aggregation
-# ---------------------------------------------------------------------------
 
 def aggregate_cell(
     df: pd.DataFrame, truth: float, alpha: float = 0.05
@@ -207,7 +176,6 @@ def aggregate_cell(
     rmse = float(np.sqrt(np.mean((th - truth) ** 2)))
     coverage = float(np.mean((lo <= truth) & (truth <= hi)))
     ci_len = float(np.mean(hi - lo))
-    # Power = P(|theta_hat / SE| > 1.96)
     z = np.abs(np.divide(th, se, out=np.full_like(th, np.nan), where=se > 0))
     power = float(np.mean(z > 1.96))
     return {
@@ -218,9 +186,6 @@ def aggregate_cell(
     }
 
 
-# ---------------------------------------------------------------------------
-# Top-level driver
-# ---------------------------------------------------------------------------
 
 def run(
     n_reps: int,
@@ -244,7 +209,6 @@ def run(
     print(f"[2/4] Fitting GaussianMixture generator...", flush=True)
     gen = fit_generator(real_E, real_z, low_rank=10, min_bin_n=10)
 
-    # Calibrate beta_direct at population scale for each effect size.
     print(f"[3/4] Calibrating beta_direct for effect sizes "
           f"{EFFECT_SIZES}...", flush=True)
     betas = {}
@@ -274,13 +238,6 @@ def run(
 
     rng_master = np.random.default_rng(seed)
 
-    # Outer parallelism over reps, ONE thread per worker. Reps are embarrassingly
-    # parallel; each rep's nuisance fits are tiny (n<=2000), so single-threaded
-    # inner is optimal and avoids oversubscription. Use all cores by default;
-    # --n_jobs caps it. inner_max_num_threads=1 makes loky export OMP_NUM_THREADS=1
-    # to each worker, which booster.make_regressor (n_jobs=None) now honors.
-    # The persistent pool keeps loky workers warm and avoids re-pickling the
-    # ~1.5 MB generator every cell.
     _outer_workers = n_jobs if (n_jobs and n_jobs > 0) else _NCORES
     rows: list[dict] = []
     with parallel_config(backend="loky", inner_max_num_threads=1):
@@ -300,7 +257,6 @@ def run(
     raw = pd.DataFrame(rows)
     raw.to_csv(out_dir / "raw_replicates.csv", index=False)
 
-    # Aggregate per cell.
     summary_rows = []
     for spec in cells:
         sub = raw[
@@ -319,7 +275,6 @@ def run(
         })
     summary = pd.DataFrame(summary_rows)
 
-    # Coverage table and power table.
     coverage_cols = ["estimator", "N", "dgp", "beta_direct", "truth",
                      "n_reps_ok", "bias", "sd", "rmse",
                      "coverage", "mean_ci_length"]
@@ -335,7 +290,6 @@ def run(
     print(f"  {out_dir/'raw_replicates.csv'}", flush=True)
     print(f"  {out_dir/'truths.json'}", flush=True)
 
-    # Quick console preview.
     print("\nCoverage table preview:")
     print(summary[coverage_cols].to_string(index=False))
 

@@ -97,7 +97,7 @@ def _wls_fit(y, v, X, tau2):
     XtWX = X.T @ W @ X
     XtWy = X.T @ W @ y
     beta = np.linalg.solve(XtWX, XtWy)
-    cov_naive = np.linalg.inv(XtWX)   # naive WLS covariance
+    cov_naive = np.linalg.inv(XtWX)
     resid = y - X @ beta
     return beta, cov_naive, resid, w
 
@@ -143,10 +143,6 @@ def romano_wolf_pvalues(y, v, X_full, mod_idx, B=2000, seed=42,
     k, p = X.shape
     rng = np.random.default_rng(seed)
 
-    # Guard: a joint design with n_predictors >= k is (near-)saturated.
-    # WLS residuals collapse to ~0, the HKSJ scale q -> 0, studentised
-    # statistics diverge, and every RW p-value floors at 1/(M+1).  Refuse
-    # the joint fit; the caller should use romano_wolf_univariate instead.
     if p >= k:
         warnings.warn(
             f"romano_wolf_pvalues: joint design has n_predictors={p} >= "
@@ -167,17 +163,10 @@ def romano_wolf_pvalues(y, v, X_full, mod_idx, B=2000, seed=42,
 
     boot_t_mods = np.zeros((B, len(mod_idx)))
     for b in range(B):
-        # Dirichlet(1,...,1) cluster weights, sum to k → mean 1.
         u = rng.exponential(scale=1.0, size=k)
         w_b = k * u / u.sum()
-        # Weighted meta-regression: weight observations by w_b (cluster
-        # weights) AND by inverse-variance 1/(v+τ²) (meta-analytic).
         v_b = v
-        tau2_b = tau2_fn(y, v_b)   # could re-estimate τ² with weights;
-        # for stability at k=12 we hold τ² at the observed estimate,
-        # which is the standard fixed-η approach for Romano-Wolf in
-        # meta-analysis (Ferguson & Heene 2012; Higgins-Thompson 2004).
-        # Apply Dirichlet weights to the WLS normal equations:
+        tau2_b = tau2_fn(y, v_b)
         w_meta = 1.0 / (v_b + tau2_obs)
         w_eff = w_b * w_meta
         XtWX = X.T @ np.diag(w_eff) @ X
@@ -191,18 +180,15 @@ def romano_wolf_pvalues(y, v, X_full, mod_idx, B=2000, seed=42,
         q_b = float(np.sum(w_eff * resid_b ** 2) / max(k - p, 1))
         cov_b = q_b * np.linalg.inv(XtWX)
         se_b = np.sqrt(np.clip(np.diag(cov_b), 0, None))
-        # Center on observed β̂ per Clarke-Romano-Wolf eq (4).
         t_b = np.abs((beta_b - beta_obs) / np.where(se_b > 0, se_b, np.inf))
         boot_t_mods[b] = t_b[mod_idx]
 
-    # Drop failed bootstrap reps.
     valid = ~np.isnan(boot_t_mods).any(axis=1)
     boot_t_mods = boot_t_mods[valid]
     M = len(boot_t_mods)
     if M == 0:
         return np.full(len(mod_idx), np.nan), {}
 
-    # Stepdown algorithm.
     order = np.argsort(-t_obs_mod)
     t_ord = t_obs_mod[order]
     boot_ord = boot_t_mods[:, order]
@@ -248,7 +234,6 @@ def romano_wolf_univariate(y, v, Z, mods, tau2_obs, B=2000, seed=42):
     rng = np.random.default_rng(seed)
     w_meta = 1.0 / (v + tau2_obs)
 
-    # Observed univariate slopes / HKSJ SEs (one regression per moderator).
     beta_obs = np.empty(m)
     se_obs = np.empty(m)
     for j in range(m):
@@ -330,7 +315,7 @@ def influence_diagnostics(y, v, Xj, tau2, cities):
     w = 1.0 / (v + tau2)
     XtWX = X.T @ (X * w[:, None])
     cov_naive = np.linalg.inv(XtWX)
-    H = X @ cov_naive @ (X * w[:, None]).T          # hat matrix
+    H = X @ cov_naive @ (X * w[:, None]).T
     hat = np.clip(np.diag(H), 0.0, None)
 
     loo_beta = np.empty(k)
@@ -438,12 +423,10 @@ def main():
     mods = ["log_population", "median_hh_income", "pct_renter",
             "pct_college", "diversity_gini_simpson", "median_home_value",
             "median_year_built", "pop_density_per_sqmi",
-            # Federal-data moderators (BEA/BLS/FHFA via FRED, added 2026-06-03)
             "fred_unemp_rate", "fred_hpi_yoy_pct", "fred_pcpi"]
     mods = [m for m in mods if m in df.columns]
     Z = df[mods].apply(lambda s: (s - s.mean()) / (s.std(ddof=1) or 1.0))
 
-    # Baseline: intercept-only random-effects pooled mean.
     X0 = np.ones((len(df), 1))
     tau2_pm = tau2_paule_mandel(y, v)
     tau2_rm = tau2_reml(y, v)
@@ -461,18 +444,12 @@ def main():
           f"CI=[{baseline_rm['ci_low'][0]:+.4f}, "
           f"{baseline_rm['ci_high'][0]:+.4f}] p={baseline_rm['p'][0]:.4f}")
 
-    # Univariate moderator scan with both BH (legacy) and RW (upgraded).
     print(f"\n=== Univariate moderator scan ===")
     cities = df.index.tolist()
     uni_rows = []
     influence_by_mod = {}
     for j, m in enumerate(mods):
         Xj = np.column_stack([np.ones(len(df)), Z[m].to_numpy()])
-        # τ² fixed at the intercept-only PM estimate across all univariate
-        # moderator scans (Veroniki 2016, Hartung-Knapp 2001). Re-estimating
-        # per moderator conflates "between-study variance after partialling
-        # out moderator j" with the unconditional heterogeneity that t-crit
-        # values are calibrated against; fixing τ² is the standard.
         hk = hksj_ci(np.zeros(2), Xj, y, v, tau2_pm)
         influence_by_mod[m] = influence_diagnostics(y, v, Xj, tau2_pm, cities)
         uni_rows.append({
@@ -489,29 +466,14 @@ def main():
     uni_df = pd.DataFrame(uni_rows)
     uni_df["bh_q"] = bh_qvalues(uni_df["p_raw"].to_numpy())
 
-    # One-sided p-values under the Shen-Ross (2021) pre-registered
-    # directional alternative H_a: β > 0 for renter_share (and by analogy
-    # the same direction for the other demographic moderators that
-    # operate through search-and-pricing exposure).  Endorsed by Lehmann
-    # & Romano (2022, Testing Statistical Hypotheses, 4e §3.7) when the
-    # alternative is scientifically determined ex ante.
     df_t = uni_df["t"].to_numpy()
-    df_resid = len(df) - 2   # k - p for univariate meta-reg with intercept + 1 mod
+    df_resid = len(df) - 2
     p_one = 1 - stats.t.cdf(df_t, df=df_resid)
     uni_df["p_one_sided"] = p_one
     uni_df["bh_q_one_sided"] = bh_qvalues(p_one)
     storey_q_one, pi0_one = storey_qvalues(p_one)
     uni_df["storey_q_one_sided"] = storey_q_one
 
-    # --- Romano-Wolf multiplicity correction over the UNIVARIATE family ---
-    # FIX: do NOT run Romano-Wolf on the joint multivariate meta-regression.
-    # At k=12 the joint design [intercept | all moderators] has
-    # n_predictors = 1 + len(mods), which is >= k here (near-saturated at 8
-    # mods, fully saturated at 11): WLS residuals collapse to ~0, the HKSJ
-    # scale q -> 0, studentised statistics diverge, and every RW p-value
-    # floors at 1/(M+1).  We instead run RW over the SAME univariate
-    # per-moderator slope statistics that BH/Storey use, so all multiplicity
-    # corrections operate on one common family of marginal associations.
     n_predictors_joint = 1 + len(mods)
     if n_predictors_joint >= len(df):
         print(f"\n  [guard] joint multivariate Romano-Wolf disabled: "
@@ -526,9 +488,6 @@ def main():
                             float_format=lambda x: f"{x:+.4f}"))
     print(f"\n  Storey π̂_0 (one-sided) = {pi0_one:.3f}")
 
-    # Influence / leverage diagnostics (Viechtbauer & Cheung 2010): surface
-    # the k=12 single-market fragility (e.g. renter-share slope sign flips)
-    # rather than hide it behind the point estimates.
     infl_print = pd.DataFrame([{
         "moderator": m,
         "beta": float(uni_df.loc[uni_df["moderator"] == m, "beta"].iloc[0]),
@@ -545,7 +504,6 @@ def main():
     print(infl_print.to_string(index=False,
                                 float_format=lambda x: f"{x:+.4f}"))
 
-    # Pooled effect: also report one-sided
     t_pooled = baseline_pm["t"][0] if "t" in baseline_pm else \
                baseline_pm["beta"][0] / baseline_pm["se"][0]
     p_pool_one = 1 - stats.t.cdf(t_pooled, df=baseline_pm["df"])
@@ -554,7 +512,6 @@ def main():
           f"t({baseline_pm['df']})={t_pooled:+.3f}  "
           f"one-sided p = {p_pool_one:.4f}")
 
-    # Merge influence diagnostics into each univariate record for the JSON.
     uni_records = uni_df.to_dict(orient="records")
     for rec in uni_records:
         infl = influence_by_mod[rec["moderator"]]

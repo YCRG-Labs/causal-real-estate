@@ -14,7 +14,7 @@ import requests
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "data" / "scripts"))
 
-from city_downloaders._helpers import DEFAULT_HEADERS, canonicalize_crime, socrata_query, write_parquet  # noqa: E402
+from city_downloaders._helpers import DEFAULT_HEADERS, canonicalize_crime, socrata_query, write_parquet
 
 SLUG = "dallas"
 DCAD_HOME = "https://www.dallascad.org/"

@@ -59,7 +59,6 @@ def _knha_meta_reml(y: np.ndarray, v: np.ndarray, X: np.ndarray | None,
             X = X.reshape(-1, 1)
     p = X.shape[1]
 
-    # REML iteration on τ². Closed-form-ish update from Viechtbauer 2005.
     tau2 = max(0.0, float(np.var(y, ddof=1) - np.mean(v)))
     for _ in range(max_iter):
         w = 1.0 / (v + tau2)
@@ -68,7 +67,6 @@ def _knha_meta_reml(y: np.ndarray, v: np.ndarray, X: np.ndarray | None,
         XtWy = X.T @ W @ y
         beta = np.linalg.solve(XtWX, XtWy)
         resid = y - X @ beta
-        # REML stationary-point update for tau2 (Viechtbauer 2005 Eq. 8).
         P = W - W @ X @ np.linalg.solve(XtWX, X.T @ W)
         num = float(resid @ (P @ P) @ resid - np.trace(P))
         den = float(np.trace(P @ P))
@@ -81,7 +79,6 @@ def _knha_meta_reml(y: np.ndarray, v: np.ndarray, X: np.ndarray | None,
             break
         tau2 = new_tau2
 
-    # Final fit with refined tau2.
     w = 1.0 / (v + tau2)
     W = np.diag(w)
     XtWX = X.T @ W @ X
@@ -89,7 +86,6 @@ def _knha_meta_reml(y: np.ndarray, v: np.ndarray, X: np.ndarray | None,
     beta = np.linalg.solve(XtWX, XtWy)
     resid = y - X @ beta
 
-    # Knapp-Hartung quadratic-form variance scaling.
     q_kh = float(resid @ (w * resid)) / max(k - p, 1)
     cov_kh = q_kh * np.linalg.inv(XtWX)
     se_kh = np.sqrt(np.maximum(np.diag(cov_kh), 0))
@@ -100,13 +96,11 @@ def _knha_meta_reml(y: np.ndarray, v: np.ndarray, X: np.ndarray | None,
     ci_high = beta + ci_half
     p_vals = 2 * (1 - stats.t.cdf(np.abs(t_stats), df))
 
-    # Q_E residual heterogeneity, I² residual.
     Q_E = float(resid @ (w * resid))
     df_Q = k - p
     I2_resid = max(0.0, (Q_E - df_Q) / max(Q_E, 1e-12)) * 100.0
 
-    # Omnibus F-test for moderators (against intercept-only).
-    if p > 1 and X[:, 0].std() == 0:  # column 0 is intercept
+    if p > 1 and X[:, 0].std() == 0:
         non_intercept = list(range(1, p))
         if non_intercept:
             beta_sub = beta[non_intercept]
@@ -156,9 +150,6 @@ def main():
     acs = pd.read_csv(args.acs).set_index("city")
     df = shen.join(acs, how="inner")
 
-    # Effect estimates and within-study sampling variances. The Shen
-    # bootstrap CI half-widths give us robust SEs that don't inherit the
-    # IF-SE quasi-undercoverage documented in §3-4.
     theta = df["dml_theta"].values
     ci_half = (df["dml_ci_high"].values - df["dml_ci_low"].values) / 2.0
     se_boot = ci_half / 1.96
@@ -177,7 +168,6 @@ def main():
     print(f"\n=== Inputs: k={len(df)} cities, {len(moderators_full)} candidate moderators ===")
     print(df[["dml_theta", "dml_ci_low", "dml_ci_high"]].assign(se_boot=se_boot).to_string())
 
-    # (a) Intercept-only random-effects baseline.
     print("\n=== (a) Intercept-only random-effects baseline ===")
     base = _knha_meta_reml(theta, v, None)
     tau2_0 = base["tau2"]
@@ -187,7 +177,6 @@ def main():
     print(f"  τ̂² = {tau2_0:.5f}  Q_E = {base['Q_E']:.2f}  "
           f"residual I² = {base['I2_resid_pct']:.1f}%")
 
-    # (b) Theory-driven multivariable m=3.
     primary_mods = ["log_population", "pct_renter", "pop_density_per_sqmi"]
     primary_mods = [m for m in primary_mods if m in moderators_full]
     if primary_mods:
@@ -208,7 +197,6 @@ def main():
             print(f"  Omnibus F({len(primary_mods)}, {pri['df']}) = "
                   f"{pri['F_omnibus']:.2f}  p = {pri['F_omnibus_p']:.3f}")
 
-    # (c) Univariate scan with BH q-values.
     print("\n=== (c) Univariate scan of all candidate moderators (BH FDR) ===")
     uni_rows = []
     for mod in moderators_full:

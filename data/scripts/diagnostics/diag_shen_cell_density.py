@@ -64,7 +64,7 @@ from __future__ import annotations
 
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import _silence  # noqa: F401
+import _silence
 
 import argparse
 import json
@@ -93,10 +93,6 @@ from replications.shen_2021 import (
     _knn_peers, hedonic_ols, power_at_published_effect,
 )
 
-# Faster DML path: use the influence-function SE rather than the project
-# default bootstrap CI. This keeps the diagnostic feasible on a laptop —
-# the bootstrap path costs ~10x more wall time and the cross-city
-# comparison does not need percentile coverage.
 
 def _fast_dml(T, confounders, Y, label: str) -> DMLResult | None:
     import contextlib, io
@@ -120,10 +116,6 @@ OUT_DIR = Path("results/diagnostics")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# ---------------------------------------------------------------------------
-# Data loading mirrored from shen_2021.run_shen so densities line up with the
-# headline runs in results/_final_runs/shen_*_doc2vec.json.
-# ---------------------------------------------------------------------------
 
 @dataclass
 class CityFrame:
@@ -170,10 +162,6 @@ def _load_city(city: str) -> CityFrame | None:
                      lon=lon, zips=zips, Y=Y, confounders=confounders)
 
 
-# ---------------------------------------------------------------------------
-# K-NN radius (geodesic, km) under the haversine metric for honesty across
-# cities at different latitudes.
-# ---------------------------------------------------------------------------
 _EARTH_KM = 6371.0
 
 
@@ -200,9 +188,6 @@ def knn_radius_km(lat: np.ndarray, lon: np.ndarray, k: int = 5) -> np.ndarray:
     return out
 
 
-# ---------------------------------------------------------------------------
-# Vocabulary diagnostics.
-# ---------------------------------------------------------------------------
 _WORD_RE = re.compile(r"[A-Za-z][A-Za-z\-']+")
 
 
@@ -240,9 +225,6 @@ def vocab_stats(descriptions: list[str]) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# K-stability sweep on the same Doc2Vec embedding the headline run uses.
-# ---------------------------------------------------------------------------
 
 def k_stability(descriptions, lat, lon, ks=(3, 5, 10, 20, 50),
                 use_doc2vec: bool = True, seed: int = 0) -> dict:
@@ -279,16 +261,13 @@ def k_stability(descriptions, lat, lon, ks=(3, 5, 10, 20, 50),
     }
 
 
-# ---------------------------------------------------------------------------
-# Per-zip density, microstructure, listings-per-zip distribution.
-# ---------------------------------------------------------------------------
 
 def density_stats(zips, Y, k_target: int = 5) -> dict:
     s = pd.Series(zips)
     counts = s.value_counts()
     pct_ge_k = float((counts >= k_target).mean())
 
-    log_y = Y  # already log in the loader
+    log_y = Y
     by_zip_var = pd.DataFrame({"zip": zips, "ly": log_y}).groupby("zip")["ly"].var()
     by_zip_var = by_zip_var.dropna()
     return {
@@ -309,9 +288,6 @@ def density_stats(zips, Y, k_target: int = 5) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# Headline DML at K=5 vs K_stable using the cached vectors.
-# ---------------------------------------------------------------------------
 
 def headline_dml(uniqueness, confounders, Y, label, *, fast: bool = True):
     if fast:
@@ -326,10 +302,6 @@ def pick_k_stable(rho_vs_5: dict[int, float], threshold: float = 0.85) -> int:
     return max(stable)
 
 
-# ---------------------------------------------------------------------------
-# Power equivalence: at observed per-cell density, what effective n drives the
-# Eq. 9 estimator, and what θ_pub would project to our observed θ?
-# ---------------------------------------------------------------------------
 
 def power_block(n_our: int, n_local: float, theta_obs: float, se_obs: float,
                 theta_pub: float = 0.149, se_pub: float = 0.034,
@@ -353,8 +325,6 @@ def power_block(n_our: int, n_local: float, theta_obs: float, se_obs: float,
     pwr_eff = power_at_published_effect(n_our=max(1, int(n_eff)),
                                         theta_pub=theta_pub, se_pub=se_pub,
                                         n_pub=n_pub)
-    # implied population θ given our observed θ if SE truly scales as
-    # 1/sqrt(n) and our n_eff is the right denominator.
     implied_theta_pub = (theta_obs * math.sqrt(n_eff / n_pub)
                          if n_eff > 0 else float("nan"))
     return {
@@ -372,9 +342,6 @@ def power_block(n_our: int, n_local: float, theta_obs: float, se_obs: float,
     }
 
 
-# ---------------------------------------------------------------------------
-# Per-city wrapper.
-# ---------------------------------------------------------------------------
 
 def run_city(city: str, use_doc2vec: bool = True, seed: int = 42,
              ks=(3, 5, 10, 20, 50), fast_dml: bool = True) -> dict:
@@ -414,7 +381,6 @@ def run_city(city: str, use_doc2vec: bool = True, seed: int = 42,
     print(f"    off-diag min={kstab['off_diag_min']:.3f} "
           f"mean={kstab['off_diag_mean']:.3f}")
 
-    # OLS + DML headlines at K=5 and at K_stable
     k_stable = pick_k_stable(kstab["rho_vs_K5"], threshold=0.85)
     print(f"  K_stable = {k_stable} (max K with ρ vs K=5 ≥ 0.85)")
     conf_names = [f"c{i}" for i in range(cf.confounders.shape[1])]
@@ -448,7 +414,6 @@ def run_city(city: str, use_doc2vec: bool = True, seed: int = 42,
                   f"DML θ={dml_d['theta']:+.4f}  CI=[{dml_d['ci_low']:+.4f},"
                   f"{dml_d['ci_high']:+.4f}]")
 
-    # Power equivalence anchored to headline K=5 DML
     pw = None
     if heads["K5"]["dml"] is not None:
         pw = power_block(
@@ -471,9 +436,6 @@ def run_city(city: str, use_doc2vec: bool = True, seed: int = 42,
     }
 
 
-# ---------------------------------------------------------------------------
-# Plot.
-# ---------------------------------------------------------------------------
 
 def make_plot(per_city: dict, path: Path):
     cities = [c for c in ["sf", "boston", "nyc"] if c in per_city
@@ -482,7 +444,6 @@ def make_plot(per_city: dict, path: Path):
         return
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
 
-    # Panel 1: listings-per-zip distribution
     ax = axes[0]
     data = []
     for c in cities:
@@ -495,7 +456,6 @@ def make_plot(per_city: dict, path: Path):
         [[1, 1, 1]] * len(cities), positions=pos,
         widths=0.5, showfliers=False, patch_artist=True,
     )
-    # overwrite with our quantile data
     for i, (b, q) in enumerate(zip(box["boxes"], data)):
         mn, p25, med, p75, mx = q
         ax.add_patch(plt.Rectangle((i - 0.25, p25), 0.5, p75 - p25,
@@ -504,7 +464,6 @@ def make_plot(per_city: dict, path: Path):
         ax.plot([i - 0.25, i + 0.25], [med, med], color="black", lw=2)
         ax.plot([i, i], [mn, p25], color="black", lw=1)
         ax.plot([i, i], [p75, mx], color="black", lw=1)
-    # remove the default rectangles from the placeholder boxplot
     for b in box["boxes"]:
         b.set_visible(False)
     for m in box["medians"]:
@@ -518,7 +477,6 @@ def make_plot(per_city: dict, path: Path):
     ax.legend(loc="upper right")
     ax.set_ylim(bottom=0)
 
-    # Panel 2: K-stability (Spearman vs K=5) per city
     ax = axes[1]
     for c in cities:
         kstab = per_city[c]["k_stability"]
@@ -540,9 +498,6 @@ def make_plot(per_city: dict, path: Path):
     plt.close(fig)
 
 
-# ---------------------------------------------------------------------------
-# Main.
-# ---------------------------------------------------------------------------
 
 def main():
     ap = argparse.ArgumentParser()
@@ -589,7 +544,6 @@ def main():
             results["cities"][c] = {"city": c, "error": repr(e)}
             print(f"  ERROR on {c}: {e}")
 
-    # Cross-city summary table
     rows = []
     for c, blk in results["cities"].items():
         if "density" not in blk:
@@ -636,7 +590,6 @@ def main():
     except Exception as e:
         print(f"plot failed: {e}")
 
-    # console summary
     if rows:
         print("\n=== Cross-city summary ===")
         cols = ["city", "n", "n_zips", "list_per_zip_median",
