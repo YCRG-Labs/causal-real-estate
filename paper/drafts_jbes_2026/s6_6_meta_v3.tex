@@ -1,0 +1,85 @@
+% §6.6 Random-effects meta-analysis: pooled per-channel effects + a moderator
+% scan that finds NOTHING surviving multiplicity or leverage diagnostics.
+% The prior draft's "primary moderator = renter share, reject at p=0.009" was the
+% pre-winsorization Portland artifact (it flipped to -0.042 and fails BH after the
+% confounder winsorizer); it is removed, not relocated. Numbers locked against
+% results/replications/meta_regression_pooled.json (run --source shen and
+% --source baur_pooled, 2026-06-07) and the per-city tables for both channels.
+
+\subsection{Random-effects meta-analysis and a null moderator scan}
+\label{sec:meta-regression-12}
+
+The twelve per-market estimates from Sections~\ref{sec:shen-12city}
+and~\ref{sec:baur-12city} are heterogeneous in magnitude, and this section
+combines them. We use a random-effects meta-regression with the Paule-Mandel
+$\tau^2$ estimator \citep{paule1982consensus} and Hartung-Knapp-Sidik-Jonkman
+$t$-adjusted small-sample confidence intervals \citep{inthout2014hartung}, and
+we ask both what the pooled effect is on each channel and whether any
+metropolitan-level covariate moderates it across the twelve markets.
+
+\paragraph{Pooled effects.} Table~\ref{tab:meta-pooled-12} reports the
+random-effects pooled per-standard-deviation effects for both channels. The
+Shen-Ross uniqueness channel returns a Paule-Mandel and HKSJ pooled estimate of
+$+0.072$ with $95\%$ confidence interval $[+0.017, +0.128]$, $t(11) = +2.89$, and
+two-sided $p = 0.015$; the REML variant returns $+0.101$ with $p = 0.005$. The
+Baur sentence-BERT axis, under the price-positive orientation convention of
+Section~\ref{sec:baur-12city}, returns a pooled estimate of $+0.156$ with $95\%$
+confidence interval $[+0.063, +0.249]$, $t(11) = +3.68$, and two-sided
+$p = 0.004$. Both channels are positive and statistically detectable in the pool,
+and they point in the same direction, which is the cross-channel concordance
+Section~\ref{sec:cross-method-12} analyzes in detail. Between-market
+heterogeneity is large on both channels, with a residual $I^2$ in the high
+nineties driven by the spread from near-zero estimates in New York to
+estimates several times the pooled mean in Philadelphia and Chicago, so the
+pooled figures summarize dispersed distributions rather than single
+generalizable means.
+
+\paragraph{Moderator scan.} We regress each channel's per-market estimate on
+eight metropolitan-level ACS covariates one at a time, the renter share of the
+housing stock, log population, median household income, the college-educated
+share, a Simpson diversity index, median home value, median year built, and
+population density, reporting Hartung-Knapp $t$-tests with Benjamini-Hochberg and
+Storey false-discovery control and Romano-Wolf step-down adjusted $p$-values
+across the family. Table~\ref{tab:meta-moderators} reports the scan. No moderator
+on either channel survives false-discovery or Romano-Wolf adjustment. On the Shen
+channel the largest single coefficient is the renter share at
+$\hat\beta = -0.042$ with a raw two-sided $p$ of $0.032$, which is the only raw
+$p$ below five percent in the entire scan, but it does not survive
+Benjamini-Hochberg adjustment across the eight-test family
+($q_{\mathrm{BH}} = 0.26$) and does not survive the Romano-Wolf step-down
+($p_{\mathrm{RW}} = 0.10$). On the Baur channel the renter share again carries
+the smallest raw $p$ at $0.046$, and it too fails every multiplicity correction
+($q_{\mathrm{BH}} = 0.32$, $p_{\mathrm{RW}} = 0.17$). Every other coefficient on
+both channels has a raw $p$ above $0.10$.
+
+\paragraph{Why the scan is null: leverage at $k=12$.} The moderator scan is not
+merely underpowered; it is dominated by a single high-leverage market. The
+leave-one-out influence diagnostics of \citet{viechtbauer2010outlier}, reported
+in Table~\ref{tab:meta-moderators}, show that New York carries a hat value
+between $0.83$ and $0.93$ on most moderators against a mean leverage of
+$p/k = 0.17$, and Cook's distances that range into the hundreds and beyond, $192$
+for the renter share on the Shen channel and over a thousand for log population
+and population density. Several coefficients change sign when New York is
+removed, including log population, median year built, and population density.
+With twelve markets and one of them an extreme outlier in both its renter share
+and its estimated effect, no moderator coefficient is stable enough to support an
+inference, and the one coefficient that reaches nominal significance owes that
+significance to New York's leverage. We therefore report no moderator finding. An
+earlier draft of this paper reported a positive and significant renter-share
+moderator; that result was an artifact of a corrupted confounder in one market
+that the winsorization described in Section~\ref{sec:data} removed, after which
+the coefficient reversed sign and lost significance under multiplicity, and we
+record the correction here rather than carry the superseded claim.
+
+\paragraph{Federal-data robustness check.} As a transparency check against the
+concern that the relevant moderator is simply not among the ACS covariates, we
+augment the eight ACS moderators with three metropolitan-level federal-data
+covariates obtained through the St.~Louis Federal Reserve Bank's FRED API, the
+BLS Local Area Unemployment Statistics unemployment rate, the FHFA
+All-Transactions House Price Index year-over-year appreciation, and BEA
+per-capita personal income. None of the three returns a Hartung-Knapp
+$t$-statistic distinguishable from zero at conventional significance, with raw
+two-sided $p$-values of $0.92$, $0.33$, and $0.07$, and none survives
+false-discovery correction across the expanded family. The augmented panel
+surfaces no hidden moderator that the ACS specification missed, and the null
+moderator conclusion stands on both channels.

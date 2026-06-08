@@ -1,0 +1,90 @@
+% Draft conclusion for JBES revision, v3 (rewritten 2026-06-07). Bellemare
+% formula: summary -> limitations -> implications -> future work. Reframed off the
+% dead renter-share moderator (a pre-winsor artifact, now NS and NYC-leverage-
+% driven) and the dead Shen-Baur "sign disagreement" (the oriented channels are
+% near-collinear, r=0.94). New thesis = framework + a positive, robust-across-
+% encodings, heterogeneous, not-cleanly-causal text-price signal. Numbers locked
+% against the canonical files and the v3 body sections.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper has asked whether the predictive gains that text embeddings deliver in
+automated valuation models reflect causal semantic content or spatial confounding
+mediated through language, and whether the answer travels across metropolitan
+housing markets. Working with $3{,}851$ deduplicated Redfin listings across twelve
+metropolitan areas, a clean panel from which we exclude no market and whose
+confounders we winsorize at the median plus or minus five median absolute
+deviations to neutralize parcel data-entry artifacts, we built a framework that
+joins a partially-linear Double Machine Learning estimator, LEACE concept erasure
+with an iterative nonlinear polish, a counterfactual rewriting intervention with
+two open-weight language models, and a finite-sample calibration study. The
+central empirical finding is that listing text carries a positive
+per-standard-deviation association with log sale price that is robust to the
+choice of text encoding but heterogeneous across markets. The Doc2Vec uniqueness
+channel pools to $+0.072$ and the sentence-BERT principal-component axis to
+$+0.156$, and the two are nearly collinear across markets at a Pearson
+correlation of $+0.94$, so they recover one signal under two representations
+rather than two independent observations of it. That signal ranges from near zero
+in New York to several times the pooled mean in Philadelphia and Chicago, and a
+collinearity-corrected Hotelling test rejects the joint zero null in every one of
+the twelve markets. The counterfactual intervention sharpens the reading. A
+contrast that strips stylistic content while holding the model's inferred location
+fixed isolates a positive style effect of $+0.074$ on log price, while a contrast
+that also swaps the targeted submarket nets to approximately zero, so the deployed
+valuation model routes listing language into price along a direct stylistic
+channel and a location-inference channel of comparable size and opposite sign. We
+searched for a metropolitan-level demographic moderator of the pooled effect and
+found none that survives multiplicity adjustment or leave-one-out leverage
+diagnostics at twelve markets, and we report that null rather than a moderator
+that an earlier draft had reported before a confounder correction reversed its
+sign.
+
+\paragraph{Limitations.} Several limitations bound the reading of these results.
+The estimates are associational rather than cleanly causal. The
+robustness-value sensitivity analysis of Section~\ref{sec:sensitivity-12} shows
+that a modest unmeasured confounder, on the order of the spatial covariates we do
+observe, would suffice to overturn the per-market estimates, so we do not claim to
+have isolated a structural semantic effect, only to have separated the linearly
+spatial component of the text signal from the remainder and bounded the strength
+of confounding the remainder could still carry. The corpus is restricted to the
+twelve metropolitan areas served by the Redfin scraper at the time of collection,
+which biases the sample toward larger and more competitive markets and away from
+the rural and small-metro regimes in which language-mediated spatial confounding
+is plausibly different in character. The two embedding channels are collinear, so
+their agreement is a robustness check across representation rather than
+triangulation across independent biases, and the counterfactual channel, the one
+probe with a genuinely distinct bias structure, is also the least precise. Finally
+the panel is small enough at twelve markets that one high-leverage market, New
+York, dominates the moderator diagnostics, so the null moderator result should be
+read as the absence of a moderator detectable at this sample size rather than as a
+demonstrated absence of moderation.
+
+\paragraph{Implications.} The clearest implication is methodological. Predictive
+fit cannot distinguish a text embedding that prices genuine semantic content from
+one that launders neighborhood geography through language, because the two are
+observationally identical in a predictive metric, and our results show that a
+large share of the apparent text signal is exactly the spatial information that
+linear concept erasure removes. An analyst or regulator who treats a text-AVM's
+predictive gain as evidence of causal semantic valuation is therefore
+overstating what the gain establishes, and the deconfounding step we describe,
+erasing the location concept and re-estimating, is a low-cost diagnostic that
+separates the two before either is trusted. Because the residual signal that
+survives deconfounding is heterogeneous across markets and sensitive to unmeasured
+confounding, the appropriate posture toward NLP-augmented valuation is neither to
+dismiss the text channel nor to treat it as a settled causal input, but to audit
+it market by market with the design-based tools this paper assembles.
+
+\paragraph{Future research.} Several extensions follow. A panel of substantially
+more than twelve markets would give the moderator analysis the leverage it lacks
+here and would let the cross-market heterogeneity we document be explained rather
+than only described. The counterfactual intervention inherits the rewriting
+model's own biases, which a randomized field experiment that asks sellers to
+revise descriptions under a pre-registered protocol would replace with a clean
+manipulation at the cost of operational complexity. Real recorded transaction
+prices in place of the scraped sale prices would tighten the outcome and remove
+any residual concern about price measurement, and pairing the causal-residual
+detector this paper isolates with the demographic-stratification machinery of the
+fairness-audit literature would let practitioners locate where any
+language-mediated mispricing that survives deconfounding is large enough to matter
+for borrowers.

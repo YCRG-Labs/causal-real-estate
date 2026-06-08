@@ -1,0 +1,57 @@
+% Draft abstract for JBES R&R, v3 (rewritten 2026-06-07).
+% Reframed off the now-dead claims: the renter-share moderator (a pre-winsor
+% Portland artifact, now NS and NYC-leverage-driven) and the Shen-Baur "sign
+% disagreement" (an artifact of the unidentified PC sign; the oriented channels
+% are near-collinear, r=0.94). New thesis = a measurement+deconfounding framework
+% showing a positive, robust-across-encodings, heterogeneous, not-cleanly-causal
+% text-price signal. Numbers locked against the canonical files + v3 body:
+%   Shen pooled +0.072 (PM+HKSJ, [+0.017,+0.128], p=0.015); Baur +0.156 ([+0.063,+0.249], p=0.004)
+%   cross_method_concordance.csv -> Shen-Baur Pearson 0.94, Spearman 0.83, 11/12 same sign
+%   counterfactual table (theta-SE folded) -> style-stripped +0.074 (t=3.66); submarket-swap ~0
+%   hotelling (Mahalanobis-corrected) -> joint null rejected 12/12; meta -> no moderator survives
+%   residential_filter_manifest.json -> 3,851 deduplicated residential listings
+% Style: one paragraph, flowing prose, no em dashes, no enumerations, no fragments.
+\begin{abstract}
+
+Automated valuation models increasingly rely on natural-language descriptions of
+properties, and text embeddings added to geographic controls deliver sizable
+gains in predictive fit. Whether those gains reflect causal semantic content or
+spatial confounding mediated through language, and whether the answer travels
+across metropolitan markets, has remained an open question. We develop a
+framework that separates the two and apply it across twelve metropolitan areas
+spanning the major United States housing-market typologies, with no market
+excluded, using $3{,}851$ deduplicated Redfin listings matched to geocoded parcel
+records whose confounders we winsorize at the median plus or minus five median
+absolute deviations to guard against parcel data-entry artifacts. The framework
+combines a partially-linear Double Machine Learning estimator with cross-fitted
+gradient-boosted nuisances, LEACE linear concept erasure with an iterative
+gradient polish for residual nonlinear leakage, a counterfactual rewriting
+intervention executed with two open-weight large language models, and a
+finite-sample calibration study that ports the \citet{ballinari2024improving}
+Design 4 stress panel alongside an application-specific coverage panel. Listing
+text carries a detectable and positive per-standard-deviation association with
+log sale price that is robust to the choice of text encoding. A Doc2Vec
+uniqueness channel pools to $+0.072$ (random-effects $95\%$ CI $[+0.017, +0.128]$)
+and a within-city-centered sentence-BERT principal-component axis to $+0.156$
+($[+0.063, +0.249]$), and across markets the two channels are nearly collinear,
+with a Pearson correlation of $+0.94$, so their agreement is evidence that the
+signal does not depend on the encoding rather than evidence from two independent
+sources. The signal is highly heterogeneous, from near zero in New York to
+several times the pooled mean in Philadelphia and Chicago, and a Hotelling
+joint-null test that corrects for the cross-channel collinearity rejects the
+no-effect null in all twelve markets. A counterfactual that strips stylistic
+content while holding the model's inferred location fixed isolates a positive
+contrast of $+0.074$ on log price, while a contrast that also swaps the targeted
+submarket nets to approximately zero, so listing language moves the deployed
+valuation model along two routes of comparable size and opposite sign. Linear
+spatial information is fully erasable from the embedding in every market, with
+residual nonlinear leakage that the iterative polish halves but does not
+eliminate in the largest corpora, and no metropolitan demographic moderator
+survives multiplicity and leverage diagnostics at twelve markets. We read the
+evidence as associational rather than cleanly causal, bounded by a sensitivity
+analysis under which a modest unmeasured confounder would overturn the per-market
+estimates, and we conclude that predictive-only evaluation of NLP-augmented
+valuation cannot separate semantic content from the spatial information that
+linear concept erasure removes.
+
+\end{abstract}

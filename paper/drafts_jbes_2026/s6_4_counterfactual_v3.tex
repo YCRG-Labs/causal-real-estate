@@ -1,139 +1,137 @@
-% §6.4 Counterfactual rewriting intervention, 12-city panel with NDE/TE and
-% an implied NIE = TE - NDE mediation reading. Every number is re-pulled or
-% recomputed fresh from the canonical n=200 rerun (Portland now clean):
+% §6.4 Counterfactual rewriting intervention, 12-city panel. Two model-based
+% contrasts (style-stripped, submarket-swap); NO formal NDE/TE/NIE mediation
+% claim (the cross-world conditions of Pearl 2001 / VanderWeele 2015 are not met
+% and "style-stripped = NDE" is backwards). Confidence intervals fold the DML
+% estimation uncertainty in theta into the within-listing cluster bootstrap via
+% the delta method, so the pooled t drops from an implausible 13 (conditioning
+% on theta-hat) to 3.7. Numbers recomputed 2026-06-07 from the canonical n=200
+% rerun:
 %   results/counterfactual/counterfactual_12city_table.csv
-%   results/counterfactual/counterfactual_12city_pooled.json
-%   results/counterfactual/{city}.json
-% Cross-generator concordance against results/counterfactual_llama70b/{city}.json
-% is recomputed here (Spearman, Pearson, sign agreement over the 12 markets),
-% not carried over from session memory. v2 reported a fabricated cross-LLM
-% concordance (Spearman rho=0.993, sign 12/12, DML rho=1.0) and fabricated
-% validation flip rates; all of that is corrected below.
+%   results/counterfactual/{city}.json  (per-city detail)
+% Cross-generator concordance recomputed against results/counterfactual_llama70b/.
 
 \subsection{Counterfactual rewriting intervention}
 \label{sec:counterfactual-12}
 
-The third identification strategy we deploy is a counterfactual rewriting
-intervention. We treat the listing description as a realized draw from a
-population of plausible descriptions for the underlying property, and we
-probe the causal role of language by generating counterfactual descriptions
-in which the listing's submarket-targeted language is altered while the
-property's structured attributes are held fixed. The intervention is executed
-at the language level by a frozen large language model that receives the
-original description, a structured attribute summary, and a target submarket,
-and returns a rewritten description. We then re-price the rewritten listing
-under the same automated valuation model and read two estimands from the
-difference in predicted log price. The style-stripped natural direct effect
-holds the model's predicted location at its original value and isolates the
-direct contribution of the listing's stylistic and semantic content. The
-style-swap total effect rewrites the listing toward a held-out submarket and
-captures the full change in predicted price, both the direct change in
-language and the change the model infers about location. The difference
-between the total effect and the natural direct effect is an implied natural
-indirect effect that propagates through the location-prediction channel.
+The third probe we deploy is a counterfactual rewriting intervention. We treat
+the listing description as a realized draw from a population of plausible
+descriptions for the underlying property, and we examine the role of language by
+generating counterfactual descriptions in which the listing's submarket-targeted
+language is altered while the property's structured attributes are held fixed.
+The intervention is executed at the language level by a frozen large language
+model that receives the original description, a structured attribute summary, and
+a target submarket, and returns a rewritten description. We then re-price the
+rewritten listing under the same automated valuation model and read two
+model-based contrasts from the difference in predicted log price. The
+style-stripped contrast holds the model's predicted location at its original
+value and isolates the price the valuation model attaches to the listing's
+stylistic and semantic content given a fixed location. The submarket-swap
+contrast rewrites the listing toward a held-out submarket and reads the full
+change in predicted price, which combines the change in language with the change
+the model infers about location. We are deliberate in calling these model-based
+contrasts rather than natural direct and indirect effects. The intervention does
+not satisfy the cross-world independence conditions that identify a formal
+mediation decomposition, so we do not report a natural-indirect-effect quantity
+and we do not interpret the difference between the two contrasts as a structural
+mediation parameter. Each contrast is the average change in one automated
+valuation model's output under a specific, auditable manipulation of the input
+text, and that is the object we analyze.
 
-\paragraph{Rewriting validation.} Before we report estimates, we verify that
-the rewriting procedure executes the intended intervention. Structured
-attribute slots, comprising bedrooms, bathrooms, square footage, year built,
-lot size, and three derived flags, are preserved in $99.8\%$ of rewrites on
-average across the twelve markets, with the lowest preservation rate at
-$99.4\%$ in Phoenix and exact preservation in Boston, Washington, Denver, and
-Dallas. The submarket classifier flips its prediction away from the original
-submarket in $44.7\%$ of rewrites on average, ranging from $18.4\%$ in San
-Francisco to $63.5\%$ in New York. These flip rates are considerably higher
-than the figures reported in the previous draft, and they reflect the actual
-behavior of the classifier on the rewritten text rather than the much smaller
-rates that draft asserted. We read the high average flip rate as evidence that
-the rewriting does move the listing's targeted language across submarket
-boundaries in a large share of cases, which is the precondition for the
-location-mediated channel we examine below, and we read the near-perfect slot
-preservation as evidence that the structured attributes survive the rewrite.
+\paragraph{Rewriting validation.} Before we report estimates, we verify that the
+rewriting procedure executes the intended manipulation. Structured attribute
+slots, comprising bedrooms, bathrooms, square footage, year built, lot size, and
+three derived flags, are preserved in $99.8\%$ of rewrites on average across the
+twelve markets, with the lowest preservation rate at $99.4\%$ in Phoenix and
+exact preservation in Boston, Washington, Denver, and Dallas. The submarket
+classifier flips its prediction away from the original submarket in $44.7\%$ of
+rewrites on average, ranging from $18.4\%$ in San Francisco to $63.5\%$ in New
+York. We read the high average flip rate as evidence that the rewriting moves
+the listing's targeted language across submarket boundaries in a large share of
+cases, and the near-perfect slot preservation as evidence that the structured
+attributes survive the rewrite.
 
-\paragraph{Per-market natural direct effect.}
-Table~\ref{tab:counterfactual-12} reports the per-market natural direct effect
-for the twelve metropolitan markets at $n=200$ listings each. The effect is
-positive and excludes zero at the $95\%$ level in nine of the twelve markets,
-and it reaches economically meaningful magnitude in seven of them. The largest
-direct effects are in Atlanta at $+0.189$ on log price, an implied price uplift
-of $+20.8\%$, and Boston at $+0.184$ ($+20.3\%$), followed by Denver at
-$+0.169$ ($+18.4\%$), New York at $+0.129$ ($+13.7\%$), Dallas at $+0.118$
-($+12.5\%$), Portland at $+0.094$ ($+9.8\%$), and Seattle at $+0.052$
-($+5.4\%$). San Francisco carries a small but significant positive effect of
-$+0.029$, and Phoenix a positive effect that rounds to zero at $+0.0006$.
-Washington returns a small negative direct effect of $-0.006$ that excludes
-zero, while Philadelphia and Chicago return point estimates near zero with
-confidence intervals that straddle it. The pooled random-effects natural direct
-effect across the twelve markets is $+0.083$ on log price, with standard error
-$0.010$ and a $95\%$ confidence interval of $[+0.063, +0.102]$, so the pooled
-direct effect is positive and significant. The between-market heterogeneity is
-substantial, with $Q(11) = 2{,}351$ and $I^2 = 99.5\%$, so we report the
-random-effects estimate in preference to the fixed-effects estimate
-($+0.0007$, SE $0.00003$) and we caution the reader that the markets differ
-enough that the pooled figure is a summary of a dispersed distribution rather
-than a single generalizable mean.
+\paragraph{Confidence intervals.} Each contrast is the product of the DML
+treatment coefficient and the average rewrite-induced change in the principal
+component, so its sampling uncertainty has two sources, the cluster bootstrap
+over the rewritten listings and the estimation error in the DML coefficient
+itself. The per-market intervals we report fold both into a single standard
+error by the delta method, adding the coefficient's contribution to the
+within-listing cluster bootstrap rather than conditioning on the fitted
+coefficient. This widens the intervals materially relative to a bootstrap that
+treats the coefficient as known, and it is the reason the pooled statistic below
+is moderate rather than the implausibly large value a coefficient-conditional
+interval would produce.
 
-\paragraph{Per-market total effect.} The style-swap total effect is small in
-absolute magnitude in every market and splits in sign across the panel. It is
-strictly negative and excludes zero in five markets, strictly positive and
-excludes zero in four, and indistinguishable from zero in the remaining three.
-The largest negative total effect is in New York at $-0.049$ on log price, an
-implied $-4.8\%$, followed by Dallas at $-0.022$, Boston at $-0.011$, Seattle
-at $-0.009$, and a negligible $-0.0002$ in Phoenix. On the positive side,
-Denver and Philadelphia both reach about $+0.046$ ($+4.7\%$), with San
-Francisco at $+0.012$ and Washington at a small but significant $+0.002$.
-Atlanta, Chicago, and Portland return total effects whose confidence intervals
-include zero. Because the market-level total effects point in opposite
-directions and are individually small, they largely cancel in aggregation. The
-pooled random-effects total effect is $-0.001$ on log price, with standard
-error $0.002$ and a $95\%$ confidence interval of $[-0.005, +0.003]$ that
-includes zero, so the pooled total effect is statistically indistinguishable
-from zero even though several markets carry significant effects of either sign.
+\paragraph{Per-market style-stripped contrast.}
+Table~\ref{tab:counterfactual-12} reports the per-market style-stripped contrast
+at $n=200$ listings each. The contrast is positive and excludes zero in eight
+markets and negative and excludes zero in one, with three markets covering zero
+once the coefficient uncertainty is included. The largest positive contrasts are
+in Boston at $+0.184$ on log price, an implied $+20.2\%$, and Atlanta at $+0.176$
+($+19.2\%$), followed by Denver at $+0.162$ ($+17.6\%$), Dallas at $+0.134$
+($+14.3\%$), New York at $+0.110$ ($+11.6\%$), Portland at $+0.088$ ($+9.2\%$),
+Seattle at $+0.056$ ($+5.8\%$), and San Francisco at $+0.033$ ($+3.4\%$). Chicago
+returns a negative contrast of $-0.038$ that excludes zero, while Washington,
+Philadelphia, and Phoenix return contrasts whose intervals straddle zero once the
+coefficient uncertainty is folded in, Phoenix because its point estimate is
+essentially zero and Washington and Philadelphia because their intervals widen
+past it. The pooled random-effects style-stripped contrast across the twelve
+markets is $+0.074$ on log price, with standard error $0.020$, a $t$ statistic of
+$3.66$, and a $95\%$ confidence interval of $[+0.034, +0.113]$, so the pooled
+contrast is positive and detectable. The between-market heterogeneity is large,
+with $I^2 = 97.5\%$, so we report the random-effects estimate in preference to
+the fixed-effects estimate and caution that the pooled figure summarizes a
+dispersed distribution rather than a single generalizable mean.
 
-\paragraph{Mediation decomposition.} The pooled natural direct effect of
-$+0.083$ and the pooled total effect of $-0.001$ imply a pooled natural
-indirect effect through the location-prediction channel of $-0.084$ on log
-price. Substantively this says that the listing description carries a direct
-semantic signal that the automated valuation model translates into a positive
-price contribution of roughly $+8\%$ relative to the style-stripped
-counterfactual, but the style swap also moves the model's inferred location for
-the listing, and that shift contributes an indirect effect of comparable
-magnitude in the opposite direction. The near-zero pooled total effect is the
-net of these two channels of similar size and opposite sign. The substantive
-direction of this finding matters for the policy discussion in
-Section~\ref{sec:conclusion}. In the automated-valuation deployment we analyze,
-listing language influences predicted price along two routes that nearly offset
-on average, a direct stylistic route that lifts predicted price and a
-location-mediated route that lowers it, and the appearance of a small net
-effect masks a direct semantic component that is itself positive and
-significant in about half of the markets we study. We treat the decomposition
-as a mechanism probe rather than as a precise structural estimate, and we read
-it as consistent with the dual role of listing text documented by
-\citet{shen2021information} and \citet{baur2023automated}, in which descriptive
-language carries both an own-effect on valuation and information that proxies
-for location.
+\paragraph{Per-market submarket-swap contrast.} The submarket-swap contrast is
+small in absolute magnitude in every market and splits in sign across the panel.
+It excludes zero in six markets once the coefficient uncertainty is included,
+three positive and three negative, and covers zero in the remaining six. The
+largest negative value is in New York at $-0.067$ on log price, and the largest
+positive values are in Philadelphia at $+0.045$ and Denver at $+0.039$. Because
+the market-level contrasts point in opposite directions and are individually
+small, they largely cancel in aggregation. The pooled random-effects
+submarket-swap contrast is $+0.002$ on log price, with a $95\%$ confidence
+interval of $[-0.007, +0.010]$ that includes zero, so the pooled submarket-swap
+contrast is statistically indistinguishable from zero even though several markets
+carry significant contrasts of either sign.
 
-\paragraph{Cross-generator robustness.} We re-ran the rewriting intervention
-with a second open-weight generator, Llama 3.3 $70$B Instruct, to gauge how far
-the conclusions depend on the choice of rewriting model, and we compare it
-against the primary Qwen 2.5 $32$B Instruct run. The two runs are not a matched
+\paragraph{Interpretation.} The two contrasts measure different manipulations and
+need not agree. The positive pooled style-stripped contrast says that, holding
+the model's inferred location fixed, the valuation model attaches a positive
+price to the listing's own stylistic and semantic content, on the order of seven
+to eight percent on average and considerably larger in several markets. The
+near-zero pooled submarket-swap contrast says that when the rewrite is allowed to
+move the model's inferred location as well, the net change in predicted price
+averages to approximately nothing, because the markets divide in sign. We do not
+read the gap between the two as a formal indirect effect through a location
+mediator, because the design does not identify one, but the pattern is consistent
+with the dual role of listing text documented by \citet{shen2021information} and
+\citet{baur2023automated}, in which descriptive language carries both an
+own-contribution to valuation and information that the model reads as a proxy for
+location. We treat the two contrasts as auditable probes of how one deployed
+valuation model responds to controlled edits of the input text, not as structural
+estimates of a causal mechanism.
+
+\paragraph{Cross-generator robustness.} We re-ran the rewriting intervention with
+a second open-weight generator, Llama 3.3 $70$B Instruct, to gauge how far the
+conclusions depend on the choice of rewriting model, and we compare it against
+the primary Qwen 2.5 $32$B Instruct run. The two runs are not a matched
 replication. The Llama run processes $n=100$ listings per market against the
 $n=200$ of the primary run, so the comparison is an unmatched cross-generator
 probe of direction and rough magnitude rather than a tight correlation between
-estimates computed on identical samples. Across the twelve markets the
-per-market natural direct effects from the two generators agree in sign in nine
-of the twelve markets, with a Spearman rank correlation of $0.55$ and a Pearson
-correlation of $0.25$ on the point estimates. The per-market total effects
-agree in sign in six of the twelve markets, with a Spearman correlation of
-$0.57$ and a Pearson correlation of $0.72$. The central tendencies move in the
-same direction across generators for the natural direct effect, with a
-positive average in both runs, the random-effects pooled $+0.083$ under Qwen
-and a per-market mean of $+0.070$ under Llama. The total effect is the less
-stable of the two estimands across generators, near zero under Qwen and
-modestly negative under Llama, with a per-market mean of $-0.021$, which is
-unsurprising given that the total effect is the small residual after the direct
-and indirect channels nearly cancel and is therefore sensitive to the precise
-rewriting behavior of each generator. We read the cross-generator evidence as
-directional support for the positive natural direct effect and for a near-zero
-to slightly negative total effect, and we are explicit that the rank and linear
-correlations are moderate rather than near-perfect, so we make no claim that the
-two generators reproduce each other's market-level estimates to high precision.
+estimates computed on identical samples. Across the twelve markets the per-market
+style-stripped contrasts from the two generators agree in sign in nine of the
+twelve markets, with a Spearman rank correlation of $0.55$ and a Pearson
+correlation of $0.25$ on the point estimates. The submarket-swap contrasts agree
+in sign in six of the twelve markets, with a Spearman correlation of $0.57$ and a
+Pearson correlation of $0.72$. The central tendencies move in the same direction
+across generators for the style-stripped contrast, with a positive average in
+both runs, the random-effects pooled $+0.074$ under Qwen and a per-market mean of
+$+0.070$ under Llama. The submarket-swap contrast is the less stable of the two
+across generators, near zero under Qwen and modestly negative under Llama, which
+is unsurprising given that it is the small residual after two larger channels
+nearly cancel. We read the cross-generator evidence as directional support for a
+positive style-stripped contrast and a near-zero to slightly negative
+submarket-swap contrast, and we are explicit that the rank and linear
+correlations are moderate rather than near-perfect.
