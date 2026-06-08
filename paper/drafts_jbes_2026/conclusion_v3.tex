@@ -18,14 +18,19 @@ confounders we winsorize at the median plus or minus five median absolute
 deviations to neutralize parcel data-entry artifacts, we built a framework that
 joins a partially-linear Double Machine Learning estimator, LEACE concept erasure
 with an iterative nonlinear polish, a counterfactual rewriting intervention with
-two open-weight language models, and a finite-sample calibration study. The
-central empirical finding is that listing text carries a positive
-per-standard-deviation association with log sale price that is robust to the
-choice of text encoding but heterogeneous across markets. The Doc2Vec uniqueness
-channel pools to $+0.072$ and the sentence-BERT principal-component axis to
-$+0.156$, and the two are nearly collinear across markets at a Pearson
-correlation of $+0.94$, so they recover one signal under two representations
-rather than two independent observations of it. That signal ranges from near zero
+two open-weight language models, and a finite-sample calibration study. What
+the framework establishes most centrally is that the price effect of listing text
+is not, in the main, geography wearing a semantic costume, since holding the
+leading text direction fixed as the treatment and folding a flexible location
+basis into the controls leaves its per-standard-deviation effect on log price
+almost exactly where it began across eleven of the twelve markets, even though
+that same direction provably encodes location, and the one place where the
+adjustment does bite is New York, whose own text is the most geographic of the
+twelve. The effect that survives is robust as well to how the text is encoded,
+since a Doc2Vec uniqueness channel pools to $+0.072$ and a sentence-BERT
+principal-component axis to $+0.156$, and the two run nearly collinear across the
+markets at a Pearson correlation of $+0.94$, so that they recover one signal under
+two representations rather than two independent observations of it. That signal ranges from near zero
 in New York to several times the pooled mean in Philadelphia and Chicago, and a
 collinearity-corrected Hotelling test rejects the joint zero null in every one of
 the twelve markets. The counterfactual intervention sharpens the reading. A
@@ -40,14 +45,16 @@ diagnostics at twelve markets, and we report that null rather than a moderator
 that an earlier draft had reported before a confounder correction reversed its
 sign.
 
-\paragraph{Limitations.} Several limitations bound the reading of these results.
-The estimates are associational rather than cleanly causal. The
-robustness-value sensitivity analysis of Section~\ref{sec:sensitivity-12} shows
-that a modest unmeasured confounder, on the order of the spatial covariates we do
-observe, would suffice to overturn the per-market estimates, so we do not claim to
-have isolated a structural semantic effect, only to have separated the linearly
-spatial component of the text signal from the remainder and bounded the strength
-of confounding the remainder could still carry. The corpus is restricted to the
+\paragraph{Limitations.} The reading we have offered is hedged in several ways
+that are worth stating plainly rather than leaving for a referee to find, the most
+consequential being that the estimates remain associational rather than identified
+by design, since the robustness-value sensitivity analysis of
+Section~\ref{sec:sensitivity-12} shows that a modest unmeasured confounder, on the
+order of the spatial covariates we do observe, would suffice to overturn the
+per-market estimates, so that we do not claim to have isolated a structural
+semantic effect, only to have shown that the location a representation encodes is
+largely not the location that moves the price, and to have bounded how strong any
+confounding the test cannot see would have to be. The corpus is restricted to the
 twelve metropolitan areas served by the Redfin scraper at the time of collection,
 which biases the sample toward larger and more competitive markets and away from
 the rural and small-metro regimes in which language-mediated spatial confounding
@@ -60,22 +67,27 @@ York, dominates the moderator diagnostics, so the null moderator result should b
 read as the absence of a moderator detectable at this sample size rather than as a
 demonstrated absence of moderation.
 
-\paragraph{Implications.} The clearest implication is methodological. Predictive
-fit cannot distinguish a text embedding that prices genuine semantic content from
-one that launders neighborhood geography through language, because the two are
-observationally identical in a predictive metric, and our results show that a
-large share of the apparent text signal is exactly the spatial information that
-linear concept erasure removes. An analyst or regulator who treats a text-AVM's
-predictive gain as evidence of causal semantic valuation is therefore
-overstating what the gain establishes, and the deconfounding step we describe,
-erasing the location concept and re-estimating, is a low-cost diagnostic that
-separates the two before either is trusted. Because the residual signal that
-survives deconfounding is heterogeneous across markets and sensitive to unmeasured
-confounding, the appropriate posture toward NLP-augmented valuation is neither to
-dismiss the text channel nor to treat it as a settled causal input, but to audit
-it market by market with the design-based tools this paper assembles.
+\paragraph{Implications.} The implication that travels furthest is
+methodological, and it cuts against an easy assumption rather than confirming a
+dire one. Because a model that prices genuine semantic content and a model that
+prices laundered geography make identical predictions, a predictive gain on its
+own cannot tell an analyst which of the two it has bought, and the reflexive worry
+that the accuracy of a text-augmented valuation is mostly relabelled location is
+one that a predictive metric can neither confirm nor dispel. What the results show
+is that, once the question is put to a design-based test rather than left to
+intuition, the worry largely does not bear out, since the text effect survives
+adjustment for location in eleven of twelve markets, so that a practitioner or
+regulator who suspected the gains were spatial confounding can be reassured for
+most of the country while being directed, by the very same test, to the one market
+where the suspicion is earned. The lesson is accordingly not to distrust text
+valuation but to stop certifying it from predictive fit alone, and the
+deconfounding toggle we describe, holding the text feature fixed while moving
+geography across the controls, is a low-cost audit that turns a question of
+suspicion into one of measurement before either trust or alarm is allowed to
+settle.
 
-\paragraph{Future research.} Several extensions follow. A panel of substantially
+\paragraph{Future research.} The natural extensions of this work run along the
+seams where its instruments stop short. A panel of substantially
 more than twelve markets would give the moderator analysis the leverage it lacks
 here and would let the cross-market heterogeneity we document be explained rather
 than only described. The counterfactual intervention inherits the rewriting
