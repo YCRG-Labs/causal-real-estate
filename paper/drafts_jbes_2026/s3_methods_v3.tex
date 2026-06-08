@@ -63,24 +63,27 @@ runs through the common dependence of both on location.
 
     \draw[arrow] (L) -- (X);
     \draw[arrow] (L) to[bend left=20] (C);
-    \draw[arrow] (L) to[bend left=30] (T);
     \draw[arrow] (X) -- (T);
     \draw[arrow] (C) -- (T);
-    \draw[arrow] (L) to[bend left=15] (Y);
     \draw[arrow] (X) -- (Y);
     \draw[arrow] (C) -- (Y);
-
-    \draw[arrow, red, very thick, opacity=0.4] (L) to[bend left=30] (T);
-    \draw[arrow, red, very thick, opacity=0.4] (T) -- (Y);
+    % spatial-confounding backdoor  t <- l -> y
+    \draw[arrow, cSF, very thick] (L) to[bend left=30] (T);
+    \draw[arrow, cSF, very thick] (L) to[bend left=15] (Y);
+    % direct effect under test
+    \draw[arrow, dashed] (T) -- (Y)
+        node[midway, draw=none, fill=white, inner sep=1.5pt, font=\small] {$\theta?$};
 \end{tikzpicture}
-\caption{The confounding structure the paper adjudicates. Location $\ell$ is
-exogenous and feeds the property attributes $x$, the contextual features $c$, the
-listing text $t$, and the price $y$. The shaded path $\ell \rightarrow t$ together
-with $\ell \rightarrow y$ is the spatial-confounding concern: text and price are
-associated in part because both depend on where the property is, so the relevant
-causal quantity is the direct $t \rightarrow y$ effect that survives conditioning
-on $\ell$, $x$, and $c$. Whether that direct effect is zero or positive is an
-empirical question the markets answer market by market.}
+\caption{The structure the paper adjudicates. Location $\ell$ is exogenous and
+feeds the property attributes $x$, the contextual features $c$, the listing text
+$t$, and the price $y$. The two highlighted edges $\ell \rightarrow t$ and
+$\ell \rightarrow y$ form the spatial-confounding backdoor, the reason text and
+price are associated in part simply because both depend on where the property
+sits. The dashed edge labelled $\theta$ is the direct effect of text on price, the
+quantity we estimate, and the empirical question is how much of the text-price
+association is that direct edge rather than the backdoor through $\ell$.
+Conditioning on $\{\ell, x, c\}$ blocks the backdoor and identifies $\theta$;
+whether $\theta$ is zero or positive is what the twelve markets decide.}
 \label{fig:dag}
 \end{figure}
 \FloatBarrier
