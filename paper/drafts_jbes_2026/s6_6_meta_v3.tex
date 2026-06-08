@@ -34,6 +34,24 @@ estimates several times the pooled mean in Philadelphia and Chicago, so the
 pooled figures summarize dispersed distributions rather than single
 generalizable means.
 
+\begin{table}[t]
+\centering
+\caption{Random-effects pooled per-standard-deviation effects for the two text
+channels. PM/HKSJ is the Paule-Mandel between-market variance with
+Hartung-Knapp-Sidik-Jonkman intervals; REML is the restricted-maximum-likelihood
+variant.}
+\label{tab:meta-pooled-12}
+\small
+\begin{tabular}{lr c r}
+\toprule
+Channel & PM/HKSJ $\hat\theta$ $[95\%~\mathrm{CI}]$, $p$ & REML $\hat\theta$, $p$ & $I^2$ \\
+\midrule
+Shen-Ross uniqueness     & $+0.072\;[+0.017,+0.128],\;0.015$ & $+0.101,\;0.005$ & $98.6\%$ \\
+Sentence-BERT pooled-PCA & $+0.156\;[+0.063,+0.249],\;0.004$ & $+0.156,\;0.004$ & $\approx 99\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \paragraph{Moderator scan.} We regress each channel's per-market estimate on
 eight metropolitan-level ACS covariates one at a time, the renter share of the
 housing stock, log population, median household income, the college-educated
@@ -51,6 +69,34 @@ Benjamini-Hochberg adjustment across the eight-test family
 the smallest raw $p$ at $0.046$, and it too fails every multiplicity correction
 ($q_{\mathrm{BH}} = 0.32$, $p_{\mathrm{RW}} = 0.17$). Every other coefficient on
 both channels has a raw $p$ above $0.10$.
+
+\begin{table}[t]
+\centering
+\caption{Moderator scan. For each metropolitan covariate, the HKSJ
+meta-regression coefficient and its raw two-sided $p$ with the
+Benjamini-Hochberg $q$ across the eight-test family, on both channels. No
+coefficient survives adjustment. The rightmost column is the maximum Cook's
+distance across markets and the market carrying it, from the leave-one-out
+diagnostics, against a mean leverage of $p/k = 0.17$.}
+\label{tab:meta-moderators}
+\small
+\begin{tabular}{l rr rr r}
+\toprule
+& \multicolumn{2}{c}{Shen} & \multicolumn{2}{c}{Baur} & \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Moderator & $\hat\beta$ & $p\;(q_{\mathrm{BH}})$ & $\hat\beta$ & $p\;(q_{\mathrm{BH}})$ & max Cook's $D$ \\
+\midrule
+Renter share      & $-0.042$ & $0.032\;(0.26)$ & $-0.086$ & $0.046\;(0.32)$ & $192$ (NYC) \\
+Median home value & $-0.066$ & $0.107\;(0.43)$ & $-0.077$ & $0.081\;(0.32)$ & $59$ (SF) \\
+Log population    & $-0.018$ & $0.382\;(0.66)$ & $+0.024$ & $0.614\;(0.81)$ & $1031$ (NYC) \\
+Pop.\ density     & $-0.020$ & $0.302\;(0.66)$ & $-0.014$ & $0.773\;(0.81)$ & $3422$ (NYC) \\
+Median HH income  & $-0.030$ & $0.434\;(0.66)$ & $-0.058$ & $0.207\;(0.55)$ & $61$ (NYC) \\
+Diversity index   & $-0.019$ & $0.494\;(0.66)$ & $+0.012$ & $0.806\;(0.81)$ & $152$ (NYC) \\
+College share     & $-0.012$ & $0.712\;(0.80)$ & $-0.041$ & $0.376\;(0.75)$ & $63$ (NYC) \\
+Median year built & $+0.006$ & $0.798\;(0.80)$ & $-0.013$ & $0.780\;(0.81)$ & $899$ (NYC) \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \paragraph{Why the scan is null: leverage at $k=12$.} The moderator scan is not
 merely underpowered; it is dominated by a single high-leverage market. The

@@ -78,6 +78,37 @@ because the pooled-PCA treatment is estimated on the full within-market sample,
 which ranges into the thousands of listings, rather than on the description
 subset.
 
+\begin{table}[t]
+\centering
+\caption{Sentence-BERT pooled-PCA channel: per-market DML effect per standard
+deviation along the oriented common axis on log sale price, with
+influence-function $95\%$ intervals, ordered by effect size. The axis is oriented
+so the pooled effect is non-negative; the principal-component sign is a disclosed
+convention (text). All twelve intervals exclude zero.}
+\label{tab:baur-12city}
+\small
+\begin{tabular}{lrrc}
+\toprule
+Market & $n$ & $\hat\theta$ & $95\%$ CI \\
+\midrule
+Chicago       & $5{,}576$  & $+0.456$ & $[+0.419, +0.493]$ \\
+Philadelphia  & $7{,}030$  & $+0.411$ & $[+0.390, +0.432]$ \\
+Atlanta       & $6{,}134$  & $+0.243$ & $[+0.220, +0.266]$ \\
+Dallas        & $8{,}008$  & $+0.195$ & $[+0.175, +0.215]$ \\
+Washington    & $4{,}015$  & $+0.118$ & $[+0.087, +0.149]$ \\
+Denver        & $5{,}280$  & $+0.103$ & $[+0.084, +0.121]$ \\
+San Francisco & $986$      & $+0.101$ & $[+0.051, +0.151]$ \\
+Portland      & $4{,}337$  & $+0.082$ & $[+0.057, +0.107]$ \\
+Boston        & $2{,}610$  & $+0.072$ & $[+0.029, +0.115]$ \\
+Phoenix       & $7{,}086$  & $+0.056$ & $[+0.030, +0.082]$ \\
+Seattle       & $2{,}884$  & $+0.049$ & $[+0.019, +0.080]$ \\
+New York      & $15{,}227$ & $-0.019$ & $[-0.033, -0.004]$ \\
+\midrule
+Pooled (PM, HKSJ) & & $+0.156$ & $[+0.063, +0.249]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \paragraph{Pooled inference.} Section~\ref{sec:meta-regression-12} takes up the
 pooled inference question directly via random-effects meta-analysis of the
 twelve per-market estimates. Combining them with a Paule-Mandel $\tau^2$ and the

@@ -131,10 +131,13 @@ inferential apparatus delivers approximately nominal coverage under
 this specification on a design more adversarial than any of our
 metropolitan datasets. We do not deploy Venn-Abers calibration in the
 applied analysis, because the calibrator is mechanically a no-op in
-the regime where the propensity learner is already flexible and the
-miscoverage signature we observed under the linear-classifier panel is
-absent from the applied diagnostics in
-Appendix~\ref{app:applied-coverage}.
+the regime where the propensity learner is already flexible. The severe
+miscoverage we observe under the linear-classifier panel does not recur in
+the applied diagnostics of Appendix~\ref{app:simulation}, where the
+influence-function interval is at most mildly anticonservative at the null,
+on the order of ten to fifteen percent in the standard error, and we report
+bootstrap intervals as the remedy for that residual narrowing rather than
+treat the applied coverage as exactly nominal.
 
 \paragraph{Limitations.} Two caveats apply to the panel.  First,
 Design 4 stresses both nuisances simultaneously, but our applied
