@@ -1,0 +1,298 @@
+% v3 figures, AOAS reframe. PURE TikZ/pgfplots, matching the house `causalre`
+% style (Tufte axis lines*=left, Okabe-Ito palette, manual gray CI whiskers,
+% extra-tick dashed null lines, consistent marks). Coordinates emitted from
+% results/ by data/scripts/make_fig_coords.py (no manual transcription).
+% Figures: coverage sim, per-market forest, LEACE erasure, sensitivity (RV),
+% concordance (supplement). Decomposition figure pending the pre/post-LEACE
+% price re-estimate (see note at end of file).
+
+% ======================================================================
+% FIG: finite-sample coverage of the embedding-treatment DML interval
+% data: results/simulation_baseline/coverage_table.csv
+% ======================================================================
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre body, name=covA,
+    xlabel={Per-$\sigma$ direct effect $\eta$},
+    ylabel={Empirical coverage of nominal $95\%$ CI},
+    title={(a) $n = 500$},
+    xmin=-0.006, xmax=0.106, ymin=0.72, ymax=1.005,
+    xtick={0,0.01,0.05,0.10}, xticklabels={$0$,$0.01$,$0.05$,$0.10$},
+    ytick={0.75,0.80,0.85,0.90,0.95,1.00},
+    legend to name=covleg, legend columns=3,
+    legend style={font=\scriptsize, draw=none, fill=none,
+                  /tikz/every even column/.append style={column sep=12pt}},
+    legend cell align=left,
+]
+\addplot[black, dashed, thin, forget plot] coordinates {(-0.006,0.95) (0.106,0.95)};
+\addplot[color=cSF,  thick, mark=*,         mark size=1.5pt] coordinates {(0,0.920) (0.01,0.913) (0.05,0.877) (0.10,0.777)};
+\addlegendentry{DML (in-sample PC)}
+\addplot[color=cNYC, thick, mark=square*,   mark size=1.5pt] coordinates {(0,0.897) (0.01,0.927) (0.05,0.873) (0.10,0.890)};
+\addlegendentry{DML (cross-fit PC)}
+\addplot[color=cBOS, thick, mark=triangle*, mark size=1.7pt] coordinates {(0,0.957) (0.01,0.940) (0.05,0.970) (0.10,0.960)};
+\addlegendentry{Doubly robust}
+\end{axis}
+\begin{axis}[
+    causalre body,
+    at={(covA.east)}, anchor=west, xshift=1.4cm,
+    xlabel={Per-$\sigma$ direct effect $\eta$}, ylabel={},
+    title={(b) $n = 2{,}000$},
+    xmin=-0.006, xmax=0.106, ymin=0.72, ymax=1.005,
+    xtick={0,0.01,0.05,0.10}, xticklabels={$0$,$0.01$,$0.05$,$0.10$},
+    ytick={0.75,0.80,0.85,0.90,0.95,1.00}, yticklabels={,,,,,},
+]
+\addplot[black, dashed, thin, forget plot] coordinates {(-0.006,0.95) (0.106,0.95)};
+\addplot[color=cSF,  thick, mark=*,         mark size=1.5pt, forget plot] coordinates {(0,0.933) (0.01,0.937) (0.05,0.907) (0.10,0.877)};
+\addplot[color=cNYC, thick, mark=square*,   mark size=1.5pt, forget plot] coordinates {(0,0.943) (0.01,0.910) (0.05,0.900) (0.10,0.900)};
+\addplot[color=cBOS, thick, mark=triangle*, mark size=1.7pt, forget plot] coordinates {(0,0.940) (0.01,0.957) (0.05,0.967) (0.10,0.933)};
+\end{axis}
+\node[anchor=north] at ($(covA.south east)+(0.8cm,-0.9cm)$) {\ref{covleg}};
+\end{tikzpicture}
+\caption{Finite-sample coverage of the nominal $95\%$ influence-function interval
+for the embedding-valued treatment, across effect size $\eta$ at $n=500$ (a) and
+$n=2{,}000$ (b), with $300$ Monte Carlo replications per cell. The horizontal
+dashed line marks the nominal level. The in-sample principal-component DML
+interval, which treats the estimated leading component as a generated regressor,
+under-covers as the true effect grows, falling to $0.78$ at $n=500$, because the
+orthogonal-score variance does not capture the sampling variability of the
+estimated treatment direction. Forming the component out of fold (cross-fit PC)
+recovers most of the lost coverage, and the doubly-robust estimator, which does
+not estimate a continuous direction, is calibrated throughout but has no power
+against the graded effect.}
+\label{fig:sim-coverage}
+\end{figure}
+
+% ======================================================================
+% FIG: per-market forest, three text channels (12 metros)
+% data: shen_12city_table / baur_pooled_pca_table / counterfactual_12city_table
+% rows ordered by Shen effect (idx 1 = bottom). Gray whiskers + filled dots.
+% ======================================================================
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+% --- panel (a) Shen uniqueness ---
+\begin{axis}[
+    causalre, width=0.31\textwidth, height=7.6cm, name=fsA,
+    symbolic y coords={New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
+    ytick=data, y dir=normal,
+    xlabel={$\hat\theta$ per $\sigma$}, xmin=-0.06, xmax=0.37,
+    xtick={0,0.1,0.2,0.3}, enlarge y limits=0.06,
+    title={(a) Shen uniqueness},
+    extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
+]
+\draw[thin,gray] (axis cs:-0.011,New York)--(axis cs:0.013,New York);
+\draw[thin,gray] (axis cs:-0.002,Boston)--(axis cs:0.056,Boston);
+\draw[thin,gray] (axis cs:0.009,Seattle)--(axis cs:0.055,Seattle);
+\draw[thin,gray] (axis cs:0.027,Phoenix)--(axis cs:0.063,Phoenix);
+\draw[thin,gray] (axis cs:0.028,Washington)--(axis cs:0.082,Washington);
+\draw[thin,gray] (axis cs:0.049,Dallas)--(axis cs:0.089,Dallas);
+\draw[thin,gray] (axis cs:0.053,Portland)--(axis cs:0.089,Portland);
+\draw[thin,gray] (axis cs:0.062,Denver)--(axis cs:0.096,Denver);
+\draw[thin,gray] (axis cs:0.089,Atlanta)--(axis cs:0.129,Atlanta);
+\draw[thin,gray] (axis cs:0.074,San Francisco)--(axis cs:0.170,San Francisco);
+\draw[thin,gray] (axis cs:0.261,Chicago)--(axis cs:0.331,Chicago);
+\draw[thin,gray] (axis cs:0.292,Philadelphia)--(axis cs:0.338,Philadelphia);
+\addplot[only marks, mark=*, mark size=1.9pt, color=cNYC] coordinates {
+  (0.001,New York) (0.027,Boston) (0.032,Seattle) (0.045,Phoenix) (0.055,Washington)
+  (0.069,Dallas) (0.071,Portland) (0.079,Denver) (0.109,Atlanta) (0.122,San Francisco)
+  (0.296,Chicago) (0.315,Philadelphia)};
+\end{axis}
+% --- panel (b) Baur sentence-BERT axis ---
+\begin{axis}[
+    causalre, width=0.27\textwidth, height=7.6cm,
+    at={(fsA.east)}, anchor=west, xshift=0.7cm,
+    symbolic y coords={New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
+    ytick=data, yticklabels={,,,,,,,,,,,},
+    xlabel={$\hat\theta$ per $\sigma$}, xmin=-0.06, xmax=0.51,
+    xtick={0,0.2,0.4}, enlarge y limits=0.06,
+    title={(b) sentence-BERT},
+    extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
+]
+\draw[thin,gray] (axis cs:-0.033,New York)--(axis cs:-0.005,New York);
+\draw[thin,gray] (axis cs:0.029,Boston)--(axis cs:0.115,Boston);
+\draw[thin,gray] (axis cs:0.019,Seattle)--(axis cs:0.079,Seattle);
+\draw[thin,gray] (axis cs:0.030,Phoenix)--(axis cs:0.082,Phoenix);
+\draw[thin,gray] (axis cs:0.087,Washington)--(axis cs:0.149,Washington);
+\draw[thin,gray] (axis cs:0.175,Dallas)--(axis cs:0.215,Dallas);
+\draw[thin,gray] (axis cs:0.057,Portland)--(axis cs:0.107,Portland);
+\draw[thin,gray] (axis cs:0.084,Denver)--(axis cs:0.122,Denver);
+\draw[thin,gray] (axis cs:0.220,Atlanta)--(axis cs:0.266,Atlanta);
+\draw[thin,gray] (axis cs:0.051,San Francisco)--(axis cs:0.151,San Francisco);
+\draw[thin,gray] (axis cs:0.419,Chicago)--(axis cs:0.493,Chicago);
+\draw[thin,gray] (axis cs:0.390,Philadelphia)--(axis cs:0.432,Philadelphia);
+\addplot[only marks, mark=square*, mark size=1.8pt, color=cSF] coordinates {
+  (-0.019,New York) (0.072,Boston) (0.049,Seattle) (0.056,Phoenix) (0.118,Washington)
+  (0.195,Dallas) (0.082,Portland) (0.103,Denver) (0.243,Atlanta) (0.101,San Francisco)
+  (0.456,Chicago) (0.411,Philadelphia)};
+\end{axis}
+% --- panel (c) counterfactual style-stripped contrast ---
+\begin{axis}[
+    causalre, width=0.27\textwidth, height=7.6cm,
+    at={(fsA.east)}, anchor=west, xshift=4.9cm,
+    symbolic y coords={New York,Boston,Seattle,Phoenix,Washington,Dallas,Portland,Denver,Atlanta,San Francisco,Chicago,Philadelphia},
+    ytick=data, yticklabels={,,,,,,,,,,,},
+    xlabel={contrast (log price)}, xmin=-0.10, xmax=0.25,
+    xtick={-0.1,0,0.1,0.2}, enlarge y limits=0.06,
+    title={(c) style-stripped},
+    extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
+]
+\draw[thin,gray] (axis cs:0.092,New York)--(axis cs:0.128,New York);
+\draw[thin,gray] (axis cs:0.136,Boston)--(axis cs:0.232,Boston);
+\draw[thin,gray] (axis cs:0.030,Seattle)--(axis cs:0.082,Seattle);
+\draw[thin,gray] (axis cs:-0.018,Phoenix)--(axis cs:0.020,Phoenix);
+\draw[thin,gray] (axis cs:-0.015,Washington)--(axis cs:0.005,Washington);
+\draw[thin,gray] (axis cs:0.111,Dallas)--(axis cs:0.157,Dallas);
+\draw[thin,gray] (axis cs:0.062,Portland)--(axis cs:0.114,Portland);
+\draw[thin,gray] (axis cs:0.135,Denver)--(axis cs:0.189,Denver);
+\draw[thin,gray] (axis cs:0.145,Atlanta)--(axis cs:0.207,Atlanta);
+\draw[thin,gray] (axis cs:0.016,San Francisco)--(axis cs:0.050,San Francisco);
+\draw[thin,gray] (axis cs:-0.067,Chicago)--(axis cs:-0.009,Chicago);
+\draw[thin,gray] (axis cs:-0.033,Philadelphia)--(axis cs:0.025,Philadelphia);
+\addplot[only marks, mark=triangle*, mark size=2.0pt, color=cGRN] coordinates {
+  (0.110,New York) (0.184,Boston) (0.056,Seattle) (0.001,Phoenix) (-0.005,Washington)
+  (0.134,Dallas) (0.088,Portland) (0.162,Denver) (0.176,Atlanta) (0.033,San Francisco)
+  (-0.038,Chicago) (-0.004,Philadelphia)};
+\end{axis}
+\end{tikzpicture}
+\caption{Per-market DML estimates across the twelve metropolitan areas for the
+three text channels, ordered by the Shen-Ross uniqueness effect. Filled dots are
+point estimates and gray whiskers are $95\%$ intervals (influence-function for
+the Shen and sentence-BERT channels; coefficient-uncertainty-folded cluster
+bootstrap for the counterfactual contrast). The dashed vertical line marks the
+null. The sentence-BERT axis is oriented so its pooled effect is non-negative.
+Numerical values appear in Tables~\ref{tab:shen-12city}, \ref{tab:baur-12city},
+and \ref{tab:counterfactual-12}.}
+\label{fig:forest-12}
+\end{figure}
+
+% ======================================================================
+% FIG: LEACE erasure completeness (held-out ridge R^2 on lat-lon)
+% data: results/leace12_igbp/leace_12city_table.csv, ordered by raw R^2
+% dumbbell: gray segment raw->erased, open dot raw, filled dot erased
+% ======================================================================
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre, width=0.66\textwidth, height=7.4cm,
+    symbolic y coords={San Francisco,Chicago,Seattle,Philadelphia,Portland,Boston,Atlanta,Washington,Denver,Phoenix,Dallas,New York},
+    ytick=data, enlarge y limits=0.06,
+    xlabel={Held-out ridge $R^2$ for predicting (lat, lon) from the embedding},
+    xmin=-0.38, xmax=0.55, xtick={-0.3,-0.1,0,0.1,0.3,0.5},
+    title={Linear spatial information before and after concept erasure},
+    extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
+    legend style={font=\scriptsize, draw=none, fill=none, at={(0.97,0.06)}, anchor=south east, row sep=1pt},
+]
+% raw -> erased connecting segments
+\draw[thin,gray] (axis cs:-0.330,San Francisco)--(axis cs:0.000,San Francisco);
+\draw[thin,gray] (axis cs:0.165,Chicago)--(axis cs:0.000,Chicago);
+\draw[thin,gray] (axis cs:0.215,Seattle)--(axis cs:0.000,Seattle);
+\draw[thin,gray] (axis cs:0.239,Philadelphia)--(axis cs:0.000,Philadelphia);
+\draw[thin,gray] (axis cs:0.287,Portland)--(axis cs:0.000,Portland);
+\draw[thin,gray] (axis cs:0.348,Boston)--(axis cs:0.000,Boston);
+\draw[thin,gray] (axis cs:0.350,Atlanta)--(axis cs:0.000,Atlanta);
+\draw[thin,gray] (axis cs:0.357,Washington)--(axis cs:0.000,Washington);
+\draw[thin,gray] (axis cs:0.377,Denver)--(axis cs:0.000,Denver);
+\draw[thin,gray] (axis cs:0.380,Phoenix)--(axis cs:0.000,Phoenix);
+\draw[thin,gray] (axis cs:0.423,Dallas)--(axis cs:0.000,Dallas);
+\draw[thin,gray] (axis cs:0.500,New York)--(axis cs:0.000,New York);
+\addplot[only marks, mark=o, mark size=2.3pt, color=cMUTE, line width=0.9pt] coordinates {
+  (-0.330,San Francisco) (0.165,Chicago) (0.215,Seattle) (0.239,Philadelphia) (0.287,Portland)
+  (0.348,Boston) (0.350,Atlanta) (0.357,Washington) (0.377,Denver) (0.380,Phoenix)
+  (0.423,Dallas) (0.500,New York)};
+\addlegendentry{Raw embedding}
+\addplot[only marks, mark=*, mark size=2.1pt, color=cNYC] coordinates {
+  (0.000,San Francisco) (0.000,Chicago) (0.000,Seattle) (0.000,Philadelphia) (0.000,Portland)
+  (0.000,Boston) (0.000,Atlanta) (0.000,Washington) (0.000,Denver) (0.000,Phoenix)
+  (0.000,Dallas) (0.000,New York)};
+\addlegendentry{After LEACE $+$ IGBP (linear)}
+\end{axis}
+\end{tikzpicture}
+\caption{Held-out ridge $R^2$ for recovering the continuous latitude-longitude
+coordinate from the sentence-BERT embedding, before (open) and after (filled)
+the composed linear concept erasure, in each of the twelve markets ordered by raw
+$R^2$. The raw embedding carries substantial linear spatial signal, recovering
+the coordinate at $R^2$ up to $0.50$ in New York; the negative San Francisco
+value reflects out-of-sample probe performance below the coordinate-mean
+baseline rather than absent signal. Linear erasure drives the recoverable signal
+to within Monte Carlo noise of zero in every market, the exact-guardedness
+property of LEACE. Residual \emph{nonlinear} leakage, which a linear probe cannot
+see, is quantified separately in Section~\ref{sec:leace-12}.}
+\label{fig:erasure-12}
+\end{figure}
+
+% ======================================================================
+% FIG: per-market robustness value (sensitivity to unmeasured confounding)
+% data: results/replications/confounder_sensitivity_12.csv (rv, block=none)
+% ======================================================================
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre, width=0.62\textwidth, height=7.2cm,
+    symbolic y coords={Boston,Seattle,New York,Portland,Washington,Phoenix,Dallas,Atlanta,Chicago,Denver,San Francisco,Philadelphia},
+    ytick=data, enlarge y limits=0.06,
+    xlabel={Robustness value $RV_{q=1}$ (residual share an unmeasured confounder must explain in both treatment and price)},
+    xmin=0, xmax=0.21, xtick={0,0.05,0.10,0.15,0.20},
+    xticklabel={\pgfmathprintnumber[fixed,precision=2]{\tick}},
+    title={Sensitivity of the per-market estimate to unmeasured confounding},
+]
+\addplot[only marks, mark=*, mark size=2.0pt, color=cNYC] coordinates {
+  (0.005,Boston) (0.025,Seattle) (0.030,New York) (0.040,Portland) (0.041,Washington)
+  (0.048,Phoenix) (0.051,Dallas) (0.051,Atlanta) (0.064,Chicago) (0.065,Denver)
+  (0.140,San Francisco) (0.183,Philadelphia)};
+\end{axis}
+\end{tikzpicture}
+\caption{Robustness value for each market's sentence-BERT effect, the share of
+residual variance an unmeasured confounder would need to explain in both the
+treatment and log price to drive the estimate to zero, following
+\citet{cinelli2020making}. Larger values are more robust. The estimate is most
+robust in Philadelphia ($0.18$) and San Francisco ($0.14$) and most fragile in
+the markets whose point estimates are already near zero. The modest robustness
+values in several markets are the reason we read the per-market estimates as
+associational and sensitivity-bounded rather than cleanly causal.}
+\label{fig:sensitivity-rv}
+\end{figure}
+
+% ======================================================================
+% SUPPLEMENT FIG: cross-method concordance scatter (Shen vs Baur), r = 0.94
+% data: results/replications/cross_method_concordance.csv
+% ======================================================================
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre, width=0.5\textwidth, height=0.5\textwidth,
+    axis equal image,
+    xlabel={Shen uniqueness $\hat\theta$ per $\sigma$},
+    ylabel={sentence-BERT $\hat\theta$ per $\sigma$ (oriented)},
+    xmin=-0.05, xmax=0.50, ymin=-0.05, ymax=0.50,
+    xtick={0,0.1,0.2,0.3,0.4}, ytick={0,0.1,0.2,0.3,0.4},
+    title={Cross-channel concordance ($r = 0.94$)},
+]
+\addplot[black, dashed, thin, forget plot] coordinates {(-0.05,-0.05) (0.50,0.50)};
+\addplot[only marks, mark=*, mark size=1.8pt, color=cNYC] coordinates {
+  (0.027,0.072) (0.001,-0.019) (0.122,0.101) (0.055,0.118) (0.315,0.411) (0.296,0.456)
+  (0.032,0.049) (0.079,0.103) (0.109,0.243) (0.071,0.082) (0.045,0.056) (0.069,0.195)};
+\end{axis}
+\end{tikzpicture}
+\caption{Per-market estimates of the two embedding channels against each other,
+with the $45^\circ$ identity line. The two channels co-move almost perfectly
+across markets (Pearson $r = 0.94$), so they recover one underlying signal under
+two encodings rather than two independent measurements; the systematic departure
+from the identity line reflects that the sentence-BERT axis is roughly twice the
+Shen channel in magnitude, not a difference in which markets carry the signal.}
+\label{fig:concordance}
+\end{figure}
+
+% ======================================================================
+% NOTE — decomposition (headline) figure PENDING DATA.
+% The Gelbach-style "confounded geography share vs residual semantic share" per
+% market requires a pre/post-LEACE PRICE re-estimate (run the Baur DML on the
+% lat-lon-erased embedding and compare to the un-erased estimate). LEACE is
+% currently used only as a representation diagnostic (Fig fig:erasure-12), not on
+% the price estimand, so that estimate does not yet exist. Build this figure once
+% data/scripts/replications/baur_pooled_pca.py is run on the erased embeddings.
+% ======================================================================

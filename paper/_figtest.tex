@@ -1,0 +1,37 @@
+\documentclass{article}
+\usepackage[margin=0.6in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{shapes,arrows,positioning,calc,backgrounds,fit,patterns,decorations.pathreplacing}
+\usepackage{natbib}
+\usepackage{graphicx}
+
+\definecolor{cBOS}{HTML}{999999}
+\definecolor{cNYC}{HTML}{0072B2}
+\definecolor{cSF}{HTML}{D55E00}
+\definecolor{cMUTE}{HTML}{BBBBBB}
+\definecolor{cGRN}{HTML}{009E73}
+\definecolor{cPNK}{HTML}{CC79A7}
+\definecolor{cSKY}{HTML}{56B4E9}
+\definecolor{cYEL}{HTML}{E69F00}
+
+\pgfplotsset{
+  causalre/.style={
+    axis lines*=left,
+    title style={font=\normalsize},
+    label style={font=\small},
+    tick label style={font=\scriptsize},
+    legend style={font=\scriptsize, draw=none, fill=none, row sep=1pt},
+    every axis plot/.append style={thick},
+    axis on top,
+  },
+  causalre body/.style={ causalre, width=0.45\textwidth, height=6cm, },
+  causalre wide/.style={ causalre, width=0.7\textwidth, height=0.6\textwidth, },
+  causalre strip/.style={ causalre, width=5.0cm, height=4.5cm, title style={font=\small} },
+}
+
+\begin{document}
+\input{drafts_jbes_2026/figures_v3}
+\end{document}
