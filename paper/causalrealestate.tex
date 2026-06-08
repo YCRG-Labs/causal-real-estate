@@ -580,7 +580,7 @@ We are explicit about what this artifact does and does not claim. It is \emph{no
 
 We assess the finite-sample calibration of the headline DML interval with a Monte Carlo study calibrated to the application. Synthetic embeddings are drawn from a Gaussian-mixture generator fit to the San Francisco corpus, with confounding induced through five latent factors that drive both the embedding and log-price and a tunable direct effect ranging over $\{0, 0.01, 0.05, 0.10\}$ per standard deviation. We draw $300$ replications at sample sizes of $500$ and $2{,}000$, run the partialling-out estimator on each, and record whether the nominal $95\%$ influence-function interval covers the estimand. Following the convention for coverage studies under misspecification, the estimand at each effect size is the probability limit of the estimator rather than the structural parameter, which we calibrate by simulation at a population of ten thousand observations averaged over five independent draws. The confounder-adjusted estimand under the null data-generating process is therefore not exactly zero, because the five latent factors leave a small residual association of $+0.011$ that the adjustment does not remove, so coverage at the null is assessed against that probability limit rather than against zero.
 
-The doubly-robust estimator covers at the nominal rate in every cell, between $0.93$ and $0.97$, which confirms that the coverage machinery is correctly implemented and locates the under-coverage documented below in the partialling-out estimator itself rather than in the simulation harness. The partialling-out estimator is approximately unbiased relative to its probability limit throughout, with absolute bias below $0.02$ in every cell, yet its influence-function interval is anticonservative, and the severity grows with the size of the true effect (Table~\ref{tab:sim_coverage}, Figure~\ref{fig:sim-coverage}). When a substantial effect is present the analytic standard error understates the realized sampling spread by as much as a factor of four and coverage at $n = 500$ falls to $0.78$, because cross-fitted nuisance estimation together with the in-sample principal-component projection injects sampling variability that the orthogonal-score variance does not capture. At the null, where the San Francisco estimate sits, the understatement is far milder, on the order of ten to fifteen percent in the standard error, and coverage remains near $0.92$.
+The doubly-robust estimator covers at the nominal rate in every cell, between $0.93$ and $0.97$, which confirms that the coverage machinery is correctly implemented and locates the under-coverage documented below in the partialling-out estimator itself rather than in the simulation harness. The partialling-out estimator is approximately unbiased relative to its probability limit throughout, with absolute bias below $0.02$ in every cell, yet its influence-function interval is anticonservative, and the severity grows with the size of the true effect (Table~\ref{tab:sim_coverage}); the interval-level failure at the strongest effect is shown in the zip plot of Figure~\ref{fig:sim-coverage}. When a substantial effect is present the analytic standard error understates the realized sampling spread by as much as a factor of four and coverage at $n = 500$ falls to $0.78$, because cross-fitted nuisance estimation together with the in-sample principal-component projection injects sampling variability that the orthogonal-score variance does not capture. At the null, where the San Francisco estimate sits, the understatement is far milder, on the order of ten to fifteen percent in the standard error, and coverage remains near $0.92$.
 
 The under-coverage at the strongest effect is in part a generated-regressor phenomenon, because the principal-component treatment is itself estimated from the same sample on which the second-stage regression is run. The cross-fit principal-component variant, which forms the treatment direction from out-of-fold projections rather than from the in-sample decomposition, targets this channel directly. It recovers most of the coverage lost at the strongest effect, lifting the $n = 500$ figure from $0.78$ to $0.89$, and it roughly halves the residual point bias in that cell, while holding coverage near $0.90$ across effect sizes at $n = 2{,}000$. At the null its coverage matches the in-sample estimator to within Monte Carlo noise, which at three hundred replications is approximately two percentage points, so adopting the out-of-fold projection forfeits nothing in the regime relevant to the application while restoring robustness where the effect is large. We adopt it for the headline specification.
 
@@ -603,62 +603,9 @@ DR & $2000$ & $0.94$ & $0.96$ & $0.97$ & $0.93$ \\
 \end{table}
 
 % ======================================================================
-% FIG: finite-sample coverage of the embedding-treatment DML interval
-% data: results/simulation_baseline/coverage_table.csv
+% FIG: zip (zipper) plot of CI coverage -- generated by make_zip_plot.py
 % ======================================================================
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}
-\begin{axis}[
-    causalre body, name=covA,
-    xlabel={Per-$\sigma$ direct effect $\eta$},
-    ylabel={Empirical coverage of nominal $95\%$ CI},
-    title={(a) $n = 500$},
-    xmin=-0.006, xmax=0.106, ymin=0.72, ymax=1.005,
-    xtick={0,0.01,0.05,0.10}, xticklabels={$0$,$0.01$,$0.05$,$0.10$},
-    ytick={0.75,0.80,0.85,0.90,0.95,1.00},
-    legend to name=covleg, legend columns=3,
-    legend style={font=\scriptsize, draw=none, fill=none,
-                  /tikz/every even column/.append style={column sep=12pt}},
-    legend cell align=left,
-]
-\addplot[black, dashed, thin, forget plot] coordinates {(-0.006,0.95) (0.106,0.95)};
-\addplot[color=cSF,  thick, mark=*,         mark size=1.5pt] coordinates {(0,0.920) (0.01,0.913) (0.05,0.877) (0.10,0.777)};
-\addlegendentry{DML (in-sample PC)}
-\addplot[color=cNYC, thick, mark=square*,   mark size=1.5pt] coordinates {(0,0.897) (0.01,0.927) (0.05,0.873) (0.10,0.890)};
-\addlegendentry{DML (cross-fit PC)}
-\addplot[color=cBOS, thick, mark=triangle*, mark size=1.7pt] coordinates {(0,0.957) (0.01,0.940) (0.05,0.970) (0.10,0.960)};
-\addlegendentry{Doubly robust}
-\end{axis}
-\begin{axis}[
-    causalre body,
-    at={(covA.east)}, anchor=west, xshift=1.4cm,
-    xlabel={Per-$\sigma$ direct effect $\eta$}, ylabel={},
-    title={(b) $n = 2{,}000$},
-    xmin=-0.006, xmax=0.106, ymin=0.72, ymax=1.005,
-    xtick={0,0.01,0.05,0.10}, xticklabels={$0$,$0.01$,$0.05$,$0.10$},
-    ytick={0.75,0.80,0.85,0.90,0.95,1.00}, yticklabels={,,,,,},
-]
-\addplot[black, dashed, thin, forget plot] coordinates {(-0.006,0.95) (0.106,0.95)};
-\addplot[color=cSF,  thick, mark=*,         mark size=1.5pt, forget plot] coordinates {(0,0.933) (0.01,0.937) (0.05,0.907) (0.10,0.877)};
-\addplot[color=cNYC, thick, mark=square*,   mark size=1.5pt, forget plot] coordinates {(0,0.943) (0.01,0.910) (0.05,0.900) (0.10,0.900)};
-\addplot[color=cBOS, thick, mark=triangle*, mark size=1.7pt, forget plot] coordinates {(0,0.940) (0.01,0.957) (0.05,0.967) (0.10,0.933)};
-\end{axis}
-\node[anchor=north] at ($(covA.south east)+(0.8cm,-0.9cm)$) {\ref{covleg}};
-\end{tikzpicture}
-\caption{Finite-sample coverage of the nominal $95\%$ influence-function interval
-for the embedding-valued treatment, across effect size $\eta$ at $n=500$ (a) and
-$n=2{,}000$ (b), with $300$ Monte Carlo replications per cell. The horizontal
-dashed line marks the nominal level. The in-sample principal-component DML
-interval, which treats the estimated leading component as a generated regressor,
-under-covers as the true effect grows, falling to $0.78$ at $n=500$, because the
-orthogonal-score variance does not capture the sampling variability of the
-estimated treatment direction. Forming the component out of fold (cross-fit PC)
-recovers most of the lost coverage, and the doubly-robust estimator, which does
-not estimate a continuous direction, is calibrated throughout but has no power
-against the graded effect.}
-\label{fig:sim-coverage}
-\end{figure}
+\input{drafts_jbes_2026/fig_zip}
 
 
 Because the residual understatement at the null is mild but real, we report bootstrap intervals for the headline estimate. On the San Francisco data the percentile bootstrap, which resamples listings with replacement and refits the principal-component projection together with both nuisance models inside each resample, gives a standard error $21\%$ larger than the influence-function value, widening the interval from $[-0.043, +0.043]$ to $[-0.046, +0.051]$ and the minimum detectable effect from $6.4$ to $7.8$ percent. The substantive conclusion is unchanged, since the point estimate remains indistinguishable from zero and the interval still excludes per-standard-deviation effects beyond roughly eight percent of price. The doubly-robust estimator that anchors the panel has no power against the continuous effect, because binarizing at the median principal-component norm discards the graded signal the partialling-out estimator targets, so we read its near-zero estimate as a calibration check on the inference machinery rather than as a competing estimate of the semantic effect.
