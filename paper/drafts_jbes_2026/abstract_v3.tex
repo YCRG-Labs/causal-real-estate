@@ -1,47 +1,49 @@
-% Abstract, v4 (AOAS-targeted reframe, 2026-06-07). Leads with the two
-% methodological contributions the framing research identified as the defensible
-% hooks -- (i) predictive fit cannot separate semantic from spatial signal but
-% concept erasure can, framed as representation-space restricted spatial
-% regression; (ii) DML influence-function SEs undercover for an embedding-valued
-% generated-regressor treatment, with a bootstrap remedy -- and reports the
-% honest applied findings second. NOT a causal price elasticity. Numbers locked
-% against the canonical files / v3 body. One paragraph, flowing prose, no em
-% dashes, no enumerations, no fragments.
+% Abstract, AOAS-targeted, written to the academic-prose standard (no em dashes,
+% no first/second scaffolding, flowing varied sentences, narrative that traces
+% the argument). Corrected thesis: the text-price effect is ROBUST to spatial
+% deconfounding (mostly genuine semantic content), not laundered geography, with
+% New York the partial exception; plus the embedding-treatment coverage result.
+% Numbers locked: erasure R^2 up to 0.5 -> ~0; confounded share <5% in 11/12;
+% Shen +0.072 / Baur +0.156, near-collinear; no surviving moderator; IF-SE
+% undercoverage + bootstrap remedy.
 \begin{abstract}
 
-Automated valuation models increasingly read the prose of a property listing, and
-the text reliably improves price prediction, yet predictive fit alone cannot
-reveal whether the gain reflects genuine semantic content or the neighborhood
-geography that language quietly encodes. We treat the listing embedding as a
-high-dimensional treatment and develop a framework that asks how much of its
-association with sale price survives once geographic location is erased from the
-representation, joining a Robinson partially-linear Double Machine Learning
-estimand with cross-fitted gradient-boosted nuisances, linear concept erasure of
-the latitude-longitude coordinate in closed form, and an iterative nonlinear
-erasure that exposes the residual leakage a linear projector leaves behind. Two findings
-anchor the framework. The first is substantive. Although predictive fit cannot
-tell genuine semantic content apart from the spatial information that listing
-language also encodes, a direct deconfounding test can, and the answer is
-reassuring rather than damning: the embedding does linearly encode location,
-recoverable at an $R^2$ as high as one half, yet holding the text treatment fixed
-and adjusting for that location leaves its per-standard-deviation price effect
-almost unchanged in eleven of twelve markets, so the text-price signal is mostly
-genuine semantic content rather than relabeled geography. The second is
-inferential: the influence-function standard error that Double Machine Learning
-reports for an embedding-valued, generated-regressor treatment undercovers at the
-sample sizes typical of a single metropolitan market, an effect we document in a
-calibration study and for which we recommend a bootstrap that resamples the entire
-pipeline. Applying the framework
-across twelve metropolitan areas with $3{,}851$ deduplicated Redfin listings, we
-find that text carries a positive per-standard-deviation association with log
-price that is robust to the choice of encoder and to spatial deconfounding,
-strongly heterogeneous across markets, and unaccompanied by any demographic
-moderator that survives multiplicity and leverage diagnostics. We are explicit
-about what this does and does not establish, because the estimates are
-associational rather than cleanly causal and a sensitivity analysis quantifies how
-weak an unmeasured confounder would need to be to overturn each market's estimate.
-The contribution is a disciplined measurement-and-deconfounding protocol with
-calibrated inference for an embedding treatment under spatial confounding, not a
-causal price elasticity.
+Automated valuation models increasingly read the prose of a property listing
+alongside its structured attributes, and the language reliably sharpens their
+price predictions, yet a gain in predictive accuracy cannot by itself reveal
+whether the text contributes genuine information about a property or merely
+relabels the neighborhood geography that an agent's description inevitably
+carries. We take that ambiguity as the object of study, treating the leading
+direction of a listing embedding as a high-dimensional treatment whose effect on
+log sale price we estimate with a partially linear double machine learning score,
+and we ask how much of that effect survives once location is taken out of the
+picture. The question is one of spatial confounding, the familiar difficulty in
+which an exposure and an unmeasured driver of the outcome share a geographic
+pattern, and the apparatus we assemble around it pairs cross-fitted
+gradient-boosted nuisances with a closed-form concept-erasure projector that
+strips latitude and longitude from the representation, a fixed-treatment toggle
+that adds a flexible location basis to the controls, an intervention that rewrites
+listings with a large language model, and a finite-sample calibration study.
+What that apparatus turns up is more reassuring than the predictive-fit worry
+would lead one to expect. The embedding does encode location, recoverable by a
+held-out probe at an $R^2$ reaching one half before erasure and essentially
+nothing after, and even so, holding the text treatment fixed while adjusting for
+geography leaves its per-standard-deviation price effect almost unmoved across
+eleven of twelve metropolitan markets, so that what the language contributes is in
+most places semantic content rather than geography in disguise. The surviving
+signal proves robust to the choice of encoder, with a Doc2Vec uniqueness measure
+and a sentence-BERT principal component tracking one another closely from market
+to market, while remaining strongly heterogeneous in magnitude and showing its
+one clear spatial exception in New York, the market whose own text direction is
+the most geographic of the twelve. Because the estimates are associational rather
+than cleanly identified, we bound their fragility with a sensitivity analysis that
+fixes how weak an unobserved confounder would have to be to overturn each market's
+result, and we document in passing that the influence-function interval double
+machine learning reports for an embedding-valued treatment undercovers at the
+sample sizes a single market affords, for which a bootstrap over the full pipeline
+is the remedy. The contribution is accordingly a disciplined protocol for
+measuring and deconfounding the price effect of a learned text representation,
+together with the inferential caution that protocol demands, rather than a causal
+elasticity of price on language.
 
 \end{abstract}
