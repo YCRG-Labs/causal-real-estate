@@ -427,10 +427,96 @@ Price outlier exclusion employs thresholds for minimum and maximum values. We te
 \end{tabular}
 \end{table}
 
+\section{Frozen-Probe Diagnostic: Proofs and Numerical Verification}
+\label{app:frozen_probe_proofs}
+
+This appendix proves Proposition~\ref{prop:frozen_probe} (Section~\ref{sec:frozen_probe_theory}) and reports three controlled numerical experiments verifying each part on synthetic data.
+
+\subsection{Notation}
+
+Let $E_\phi: \mathcal{X} \to \mathcal{Z}$ be an encoder, $C \in \{0, 1\}$ a binary confounder, and $\Phi \subseteq \Phi'$ two parameterized classes of probabilistic classifiers $q: \mathcal{Z} \to [0, 1]$. For a class $\mathcal{F}$, recall the Barber--Agakov variational lower bound on $I(Z; C)$:
+\begin{equation}
+V_{\mathcal{F}}(Z; C) \;:=\; \sup_{q \in \mathcal{F}} \big[H(C) - \mathbb{E}_{(Z,C)}[-\log q(C \mid Z)]\big].
+\end{equation}
+The supremum is achieved at $q^\star = p(C \mid Z)$ when $\mathcal{F}$ contains the Bayes-optimal posterior. Denote the empirical version by $\hat V_{\mathcal{F}}$ (sample mean of the cross-entropy gain at the empirical $\arg\sup$).
+
+\subsection{Proof of Proposition \ref{prop:frozen_probe}(a)}
+
+The first inequality $V_\Phi \le V_{\Phi'}$ is immediate from $\Phi \subseteq \Phi'$ implying the supremum over $\Phi'$ is at least as large. For the second inequality $V_{\Phi'} \le I(Z; C)$, the Barber--Agakov bound is by construction a lower bound on the mutual information: for any $q$,
+\begin{equation}
+H(C) - \mathbb{E}[-\log q(C \mid Z)] \;=\; H(C) - H(C \mid Z) - D_{\mathrm{KL}}(p(C \mid Z) \,\|\, q(C \mid Z)) \;=\; I(Z; C) - D_{\mathrm{KL}}(\cdot),
+\end{equation}
+which is at most $I(Z; C)$ with equality iff $q = p(C \mid Z)$ almost surely. Taking the supremum over $q \in \Phi'$ preserves the inequality, with strictness whenever $\Phi'$ does not contain $p(C \mid Z)$. This statement is Proposition 1 of \citet{xu2020theory} restated in the Barber--Agakov form used by \citet{pimentel2020information}; we restate it here for self-containedness. \qed
+
+\subsection{Proof of Proposition \ref{prop:frozen_probe}(b)}
+
+\textbf{(b1) Empirical equivalence.} The gradient-reversal training objective on the discriminator $\psi$ is $\min_\psi \hat L_\Phi(\psi)$ where $\hat L_\Phi(\psi) = -\frac{1}{n}\sum_i \log D_\psi(C_i \mid Z_i)$ is the empirical cross-entropy of $D_\psi$ on the encoder output $Z = E_{\hat\phi}(X)$. By definition of the Barber--Agakov bound,
+\begin{equation}
+\hat V_\Phi(Z; C) \;=\; \sup_{q \in \Phi} \big[H(C) - \tfrac{1}{n}\sum_i -\log q(C_i \mid Z_i)\big] \;=\; H(C) - \inf_{\psi} \hat L_\Phi(\psi),
+\end{equation}
+so $\hat V_\Phi$ equals $H(C)$ minus the converged training loss of the live discriminator. Therefore ``the live discriminator achieves chance-level accuracy'' (i.e.\ $\hat L_\Phi \approx H(C)$) is exactly equivalent to $\hat V_\Phi(Z_{\hat\phi}; C) \approx 0$. \qed
+
+\textbf{(b2) Consistency of the post-hoc plug-in.} Apply Theorem 3 of \citet{xu2020theory}, which gives uniform PAC-style consistency of the empirical $\mathcal{V}$-information estimator under finite Rademacher complexity of $\mathcal{V}$ and bounded log-loss. Fixing the encoder at $E_{\hat\phi}$ and applying the theorem with $\mathcal{V} = \Phi'$ on a held-out sample of size $m$,
+\begin{equation}
+\hat V_{\Phi'}^{\text{post}}(Z_{\hat\phi}; C) \;\xrightarrow{\;p\;}\; V_{\Phi'}(Z_{\hat\phi}; C) \quad \text{as } m \to \infty.
+\end{equation}
+The fact that $\hat V_\Phi$ is also consistent (since $\Phi \subseteq \Phi'$) and the difference of two consistent estimators is consistent for the difference yields
+\begin{equation}
+\hat V_{\Phi'}^{\text{post}} - \hat V_\Phi \;\xrightarrow{\;p\;}\; V_{\Phi'}(Z_{\hat\phi}; C) - V_\Phi(Z_{\hat\phi}; C) \;\ge\; 0,
+\end{equation}
+exact when $\Phi'$ contains the Bayes-optimal posterior $p(C \mid Z_{\hat\phi})$. \qed
+
+\subsection{Proof of Proposition \ref{prop:frozen_probe}(c)}
+
+We exhibit a data distribution, a downstream label, a class pair $\Phi \subsetneq \Phi'$, and an explicit saddle of the joint adversarial-prediction game at which the gap equals $H(C)$.
+
+\textit{Why the joint game.} The bare gradient-reversal game over an unconstrained encoder admits the trivial collapsed saddle $\phi(X) \equiv 0$, at which $V_\Phi(Z; C) = 0$ holds vacuously and $V_{\Phi'}(Z; C) = 0$ as well. To rule this out, the proposition is stated in the joint adversarial-prediction game, the formulation of \citet{xie2017controllable},~\citet{madras2018learning}, and~\citet{zhang2018mitigating}: the encoder is trained simultaneously against a downstream task $Y$ that requires preserving information about $X$, eliminating the collapsed saddle as a feasible equilibrium.
+
+\textit{Construction.} Take $X = (X_1, X_2) \in \{0, 1\}^2$ with $X_1, X_2 \overset{\text{iid}}{\sim} \text{Bernoulli}(1/2)$, and $C = X_1 \oplus X_2$ (the XOR of the two binary features). Then $C \in \{0, 1\}$ uniformly with $H(C) = \log 2$. Take $Y = X_1$ as the downstream label, so $I(X; Y) = H(Y) = \log 2 > 0$.
+
+Let $\Phi$ be the class of linear logistic-regression classifiers $D_\psi(z) = \sigma(w^\top z + b)$ on $z \in \mathbb{R}^2$, and let $\Phi'$ be any class containing a $2$-layer MLP with hidden width $\ge 2$.
+
+\textit{Exhibited saddle.} Set $\phi^\star = \mathrm{id}$ (the identity encoder), $g^\star(z) = z_1$ (linear task head reading off the first coordinate), and $h^\star \equiv 1/2$ (the Bayes-optimal linear classifier of $C$ from $Z$, which is constant since $C$ is not linearly separable from $Z$ in this DGP). Then on the joint distribution $(Z, C, Y)$:
+\begin{itemize}
+\item \textbf{Adversary inner max.} For any $D_\psi \in \Phi$ (linear), the conditional posterior $\Pr[C = 1 \mid Z]$ takes value $1$ on $\{(0,1), (1,0)\}$ and value $0$ on $\{(0,0), (1,1)\}$, which is not linearly separable. The Bayes-optimal linear classifier is the constant $D_\psi \equiv 1/2$, attaining cross-entropy $H(C) = \log 2$ exactly. Therefore $V_\Phi(Z_{\phi^\star}; C) = 0$.
+\item \textbf{Probe completeness.} For $\Phi'$ containing the $2$-layer MLP, the Bayes-optimal posterior $\Pr[C = 1 \mid Z] \in \{0, 1\}$ is exactly representable. Hence $V_{\Phi'}(Z_{\phi^\star}; C) = I(Z_{\phi^\star}; C) = H(C) = \log 2$.
+\item \textbf{Task decodability.} Since $Y = X_1 = (\phi^\star(X))_1$, the linear head $g^\star(z) = z_1$ achieves $\mathcal{L}_{\text{task}} = 0$, the global minimum of the task term.
+\item \textbf{Saddle.} For any $\alpha > 0$, $(\phi^\star, g^\star, h^\star)$ jointly minimize the task term to its floor, while the adversary $h^\star$ is Bayes-optimal in $\Phi$ given the encoder. Any unilateral perturbation of $\phi^\star$ that decreases the discriminator's loss must distort the linear separability of $Y = X_1$ from $Z_1$ and hence increase $\mathcal{L}_{\text{task}}$, yielding a stable equilibrium under the joint loss.
+\end{itemize}
+
+The gap at this saddle is therefore exactly $V_{\Phi'}(Z_{\phi^\star}; C) - V_\Phi(Z_{\phi^\star}; C) = \log 2 - 0 = H(C)$. The collapsed encoder $\phi_{\text{collapse}}(X) \equiv 0$ achieves task loss $H(Y) = \log 2 > 0$ and is therefore not a saddle of the joint game for any $\alpha > 0$. The construction generalizes from binary $X$ to continuous distributions by replacing the XOR structure with any nonlinear interaction (e.g., $C = \mathrm{sign}(X_1 X_2)$ for Gaussian $X_1, X_2$), at the cost of a vanishing $O(\delta)$ remainder controlling the off-diagonal probability mass. We verify all four bullets computationally in Appendix~\ref{app:verification} (script \texttt{07\_saddle\_verification.py}), including an explicit numerical demonstration that $\phi_{\text{collapse}}$ would be a saddle of the bare GRL game with $V_{\Phi'} = 0$, motivating the joint-game restriction. \qed
+
+\subsection{Numerical Verification}
+\label{app:frozen_probe_numerical}
+
+Three controlled experiments verify each part of Proposition~\ref{prop:frozen_probe} on synthetic data. Implementation in \texttt{data/scripts/theory/frozen\_probe\_gap.py}; raw results in \texttt{results/theory/frozen\_probe\_gap.json}.
+
+\textbf{Experiment 1 (static XOR).} The exact construction of part (c). $Z = (Z_1, Z_2) \sim \text{Bernoulli}(1/2)^2$, $C = Z_1 \oplus Z_2$, $N = 4{,}000$, averaged across $5$ trials. True $I(Z; C) = \log 2 = 1$ bit. Linear logistic regression: $\hat V_\Phi = 0.0004$ bits, accuracy $46.1\%$ (chance). $2$-layer MLP $(16,16)$: $\hat V_{\Phi'} = 0.997$ bits, accuracy $100\%$. The diagnostic gap $\hat V_{\Phi'} - \hat V_\Phi = 0.997$ bits is $99.7\%$ of the true mutual information.
+
+\textbf{Experiment 2 (dynamic gradient-reversal training).} A $2$-layer encoder $E_\phi: \mathbb{R}^{10} \to \mathbb{R}^4$ trained adversarially against a linear discriminator via gradient reversal for $200$ epochs, with a downstream MSE predictor on $Y = 0.5 X_3 + \epsilon$. Confounder generated as $C = \mathrm{sign}(X_1 X_2)$ (continuous-Gaussian XOR). After training: live linear discriminator accuracy $46.3\%$ (chance), frozen linear probe accuracy $56.4\%$, frozen $(32, 32)$ MLP probe accuracy $61.0\%$. Diagnostic gap $\hat V_{\Phi'}^{\text{post}} - \hat V_\Phi = +14.7$ percentage points of accuracy; the encoder fooled its discriminator while leaving the underlying confounder recoverable to a richer probe.
+
+\textbf{Experiment 3 (capacity ladder).} Same XOR DGP, varying classifier capacity:
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Architecture} & $\hat V_\Phi$ (bits) & Accuracy \\
+\midrule
+Linear & $0.000$ & $0.510$ \\
+MLP $(4)$ & $0.659$ & $0.835$ \\
+MLP $(8)$ & $0.990$ & $1.000$ \\
+MLP $(16)$ & $0.993$ & $1.000$ \\
+MLP $(16, 16)$ & $0.997$ & $1.000$ \\
+MLP $(32, 32, 32)$ & $0.999$ & $1.000$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+$\hat V_\Phi$ is monotone non-decreasing in capacity, asymptoting at the true mutual information $\log 2 \approx 0.693$ nats $= 1$ bit. This operationalizes ``probe-capacity escalation'' as a complementary diagnostic to ``confounder escalation'' (Section~\ref{sec:results}): if $\hat V_{\Phi'}$ continues to grow as probe capacity increases, the encoder has not actually erased the confounder; it has merely outrun the current discriminator.
+
 \section{Computational Verification of Analytic Claims}
 \label{app:verification}
 
-To complement the written proofs in Appendix~\ref{app:proofs}, we provide a computational verification artifact in the \texttt{verification/} directory of the replication repository. For every theorem, lemma, proposition, and corollary in the paper, an independent open-source toolchain re-derives the result and asserts agreement with the written proof. Each script writes a JSON certificate to \texttt{verification/results/} with a verdict (\texttt{PASS}/\texttt{FAIL}) and the numerical or symbolic quantities cited; the full suite is reproducible via \texttt{make verify} from pinned tool versions in \texttt{requirements.txt}.
+To complement the written proofs in Appendices~\ref{app:proofs} and~\ref{app:frozen_probe_proofs}, we provide a computational verification artifact in the \texttt{verification/} directory of the replication repository. For every theorem, lemma, proposition, and corollary in the paper, an independent open-source toolchain re-derives the result and asserts agreement with the written proof. Each script writes a JSON certificate to \texttt{verification/results/} with a verdict (\texttt{PASS}/\texttt{FAIL}) and the numerical or symbolic quantities cited; the full suite is reproducible via \texttt{make verify} from pinned tool versions in \texttt{requirements.txt}.
 
 \begin{table}[!htbp]
 \centering
@@ -445,13 +531,18 @@ Theorem~1 (Backdoor Adjustment, \S\ref{sec:methods}) & Independent identificatio
 Theorem~2 (Backdoor Identifiability, App.~\ref{app:proofs}) & Same as Theorem~1; backdoor estimand returned & DoWhy 0.14 \\
 Proposition~1 (Zero Causal Effect, \S\ref{sec:methods}) & Edge-set check ($T \notin \mathrm{Pa}(Y)$); DoWhy declares zero & pgmpy + DoWhy \\
 Corollary~1 (Zero Effect under True SCM, App.~\ref{app:proofs}) & Same as Proposition~1 & pgmpy \\
+Proposition~2(a) (variational MI inequality, App.~\ref{app:frozen_probe_proofs}) & Symbolic KL nonneg + numerical $V$-chain & SymPy + PyTorch \\
+Proposition~2(b1) (algebraic identity) & Symbolic and numerical equality, $|\Delta| < 10^{-8}$ & SymPy + PyTorch \\
+Proposition~2(b2) (consistency of post-hoc $\hat V_{\Phi'}^{\text{post}}$) & Monte Carlo $n$-sweep; log-log slope vs.\ rate predicted by \citet{xu2020theory} Thm~3 & scikit-learn \\
+Proposition~2(c) (XOR saddle-gap, identity-encoder construction) & Wraps \texttt{frozen\_probe\_gap.py}; assertions on $V_\Phi$, $V_{\Phi'}$ & PyTorch \\
+Proposition~2(c) (joint-game saddle existence + collapsed-encoder counterexample) & Explicit construction at $\phi_{\text{id}}$ and $\phi_{\text{collapse}}$; sweep over joint-game weight $\alpha$ & PyTorch \\
 \bottomrule
 \end{tabular}
 \caption{Mapping from analytic claims to computational verification scripts. Every entry passes; certificates are in \texttt{verification/results/*.json}.}
 \label{tab:verification_map}
 \end{table}
 
-We are explicit about what this artifact does and does not claim. It is \emph{not} a machine-checked formal proof in Lean, Coq, or Isabelle: as of late 2025 no proof assistant has a causal-DAG library, which would gate even Lemma~\ref{lemma:dsep} (the closest available are HOL-Probability for measure theory, infotheo for Shannon information theory, and recent Lean ports of Rademacher complexity~\citep{sonoda2025rademacher}). What it does claim is that every analytic statement has been re-derived by an independent, deterministic open-source tool and that the d-separation and backdoor identification constructions are mechanically checkable without estimation error. This is a reproducibility artifact for analytic claims, at the bar that current top stats journals accept; it is intended as a complement to, not a substitute for, the written proofs.
+We are explicit about what this artifact does and does not claim. It is \emph{not} a machine-checked formal proof in Lean, Coq, or Isabelle: as of late 2025 no proof assistant has a causal-DAG library, which would gate even Lemma~\ref{lemma:dsep} (the closest available are HOL-Probability for measure theory, infotheo for Shannon information theory, and recent Lean ports of Rademacher complexity~\citep{sonoda2025rademacher}). What it does claim is that every analytic statement has been re-derived by an independent, deterministic open-source tool, that the d-separation, backdoor identification, and XOR saddle constructions are mechanically checkable without estimation error, and that the asymptotic consistency claim is empirically verified at the rate predicted by the cited theorem (slope $-0.547$ for the $O(m^{-1/2})$ prediction). This is a reproducibility artifact for analytic claims, at the bar that current top stats journals accept; it is intended as a complement to, not a substitute for, the written proofs.
 
 \section{Finite-Sample Calibration of the DML Estimator}
 \label{app:simulation}

@@ -186,6 +186,51 @@ embedding in keeping with the published protocol; its role is to bound how much
 location a linear or nonlinear function of the text could carry, which the
 decomposition below then connects to how much location actually moves the price.
 
+\subsection{When a probe fails, what has been erased?}
+\label{sec:frozen_probe_theory}
+
+The erasure diagnostic of the previous subsection rests on probing, and probing
+carries a subtlety that bears on how its verdicts should be read. The natural way
+to check that a concept has left a representation is to train a probe of the
+concept on the cleaned representation and confirm that it does no better than
+chance, yet a probe that fails establishes only that this particular probe, at
+this capacity, cannot recover the concept, and not that the representation has
+shed it, since a fresh classifier of higher capacity fit after the fact can
+recover what a weaker or adversarially pressured probe could not. This is the
+reason we lean on closed-form erasure, whose guardedness guarantee holds against
+every linear probe at once rather than against the one we happened to train, and
+the reason we read the residual probe $R^2$ that survives the iterative erasure of
+Section~\ref{sec:leace-12} as a lower bound on the location a nonlinear function
+could still recover rather than as a measurement of zero. The same subtlety is a
+warning about the obvious alternative to closed-form erasure, an adversarially
+trained encoder whose discriminator gradient reversal drives to chance, because a
+live discriminator at chance is the weakest possible evidence of erasure: it
+certifies only that the encoder defeated the one probe it was trained against, and
+a fresh post-hoc probe of greater capacity may still read the concept off the same
+representation. We make the point precise as a $\mathcal{V}$-information
+\citep{xu2020theory} statement connected to the Barber--Agakov variational lower
+bound used throughout the probing literature \citep{pimentel2020information}.
+
+For any class $\mathcal{F}$ of probabilistic classifiers $q: \mathcal{Z} \to [0,1]$, define the variational lower bound on $I(Z; C)$:
+\begin{equation}
+V_{\mathcal{F}}(Z; C) \;:=\; \sup_{q \in \mathcal{F}} \big[H(C) - \mathbb{E}_{(Z,C)}[-\log q(C \mid Z)]\big].
+\end{equation}
+The supremum is achieved at $q^\star = p(C \mid Z)$ when $\mathcal{F}$ contains the Bayes-optimal posterior; otherwise $V_{\mathcal{F}} < I(Z; C)$ strictly.
+
+\begin{proposition}[Frozen-probe diagnostic]
+\label{prop:frozen_probe}
+Let $E_\phi: \mathcal{X} \to \mathcal{Z}$ be an encoder, $\Phi$ the discriminator class trained jointly via gradient reversal, and $\Phi'$ a probe class with $\Phi \subseteq \Phi'$ trained post-hoc on the frozen encoder. Then:
+\begin{enumerate}
+\item[(a)] $0 \le V_\Phi(Z; C) \le V_{\Phi'}(Z; C) \le I(Z; C)$, with the rightmost inequality strict whenever $\Phi'$ omits the Bayes-optimal posterior.
+\item[(b)] The empirical Barber--Agakov lower bound under $\Phi$ equals the gradient-reversal discriminator's converged value: $\hat V_\Phi(Z_{\hat\phi}; C) = H(C) - \hat L_\Phi$. Therefore ``the live discriminator achieves chance'' is equivalent to $\hat V_\Phi \le \epsilon$. Under uniform-convergence conditions on $\Phi'$, the post-hoc plug-in $\hat V_{\Phi'}^{\text{post}}(Z_{\hat\phi}; C) \to V_{\Phi'}(Z_{\hat\phi}; C)$ in probability, and hence $\hat V_{\Phi'}^{\text{post}} - \hat V_\Phi$ is a consistent lower-bound estimator of the residual mutual information $I(Z_{\hat\phi}; C) - V_\Phi(Z_{\hat\phi}; C) \ge 0$.
+\item[(c)] There exist a data distribution over $(X, C)$, a downstream label $Y$ with $I(X; Y) > 0$, class pairs $\Phi \subsetneq \Phi'$, and a joint-game weight $\alpha > 0$ such that the joint adversarial-prediction loss
+$$\mathcal{L}(\phi, g, h) \;=\; \alpha \cdot \mathcal{L}_{\text{task}}(g(E_\phi(X)), Y) \;-\; \mathcal{L}_{\text{disc}}(h(E_\phi(X)), C)$$
+admits a saddle $(\phi^\star, g^\star, h^\star)$ with $V_\Phi(Z_{\phi^\star}; C) = 0$ but $V_{\Phi'}(Z_{\phi^\star}; C) \ge H(C) - \delta$ for arbitrary $\delta > 0$.
+\end{enumerate}
+\end{proposition}
+
+Statement (a) is folklore in the variational mutual-information literature, appearing as Proposition~1 of \citet{xu2020theory} in the language of $\mathcal{V}$-information and as the central observation of \citet{pimentel2020information} in the language of probe capacity, and we restate it for self-containedness. Statements (b) and (c) are our contribution. Part (b) ties the bound to the gradient-reversal objective and recasts the post-hoc adversary used as a heuristic by \citet{moyer2018invariant} and \citet{elazar2018adversarial} as a consistent statistical estimator of residual leakage, which is what licenses reading the surviving probe $R^2$ as a number rather than a guess. Part (c) establishes that the joint adversarial-prediction game admits saddles at which the live discriminator achieves the optimum of its own minimax game while essentially all of the concept remains recoverable to a richer probe, so an adversarial erasure can certify success and be wrong. The existential construction mirrors the style of \citet{ravfogel2022linear}~Proposition~3.2 and \citet{belrose2023leace}~Theorem~4.3, and proofs together with three synthetic numerical experiments verifying each part are deferred to Appendix~\ref{app:frozen_probe_proofs}.
+
 \subsection{Holding the text fixed: a covariate decomposition}
 
 Showing that the embedding encodes geography is not the same as showing that the
