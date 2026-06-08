@@ -31,7 +31,7 @@ New York and $0.42$ in Dallas to within $0.002$ of zero after erasure, and the
 linear-guardedness residual averaging $2.7\text{e-}8$ across the twelve markets,
 ranging from $8.3\text{e-}9$ to $6.0\text{e-}8$, which is the floating-point floor
 of the single-precision computation, so the linear erasure comes out complete
-throughout the panel.
+throughout the panel (Figure~\ref{fig:erasure-12}).
 
 The concept is routed through the continuous coordinate representation rather
 than the categorical ZIP-code identifier in every market. Categorical LEACE has
@@ -100,3 +100,117 @@ with the one on which it acts. The question of whether the location the embeddin
 demonstrably encodes is the location that actually moves the price is taken up
 directly in Section~\ref{sec:decomposition}, where the text treatment is held
 fixed and geography is moved on and off the controls around it.
+
+% ======================================================================
+% FIG: LEACE erasure completeness (held-out ridge R^2 on lat-lon)
+% data: results/leace12_igbp/leace_12city_table.csv, ordered by raw R^2
+% dumbbell: gray segment raw->erased, open dot raw, filled dot erased
+% ======================================================================
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre, width=0.66\textwidth, height=7.4cm,
+    symbolic y coords={San Francisco,Chicago,Seattle,Philadelphia,Portland,Boston,Atlanta,Washington,Denver,Phoenix,Dallas,New York},
+    ytick=data, enlarge y limits=0.06,
+    xlabel={Held-out ridge $R^2$ for predicting (lat, lon) from the embedding},
+    xmin=-0.38, xmax=0.55, xtick={-0.3,-0.1,0,0.1,0.3,0.5},
+    title={Linear spatial information before and after concept erasure},
+    extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
+    legend style={font=\scriptsize, draw=none, fill=none, at={(0.97,0.06)}, anchor=south east, row sep=1pt},
+]
+% raw -> erased connecting segments
+\draw[thin,gray] (axis cs:-0.330,San Francisco)--(axis cs:0.000,San Francisco);
+\draw[thin,gray] (axis cs:0.165,Chicago)--(axis cs:0.000,Chicago);
+\draw[thin,gray] (axis cs:0.215,Seattle)--(axis cs:0.000,Seattle);
+\draw[thin,gray] (axis cs:0.239,Philadelphia)--(axis cs:0.000,Philadelphia);
+\draw[thin,gray] (axis cs:0.287,Portland)--(axis cs:0.000,Portland);
+\draw[thin,gray] (axis cs:0.348,Boston)--(axis cs:0.000,Boston);
+\draw[thin,gray] (axis cs:0.350,Atlanta)--(axis cs:0.000,Atlanta);
+\draw[thin,gray] (axis cs:0.357,Washington)--(axis cs:0.000,Washington);
+\draw[thin,gray] (axis cs:0.377,Denver)--(axis cs:0.000,Denver);
+\draw[thin,gray] (axis cs:0.380,Phoenix)--(axis cs:0.000,Phoenix);
+\draw[thin,gray] (axis cs:0.423,Dallas)--(axis cs:0.000,Dallas);
+\draw[thin,gray] (axis cs:0.500,New York)--(axis cs:0.000,New York);
+\addplot[only marks, mark=o, mark size=2.3pt, color=cMUTE, line width=0.9pt] coordinates {
+  (-0.330,San Francisco) (0.165,Chicago) (0.215,Seattle) (0.239,Philadelphia) (0.287,Portland)
+  (0.348,Boston) (0.350,Atlanta) (0.357,Washington) (0.377,Denver) (0.380,Phoenix)
+  (0.423,Dallas) (0.500,New York)};
+\addlegendentry{Raw embedding}
+\addplot[only marks, mark=*, mark size=2.1pt, color=cNYC] coordinates {
+  (0.000,San Francisco) (0.000,Chicago) (0.000,Seattle) (0.000,Philadelphia) (0.000,Portland)
+  (0.000,Boston) (0.000,Atlanta) (0.000,Washington) (0.000,Denver) (0.000,Phoenix)
+  (0.000,Dallas) (0.000,New York)};
+\addlegendentry{After LEACE $+$ IGBP (linear)}
+\end{axis}
+\end{tikzpicture}
+\caption{Held-out ridge $R^2$ for recovering the continuous latitude-longitude
+coordinate from the sentence-BERT embedding, before (open) and after (filled)
+the composed linear concept erasure, in each of the twelve markets ordered by raw
+$R^2$. The raw embedding carries substantial linear spatial signal, recovering
+the coordinate at $R^2$ up to $0.50$ in New York; the negative San Francisco
+value reflects out-of-sample probe performance below the coordinate-mean
+baseline rather than absent signal. Linear erasure drives the recoverable signal
+to within Monte Carlo noise of zero in every market, the exact-guardedness
+property of LEACE. Residual \emph{nonlinear} leakage, which a linear probe cannot
+see, is quantified separately in Section~\ref{sec:leace-12}.}
+\label{fig:erasure-12}
+\end{figure}
+
+% ======================================================================
+% FIG: GRL adversarial erasure foil -- a fresh probe recovers location
+% from the adversarially-deconfounded encoder but not from the LEACE projection
+% data: results/adversarial_12city/adversarial_12city_summary.csv (geo_probe_r2)
+% vs the LEACE linear-erased coordinate R2 (~0, fig:erasure-12)
+% ======================================================================
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre, width=0.62\textwidth, height=7.2cm,
+    symbolic y coords={Philadelphia,Seattle,Dallas,Phoenix,Portland,Chicago,
+                       Denver,San Francisco,New York,Boston,Atlanta,Washington},
+    ytick=data, enlarge y limits=0.05,
+    xlabel={Held-out ridge $R^2$ for the coordinate from the deconfounded representation},
+    xmin=-0.02, xmax=0.46, xtick={0,0.1,0.2,0.3,0.4},
+    xticklabel={\pgfmathprintnumber[fixed,precision=1]{\tick}},
+    title={A fresh probe recovers location after adversarial erasure, not after LEACE},
+    extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
+    legend style={font=\scriptsize, draw=none, fill=none, at={(0.97,0.06)}, anchor=south east, row sep=1pt},
+]
+\draw[thin,gray] (axis cs:0.164,Philadelphia)--(axis cs:0.000,Philadelphia);
+\draw[thin,gray] (axis cs:0.201,Seattle)--(axis cs:0.000,Seattle);
+\draw[thin,gray] (axis cs:0.211,Dallas)--(axis cs:0.000,Dallas);
+\draw[thin,gray] (axis cs:0.227,Phoenix)--(axis cs:0.000,Phoenix);
+\draw[thin,gray] (axis cs:0.245,Portland)--(axis cs:0.000,Portland);
+\draw[thin,gray] (axis cs:0.247,Chicago)--(axis cs:0.000,Chicago);
+\draw[thin,gray] (axis cs:0.253,Denver)--(axis cs:0.000,Denver);
+\draw[thin,gray] (axis cs:0.277,San Francisco)--(axis cs:0.000,San Francisco);
+\draw[thin,gray] (axis cs:0.278,New York)--(axis cs:0.000,New York);
+\draw[thin,gray] (axis cs:0.300,Boston)--(axis cs:0.000,Boston);
+\draw[thin,gray] (axis cs:0.331,Atlanta)--(axis cs:0.000,Atlanta);
+\draw[thin,gray] (axis cs:0.422,Washington)--(axis cs:0.000,Washington);
+\addplot[only marks, mark=*, mark size=2.1pt, color=cSF] coordinates {
+  (0.164,Philadelphia) (0.201,Seattle) (0.211,Dallas) (0.227,Phoenix) (0.245,Portland)
+  (0.247,Chicago) (0.253,Denver) (0.277,San Francisco) (0.278,New York) (0.300,Boston)
+  (0.331,Atlanta) (0.422,Washington)};
+\addlegendentry{After GRL adversarial erasure}
+\addplot[only marks, mark=*, mark size=2.1pt, color=cNYC] coordinates {
+  (0.000,Philadelphia) (0.000,Seattle) (0.000,Dallas) (0.000,Phoenix) (0.000,Portland)
+  (0.000,Chicago) (0.000,Denver) (0.000,San Francisco) (0.000,New York) (0.000,Boston)
+  (0.000,Atlanta) (0.000,Washington)};
+\addlegendentry{After LEACE projection}
+\end{axis}
+\end{tikzpicture}
+\caption{The frozen-probe diagnostic applied to two erasure methods, in each of the
+twelve markets. A ridge probe of the latitude-longitude coordinate is trained from
+scratch on the deconfounded representation. Against the gradient-reversal
+adversarial encoder, whose own multi-head discriminator has been driven to chance
+on location (out-of-sample coordinate $R^2 \le 0.07$ across the panel), the fresh
+probe still recovers the coordinate at $R^2$ between $0.16$ and $0.42$; against the
+LEACE projection the same probe sits at the chance baseline, the exact-guardedness
+property of closed-form erasure. The adversarial training did not remove location,
+it taught its discriminator not to look, which is the saddle of
+Proposition~\ref{prop:frozen_probe}(c) realized across every market.}
+\label{fig:grl-foil}
+\end{figure}

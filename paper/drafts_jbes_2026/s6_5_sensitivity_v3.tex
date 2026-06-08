@@ -116,3 +116,36 @@ per-market sensitivities as informative about robustness rather than as a second
 identification test, and we leave the benchmarking of non-spatial confounder
 groups to future work, since the census, crime, and amenity blocks needed to
 construct them are not uniformly available across the twelve per-market panels.
+
+% ======================================================================
+% FIG: per-market robustness value (sensitivity to unmeasured confounding)
+% data: results/replications/confounder_sensitivity_12.csv (rv, block=none)
+% ======================================================================
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre, width=0.62\textwidth, height=7.2cm,
+    symbolic y coords={Boston,Seattle,New York,Portland,Washington,Phoenix,Dallas,Atlanta,Chicago,Denver,San Francisco,Philadelphia},
+    ytick=data, enlarge y limits=0.06,
+    xlabel={Robustness value $RV_{q=1}$ (residual share an unmeasured confounder must explain in both treatment and price)},
+    xmin=0, xmax=0.21, xtick={0,0.05,0.10,0.15,0.20},
+    xticklabel={\pgfmathprintnumber[fixed,precision=2]{\tick}},
+    title={Sensitivity of the per-market estimate to unmeasured confounding},
+]
+\addplot[only marks, mark=*, mark size=2.0pt, color=cNYC] coordinates {
+  (0.005,Boston) (0.025,Seattle) (0.030,New York) (0.040,Portland) (0.041,Washington)
+  (0.048,Phoenix) (0.051,Dallas) (0.051,Atlanta) (0.064,Chicago) (0.065,Denver)
+  (0.140,San Francisco) (0.183,Philadelphia)};
+\end{axis}
+\end{tikzpicture}
+\caption{Robustness value for each market's sentence-BERT effect, the share of
+residual variance an unmeasured confounder would need to explain in both the
+treatment and log price to drive the estimate to zero, following
+\citet{cinelli2020making}. Larger values are more robust. The estimate is most
+robust in Philadelphia ($0.18$) and San Francisco ($0.14$) and most fragile in
+the markets whose point estimates are already near zero. The modest robustness
+values in several markets are the reason we read the per-market estimates as
+associational and sensitivity-bounded rather than cleanly causal.}
+\label{fig:sensitivity-rv}
+\end{figure}
