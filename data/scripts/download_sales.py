@@ -283,8 +283,27 @@ def fetch_dc(limit: int | None) -> pd.DataFrame:
         geom_field="SSL", geom_where="SSL NOT LIKE 'PAR%'", limit=limit)
 
 
+def fetch_nyc(limit: int | None) -> pd.DataFrame:
+    """NYC DOF rolling sales are already in the parcels file (sale_price,
+    sale_date, lat/lon by BBL); reshape to the recorded-sales schema."""
+    for p in (REPO / "release" / "data" / "nyc" / "parcels.parquet",
+              PROC / "nyc_parcels_micro_geo.gpkg"):
+        if p.exists():
+            df = pd.read_parquet(p) if p.suffix == ".parquet" else None
+            break
+    else:
+        raise SystemExit("nyc parcels not found")
+    df = df.rename(columns={"latitude": "lat", "longitude": "lon", "parcel_id": "parcel_id"})
+    df = df[pd.to_numeric(df["sale_price"], errors="coerce") > 10000].copy()
+    df["sale_date"] = pd.to_datetime(df["sale_date"], errors="coerce", utc=True)
+    df["address"] = ""
+    if limit:
+        df = df.head(limit)
+    return df[["parcel_id", "address", "lat", "lon", "sale_price", "sale_date"]].dropna(subset=["lat", "lon"])
+
+
 FETCHERS = {"philadelphia": fetch_philadelphia, "chicago": fetch_chicago,
-            "dc": fetch_dc}
+            "dc": fetch_dc, "nyc": fetch_nyc}
 
 
 def main() -> int:
