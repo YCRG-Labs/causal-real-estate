@@ -55,27 +55,35 @@ SOURCES = {
                 "endpoint": "https://datacatalog.cookcountyil.gov/resource/wvhk-k5uv.json",
                 "note": "Cook Assessor Parcel Sales (pin, sale_price, sale_date); 518k sales since 2020. "
                         "No lat/lon here: join pin -> Parcel Universe nj4t-kc8j for coordinates."},
-    "dc": {"method": "opendata_dc",
-           "endpoint": "https://opendata.dc.gov/datasets/integrated-tax-system-public-extract-vintage",
-           "note": "OCFO real property sales; key=SSL, SALEPRICE, SALEDATE"},
-    "phoenix": {"method": "download",
-                "endpoint": "https://mcassessor.maricopa.gov/page/data_sales/",
-                "note": "Maricopa sales affidavits CSV; key=APN, SalePrice, SaleDate"},
-    "seattle": {"method": "download",
-                "endpoint": "https://info.kingcounty.gov/assessor/DataDownload/default.aspx",
-                "note": "King County EXTR Real Property Sales; key=Major+Minor, SalePrice, DocumentDate"},
-    "denver": {"method": "opendata_arcgis",
-               "endpoint": "https://www.denvergov.org/opendata",
-               "note": "Denver assessor real property sales; key=schednum"},
-    "atlanta": {"method": "qpublic",
-                "endpoint": "https://qpublic.schneidercorp.com/Application.aspx?AppID=936",
-                "note": "Fulton County sales; key=parcel id (GA is disclosure)"},
-    "portland": {"method": "rlis",
-                 "endpoint": "https://rlisdiscovery.oregonmetro.gov/",
-                 "note": "Multnomah/RLIS taxlots + sales; key=TLID/parcel"},
-    "boston": {"method": "massgis",
+    "dc": {"method": "arcgis", "verified": "saleprice field exists",
+           "endpoint": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer",
+           "note": "CAMA property sales / Owner Points carry SALEPRICE, SALEDATE, SSL. "
+                   "Pin the live sales layer id (Owner Points 26 is retired); query /<id>/query."},
+    "phoenix": {"method": "download_zip",
+                "endpoint": "https://www.mcassessor.maricopa.gov/page/data_sales/",
+                "note": "Maricopa Sales Affidavits ZIP (pipe-delimited): APN, SalePrice, SaleDate, grantor/grantee. "
+                        "Join APN -> Maricopa parcels (api.mcassessor.maricopa.gov) for lat/lon."},
+    "seattle": {"method": "download", "verified": "rpsale_extr is the table",
+                "endpoint": "https://info.kingcounty.gov/assessor/datadownload/default.aspx",
+                "note": "King EXTR Real Property Sales (rpsale_extr): key=Major+Minor, SalePrice, DocumentDate. "
+                        "Join Major+Minor -> parcel_extr for geometry/lat-lon."},
+    "denver": {"method": "arcgis", "verified": "sales table found (SALEDT, PRICE, PARID)",
+               "endpoint": "https://services1.arcgis.com/ioennV6PpG5Xodq0/ArcGIS/rest/services/OpenData_A5/FeatureServer/1",
+               "note": "Tax Admin Real Estate Sales: PARID, PRICE, SALEDT (no geometry in table). "
+                       "Join PARID -> Denver parcels layer (separate service) for lat/lon."},
+    "atlanta": {"method": "arcgis_or_qpublic",
+                "endpoint": "https://gisdata.fultoncountyga.gov/",
+                "note": "Fulton GIS property layer carries recorded sale date+price (GA is disclosure); "
+                        "find the parcels FeatureServer with sale fields + geometry."},
+    "portland": {"method": "rlis_arcgis",
+                 "endpoint": "https://rlisdiscovery.oregonmetro.gov/datasets/9d3c396ffad44649bc7451465aa300f0",
+                 "note": "RLIS Taxlots (Public) carry SALEPRICE/SALEDATE + geometry inline; "
+                         "ArcGIS FeatureServer query, like Philadelphia but ArcGIS not Carto."},
+    "boston": {"method": "BLOCKED_easy",
                "endpoint": "https://www.mass.gov/info-details/massgis-data-property-tax-parcels",
-               "note": "MassGIS standardized assessors parcels carry last sale price/date; key=loc_id"},
+               "note": "Analyze Boston assessment has NO sale price (verified). MassGIS L3 standardized "
+                       "parcels carry LS_PRICE/LS_DATE but as a statewide GDB download, not a clean API. "
+                       "Like SF: no clean free sale-price feed -- drop or use MassGIS GDB with effort."},
     "sf": {"method": "BLOCKED",
            "endpoint": "https://data.sfgov.org/resource/wv5m-vpq2.json",
            "note": "DataSF open tax roll carries ONLY assessed values, no transaction price "
