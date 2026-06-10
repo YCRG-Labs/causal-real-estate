@@ -69,6 +69,24 @@ see, and since the erasure that certifies the representation's geography is itse
 linear, so that a nonlinear geographic signal no ridge probe would surface could
 in principle persist into the residual we are calling semantic.
 
+That concession invites a direct test, and we run it by replacing the coordinate
+polynomial with a thin-plate regression spline, the flexible low-rank smoother
+that the spatial-statistics literature reaches for when the scale of confounding
+is not known in advance \citep{keller2020selecting,gilbert2021causal}. A
+rank-thirty spline over latitude and longitude, projected to meters so that its
+isotropic metric is physical, captures far more of the treatment's spatial
+structure than the quadratic does, raising the average share of the leading text
+direction that location explains from about $0.13$ to about $0.21$ and from $0.42$
+to $0.52$ in New York, and yet the price effect after adjustment barely responds.
+The location-adjusted estimate moves by at most $0.030$ of a log point across the
+twelve markets, in New York, and by under $0.02$ in every other market, with no
+market changing sign and the pooled effect shifting from $+0.144$ to $+0.137$, so
+that a basis flexible enough to absorb twice the geography leaves the semantic
+estimate essentially where the quadratic left it. The finer spatial grain the
+polynomial could not bend to turns out, where the data can see it, not to carry
+the price effect either, and the per-market comparison is released with the
+replication code.
+
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}

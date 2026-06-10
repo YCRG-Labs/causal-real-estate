@@ -10,14 +10,20 @@ geographic range of the United States housing stock, from San Francisco and New
 York at the expensive coastal end through Boston, Seattle, Washington, Denver, and
 Portland in the middle to Chicago, Atlanta, Phoenix, Dallas, and Philadelphia
 toward the more affordable interior and south. Each listing carries the free-text
-description an agent wrote, the realized sale price the platform records, the
+description an agent wrote, the sale price the platform reports for the property, the
 structured attributes a hedonic model expects, the bedroom and bathroom counts,
 the living area, the lot size, the year built, and the property type, and a
 property-level latitude and longitude rather than a coarse centroid. Working with
-recorded sale prices rather than the assessed values or tax-reassessment proxies
-that earlier versions of this project relied on removes a layer of measurement
-concern at the root, since the outcome is the transaction the market actually
-cleared.
+platform-reported sale prices rather than the assessed values or tax-reassessment
+proxies that earlier versions of this project relied on removes a layer of
+measurement concern, since the outcome is a market price rather than an
+administrative valuation. The sale date the listing page records, which we recover
+for every property in the corpus, ranges widely across the panel, yet it is
+essentially uncorrelated with price within each market, the absolute correlation
+no larger than $0.20$ and the $R^2$ below $0.04$ in every market, so that pooling
+sales observed at different times does not by itself introduce temporal
+confounding of the text effect; the recovered dates are released with the data so
+that sale-period controls can be added directly.
 
 \begin{table}[H]
 \centering
