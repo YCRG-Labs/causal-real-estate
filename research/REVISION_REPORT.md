@@ -162,6 +162,31 @@ Implications, now reflected in the paper:
   new pipeline. SF currently uses an assessed-value proxy (`infer_sf_prices.py`),
   inconsistent with the others — worth a footnote regardless.
 
+## Sale-price validity check — COMPLETED (4 markets)
+
+After verifying that only four metros publish recorded transaction prices on free
+public data (Philadelphia OPA, Cook County, DC CAMA, NYC DOF; the rest publish
+parcels/assessments without sale prices, and Dallas is barred by TX
+non-disclosure), we recovered real sale prices for those four and re-estimated the
+text effect on the transaction rather than the asking price (sale-quarter FE; same
+treatment and controls; matched samples). Result:
+
+| Market | n | θ list | θ sale | list/sale |
+|---|---|---|---|---|
+| Philadelphia | 6,604 | +0.472 | +0.358 | 1.90 |
+| Chicago | 4,746 | +0.431 | +0.107 | 1.53 |
+| DC | 2,114 | +0.151 | +0.070 | 1.22 |
+| NYC | 6,436 | +0.039 | +0.042 | 1.24 |
+
+The effect **replicates on realized sale prices** (positive, individually
+significant in all four) but **attenuates** (~half pooled, +0.27→+0.14; −75% in
+Chicago, nil in near-zero NYC), confirming part of the listing-price association is
+the agent's asking-price simultaneity. The listing-price estimates are an upper
+bound; the realized-transaction effect is smaller but real. Written up as
+Section~\ref{sec:saleprice} (`s6_8_saleprice_v3.tex`). Acquisition tooling:
+`download_sales.py` (Philadelphia/Chicago/DC/NYC fetchers), `join_sales_to_listings.py`,
+`compare_saleprice.py`.
+
 ## Artifacts (all on `main`)
 
 Code: `parse_sold_dates.py`, `spatial_basis.py`, `replications/meta_pooling.py`,

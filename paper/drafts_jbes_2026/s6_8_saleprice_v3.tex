@@ -1,0 +1,58 @@
+\subsection{A validity check on recorded sale prices}
+\label{sec:saleprice}
+
+The outcome throughout is the listing's asking price, which an agent sets together
+with the description and which sits well above the price a property eventually
+clears, so a natural question is whether the text effect we estimate is a property
+of the market's valuation or an artifact of the agent pricing their own language.
+Four of the twelve metropolitan areas, Philadelphia, Chicago, Washington, and New
+York, publish recorded transaction prices through their county assessor or
+recorder, and for these we recover the realized sale price and its date, match
+each listing to the recorded sale of the parcel it occupies, and re-estimate the
+text effect on the transaction rather than the ask. The treatment and the
+structured and spatial controls are held fixed, and we add sale-quarter fixed
+effects because recorded sales span several years in nominal dollars. The asking
+price in these markets runs between a fifth and ninety percent above the eventual
+sale, so the two outcomes are far from interchangeable.
+
+The effect survives the change of outcome. Estimated on the realized sale price it
+is positive and individually significant in all four markets, at $+0.358$ in
+Philadelphia, $+0.107$ in Chicago, $+0.070$ in Washington, and $+0.042$ in New
+York, against listing-price estimates on the same matched sample of $+0.472$,
+$+0.431$, $+0.151$, and $+0.039$ reported alongside in Table~\ref{tab:saleprice}.
+The sale-price effect is smaller than the listing-price effect in three of the
+four markets, by about a quarter in Philadelphia and by more in Chicago, which is
+the signature of the asking-price simultaneity we are explicit about, since part
+of the association between language and the ask is the agent's own pricing rather
+than the market's. New York, whose effect is near zero on either outcome, is
+unchanged and remains the panel's exception. We therefore read the listing-price
+estimates as an upper bound on the price effect of a property's language, with the
+realized-transaction effect positive but materially smaller, and we report the
+per-market replication rather than the four-market pooled mean, which a
+Hartung-Knapp interval leaves wide given the heterogeneity across so few markets.
+That the effect is present at all on the transaction the market actually cleared,
+in every market where that transaction is public, is the strongest evidence the
+available data affords that the listing-price association is not merely an artifact
+of how agents price their own prose.
+
+\begin{table}[H]
+\centering
+\caption{Sale-price validity check. Per-market DML effect of the leading text
+direction on log listing price and on log recorded sale price, estimated on the
+matched sample with identical treatment and controls; the sale-price column adds
+sale-quarter fixed effects. The final column is the median ratio of asking to
+recorded sale price. Recorded sales are from the Philadelphia OPA, the Cook County
+Assessor, the DC CAMA system, and the NYC Department of Finance.}
+\label{tab:saleprice}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Market & $n$ & $\hat\theta$ list price & $\hat\theta$ sale price & list/sale \\
+\midrule
+Philadelphia & $6{,}604$ & $+0.472\ (0.012)$ & $+0.358\ (0.014)$ & $1.90$ \\
+Chicago      & $4{,}746$ & $+0.431\ (0.018)$ & $+0.107\ (0.017)$ & $1.53$ \\
+Washington   & $2{,}114$ & $+0.151\ (0.017)$ & $+0.070\ (0.012)$ & $1.22$ \\
+New York     & $6{,}436$ & $+0.039\ (0.015)$ & $+0.042\ (0.015)$ & $1.24$ \\
+\bottomrule
+\end{tabular}
+\end{table}
