@@ -93,6 +93,52 @@ def _carto(endpoint: str, q: str) -> pd.DataFrame:
         return pd.read_csv(io.StringIO(r.read().decode("utf-8")))
 
 
+def _socrata(resource: str, select: str, where: str, max_rows: int | None,
+             order: str = ":id", page: int = 50000) -> pd.DataFrame:
+    """Paginated Socrata pull. Large pulls (Cook universe ~1.8M) are best run on
+    Brev for the faster network; pass max_rows to bound a local smoke test."""
+    frames, offset = [], 0
+    while True:
+        params = {"$select": select, "$where": where, "$order": order,
+                  "$limit": page, "$offset": offset}
+        url = resource + "?" + urllib.parse.urlencode(params)
+        with urllib.request.urlopen(url, timeout=180) as r:
+            chunk = pd.read_csv(io.StringIO(r.read().decode("utf-8"))) \
+                if resource.endswith(".csv") else pd.read_json(io.BytesIO(r.read()))
+        if len(chunk) == 0:
+            break
+        frames.append(chunk)
+        offset += len(chunk)
+        if len(chunk) < page or (max_rows and offset >= max_rows):
+            break
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
+def fetch_chicago(limit: int | None) -> pd.DataFrame:
+    sales_url = "https://datacatalog.cookcountyil.gov/resource/wvhk-k5uv.csv"
+    univ_url = "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.csv"
+    sales = _socrata(
+        sales_url, select="pin,sale_price,sale_date",
+        where="sale_price > 10000 AND sale_date >= '2015-01-01T00:00:00' "
+              "AND sale_filter_less_than_10k = false AND is_multisale = false",
+        max_rows=limit)
+    sales["pin"] = sales["pin"].astype(str).str.zfill(14)
+    sales = sales.sort_values("sale_date").drop_duplicates("pin", keep="last")
+
+    univ = _socrata(
+        univ_url, select="pin,lat,lon",
+        where="lat IS NOT NULL AND lon IS NOT NULL",
+        max_rows=(limit * 4 if limit else None))
+    univ["pin"] = univ["pin"].astype(str).str.zfill(14)
+    univ = univ.dropna(subset=["lat", "lon"]).drop_duplicates("pin")
+
+    df = sales.merge(univ, on="pin", how="inner")
+    df = df.rename(columns={"pin": "parcel_id"})
+    df["address"] = ""
+    df["sale_date"] = pd.to_datetime(df["sale_date"], errors="coerce", utc=True)
+    return df[["parcel_id", "address", "lat", "lon", "sale_price", "sale_date"]]
+
+
 def fetch_philadelphia(limit: int | None) -> pd.DataFrame:
     s = SOURCES["philadelphia"]
     sel = ("parcel_number AS parcel_id, location AS address, "
@@ -105,7 +151,7 @@ def fetch_philadelphia(limit: int | None) -> pd.DataFrame:
     return df[["parcel_id", "address", "lat", "lon", "sale_price", "sale_date"]]
 
 
-FETCHERS = {"philadelphia": fetch_philadelphia}
+FETCHERS = {"philadelphia": fetch_philadelphia, "chicago": fetch_chicago}
 
 
 def main() -> int:
