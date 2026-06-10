@@ -60,7 +60,7 @@
 \newtheorem{assumption}{Assumption}
 \newtheorem{remark}{Remark}
 
-\title{Causal Disentanglement of Location and Semantic Signals in Real Estate Valuation}
+\title{Deconfounding Location from Semantic Signals in Real Estate Valuation}
 
 \author{
     Jacob Crainic
@@ -70,7 +70,7 @@
 
 \renewcommand{\headeright}{Preprint}
 \renewcommand{\undertitle}{Preprint}
-\renewcommand{\shorttitle}{Causal Disentanglement in Real Estate Valuation}
+\renewcommand{\shorttitle}{Deconfounding Location and Semantics in Real Estate Valuation}
 
 \begin{document}
 \maketitle
@@ -115,7 +115,7 @@ together with the inferential caution that protocol demands, rather than a causa
 elasticity of price on language.
 \end{abstract}
 
-\keywords{Spatial Confounding \and Concept Erasure \and Double Machine Learning \and Generated Regressors \and Text as Data \and Real Estate Valuation}
+\keywords{Spatial confounding, Concept erasure, Double machine learning, Generated regressors, Text as data, Real estate valuation}
 
 \section{Introduction}
 
@@ -159,7 +159,7 @@ The distinction between correlation and causation is not academic here. If text 
 
 The concern that text may encode geography rather than semantics connects two literatures that have developed largely in parallel.
 
-In spatial statistics and epidemiology, the problem is well characterized: when an exposure of interest varies spatially and shares its spatial pattern with unmeasured confounders, standard regression attributes the confounders' effects to the exposure~\citep{paciorek2010importance}. The severity depends on the spatial scale: fine-grained exposures are most vulnerable to fine-grained confounders. Methods to address this include restricted spatial regression, which orthogonalizes spatial random effects against fixed effects of interest~\citep{reich2021spatial}, and sensitivity frameworks that quantify the confounder strength needed to overturn a finding~\citep{cinelli2020making}. A counterintuitive result from this literature is that adding spatially-correlated error terms to a model can worsen, not improve, inference about fixed effects when spatial confounding is present~\citep{hodges2010spatial}. Spatial econometrics addresses the same challenge through spatial lag and error models~\citep{anselin1988spatial,lesage2009introduction,elhorst2014spatial}, though identification of spatial dependence parameters remains difficult to separate from omitted-variable bias~\citep{gibbons2014spatial}.
+In spatial statistics and epidemiology, the problem is well characterized: when an exposure of interest varies spatially and shares its spatial pattern with unmeasured confounders, standard regression attributes the confounders' effects to the exposure~\citep{paciorek2010importance}. The severity depends on the spatial scale: fine-grained exposures are most vulnerable to fine-grained confounders. Because that scale is rarely known in advance, \citet{keller2020selecting} cast the flexibility of the adjustment as a model-selection problem and recommend fixing it by the Euclidean distance at which spatial variation is removed rather than by an opaque degrees-of-freedom count, and \citet{gilbert2021causal} make explicit the conditions under which spatial coordinates can stand in for an unmeasured spatial confounder, requiring that the confounder be a smooth function of location and, of particular relevance for a learned treatment, that the exposure retain variation that is not itself spatial, a condition the erasure diagnostic of Section~\ref{sec:methods} shows the text direction to satisfy; the consistency of the resulting estimators under spatial confounding is studied by \citet{gilbert2024consistency}. Methods to address this include restricted spatial regression, which orthogonalizes spatial random effects against fixed effects of interest~\citep{reich2021spatial}, and sensitivity frameworks that quantify the confounder strength needed to overturn a finding~\citep{cinelli2020making}. A counterintuitive result from this literature is that adding spatially-correlated error terms to a model can worsen, not improve, inference about fixed effects when spatial confounding is present~\citep{hodges2010spatial}. Spatial econometrics addresses the same challenge through spatial lag and error models~\citep{anselin1988spatial,lesage2009introduction,elhorst2014spatial}, though identification of spatial dependence parameters remains difficult to separate from omitted-variable bias~\citep{gibbons2014spatial}.
 
 In NLP, a parallel line of work has shown that text embeddings absorb far more than semantic content from their training corpora. Word embeddings encode human-like gender and racial biases~\citep{bolukbasi2016man}, replicate implicit association test results~\citep{caliskan2017semantics}, and retain these biases even after standard debiasing~\citep{gonen2019lipstick}. Language use varies systematically by geography: user location can be predicted from tweets with high accuracy~\citep{rahimi2018geolocation}, and lexical innovations diffuse through social networks along spatial paths~\citep{eisenstein2014diffusion}. Property descriptions are an extreme case of this phenomenon because agents write with complete knowledge of the property's location, neighborhood, and market context. The language is not incidentally spatial; it is intentionally so.
 

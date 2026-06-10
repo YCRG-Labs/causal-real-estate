@@ -28,6 +28,21 @@ carries, and the methods that follow are built to isolate it and then to ask, fo
 each metropolitan market in turn, how much of the apparent text signal that
 isolation leaves standing.
 
+This conflation has a precise name in the literature on text as a treatment,
+where it appears as the aliasing of one measured latent feature of a document with
+the unmeasured features that the same prose inevitably carries, and
+\citet{fong2023latent} show that even a randomly assigned text fails to identify
+the effect of a single latent feature unless the others it travels with are either
+independent of it or irrelevant to price. We do not impose that condition, so the
+quantity we isolate is the price effect of the leading text direction
+marginalizing over whatever else the language encodes, an associational object
+rather than the effect of a cleanly separated semantic attribute, and we are
+explicit about that reading throughout. A second lesson from this literature bears
+on estimation rather than interpretation, since \citet{egami2022texts} establish
+that when the treatment representation is learned from the documents it must be
+formed on data held apart from the outcome, which is the role the out-of-fold
+construction of the treatment direction described below plays here.
+
 \subsection{A structural account of the confounding}
 
 The data-generating process we have in mind makes the confounding explicit rather
@@ -131,13 +146,15 @@ One feature of the embedding channel complicates the inference and we flag it he
 because it shapes how the per-market intervals should be read. When the treatment
 is the leading principal component of the embedding, that direction is itself
 estimated on the same sample that estimates the price effect, so $T$ is a generated
-regressor in the sense of \citet{pagan1984econometric} and the orthogonal-score
+regressor in the sense of \citet{pagan1984econometric}, the machine-learning-generated
+case treated by \citet{battaglia2024inference}, and the orthogonal-score
 variance in Equation~\eqref{eq:dml} does not absorb the extra sampling variability
 the estimation of the direction introduces. The interval is correspondingly
 anticonservative at the few thousand listings a single market affords, mildly so
 near the null and more seriously when the true effect is large, a pattern we
 document in a calibration study and repair with an out-of-fold construction of the
-treatment direction in Appendix~\ref{app:simulation}. The point estimates are
+treatment direction, the sample-splitting that \citet{egami2022texts} prescribe
+when the treatment is learned from the documents, in Appendix~\ref{app:simulation}. The point estimates are
 approximately unbiased throughout; it is the nominal coverage of the analytic
 interval, not the location of the estimate, that the calibration study qualifies.
 
