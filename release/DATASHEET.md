@@ -4,11 +4,18 @@ Following the schema of Gebru et al., *Datasheets for Datasets* (CACM 2021).
 
 ## Motivation
 
-**Purpose.** Released to support and enable independent replication of *Causal
-Disentanglement of Location and Semantic Signals in Real Estate Valuation* (Yee
-& Crainic, 2026), which evaluates whether semantic features extracted from
-property descriptions add predictive value beyond geographic location, or
-whether observed gains arise from spatial confounding.
+**Purpose.** Released to support and enable independent replication of
+*Deconfounding Location from Semantic Signals in Real Estate Valuation* (Crainic,
+2026), which evaluates whether the price effect of property-listing language is
+genuine semantic content or spatial confounding mediated through the text.
+
+> **Note (scope).** This packaged release describes the earlier three-city
+> (Boston / NYC / SF) parcel subset. The published study spans twelve metropolitan
+> markets and 69,173 deduplicated listings with the listing (asking) price as the
+> outcome; recorded sale prices are additionally used for the four markets that
+> publish them (Philadelphia, Chicago, DC, NYC). The twelve-market derived
+> features and the collection code are in the replication repository; raw listing
+> text and asking prices are not redistributed (see Distribution).
 
 **Created by.** Yee Collins Research Group, Management Sciences Lab. Funded
 through internal research budget; no external sponsor.
@@ -109,8 +116,14 @@ DOI minted via Zenodo on first stable release.
   open-data portals are public-domain or CC0; ACS is public-domain; OSM is
   ODbL — note that derived counts/densities are aggregations, not redistribution
   of OSM features).
-- Raw Redfin listing descriptions are **not** redistributed. Retrieval against
-  Redfin remains subject to Redfin's Terms of Service and MLS copyright.
+- Raw Redfin listing descriptions **and the scraped asking (listing) prices** are
+  **not** redistributed. Both are scraped content and retrieval against Redfin
+  remains subject to Redfin's Terms of Service and MLS copyright. We release the
+  collection code that reconstructs them, the sentence-transformer embeddings
+  derived from the descriptions, and the structured covariates from public sources.
+- Recorded transaction sale prices used in the sale-price validity check are from
+  public county assessor/recorder open data (Philadelphia OPA, Cook County
+  Assessor, DC CAMA, NYC DOF) and **are** redistributable.
 
 ## Maintenance
 

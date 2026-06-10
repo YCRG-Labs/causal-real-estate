@@ -65,6 +65,52 @@ New York      & $-0.152$ & $-0.183$ & $-0.030$ & $0.417$ & $0.523$ \\
 \end{tabular}
 \end{table}
 
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre, width=0.56\textwidth, height=6.6cm,
+    symbolic y coords={New York,Phoenix,Washington,Seattle,Portland,San Francisco,Boston,Denver,Dallas,Atlanta,Philadelphia,Chicago},
+    ytick=data, enlarge y limits=0.06,
+    xlabel={$\hat\theta_{\text{geo}}$ per $\sigma$ (log price)}, xmin=-0.24, xmax=0.53,
+    xtick={-0.2,-0.1,0,0.2,0.4},
+    extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
+    legend style={font=\scriptsize, draw=none, fill=none, at={(0,1.07)}, anchor=south west, legend columns=2, /tikz/every even column/.append style={column sep=10pt}},
+]
+\draw[thin,gray] (axis cs:-0.152,New York)--(axis cs:-0.183,New York);
+\draw[thin,gray] (axis cs:-0.002,Phoenix)--(axis cs:-0.010,Phoenix);
+\draw[thin,gray] (axis cs:0.013,Washington)--(axis cs:0.008,Washington);
+\draw[thin,gray] (axis cs:0.065,Seattle)--(axis cs:0.057,Seattle);
+\draw[thin,gray] (axis cs:0.095,Portland)--(axis cs:0.081,Portland);
+\draw[thin,gray] (axis cs:0.109,San Francisco)--(axis cs:0.105,San Francisco);
+\draw[thin,gray] (axis cs:0.126,Boston)--(axis cs:0.114,Boston);
+\draw[thin,gray] (axis cs:0.158,Denver)--(axis cs:0.169,Denver);
+\draw[thin,gray] (axis cs:0.199,Dallas)--(axis cs:0.200,Dallas);
+\draw[thin,gray] (axis cs:0.250,Atlanta)--(axis cs:0.255,Atlanta);
+\draw[thin,gray] (axis cs:0.405,Philadelphia)--(axis cs:0.388,Philadelphia);
+\draw[thin,gray] (axis cs:0.469,Chicago)--(axis cs:0.463,Chicago);
+\addplot[only marks, mark=o, mark size=2.2pt, color=cMUTE, line width=0.9pt] coordinates {
+  (-0.152,New York) (-0.002,Phoenix) (0.013,Washington) (0.065,Seattle) (0.095,Portland)
+  (0.109,San Francisco) (0.126,Boston) (0.158,Denver) (0.199,Dallas) (0.250,Atlanta)
+  (0.405,Philadelphia) (0.469,Chicago)};
+\addlegendentry{quadratic basis}
+\addplot[only marks, mark=*, mark size=1.7pt, color=cNYC] coordinates {
+  (-0.183,New York) (-0.010,Phoenix) (0.008,Washington) (0.057,Seattle) (0.081,Portland)
+  (0.105,San Francisco) (0.114,Boston) (0.169,Denver) (0.200,Dallas) (0.255,Atlanta)
+  (0.388,Philadelphia) (0.463,Chicago)};
+\addlegendentry{thin-plate spline (rank 30)}
+\end{axis}
+\end{tikzpicture}
+\caption{Spatial basis robustness, visualized. The location-adjusted text
+coefficient $\hat\theta_{\text{geo}}$ under the quadratic location basis (open) and
+under a rank-thirty thin-plate regression spline (filled), per market. The two
+nearly coincide in every market despite the spline absorbing roughly twice the
+treatment's spatial variance, the only visible gap being New York, which moves
+further negative. A basis flexible enough to capture far more geography leaves the
+semantic estimate essentially in place.}
+\label{fig:decomposition-tprs}
+\end{figure}
+
 \section{Counterfactual-Rewriting Protocol}
 \label{app:counterfactual}
 
