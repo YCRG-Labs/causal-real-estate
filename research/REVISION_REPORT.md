@@ -135,20 +135,32 @@ correction and the market-vs-listing weighting distinction (+ Röver citation).
   (Fong & Grimmer, Egami et al., Battaglia et al., Keller & Szpiro, Gilbert et al.
   ×2, Röver et al.). All WebFetch/WebSearch-verified.
 
-## Open item needing an author decision — price provenance
+## Resolved by investigation — the outcome is the listing (asking) price
 
-The `price` field behaves like a **current value/estimate**, not a historical
-transaction amount: it is uncorrelated with the recovered sale date, its median is
-flat-to-declining by sale era, and it matches the page's "sold on … for \$X"
-string in only ~1% of cases. The `status=9` scrape does target sold listings, so
-it is plausibly the most-recent sold price, but the evidence leans toward a current
-valuation. The strongest overclaim ("the transaction the market actually cleared")
-has been softened to "a market price rather than an administrative valuation,"
-which is true either way. **Before submission, confirm what the scraper's price
-field captures** (sold price vs. Redfin estimate); if it is a current valuation,
-the estimand is "effect of text on current estimated value," which is defensible
-for an AVM paper but should be stated. SF specifically uses an assessed-value proxy
-(`infer_sf_prices.py`), inconsistent with the other markets — worth a footnote.
+Settled definitively from the cached HTML. The `price` field equals the page's
+`priceInfo.amount` (100% match), whose label is **"Price" / "Listed at Price"**
+(>99% of pages), essentially never "Last Sold Price." Against actual recent sales
+recovered from the same pages, **price / realized-sale-price runs 1.2–1.6× and
+price exceeds the sale price in 89–100% of cases**. So the outcome is the agent's
+**asking price at crawl time, not a realized transaction**. The paper's "realized
+sale price / the transaction the market actually cleared" was factually wrong.
+
+Implications, now reflected in the paper:
+- The price and the description are produced by the **same agent at the same
+  moment**, so part of the text-price association is the agent's own pricing of
+  the language, a simultaneity orthogonal to (and not addressed by) the
+  spatial-confounding question. Stated in the abstract, data section, and
+  conclusion; the outcome is relabeled "listing price" throughout the paper's own
+  claims (literature references to others' sale-price studies left intact).
+- Because the corpus is a single cross-sectional crawl, the outcome carries no
+  calendar-time variation, so concern 2 (temporal confounding of the outcome)
+  largely dissolves; the recovered dates are a covariate.
+- **Author decision still open:** whether to (i) keep the listing-price framing
+  (done, defensible for an AVM paper), or (ii) re-run on realized sale prices,
+  which are partially recoverable (the "sold for \$X" / `lastSoldPrice` fields for
+  recent sales; real DOF/assessor data for NYC and SF) at the cost of sample and a
+  new pipeline. SF currently uses an assessed-value proxy (`infer_sf_prices.py`),
+  inconsistent with the others — worth a footnote regardless.
 
 ## Artifacts (all on `main`)
 
