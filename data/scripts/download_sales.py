@@ -67,18 +67,20 @@ SOURCES = {
                 "endpoint": "https://info.kingcounty.gov/assessor/datadownload/default.aspx",
                 "note": "King EXTR Real Property Sales (rpsale_extr): key=Major+Minor, SalePrice, DocumentDate. "
                         "Join Major+Minor -> parcel_extr for geometry/lat-lon."},
-    "denver": {"method": "arcgis", "verified": "sales table found (SALEDT, PRICE, PARID)",
-               "endpoint": "https://services1.arcgis.com/ioennV6PpG5Xodq0/ArcGIS/rest/services/OpenData_A5/FeatureServer/1",
-               "note": "Tax Admin Real Estate Sales: PARID, PRICE, SALEDT (no geometry in table). "
-                       "Join PARID -> Denver parcels layer (separate service) for lat/lon."},
+    "denver": {"method": "BLOCKED_likely",
+               "endpoint": "https://services1.arcgis.com/zdB7qR0BtYrg0Xpl/arcgis/rest/services/ODC_PROP_PARCELS_A/FeatureServer",
+               "note": "Denver open-data parcels carry geometry but NO sale price (verified). "
+                       "(An earlier endpoint on org ioennV6PpG5Xodq0 was Fairfax County VA, not Denver -- "
+                       "misattributed.) Denver sale prices live at property.spatialest.com (search tool, not bulk). "
+                       "Likely needs the assessor's non-open route or a vendor."},
     "atlanta": {"method": "arcgis_or_qpublic",
                 "endpoint": "https://gisdata.fultoncountyga.gov/",
                 "note": "Fulton GIS property layer carries recorded sale date+price (GA is disclosure); "
                         "find the parcels FeatureServer with sale fields + geometry."},
-    "portland": {"method": "rlis_arcgis",
+    "portland": {"method": "download_shapefile",
                  "endpoint": "https://rlisdiscovery.oregonmetro.gov/datasets/9d3c396ffad44649bc7451465aa300f0",
-                 "note": "RLIS Taxlots (Public) carry SALEPRICE/SALEDATE + geometry inline; "
-                         "ArcGIS FeatureServer query, like Philadelphia but ArcGIS not Carto."},
+                 "note": "RLIS Taxlots is a SHAPEFILE download (not a queryable API); typically carries "
+                         "SALEPRICE/SALEDATE compiled from county assessors. Download + parse + use geometry."},
     "boston": {"method": "BLOCKED_easy",
                "endpoint": "https://www.mass.gov/info-details/massgis-data-property-tax-parcels",
                "note": "Analyze Boston assessment has NO sale price (verified). MassGIS L3 standardized "
