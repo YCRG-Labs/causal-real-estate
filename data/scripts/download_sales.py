@@ -51,9 +51,10 @@ SOURCES = {
                  "lat": "lat", "lon": "lng",
                  "sale_price": "sale_price", "sale_date": "sale_date"},
     },
-    "chicago": {"method": "socrata",
+    "chicago": {"method": "socrata", "verified": True,
                 "endpoint": "https://datacatalog.cookcountyil.gov/resource/wvhk-k5uv.json",
-                "note": "Cook County Assessor Parcel Sales; key=pin, sale_price, sale_date"},
+                "note": "Cook Assessor Parcel Sales (pin, sale_price, sale_date); 518k sales since 2020. "
+                        "No lat/lon here: join pin -> Parcel Universe nj4t-kc8j for coordinates."},
     "dc": {"method": "opendata_dc",
            "endpoint": "https://opendata.dc.gov/datasets/integrated-tax-system-public-extract-vintage",
            "note": "OCFO real property sales; key=SSL, SALEPRICE, SALEDATE"},
@@ -75,9 +76,12 @@ SOURCES = {
     "boston": {"method": "massgis",
                "endpoint": "https://www.mass.gov/info-details/massgis-data-property-tax-parcels",
                "note": "MassGIS standardized assessors parcels carry last sale price/date; key=loc_id"},
-    "sf": {"method": "assessor",
-           "endpoint": "https://data.sfgov.org/",
-           "note": "SF recorded sales (NOT assessed value); replace infer_sf_prices.py proxy"},
+    "sf": {"method": "BLOCKED",
+           "endpoint": "https://data.sfgov.org/resource/wv5m-vpq2.json",
+           "note": "DataSF open tax roll carries ONLY assessed values, no transaction price "
+                   "(verified). Real SF sale prices need the Recorder (not open data) or a vendor. "
+                   "Like Dallas, no clean free sale-price feed -- drop or keep assessed-flagged."},
+    # dallas: Texas non-disclosure (Gov Code 552.149); no public sale price. Excluded by law.
     "nyc": {"method": "have",
             "note": "DOF Rolling Sales already integrated in load_parcels.py (sale_price, sale_date by BBL)"},
 }
