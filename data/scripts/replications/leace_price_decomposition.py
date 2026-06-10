@@ -42,6 +42,7 @@ sys.path.insert(0, str(REPO / "data" / "scripts"))
 
 from replications.baur_2023 import get_features_and_target, load_analysis_data
 from replications.compare_to_dml import run_dml
+from spatial_basis import thin_plate_basis
 
 ALL_12 = ["boston", "nyc", "sf", "dc", "philadelphia", "chicago",
           "seattle", "denver", "atlanta", "portland", "phoenix", "dallas"]
@@ -56,15 +57,21 @@ def _oriented_pc1(emb: np.ndarray, y: np.ndarray, seed: int = 42) -> np.ndarray:
     return ((pc - pc.mean()) / (pc.std(ddof=1) or 1.0)).reshape(-1, 1)
 
 
-def _geo_basis(lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
-    """Location confounder basis: standardized lat, lon, lat^2, lon^2, lat*lon."""
+def _geo_basis(lat, lon, basis: str = "quad", k: int = 30, seed: int = 42) -> np.ndarray:
+    """Location confounder basis. basis='quad' is the legacy standardized
+    [lat, lon, lat*lon, lat^2, lon^2]; basis='tprs' is a rank-k thin-plate
+    regression spline (mgcv s(lat,lon,bs='tp')), the flexible-scale control that
+    a spatial-statistics reading prefers to the metropolitan-scale quadratic."""
+    if basis == "tprs":
+        return thin_plate_basis(lat, lon, k=k, seed=seed)
     la = (lat - lat.mean()) / (lat.std() or 1.0)
     lo = (lon - lon.mean()) / (lon.std() or 1.0)
     B = np.column_stack([la, lo, la * lo, la ** 2, lo ** 2])
     return StandardScaler().fit_transform(B)
 
 
-def decompose_city(city: str, fast: bool, seed: int = 42) -> dict:
+def decompose_city(city: str, fast: bool, seed: int = 42,
+                   basis: str = "quad", k: int = 30) -> dict:
     print(f"\n=== price-geo toggle: {city} ===")
     loaded = load_analysis_data(city)
     if loaded is None:
@@ -88,7 +95,7 @@ def decompose_city(city: str, fast: bool, seed: int = 42) -> dict:
                     for j in range(conf.shape[1])])
     geo_cols = cor > 0.99
     conf_naive = conf[:, ~geo_cols]
-    geo_b = _geo_basis(lat, lon)
+    geo_b = _geo_basis(lat, lon, basis=basis, k=k, seed=seed)
     conf_geo = np.column_stack([conf_naive, geo_b])
     print(f"  n={len(Y_log):,}  stripped {int(geo_cols.sum())} geo confounder col(s); "
           f"naive p={conf_naive.shape[1]}, geo p={conf_geo.shape[1]}")
@@ -108,6 +115,8 @@ def decompose_city(city: str, fast: bool, seed: int = 42) -> dict:
           f"  confounded={confounded:+.4f}  PC1-geo R^2={pc1_geo_r2:.3f}")
     return {
         "city": city, "n": int(len(Y_log)),
+        "basis": basis, "k": (k if basis == "tprs" else 0),
+        "geo_basis_cols": int(geo_b.shape[1]),
         "naive_theta": float(dml_naive.theta), "naive_se": float(dml_naive.se),
         "geo_theta": float(dml_geo.theta), "geo_se": float(dml_geo.se),
         "confounded_share": confounded,
@@ -123,16 +132,23 @@ def main():
     ap.add_argument("--all_12", action="store_true")
     ap.add_argument("--fast", action="store_true")
     ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--out", type=Path,
-                    default=REPO / "results" / "replications"
-                              / "leace_price_decomposition.csv")
+    ap.add_argument("--basis", choices=["quad", "tprs"], default="quad",
+                    help="location control: quad (legacy) or tprs (thin-plate)")
+    ap.add_argument("--k", type=int, default=30, help="TPRS basis rank")
+    ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args()
 
     cities = list(ALL_12) if args.all_12 else [args.city]
     if any(c is None for c in cities):
         raise SystemExit("specify --city or --all_12")
 
-    rows = [decompose_city(c, fast=args.fast, seed=args.seed) for c in cities]
+    if args.out is None:
+        tag = args.basis + (f"{args.k}" if args.basis == "tprs" else "")
+        args.out = (REPO / "results" / "replications"
+                    / f"leace_price_decomposition_{tag}.csv")
+
+    rows = [decompose_city(c, fast=args.fast, seed=args.seed,
+                           basis=args.basis, k=args.k) for c in cities]
     df = pd.DataFrame([r for r in rows if "error" not in r])
     args.out.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(args.out, index=False)
