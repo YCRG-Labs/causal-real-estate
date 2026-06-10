@@ -103,22 +103,41 @@ def _carto(endpoint: str, q: str) -> pd.DataFrame:
         return pd.read_csv(io.StringIO(r.read().decode("utf-8")))
 
 
+import os
+import time
+
+
 def _socrata(resource: str, select: str, where: str, max_rows: int | None,
-             order: str = ":id", page: int = 50000) -> pd.DataFrame:
-    """Paginated Socrata pull. Large pulls (Cook universe ~1.8M) are best run on
-    Brev for the faster network; pass max_rows to bound a local smoke test."""
+             order: str = ":id", page: int = 50000, label: str = "") -> pd.DataFrame:
+    """Paginated Socrata pull. Unauthenticated requests are throttled from a
+    shared pool (dev.socrata.com/docs/app-tokens), which stalls large pulls, so
+    we send an app token when SOCRATA_APP_TOKEN is set, log progress, and retry
+    with backoff on transient errors."""
+    token = os.environ.get("SOCRATA_APP_TOKEN")
     frames, offset = [], 0
     while True:
         params = {"$select": select, "$where": where, "$order": order,
                   "$limit": page, "$offset": offset}
         url = resource + "?" + urllib.parse.urlencode(params)
-        with urllib.request.urlopen(url, timeout=180) as r:
-            chunk = pd.read_csv(io.StringIO(r.read().decode("utf-8"))) \
-                if resource.endswith(".csv") else pd.read_json(io.BytesIO(r.read()))
+        req = urllib.request.Request(url)
+        if token:
+            req.add_header("X-App-Token", token)
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(req, timeout=300) as r:
+                    chunk = pd.read_csv(io.StringIO(r.read().decode("utf-8")))
+                break
+            except Exception as e:
+                if attempt == 4:
+                    raise
+                wait = 2 ** attempt
+                print(f"  [{label}] page@{offset} error ({e}); retry in {wait}s", flush=True)
+                time.sleep(wait)
         if len(chunk) == 0:
             break
         frames.append(chunk)
         offset += len(chunk)
+        print(f"  [{label}] pulled {offset:,} rows", flush=True)
         if len(chunk) < page or (max_rows and offset >= max_rows):
             break
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
@@ -131,14 +150,20 @@ def fetch_chicago(limit: int | None) -> pd.DataFrame:
         sales_url, select="pin,sale_price,sale_date",
         where="sale_price > 10000 AND sale_date >= '2015-01-01T00:00:00' "
               "AND sale_filter_less_than_10k = false AND is_multisale = false",
-        max_rows=limit)
+        max_rows=limit, label="cook-sales")
     sales["pin"] = sales["pin"].astype(str).str.zfill(14)
     sales = sales.sort_values("sale_date").drop_duplicates("pin", keep="last")
 
+    # Bound the 1.8M-parcel universe to the Chicago listings' bbox so we pull
+    # ~city-sized geometry, not all of Cook County.
+    L = pd.read_parquet(PROC / "chicago_listings.parquet")
+    la, lo = L["lat_centroid"].dropna(), L["lon_centroid"].dropna()
+    pad = 0.02
+    bbox = (f"lat between {la.min()-pad} and {la.max()+pad} "
+            f"AND lon between {lo.min()-pad} and {lo.max()+pad}")
     univ = _socrata(
-        univ_url, select="pin,lat,lon",
-        where="lat IS NOT NULL AND lon IS NOT NULL",
-        max_rows=(limit * 4 if limit else None))
+        univ_url, select="pin,lat,lon", where=bbox,
+        max_rows=(limit * 4 if limit else None), label="cook-universe")
     univ["pin"] = univ["pin"].astype(str).str.zfill(14)
     univ = univ.dropna(subset=["lat", "lon"]).drop_duplicates("pin")
 
