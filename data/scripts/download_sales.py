@@ -159,6 +159,78 @@ def fetch_philadelphia(limit: int | None) -> pd.DataFrame:
     return df[["parcel_id", "address", "lat", "lon", "sale_price", "sale_date"]]
 
 
+def _arcgis_query(layer_url: str, out_fields: str, where: str,
+                  max_rows: int | None, geom: bool, page: int = 1000) -> pd.DataFrame:
+    """Paginated ArcGIS FeatureServer/MapServer query. With geom=True, requests
+    geometry in WGS84 (outSR=4326) and returns lat/lon (point x/y or polygon-ring
+    centroid)."""
+    rows, offset = [], 0
+    while True:
+        params = {"where": where, "outFields": out_fields, "f": "json",
+                  "resultOffset": offset, "resultRecordCount": page,
+                  "returnGeometry": "true" if geom else "false"}
+        if geom:
+            params["outSR"] = "4326"
+        url = layer_url.rstrip("/") + "/query?" + urllib.parse.urlencode(params)
+        with urllib.request.urlopen(url, timeout=180) as r:
+            d = json.loads(r.read().decode("utf-8"))
+        feats = d.get("features", [])
+        if not feats:
+            break
+        for ft in feats:
+            rec = dict(ft.get("attributes", {}))
+            if geom:
+                g = ft.get("geometry", {}) or {}
+                if "x" in g and "y" in g:
+                    rec["lon"], rec["lat"] = g["x"], g["y"]
+                elif g.get("rings"):
+                    pts = [p for ring in g["rings"] for p in ring]
+                    if pts:
+                        rec["lon"] = sum(p[0] for p in pts) / len(pts)
+                        rec["lat"] = sum(p[1] for p in pts) / len(pts)
+            rows.append(rec)
+        offset += len(feats)
+        if not d.get("exceededTransferLimit") or (max_rows and offset >= max_rows):
+            break
+    return pd.DataFrame(rows)
+
+
+def _arcgis_two_table(sales_url, sales_fields, geom_url, geom_field, key,
+                      price, date, where_sales, limit) -> pd.DataFrame:
+    """Generic county pattern: a sales table keyed by parcel id joined to a
+    geometry layer keyed by the same id. Used by DC, Denver, Fulton."""
+    sales = _arcgis_query(sales_url, sales_fields, where_sales, limit, geom=False)
+    geo = _arcgis_query(geom_url, f"{geom_field}", "1=1",
+                        (limit * 6 if limit else None), geom=True)
+    if sales.empty or geo.empty or "lat" not in geo:
+        raise SystemExit(f"two-table fetch incomplete: sales={len(sales)} geo={len(geo)}; "
+                         f"verify the geometry layer and that its {geom_field} format "
+                         f"matches the sales {key} format.")
+    sales[key] = sales[key].astype(str)
+    geo[geom_field] = geo[geom_field].astype(str)
+    sales = sales.sort_values(date).drop_duplicates(key, keep="last")
+    geo = geo.dropna(subset=["lat", "lon"]).drop_duplicates(geom_field)
+    df = sales.merge(geo, left_on=key, right_on=geom_field, how="inner")
+    df = df.rename(columns={key: "parcel_id", price: "sale_price", date: "sale_date"})
+    df["address"] = ""
+    df["sale_date"] = pd.to_datetime(df["sale_date"], errors="coerce", utc=True, unit="ms")
+    df = df[df["sale_price"] > 10000]
+    return df[["parcel_id", "address", "lat", "lon", "sale_price", "sale_date"]]
+
+
+def fetch_dc(limit: int | None) -> pd.DataFrame:
+    base = "https://maps2.dcgis.dc.gov/dcgis/rest/services"
+    return _arcgis_two_table(
+        sales_url=f"{base}/DCGIS_APPS/Real_Property_Application/MapServer/4",
+        sales_fields="SSL,PRICE,SALEDATE", key="SSL", price="PRICE", date="SALEDATE",
+        where_sales="PRICE > 10000 AND SALEDATE IS NOT NULL",
+        geom_url=f"{base}/DCGIS_DATA/Property_and_Land/MapServer/8",
+        geom_field="SSL", limit=limit)
+
+
+# dc: sales (layer 4, SSL/PRICE/SALEDATE) verified working; the SSL-keyed parcel
+# geometry layer still needs matching (layer 4 SSL '0096 0805' format differs from
+# the Owner-Polygon 'PAR ...' id), so dc is registry-only until that is resolved.
 FETCHERS = {"philadelphia": fetch_philadelphia, "chicago": fetch_chicago}
 
 
