@@ -72,12 +72,16 @@ def run_city(city):
     e["sha16"] = e["source_html_sha256"].astype(str).str[:16]
     emb_cols = [c for c in e.columns if c.startswith("emb_")]
     sp = pd.read_parquet(spp)
-    L = pd.read_parquet(PROC / f"{city}_listings.parquet")
-    L["sha16"] = L["source_html_sha256"].astype(str).str[:16]
-    have = [c for c in PROP if c in L.columns]
-
-    df = e.merge(sp, on="sha16", how="inner").merge(
-        L[["sha16"] + have].drop_duplicates("sha16"), on="sha16", how="left")
+    df = e.merge(sp, on="sha16", how="inner")
+    need = [c for c in PROP if c not in df.columns]
+    lp = PROC / f"{city}_listings.parquet"
+    if need and lp.exists():
+        L = pd.read_parquet(lp)
+        L["sha16"] = L["source_html_sha256"].astype(str).str[:16]
+        jc = [c for c in need if c in L.columns]
+        if jc:
+            df = df.merge(L[["sha16"] + jc].drop_duplicates("sha16"), on="sha16", how="left")
+    have = [c for c in PROP if c in df.columns]
     df = df[(df["sale_price"] > 1e4) & (df["list_price"] > 1e4)]
     df = df[np.isfinite(df["lat"]) & np.isfinite(df["lon"])].reset_index(drop=True)
     if len(df) < 150:
