@@ -85,13 +85,18 @@ def load_market(city):
         return None
     e["sha16"] = e["source_html_sha256"].astype(str).str[:16]
 
-    L = pd.read_parquet(PROC / f"{city}_listings.parquet")
-    L["sha16"] = L["source_html_sha256"].astype(str).str[:16]
-    have = [c for c in PROP_COLS if c in L.columns]
     SD = pd.read_parquet(PROC / f"{city}_sold_dates.parquet")[["sha16", "sale_year", "sale_quarter"]]
+    df = e.merge(SD.drop_duplicates("sha16"), on="sha16", how="left")
 
-    df = e.merge(L[["sha16"] + have].drop_duplicates("sha16"), on="sha16", how="left")
-    df = df.merge(SD.drop_duplicates("sha16"), on="sha16", how="left")
+    need_from_L = [c for c in PROP_COLS if c not in df.columns]
+    lst_path = PROC / f"{city}_listings.parquet"
+    if need_from_L and lst_path.exists():
+        L = pd.read_parquet(lst_path)
+        L["sha16"] = L["source_html_sha256"].astype(str).str[:16]
+        join_cols = [c for c in need_from_L if c in L.columns]
+        if join_cols:
+            df = df.merge(L[["sha16"] + join_cols].drop_duplicates("sha16"), on="sha16", how="left")
+    have = [c for c in PROP_COLS if c in df.columns]
 
     price = pd.to_numeric(df["price"], errors="coerce")
     lat = pd.to_numeric(df["latitude"], errors="coerce")
