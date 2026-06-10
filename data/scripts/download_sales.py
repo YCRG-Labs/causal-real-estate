@@ -143,28 +143,52 @@ def _socrata(resource: str, select: str, where: str, max_rows: int | None,
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
+def _socrata_once(resource: str, select: str, where: str, limit: int,
+                  label: str = "") -> pd.DataFrame:
+    """Single streaming Socrata request with a large $limit. One connection the
+    server streams is far more robust than many paginated pages, which throttling
+    kills mid-run without an app token. Honors SOCRATA_APP_TOKEN; retries."""
+    token = os.environ.get("SOCRATA_APP_TOKEN")
+    params = {"$select": select, "$where": where, "$limit": limit}
+    url = resource + "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url)
+    if token:
+        req.add_header("X-App-Token", token)
+    for attempt in range(5):
+        try:
+            print(f"  [{label}] streaming up to {limit:,} rows...", flush=True)
+            with urllib.request.urlopen(req, timeout=900) as r:
+                df = pd.read_csv(io.StringIO(r.read().decode("utf-8")))
+            print(f"  [{label}] got {len(df):,} rows", flush=True)
+            return df
+        except Exception as e:
+            if attempt == 4:
+                raise
+            wait = 5 * 2 ** attempt
+            print(f"  [{label}] error ({e}); retry in {wait}s", flush=True)
+            time.sleep(wait)
+
+
 def fetch_chicago(limit: int | None) -> pd.DataFrame:
     sales_url = "https://datacatalog.cookcountyil.gov/resource/wvhk-k5uv.csv"
     univ_url = "https://datacatalog.cookcountyil.gov/resource/nj4t-kc8j.csv"
-    sales = _socrata(
+    sales = _socrata_once(
         sales_url, select="pin,sale_price,sale_date",
         where="sale_price > 10000 AND sale_date >= '2015-01-01T00:00:00' "
               "AND sale_filter_less_than_10k = false AND is_multisale = false",
-        max_rows=limit, label="cook-sales")
+        limit=(limit or 1_500_000), label="cook-sales")
     sales["pin"] = sales["pin"].astype(str).str.zfill(14)
     sales = sales.sort_values("sale_date").drop_duplicates("pin", keep="last")
 
-    # Bound the 1.8M-parcel universe to the Chicago listings' bbox so we pull
-    # ~city-sized geometry, not all of Cook County.
-    L = pd.read_parquet(PROC / "chicago_listings.parquet")
-    la, lo = L["lat_centroid"].dropna(), L["lon_centroid"].dropna()
-    pad = 0.02
-    bbox = (f"lat between {la.min()-pad} and {la.max()+pad} "
-            f"AND lon between {lo.min()-pad} and {lo.max()+pad}")
-    univ = _socrata(
-        univ_url, select="pin,lat,lon", where=bbox,
-        max_rows=(limit * 4 if limit else None), label="cook-universe")
+    # The parcel universe is historic (every parcel x every year); pull one
+    # streaming request of the latest year's pin/lat/lon rather than paginating
+    # ~2.3M rows, which Socrata throttling makes fragile without a token.
+    univ = _socrata_once(
+        univ_url, select="pin,lat,lon", where="year='2026.0' AND lat IS NOT NULL",
+        limit=(limit * 4 if limit else 2_000_000), label="cook-universe")
     univ["pin"] = univ["pin"].astype(str).str.zfill(14)
+    univ["lat"] = pd.to_numeric(univ["lat"], errors="coerce")
+    univ["lon"] = pd.to_numeric(univ["lon"], errors="coerce")
     univ = univ.dropna(subset=["lat", "lon"]).drop_duplicates("pin")
 
     df = sales.merge(univ, on="pin", how="inner")
