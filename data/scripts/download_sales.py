@@ -197,22 +197,26 @@ def _arcgis_query(layer_url: str, out_fields: str, where: str,
     return pd.DataFrame(rows)
 
 
+def _normkey(s):
+    return s.astype(str).str.replace(r"\s+", "", regex=True).str.upper()
+
+
 def _arcgis_two_table(sales_url, sales_fields, geom_url, geom_field, key,
-                      price, date, where_sales, limit) -> pd.DataFrame:
+                      price, date, where_sales, limit, geom_where="1=1") -> pd.DataFrame:
     """Generic county pattern: a sales table keyed by parcel id joined to a
-    geometry layer keyed by the same id. Used by DC, Denver, Fulton."""
+    geometry layer keyed by the same id (whitespace-normalized). Used by DC."""
     sales = _arcgis_query(sales_url, sales_fields, where_sales, limit, geom=False)
-    geo = _arcgis_query(geom_url, f"{geom_field}", "1=1",
+    geo = _arcgis_query(geom_url, geom_field, geom_where,
                         (limit * 6 if limit else None), geom=True)
     if sales.empty or geo.empty or "lat" not in geo:
         raise SystemExit(f"two-table fetch incomplete: sales={len(sales)} geo={len(geo)}; "
                          f"verify the geometry layer and that its {geom_field} format "
                          f"matches the sales {key} format.")
-    sales[key] = sales[key].astype(str)
-    geo[geom_field] = geo[geom_field].astype(str)
-    sales = sales.sort_values(date).drop_duplicates(key, keep="last")
-    geo = geo.dropna(subset=["lat", "lon"]).drop_duplicates(geom_field)
-    df = sales.merge(geo, left_on=key, right_on=geom_field, how="inner")
+    sales["_k"] = _normkey(sales[key])
+    geo["_k"] = _normkey(geo[geom_field])
+    sales = sales.sort_values(date).drop_duplicates("_k", keep="last")
+    geo = geo.dropna(subset=["lat", "lon"]).drop_duplicates("_k")
+    df = sales.merge(geo[["_k", "lat", "lon"]], on="_k", how="inner")
     df = df.rename(columns={key: "parcel_id", price: "sale_price", date: "sale_date"})
     df["address"] = ""
     df["sale_date"] = pd.to_datetime(df["sale_date"], errors="coerce", utc=True, unit="ms")
@@ -226,14 +230,12 @@ def fetch_dc(limit: int | None) -> pd.DataFrame:
         sales_url=f"{base}/DCGIS_APPS/Real_Property_Application/MapServer/4",
         sales_fields="SSL,PRICE,SALEDATE", key="SSL", price="PRICE", date="SALEDATE",
         where_sales="PRICE > 10000 AND SALEDATE IS NOT NULL",
-        geom_url=f"{base}/DCGIS_DATA/Property_and_Land/MapServer/8",
-        geom_field="SSL", limit=limit)
+        geom_url=f"{base}/DCGIS_DATA/Property_and_Land/MapServer/40",
+        geom_field="SSL", geom_where="SSL NOT LIKE 'PAR%'", limit=limit)
 
 
-# dc: sales (layer 4, SSL/PRICE/SALEDATE) verified working; the SSL-keyed parcel
-# geometry layer still needs matching (layer 4 SSL '0096 0805' format differs from
-# the Owner-Polygon 'PAR ...' id), so dc is registry-only until that is resolved.
-FETCHERS = {"philadelphia": fetch_philadelphia, "chicago": fetch_chicago}
+FETCHERS = {"philadelphia": fetch_philadelphia, "chicago": fetch_chicago,
+            "dc": fetch_dc}
 
 
 def main() -> int:
