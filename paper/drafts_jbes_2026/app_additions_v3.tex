@@ -38,6 +38,33 @@ New York      & $-0.119$ & $-0.152$ & $+0.033$ & $0.417$ \\
 
 The shift is small in absolute terms throughout: $|\Delta_{\text{geo}}|$ is at most $0.033$ of a log point, in New York, and at most $0.011$ in every other market. Expressed as a fraction of the coefficient it stays under five percent in every market that carries a non-trivial effect, New York alone excepted at about a quarter; the two near-null markets, Phoenix and Washington, have absolute shifts of a hundredth of a log point or less, so their fraction is large but uninformative. The decomposition is non-vacuous because $R^2_{T\sim G}$ is far from zero, reaching $0.42$ in New York and exceeding a tenth in six markets, so the text direction does encode location, yet that location component does not carry the effect of the language on price except in New York. The location basis is a smooth coordinate polynomial laid over roughly thirty structured controls, so confounding at a finer spatial grain, or through pathways those controls miss, is outside what the comparison can rule out.
 
+To test whether the small shifts above are an artifact of that coarse polynomial, we replace it with a rank-thirty thin-plate regression spline over latitude and longitude, projected to meters, the flexible low-rank smoother the spatial-statistics literature prefers when the scale of confounding is unknown \citep{keller2020selecting,gilbert2021causal}. Table~\ref{tab:decomposition-tprs} reports the geography-adjusted coefficient under each basis. The spline captures far more of the treatment's spatial structure, with $R^2_{T\sim G}$ roughly doubling on average and rising from $0.42$ to $0.52$ in New York, yet the adjusted coefficient moves by at most $0.030$ of a log point, again in New York, and by under $0.02$ in every other market, with no market changing sign. A basis flexible enough to absorb twice the geography therefore leaves the semantic estimate essentially where the quadratic left it, which is the response the spatial-confounding critique calls for.
+
+\begin{table}[H]
+\centering
+\caption{Spatial basis robustness. $\hat\theta_{\text{geo}}$ is the per-standard-deviation text coefficient after the location adjustment, under the quadratic basis of Table~\ref{tab:decomposition-12} and under a rank-thirty thin-plate regression spline; $\Delta$ is their difference; $R^2_{T\sim G}$ is the share of the treatment's own variance the location basis explains under each. Markets ordered as in Table~\ref{tab:decomposition-12}.}
+\label{tab:decomposition-tprs}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+Market & $\hat\theta_{\text{geo}}$ (quad) & $\hat\theta_{\text{geo}}$ (TPRS) & $\Delta$ & $R^2_{T\sim G}$ quad & $R^2_{T\sim G}$ TPRS \\
+\midrule
+Chicago       & $+0.469$ & $+0.463$ & $-0.006$ & $0.187$ & $0.290$ \\
+Philadelphia  & $+0.405$ & $+0.388$ & $-0.017$ & $0.116$ & $0.269$ \\
+Atlanta       & $+0.250$ & $+0.255$ & $+0.004$ & $0.148$ & $0.285$ \\
+Dallas        & $+0.199$ & $+0.200$ & $+0.001$ & $0.059$ & $0.104$ \\
+Denver        & $+0.158$ & $+0.169$ & $+0.012$ & $0.165$ & $0.226$ \\
+Boston        & $+0.126$ & $+0.114$ & $-0.012$ & $0.053$ & $0.137$ \\
+San Francisco & $+0.109$ & $+0.105$ & $-0.004$ & $0.035$ & $0.095$ \\
+Portland      & $+0.095$ & $+0.081$ & $-0.014$ & $0.158$ & $0.215$ \\
+Seattle       & $+0.065$ & $+0.057$ & $-0.007$ & $0.034$ & $0.059$ \\
+Washington    & $+0.013$ & $+0.008$ & $-0.005$ & $0.121$ & $0.224$ \\
+Phoenix       & $-0.002$ & $-0.010$ & $-0.009$ & $0.097$ & $0.145$ \\
+New York      & $-0.152$ & $-0.183$ & $-0.030$ & $0.417$ & $0.523$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Counterfactual-Rewriting Protocol}
 \label{app:counterfactual}
 

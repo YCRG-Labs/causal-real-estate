@@ -10,20 +10,22 @@ geographic range of the United States housing stock, from San Francisco and New
 York at the expensive coastal end through Boston, Seattle, Washington, Denver, and
 Portland in the middle to Chicago, Atlanta, Phoenix, Dallas, and Philadelphia
 toward the more affordable interior and south. Each listing carries the free-text
-description an agent wrote, the sale price the platform reports for the property, the
-structured attributes a hedonic model expects, the bedroom and bathroom counts,
-the living area, the lot size, the year built, and the property type, and a
-property-level latitude and longitude rather than a coarse centroid. Working with
-platform-reported sale prices rather than the assessed values or tax-reassessment
-proxies that earlier versions of this project relied on removes a layer of
-measurement concern, since the outcome is a market price rather than an
-administrative valuation. The sale date the listing page records, which we recover
-for every property in the corpus, ranges widely across the panel, yet it is
-essentially uncorrelated with price within each market, the absolute correlation
-no larger than $0.20$ and the $R^2$ below $0.04$ in every market, so that pooling
-sales observed at different times does not by itself introduce temporal
-confounding of the text effect; the recovered dates are released with the data so
-that sale-period controls can be added directly.
+description an agent wrote, the asking price the platform reports for the property
+at the time of the crawl, the structured attributes a hedonic model expects, the
+bedroom and bathroom counts, the living area, the lot size, the year built, and
+the property type, and a property-level latitude and longitude rather than a
+coarse centroid. Two features of this outcome we are explicit about. The price is
+the listing's asking price rather than a realized transaction, and it is set by the
+same agent who writes the description and at the same moment, so part of any
+text-price association is the agent's own pricing of the language rather than the
+market's, a simultaneity that no spatial adjustment removes and that limits the
+causal reading of the estimates along an axis orthogonal to the spatial-confounding
+question this paper takes up. Because the corpus is a single cross-sectional crawl,
+the outcome itself carries no calendar-time variation that pooling could confound;
+the property's most recent prior-sale date, which we recover from the listing page
+for every property and release with the data, enters only as a covariate and is in
+any case essentially uncorrelated with the asking price within each market, the
+absolute correlation no larger than $0.20$ and the $R^2$ below $0.04$.
 
 \begin{table}[H]
 \centering
