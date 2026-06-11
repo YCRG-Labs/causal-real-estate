@@ -6,12 +6,13 @@ Sections~\ref{sec:shen-12city} and~\ref{sec:baur-12city} estimate the
 text-on-price relationship through two different encodings of the same listing
 language, a Doc2Vec uniqueness score read through the Shen-Ross hedonic
 specification and the leading principal component of a sentence-BERT
-representation read through a partialling-out score. Section~\ref{sec:counterfactual-12}
-adds a third measurement of a different kind, the price differential implied by
-an LLM rewriting intervention. The question this section answers is whether the
-three measurements agree on which markets carry an effect, and, where they
-agree, whether the agreement reflects independent lines of evidence or the same
-signal recovered more than once.
+representation read through a partialling-out score. The auxiliary rewriting
+intervention of Appendix~\ref{sec:counterfactual-12} supplies a third measurement
+of a different kind, the price differential an LLM edit implies. The question this
+section answers is whether the two encoders agree on which markets carry an
+effect, and, where they agree, whether the agreement reflects independent evidence
+or the same signal recovered twice; the rewriting channel is reported alongside as
+a corroborating check.
 
 \begin{table}[H]
 \centering
@@ -19,7 +20,7 @@ signal recovered more than once.
 markets. The Shen-Ross uniqueness and oriented pooled-PCA sentence-BERT
 coefficients are per-standard-deviation DML effects on log listing price, with
 standard errors in parentheses; the submarket-swap contrast is the LLM rewriting
-differential of Section~\ref{sec:counterfactual-12}. The bottom row is the
+differential of Appendix~\ref{sec:counterfactual-12}. The bottom row is the
 random-effects pooled estimate. The sentence-BERT axis is oriented so its pooled
 effect is non-negative, the principal-component sign being a disclosed convention
 (Section~\ref{sec:baur-12city}).}
@@ -90,7 +91,7 @@ with the embedding channels on the ordering of markets more than on the
 magnitude or the presence of an effect, and we treat it as a corroborating
 probe with limited power rather than as a co-equal estimate, consistent with
 the minimum-detectable-effect caveat recorded in
-Section~\ref{sec:counterfactual-12}.
+Appendix~\ref{sec:counterfactual-12}.
 
 \paragraph{Identification overlap.} A more decision-relevant summary than rank
 agreement is which markets each channel identifies at the $95\%$ level, where
