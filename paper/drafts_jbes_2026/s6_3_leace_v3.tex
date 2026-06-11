@@ -56,29 +56,17 @@ the markets that keep the most are the larger corpora whose listing language
 carries the richest location-targeted structure, which is also where a nonlinear
 probe has the most left to find.
 
-\paragraph{Why closed-form erasure rather than adversarial training.} The
-projection is not the only way to strip location from a representation, and the
-frozen-probe result of Section~\ref{sec:frozen_probe_theory} is what lets us say
-precisely why we prefer it to the adversarial alternative the disentanglement
-literature more often reaches for. We trained, in each of the twelve markets, a
-gradient-reversal encoder with the multi-head location discriminator detailed in
-Appendix~\ref{app:adversarial}, ramping the adversarial weight until the
-discriminator's location heads fell to chance. By that internal standard the
-erasure succeeds everywhere, since the continuous-coordinate head ends at an
-out-of-sample $R^2$ no larger than $0.07$ across the panel and the ZIP head is
-driven to a few times its uniform baseline. A fresh probe of the frozen
-representation overturns the verdict. A ridge regressor of the coordinate trained
-from scratch on the deconfounded embedding, under no adversarial pressure, recovers
-latitude and longitude at an $R^2$ between $0.16$ in Philadelphia and $0.42$ in
-Washington, and a fresh ZIP classifier reads the neighborhood back at nine to
-forty-seven times the uniform rate, in every one of the twelve markets
-(Figure~\ref{fig:grl-foil}). The adversarial training did not remove location, it
-taught its own discriminator not to look, which is exactly the saddle that
-Proposition~\ref{prop:frozen_probe}(c) constructs. The same fresh probe that reads
-the coordinate off the adversarial encoder cannot read it off the LEACE
-projection, whose guardedness guarantee holds it at the baseline by construction,
-and it is therefore the closed-form erasure on which we rest the deconfounding
-decomposition that follows.
+\paragraph{Why closed-form erasure rather than adversarial training.} We prefer
+the closed-form projection to the adversarial alternative the disentanglement
+literature more often reaches for, for a reason we develop in
+Appendix~\ref{app:adversarial}. An adversarially trained encoder can drive its own
+location discriminator to chance and still leave the coordinate recoverable: a
+fresh probe of the frozen representation reads latitude and longitude back at an
+$R^2$ between $0.16$ and $0.42$ across the twelve markets, and the ZIP code at nine
+to forty-seven times the uniform rate. The adversarial training does not remove
+location; it teaches its discriminator not to look. The closed-form projection, by
+contrast, is guarded against any probe by construction, and it is the erasure on
+which we rest the decomposition that follows.
 
 \paragraph{What the diagnostic does and does not settle.} The Baur estimates of
 Table~\ref{tab:baur-12city} are computed on the unprojected embedding, in keeping
@@ -148,53 +136,3 @@ see, is quantified separately in Section~\ref{sec:leace-12}.}
 \label{fig:erasure-12}
 \end{figure}
 
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}
-\begin{axis}[
-    causalre, width=0.62\textwidth, height=6.6cm,
-    symbolic y coords={Philadelphia,Seattle,Dallas,Phoenix,Portland,Chicago,
-                       Denver,San Francisco,New York,Boston,Atlanta,Washington},
-    ytick=data, enlarge y limits=0.05,
-    xlabel={Held-out ridge $R^2$ for the coordinate from the deconfounded representation},
-    xmin=-0.02, xmax=0.46, xtick={0,0.1,0.2,0.3,0.4},
-    xticklabel={\pgfmathprintnumber[fixed,precision=1]{\tick}},
-    extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
-    legend style={font=\scriptsize, draw=none, fill=none, at={(0,1.02)}, anchor=south west, legend columns=2, /tikz/every even column/.append style={column sep=10pt}},
-]
-\draw[thin,gray] (axis cs:0.164,Philadelphia)--(axis cs:0.000,Philadelphia);
-\draw[thin,gray] (axis cs:0.201,Seattle)--(axis cs:0.000,Seattle);
-\draw[thin,gray] (axis cs:0.211,Dallas)--(axis cs:0.000,Dallas);
-\draw[thin,gray] (axis cs:0.227,Phoenix)--(axis cs:0.000,Phoenix);
-\draw[thin,gray] (axis cs:0.245,Portland)--(axis cs:0.000,Portland);
-\draw[thin,gray] (axis cs:0.247,Chicago)--(axis cs:0.000,Chicago);
-\draw[thin,gray] (axis cs:0.253,Denver)--(axis cs:0.000,Denver);
-\draw[thin,gray] (axis cs:0.277,San Francisco)--(axis cs:0.000,San Francisco);
-\draw[thin,gray] (axis cs:0.278,New York)--(axis cs:0.000,New York);
-\draw[thin,gray] (axis cs:0.300,Boston)--(axis cs:0.000,Boston);
-\draw[thin,gray] (axis cs:0.331,Atlanta)--(axis cs:0.000,Atlanta);
-\draw[thin,gray] (axis cs:0.422,Washington)--(axis cs:0.000,Washington);
-\addplot[only marks, mark=*, mark size=2.1pt, color=cSF] coordinates {
-  (0.164,Philadelphia) (0.201,Seattle) (0.211,Dallas) (0.227,Phoenix) (0.245,Portland)
-  (0.247,Chicago) (0.253,Denver) (0.277,San Francisco) (0.278,New York) (0.300,Boston)
-  (0.331,Atlanta) (0.422,Washington)};
-\addlegendentry{After GRL adversarial erasure}
-\addplot[only marks, mark=o, mark size=2.3pt, line width=0.9pt, color=cNYC] coordinates {
-  (0.000,Philadelphia) (0.000,Seattle) (0.000,Dallas) (0.000,Phoenix) (0.000,Portland)
-  (0.000,Chicago) (0.000,Denver) (0.000,San Francisco) (0.000,New York) (0.000,Boston)
-  (0.000,Atlanta) (0.000,Washington)};
-\addlegendentry{After LEACE projection}
-\end{axis}
-\end{tikzpicture}
-\caption{The frozen-probe diagnostic applied to two erasure methods, in each of the
-twelve markets. A ridge probe of the latitude-longitude coordinate is trained from
-scratch on the deconfounded representation. Against the gradient-reversal
-adversarial encoder, whose own multi-head discriminator has been driven to chance
-on location (out-of-sample coordinate $R^2 \le 0.07$ across the panel), the fresh
-probe still recovers the coordinate at $R^2$ between $0.16$ and $0.42$; against the
-LEACE projection the same probe sits at the chance baseline, the exact-guardedness
-property of closed-form erasure. The adversarial training did not remove location,
-it taught its discriminator not to look, which is the saddle of
-Proposition~\ref{prop:frozen_probe}(c) realized across every market.}
-\label{fig:grl-foil}
-\end{figure}
