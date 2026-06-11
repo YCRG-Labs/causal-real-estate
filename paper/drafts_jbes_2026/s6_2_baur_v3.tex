@@ -150,3 +150,45 @@ Textual distinctiveness in the Shen sense and the utilitarian-to-amenity axis
 that the leading sentence-BERT component recovers price in the same direction,
 and the difference between them is one of magnitude and of which markets each
 detects, not of sign.
+
+\paragraph{What the leading axis prices.} To make concrete what the leading axis
+encodes, we regress each listing's projection onto it on a TF-IDF vocabulary of
+the description, pooled across the twelve markets, and read off the terms with the
+largest coefficients. Table~\ref{tab:loadings} reports them. The high-price end of
+the axis is dominated by property-quality and amenity language, words like
+\emph{spacious}, \emph{modern}, \emph{designed}, \emph{chef}, \emph{owner suite},
+and \emph{great room} that describe condition, finish, and layout rather than
+location. The low-price end is dominated by land and transactional boilerplate,
+\emph{vacant}, \emph{lot}, \emph{acres}, \emph{zoned}, \emph{hoa}, \emph{mls}, and
+\emph{seller}, the vocabulary of undeveloped parcels and the mechanics of a sale
+rather than of a home. The axis does also carry some lexical geography:
+premium-neighborhood terms such as \emph{center city} and \emph{rittenhouse
+square} load near the top, and the bare city names that head the pooled list
+reflect between-market price differences that the within-city centering only
+partly removes. This is the mixture the deconfounding test of
+Section~\ref{sec:decomposition} is built to separate. The axis encodes both the
+semantic content of a property and the neighborhood it sits in, and holding
+location fixed is what shows that it is the quality language, not the geography,
+that carries the price effect.
+
+\begin{table}[H]
+\centering
+\caption{What the leading text axis prices, pooled across the twelve markets. The
+description terms whose TF-IDF most strongly predicts a listing's projection onto
+the price-oriented sentence-BERT axis, at each end. Property-quality and amenity
+language tops the high-price end alongside premium-neighborhood terms; land and
+transactional boilerplate the low end.}
+\label{tab:loadings}
+\small
+\begin{tabular}{p{0.44\textwidth}p{0.44\textwidth}}
+\toprule
+High-price end of the axis & Low-price end \\
+\midrule
+spacious, modern, designed, featuring, chef, owner suite, great room, living
+space, comfort, dining, closet, layout; and the premium-neighborhood terms center
+city and rittenhouse square & vacant, lot, land, acres, parcel, zoned, zoning,
+county; and the transactional boilerplate hoa, mls, seller, buyer, agent,
+opportunity \\
+\bottomrule
+\end{tabular}
+\end{table}
