@@ -38,11 +38,17 @@ def load_market(city):
     if "source_html_sha256" not in e.columns or not emb:
         return None
     e["sha16"] = e["source_html_sha256"].astype(str).str[:16]
-    L = pd.read_parquet(PROC / f"{city}_listings.parquet")
-    L["sha16"] = L["source_html_sha256"].astype(str).str[:16]
-    text_col = "clean_description" if "clean_description" in L.columns else "description"
-    df = e.merge(L[["sha16", text_col, "price"]].drop_duplicates("sha16"),
-                 on="sha16", how="inner")
+    df = e
+    need = [c for c in ("clean_description", "description", "price") if c not in df.columns]
+    if need:
+        L = pd.read_parquet(PROC / f"{city}_listings.parquet")
+        L["sha16"] = L["source_html_sha256"].astype(str).str[:16]
+        jc = [c for c in need if c in L.columns]
+        if jc:
+            df = df.merge(L[["sha16"] + jc].drop_duplicates("sha16"), on="sha16", how="left")
+    text_col = "clean_description" if "clean_description" in df.columns else "description"
+    if text_col not in df.columns or "price" not in df.columns:
+        return None
     df = df[df[text_col].astype(str).str.len() > 20]
     price = pd.to_numeric(df["price"], errors="coerce")
     df = df[(price > 1e4) & price.notna()].reset_index(drop=True)
