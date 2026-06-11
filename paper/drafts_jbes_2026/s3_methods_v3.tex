@@ -121,12 +121,12 @@ in which $\theta$ is the per-standard-deviation effect of the text direction on
 log price and the nuisance functions $g$ and $m$ are left unrestricted. The
 Robinson partialling-out estimator \citep{robinson1988root} recovers $\theta$ from
 the residual-on-residual regression of $\tilde{Y} = Y - \hat{g}$ on
-$\tilde{T} = T - \hat{m}$, and we fit $\hat{g}$ and $\hat{m}$ by cross-fitted
-machine learning in the double machine learning framework of
+$\tilde{T} = T - \hat{m}$. We fit the nuisances $\hat{g}$ and $\hat{m}$ by
+cross-fitted machine learning in the double machine learning framework of
 \citet{chernozhukov2018double}, using gradient boosting for the embedding-based
 channels and ridge regression for the Shen-Ross uniqueness channel in keeping with
-its published hedonic protocol, splitting each market into $K = 5$ folds and
-predicting each fold's residuals from models trained on the complement so that the
+its published hedonic protocol. Each market is split into $K = 5$ folds, and each
+fold's residuals are predicted from models trained on the complement, so that the
 nuisance estimates and the score are never formed on the same observations;
 Appendix~\ref{app:hyperparams} consolidates the learner, fold, and bootstrap
 settings. The resulting estimator is Neyman-orthogonal and root-$n$ consistent whenever the
