@@ -60,7 +60,7 @@
 \newtheorem{assumption}{Assumption}
 \newtheorem{remark}{Remark}
 
-\title{Deconfounding Location from Semantic Signals in Real Estate Valuation}
+\title{Does Listing Language Add Value Beyond Location? Deconfounding Text and Geography in Automated Home Valuation}
 
 \author{
     Jacob Crainic
@@ -70,30 +70,29 @@
 
 \renewcommand{\headeright}{Preprint}
 \renewcommand{\undertitle}{Preprint}
-\renewcommand{\shorttitle}{Deconfounding Location and Semantics in Real Estate Valuation}
+\renewcommand{\shorttitle}{Does Listing Language Add Value Beyond Location?}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Automated valuation models increasingly read a listing's prose alongside its
-structured attributes, and the language reliably sharpens price predictions, yet
-better prediction cannot say whether the text carries genuine property information
-or merely relabels the neighborhood geography an agent's description encodes.
-Treating the leading direction of a listing embedding as a high-dimensional
-treatment, we estimate its effect on log listing price with a partially linear
-double machine learning score and ask how much survives once location is removed.
-Across twelve metropolitan markets the embedding provably encodes location,
-recoverable by a held-out probe before a closed-form erasure and essentially not
-after, yet holding the text fixed and adjusting for geography with a flexible
-thin-plate basis leaves the per-standard-deviation price effect almost unmoved in
-eleven markets, the exception being New York, whose language is the most
-geographic of the twelve. Because the estimates are associational rather than
-cleanly identified, and because the outcome is an agent-set asking price produced
-together with the text, we bound their fragility with a sensitivity analysis and
-are explicit about what the design does and does not settle. The contribution is a
-disciplined protocol for measuring and deconfounding the price effect of a learned
-text representation rather than a causal elasticity of price on language.
+Automated valuation models increasingly price homes by reading the prose of a
+listing alongside its structured attributes, and the language reliably improves
+their predictions. Whether that improvement reflects genuine property information
+or merely the neighborhood an agent's description encodes has not been tested, and
+the distinction matters: a model that prices laundered geography offers nothing
+beyond location and inherits its biases, while one that prices semantic content
+adds real information. We treat the leading direction of a listing embedding as a
+treatment and estimate its effect on log price with a partially linear double
+machine learning score, holding the structured attributes and the parcel's
+location fixed. Across twelve metropolitan markets the price effect of listing
+language is almost unmoved by spatial adjustment in eleven; the exception is New
+York, whose text is the most geographic of the twelve. The effect also holds on
+recorded sale prices in the four markets where transactions are public, though it
+attenuates, since part of the asking-price association is the agent's own pricing
+of the language. The estimates are associational, and we bound their fragility
+with a sensitivity analysis. In most markets, a listing's language is priced for
+its content, not its geography.
 \end{abstract}
 
 \keywords{Spatial confounding, Concept erasure, Double machine learning, Generated regressors, Text as data, Real estate valuation}
