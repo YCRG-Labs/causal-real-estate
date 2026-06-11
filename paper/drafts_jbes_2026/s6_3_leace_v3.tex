@@ -1,10 +1,12 @@
 
-\subsection{Spatial deconfounding of BERT embeddings via LEACE and IGBP}
+\subsection{How much location does the representation encode?}
 \label{sec:leace-12}
 
-The sentence-BERT representation that underlies the Baur channel in
-Section~\ref{sec:baur-12city} encodes more than the language a listing agent
-uses. Pre-trained on a generic corpus, the encoder has no particular incentive
+Before asking whether the text effect survives location, we check the
+precondition that makes the question worth asking at all: that the representation
+encodes location to begin with. The sentence-BERT representation that underlies
+the Baur channel in Section~\ref{sec:baur-12city} encodes more than the language
+a listing agent uses. Pre-trained on a generic corpus, the encoder has no particular incentive
 to separate semantic content about a property's condition or amenities from the
 geographic information that correlates with its neighborhood. If the embedding
 carries location-targeted information into the leading principal component, the
