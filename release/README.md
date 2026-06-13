@@ -2,7 +2,7 @@
 license: cc-by-4.0
 language: en
 size_categories:
-  - 100K<n<1M
+  - 10K<n<100K
 task_categories:
   - tabular-regression
   - feature-extraction
@@ -10,103 +10,101 @@ tags:
   - causal-inference
   - real-estate
   - spatial-confounding
+  - text-as-data
   - urban-analytics
-pretty_name: Causal Real Estate (Boston / NYC / SF)
+pretty_name: Listing Language & Home Valuation (12 U.S. markets)
 ---
 
-# Causal Real Estate
+# Listing Language & Home Valuation
 
-Multi-city parcel-level dataset and text embeddings for studying spatial confounding
-in real estate valuation, released alongside *Causal Disentanglement of Location and
-Semantic Signals in Real Estate Valuation* (Yee & Crainic, 2026).
+Listing-level text embeddings and structured covariates for studying whether the
+language of a property description carries genuine information about a home or
+merely relabels its location. Released alongside the working paper *Does Listing
+Language Add Value Beyond Location? Deconfounding Text and Geography in Automated
+Home Valuation* (Crainic, 2026).
 
-The dataset combines property assessments, census demographics, geocoded crime
-incidents, and points-of-interest amenities for **556,636 parcels** across Boston,
-New York (Manhattan + Brooklyn), and San Francisco. A held-out subset of ~3,000
-parcels also ships with sentence-transformer embeddings of listing descriptions.
+The package covers **twelve U.S. metropolitan markets** and roughly **69,000
+listings** (69,173 in the paper's analysis sample). Each listing ships with a
+sentence-transformer embedding of its description, structured property attributes,
+parcel coordinates, and a recovered sale date. For the four markets that publish
+recorded transactions (Philadelphia, Chicago, DC, New York), the realized sale
+price is included as well.
 
 ## Contents
 
 ```
-data/
-  boston/  parcels.parquet  embeddings_mpnet.parquet  embeddings_minilm.parquet
-  nyc/     parcels.parquet  embeddings_mpnet.parquet  embeddings_minilm.parquet
-  sf/      parcels.parquet  embeddings_mpnet.parquet  embeddings_minilm.parquet
-splits/temporal_splits.csv     parcel_id → train / val / test (NYC, SF only)
-scripts/make_panel.py          rebuilds these parquets from raw sources
-scripts/fetch_descriptions.py  re-derives raw text from your own Redfin access
-scripts/regenerate_embeddings.py
+data_12/
+  <city>.parquet     one row per listing, for each of the twelve markets
+  MANIFEST.md        authoritative per-market row counts and sale-price coverage
+scripts/             collection + pipeline code (rebuilds the corpus from source)
+DATASHEET.md         full provenance, collection process, and limitations
+JAE_DATA_README.md   deposit notes for the Journal of Applied Econometrics archive
 ```
 
-| City | Parcels | With description / embeddings | Median price |
-|---|---:|---:|---:|
-| Boston | 87,340 | 997 | $812,800 (assessed) |
-| NYC (Manhattan + Brooklyn) | 242,062 | 990 | $995,000 (sale) |
-| San Francisco | 227,677 | 995 | $1,283,160 (inferred sale) |
+Markets: Boston, New York, San Francisco, Washington DC, Philadelphia, Chicago,
+Seattle, Denver, Atlanta, Portland, Phoenix, Dallas.
+
+| Market | Listings | Recorded sale price |
+|---|---:|---|
+| Dallas | 8,009 | reconstruct via scraper |
+| Phoenix | 7,089 | reconstruct via scraper |
+| Philadelphia | 7,033 | ✓ ~94% |
+| Atlanta | 6,139 | reconstruct via scraper |
+| Chicago | 5,606 | ✓ ~86% |
+| Denver | 5,283 | reconstruct via scraper |
+| Portland | 4,347 | reconstruct via scraper |
+| Washington DC | 4,028 | ✓ ~53% |
+| Seattle | 2,887 | reconstruct via scraper |
+| Boston | 2,630 | reconstruct via scraper |
+| New York | 15,240 | ✓ ~42% |
+| San Francisco | 987 | reconstruct via scraper |
+
+Counts are as built; see `data_12/MANIFEST.md` for the authoritative figures.
 
 ## Schema
 
-`parcels.parquet` per city. Common 34-covariate confounder set used in the paper:
+`data_12/<city>.parquet`, one row per listing:
 
-- **Property:** `bedrooms`, `lot_area_sqft`, `bldg_area_sqft`, `year_built`, `assessed_*`
-- **Location:** `latitude`, `longitude`, `GEOID` (block group)
-- **Census (ACS 5yr 2022):** `median_household_income`, `median_home_value`, `median_gross_rent`, `pct_white`, `pct_black`, `pct_asian`, `pct_hispanic`, `pct_bachelors`, `labor_force_participation`, `pct_under_25`, `pct_over_60`
-- **Crime (500m radius):** `crime_violent`, `crime_property`, `crime_quality_of_life`, `crime_other`, `crime_total`
-- **Amenities (counts and densities):** `amenity_food_dining`, `amenity_retail`, `amenity_services`, `amenity_recreation`, `amenity_transportation`, `amenity_education`, `amenity_total`, `amenity_diversity`, plus `*_density` versions
-- **Micro-geography:** `dist_park_m`, `dist_transit_m`, `dist_school_m`, `dist_restaurant_m`, `dist_retail_m`, `dist_medical_m`
+- **Identifier:** `id` (stable anonymized listing key)
+- **Location:** `latitude`, `longitude`, `zip` (parcel-centroid precision)
+- **Property:** `beds`, `baths`, `sqft`, `year_built`, `lot_size`, `property_type`
+- **Timing:** `sale_year`, `sale_quarter` (recovered from the listing page)
+- **Outcome (4 markets only):** `sale_price`, `sale_date` — recorded transactions
+  for Philadelphia, Chicago, DC, and New York
+- **Text:** `emb_0` … `emb_767` — 768-dimensional sentence-transformer (mpnet)
+  embedding of the listing description
 
-City-specific extras (NYC sale dates, SF assessor metadata) are documented in `DATASHEET.md`.
-
-`embeddings_*.parquet` per city: `latitude`, `longitude`, `zip`, `price`, plus `emb_0`..`emb_N`
-where N=767 (mpnet, 768-dim) or N=383 (MiniLM, 384-dim).
+The census, crime, and amenity confounders used in the paper are **not** shipped
+here; they are regenerated from their public sources by the pipeline scripts
+(`attach_census.py`, `attach_crime.py`, `attach_amenities.py`).
 
 ## Loading
 
 ```python
-from datasets import load_dataset
-ds = load_dataset("jcrainic2/causal-real-estate", "nyc-parcels")
-# or directly:
 import pandas as pd
-parcels = pd.read_parquet("hf://datasets/jcrainic2/causal-real-estate/data/nyc/parcels.parquet")
+nyc = pd.read_parquet("hf://datasets/jcrainic2/causal-real-estate/data_12/nyc.parquet")
 ```
 
 ## What is *not* included, and why
 
-**Raw listing descriptions are not redistributed.** The descriptions used to
-produce the embeddings were retrieved from Redfin, whose Terms of Service prohibit
-redistribution; the remarks themselves carry MLS copyright. To reproduce the
-text-side analysis in full, run `scripts/fetch_descriptions.py` against your own
-Redfin access. The pre-computed embeddings shipped here are derivative
-representations and are released under CC BY 4.0.
+**Raw listing descriptions and asking prices are not redistributed.** Both are
+scraped content: descriptions carry MLS copyright and asking prices are retrieved
+under Redfin's Terms of Service, which prohibit redistribution. The embeddings
+shipped here are derivative representations released under CC BY 4.0. To rebuild the
+raw text and asking price from your own access, run the collection code in
+`scripts/`.
 
-**Street addresses are not included** even where they appear in source assessor
-rolls (notably SF). The paper's analysis uses lat/lon at parcel-centroid
+**Street addresses are not included.** The analysis uses lat/lon at parcel-centroid
 precision; addresses are unnecessary for replication.
 
 ## License
 
 - **Structured features and embeddings:** [CC BY 4.0](LICENSE)
 - **Code (`scripts/`):** MIT
+- **Recorded sale prices:** public county assessor/recorder open data
 - **Source attributions:** see `DATASHEET.md` § Source Datasets
-
-If you use this dataset, please cite:
-
-```bibtex
-@article{yee2026causal,
-  title={Causal Disentanglement of Location and Semantic Signals in Real Estate Valuation},
-  author={Yee, Brandon and Crainic, Jacob},
-  journal={Journal of Business and Economic Statistics},
-  year={2026},
-  note={Under review}
-}
-```
-
-## Reproducing the paper
-
-The companion code repository contains the full pipeline (`run_pipeline.py`) including DML, doubly-robust estimation,
-adversarial deconfounding, and the confounder escalation test. This dataset is
-the input.
 
 ## Contact
 
-`{b.yee, j.crainic}@ycrg-labs.org`
+Questions and corrections via the
+[GitHub repository](https://github.com/human-vc/causal-real-estate) issues.
