@@ -91,18 +91,6 @@ reconstructs them from your own access is included, so the corpus can be rebuilt
 rather than only read. See `release/DATASHEET.md` and `release/JAE_DATA_README.md`
 for the full provenance and the confidential-source path.
 
-## Citation
-
-```bibtex
-@unpublished{crainic2026listing,
-  author = {Crainic, Jacob},
-  title  = {Does Listing Language Add Value Beyond Location?
-            Deconfounding Text and Geography in Automated Home Valuation},
-  year   = {2026},
-  note   = {Working paper}
-}
-```
-
 ## License
 
 Code is released under the MIT License (see [`LICENSE`](LICENSE)). Released data
