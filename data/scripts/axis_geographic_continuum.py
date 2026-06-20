@@ -1,24 +1,3 @@
-"""Layer 2: is the New York reading a continuum or an anecdote?
-
-For each of the twelve markets it computes two quantities and asks whether they
-track each other:
-
-  geo_r2     how geographic the leading text direction is, the R^2 of the
-             projection on a thin-plate spline over lat/lon (the R^2_{T~G} the
-             paper already reports per market).
-  loc_share  how much of the axis vocabulary is locational, the share of the
-             top-weighted TF-IDF terms' coefficient mass carried by location
-             words. A term counts as locational if it matches a transparent
-             generic lexicon (directions, transit, street types, area words) or
-             is data-driven place-like, meaning its occurrences concentrate in a
-             few ZIP codes.
-
-If loc_share tracks geo_r2 across markets, the interpretable vocabulary is what
-makes the embedding geographic, and New York is the extreme of a documented line
-rather than a one-off. Writes results/interpretability/geographic_continuum.csv.
-
-  python axis_geographic_continuum.py
-"""
 import sys, os
 from pathlib import Path
 

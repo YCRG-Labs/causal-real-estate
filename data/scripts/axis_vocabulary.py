@@ -1,15 +1,3 @@
-"""Interpret the leading listing-text direction by the vocabulary that loads on it.
-
-For each market: take the leading principal component of the embedding (the
-treatment in the Baur channel), orient it so it correlates positively with log
-price, project every listing onto it, and regress that projection on a TF-IDF
-vocabulary of the descriptions. The largest positive coefficients are the language
-at the high-price end of the axis, the largest negative ones the low end. This is
-the embedding analogue of the implicit-price tokenization of Nowak & Smith (2017),
-and gives the qualitative reading behind the per-market R^2_{T~G} geographic-ness.
-
-  python axis_vocabulary.py --cities nyc,dallas,phoenix --topn 15
-"""
 import argparse
 from pathlib import Path
 

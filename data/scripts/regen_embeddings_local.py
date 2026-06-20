@@ -1,16 +1,3 @@
-"""Regenerate the per-market sentence-transformer embeddings locally from the
-listings parquets, after the compute box was lost.
-
-Faithful to the paper's pipeline: all-mpnet-base-v2, the same clean_description
-text cleaning, unit-normalized 768-dim vectors. Reads data/processed/<city>_listings.parquet
-(descriptions live there), renames the centroid coordinates to the latitude/longitude
-the downstream loaders and build_release_12.py expect, and writes the canonical
-data/processed/<city>_embeddings.parquet (no model suffix) with the structured
-columns + emb_0..emb_767.
-
-  python regen_embeddings_local.py --city sf            # pilot
-  python regen_embeddings_local.py --all                # all twelve
-"""
 import sys, os, time, argparse
 from pathlib import Path
 
