@@ -59,7 +59,58 @@ most location in its language is the place that location matters most for the
 estimate. We read this less as a crack in the broader finding than as its
 mechanism caught in the act, and as a reminder that the protocol earns its keep by
 flagging the markets where a spatial audit is most warranted rather than by
-declaring that none is ever needed. The conclusion travels only as far as its
+declaring that none is ever needed.
+
+The market the diagnostic singles out also reads differently once one looks at the
+language behind the direction. Interpreting the leading text direction by the
+vocabulary that loads on it, in the way \citet{nowak2017textual} read implicit
+prices off listing tokens and the construct-validity approach of
+\citet{fang2022construct} formalises for embeddings, shows that what the New York
+direction is built from is location. Its heaviest terms are boroughs and
+neighborhoods and the transit that joins them, Manhattan and Brooklyn and Midtown
+and SoHo, the subway and the avenue, alongside the housing nouns peculiar to the
+city such as the apartment and the studio. The same exercise in a market the
+adjustment leaves untouched returns condition and finish instead, so that in Dallas
+the owner suite and the kitchen and the open dining space carry the high-price end
+while the city and its suburbs load only at the low end. New York's listings locate
+a property where Dallas's describe one, and a direction made of place names is
+mechanically a direction that geography can move. That location is so heavily
+written into the words is itself a property of the market, since where submarkets
+are drawn tightly and fine-scale geography is steeply valued
+\citep{goodman1998housing,bourassa1999defining} the name of a neighborhood is
+already a statement about price, and the confounding such language carries sits at
+exactly the spatial grain a coarse control cannot reach
+\citep{paciorek2010importance,keller2020selecting}. The pattern is not that naming
+places makes a market's text geographic in the sense that matters here. Phoenix
+names its places as readily as New York, its axis carrying Scottsdale and Arcadia
+and the desert, and yet its text effect is indistinguishable from zero and the
+adjustment leaves it there, because a Phoenix suburb is not the steep price
+discontinuity that a Manhattan block is. It is locational language where location
+is steeply priced, rather than locational language as such, that the deconfounding
+responds to.
+
+\begin{table}[H]
+\centering
+\caption{The vocabulary of the leading text direction in the market the spatial
+adjustment moves most and a market it leaves untouched. Description terms whose
+TF-IDF most strongly loads on the price-oriented sentence-BERT direction. New
+York's direction is built from boroughs, neighborhoods, and transit; Dallas's from
+condition and finish, with the city and its suburbs loading only at the low-price
+end. Per-market lists are produced by the replication code.}
+\label{tab:nyc-vocab}
+\small
+\begin{tabular}{p{0.43\textwidth}p{0.43\textwidth}}
+\toprule
+New York & Dallas \\
+\midrule
+Manhattan, Brooklyn, Midtown, SoHo, Bensonhurst, subway, avenue, apartment, studio
+& owner suite, kitchen, open dining, living space, overlooking, thoughtfully
+curated, comfort \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The conclusion travels only as far as its
 instruments reach, and they reach less far than one would like. The location
 basis is a smooth coordinate polynomial laid over roughly thirty structured
 controls that already carry census-tract demography, so confounding operating at a
