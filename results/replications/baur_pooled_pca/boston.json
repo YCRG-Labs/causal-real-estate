@@ -1,0 +1,18 @@
+{
+  "city": "boston",
+  "n": 2610,
+  "engine": "ridge",
+  "treatment": "pooled_within_city_centered_pca_pc1",
+  "dml": {
+    "label": "DML on pooled BERT PC1",
+    "n": 2610,
+    "theta": -0.07221133005786942,
+    "se": 0.022001136111738977,
+    "ci_low": -0.11533355683687782,
+    "ci_high": -0.02908910327886103,
+    "mde": 0.06164718338509261,
+    "contains_zero": false,
+    "se_if": 0.022001136111738977,
+    "n_boot": null
+  }
+}

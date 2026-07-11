@@ -1,0 +1,9 @@
+{
+  "theta_re": 0.1556268871290687,
+  "se_re": 0.04363558508652479,
+  "I2_pct": 99.32209980992434,
+  "tau2": 0.02261500204520565,
+  "k": 12,
+  "oriented_flip": true,
+  "spec": "pooled_within_city_centered_pca_pc1; RE(DL) over 12 cities"
+}

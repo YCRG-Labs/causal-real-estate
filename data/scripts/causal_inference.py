@@ -154,7 +154,7 @@ def get_features_and_target(emb_df, parcels, drop_mismatched_crime=False):
     lon = pd.to_numeric(emb_df.get("longitude", pd.Series(dtype=float)), errors="coerce").values
 
     if "zip" in emb_df.columns:
-        zips = emb_df["zip"].fillna(0).astype(float).astype(int).astype(str)
+        zips = pd.to_numeric(emb_df["zip"], errors="coerce").fillna(0).astype(int).astype(str)
         le = LabelEncoder()
         zip_labels = le.fit_transform(zips)
     else:

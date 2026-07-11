@@ -1,0 +1,18 @@
+{
+  "city": "portland",
+  "n": 4337,
+  "engine": "ridge",
+  "treatment": "pooled_within_city_centered_pca_pc1",
+  "dml": {
+    "label": "DML on pooled BERT PC1",
+    "n": 4337,
+    "theta": -0.08184028589141042,
+    "se": 0.012887609453510357,
+    "ci_low": -0.10710000042029072,
+    "ci_high": -0.05658057136253011,
+    "mde": 0.03611108168873602,
+    "contains_zero": false,
+    "se_if": 0.012887609453510357,
+    "n_boot": null
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "city": "dc",
+  "n": 4015,
+  "engine": "ridge",
+  "treatment": "pooled_within_city_centered_pca_pc1",
+  "dml": {
+    "label": "DML on pooled BERT PC1",
+    "n": 4015,
+    "theta": -0.118067851320251,
+    "se": 0.01576124522075253,
+    "ci_low": -0.14895989195292594,
+    "ci_high": -0.08717581068757603,
+    "mde": 0.04416300910854859,
+    "contains_zero": false,
+    "se_if": 0.01576124522075253,
+    "n_boot": null
+  }
+}

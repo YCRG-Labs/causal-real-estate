@@ -1,0 +1,18 @@
+{
+  "city": "denver",
+  "n": 5280,
+  "engine": "ridge",
+  "treatment": "pooled_within_city_centered_pca_pc1",
+  "dml": {
+    "label": "DML on pooled BERT PC1",
+    "n": 5280,
+    "theta": -0.10283286227970748,
+    "se": 0.009447532041983757,
+    "ci_low": -0.12135002508199563,
+    "ci_high": -0.08431569947741932,
+    "mde": 0.026471984781638487,
+    "contains_zero": false,
+    "se_if": 0.009447532041983757,
+    "n_boot": null
+  }
+}
