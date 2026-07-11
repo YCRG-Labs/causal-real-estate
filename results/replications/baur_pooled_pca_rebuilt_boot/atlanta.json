@@ -1,0 +1,18 @@
+{
+  "city": "atlanta",
+  "n": 6135,
+  "engine": "ridge",
+  "treatment": "pooled_within_city_centered_pca_pc1",
+  "dml": {
+    "label": "DML on pooled BERT PC1",
+    "n": 6135,
+    "theta": -0.11194034868022709,
+    "se": 0.00923141086256923,
+    "ci_low": -0.13079059952725083,
+    "ci_high": -0.0939691951434359,
+    "mde": 0.025866413236918982,
+    "contains_zero": false,
+    "se_if": 0.008942463666284092,
+    "n_boot": 500
+  }
+}

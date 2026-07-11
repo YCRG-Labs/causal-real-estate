@@ -1,0 +1,14 @@
+{
+  "theta_re": 0.12915925396322778,
+  "se_re": 0.03924880666540257,
+  "tau2": 0.018276346732421855,
+  "Q": 1673.9241612342616,
+  "df": 11,
+  "I2_pct": 99.34286150742402,
+  "theta_fe": 0.10565599530292562,
+  "se_fe": 0.003104842019976288,
+  "k": 12,
+  "oriented_flip": true,
+  "spec": "pooled_within_city_centered_pca_pc1; RE(DL) over 12 cities",
+  "sign_note": "PC sign unidentified; oriented so pooled>=0; cross-method |corr| is sign-invariant"
+}

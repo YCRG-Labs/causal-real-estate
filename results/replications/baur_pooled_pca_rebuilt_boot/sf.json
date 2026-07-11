@@ -1,0 +1,18 @@
+{
+  "city": "sf",
+  "n": 986,
+  "engine": "ridge",
+  "treatment": "pooled_within_city_centered_pca_pc1",
+  "dml": {
+    "label": "DML on pooled BERT PC1",
+    "n": 986,
+    "theta": -0.10564588067208756,
+    "se": 0.026710978482393958,
+    "ci_low": -0.15393791714573077,
+    "ci_high": -0.052305904936337924,
+    "mde": 0.07484416170766788,
+    "contains_zero": false,
+    "se_if": 0.025299281825427143,
+    "n_boot": 500
+  }
+}
