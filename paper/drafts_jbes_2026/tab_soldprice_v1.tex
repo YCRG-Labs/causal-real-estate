@@ -1,0 +1,22 @@
+\begin{table}[H]
+\centering
+\caption{Effect of the leading listing-text direction on log realized sale price, by metropolitan area. Estimates are ridge partially-linear DML on the single-unit subset with sale-quarter fixed effects; the assessor arm controls for exogenous county-record attributes (the primary, controlled-direct-effect specification) and the listing arm for agent-reported attributes (a bad-control sensitivity bound). Intervals are tract cluster-bootstrap ($B=300$); $\hat\theta_{\text{corr}}$ divides the assessor estimate by the validation-sample truncation factor. Estimates are oriented so the effect is positive; all are individually significant.}
+\label{tab:soldprice}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+Market & $n$ & $\hat\theta_{\text{assessor}}$ & 95\% CI (cluster) & $\hat\theta_{\text{listing}}$ & $\hat\theta_{\text{corr}}$ \\
+\midrule
+Philadelphia & $29{,}094$ & $0.159$ & $[0.146, 0.169]$ & $0.140$ & $0.196$ \\
+Chicago & $20{,}245$ & $0.148$ & $[0.136, 0.158]$ & $0.102$ & $0.182$ \\
+San Francisco & $6{,}585$ & $0.115$ & $[0.098, 0.131]$ & $0.076$ & $0.141$ \\
+Boston & $3{,}337$ & $0.111$ & $[0.093, 0.132]$ & $0.057$ & $0.137$ \\
+Washington & $9{,}846$ & -- & -- & $0.060$ & -- \\
+Atlanta & $23{,}603$ & -- & -- & $0.069$ & -- \\
+Seattle & $17{,}363$ & $0.059$ & $[0.053, 0.065]$ & $0.049$ & $0.073$ \\
+Denver & $22{,}000$ & $0.060$ & $[0.052, 0.068]$ & $0.043$ & $0.074$ \\
+Portland & $21{,}653$ & $0.064$ & $[0.056, 0.069]$ & $0.044$ & $0.080$ \\
+Phoenix & $39{,}003$ & $0.029$ & $[0.025, 0.034]$ & $0.020$ & $0.036$ \\
+\bottomrule
+\end{tabular}
+\end{table}

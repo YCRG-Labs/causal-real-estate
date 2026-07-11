@@ -88,10 +88,10 @@ machine learning score, holding the structured attributes and the parcel's
 location fixed. Across twelve metropolitan markets the price effect of listing
 language is almost unmoved by spatial adjustment in eleven; the exception is New
 York, whose text is the most geographic of the twelve. The effect also holds on
-recorded sale prices in the four markets where transactions are public, though it
-attenuates, since part of the asking-price association is the agent's own pricing
-of the language. The estimates are associational, and we bound their fragility
-with a sensitivity analysis. In most markets, a listing's language is priced for
+realized sale prices, re-estimated across ten markets on a panel of nearly three
+hundred thousand recorded transactions rather than the asking price an agent sets,
+and is individually significant in every one. The estimates are associational, and
+we bound their fragility with a sensitivity analysis. In most markets, a listing's language is priced for
 its content, not its geography.
 \end{abstract}
 
@@ -105,7 +105,7 @@ Breaking that silence means asking how much of the association between a listing
 
 Applied across twelve metropolitan areas using $69{,}173$ deduplicated Redfin listings, the answer is more reassuring than the predictive-fit worry would suggest. A held-out probe recovers the latitude-longitude coordinate from the embedding at an $R^2$ approaching one half, so the representation plainly carries location. And yet holding the text direction fixed and folding a flexible location basis into the controls leaves its per-standard-deviation effect on log price almost exactly where it began in eleven of the twelve markets. The one market in which the adjustment bites, New York, is the market whose text direction is itself the most geographic, so the exception illuminates the mechanism rather than embarrassing it. The surviving effect does not depend on the encoder: a Doc2Vec uniqueness channel and a sentence-BERT principal component move almost in lockstep across markets, two encodings of one signal rather than independent confirmations of it. In economic terms the effect is sizable rather than merely detectable: a one-standard-deviation move along the text direction is worth between roughly eight and seventeen percent of a home's price, depending on the encoder, several times the marginal value of an additional bedroom. One inferential subtlety needs care. The leading principal component is estimated on the same sample that estimates the price effect, which makes it a generated regressor in the sense of \citet{pagan1984econometric}, and its analytic interval undercovers; we document this in a calibration study and repair it with a bootstrap over the full pipeline (Appendix~\ref{app:simulation}).
 
-None of this is a clean causal elasticity, and we say so throughout. The estimates are associational, and a sensitivity analysis in the style of \citet{cinelli2020making} reports how strong an unobserved confounder would have to be to overturn each market's result, a threshold that none of the covariates we observe attains in any of the twelve, though it is small in absolute terms precisely where the effect it protects is small. Because the outcome is the asking price an agent sets together with the description, we ask finally whether the effect holds on the price a property actually fetches. In the four markets that publish recorded transactions it replicates on sale prices, though it attenuates, which is what we would expect when part of the asking-price association is the agent's own pricing of the language. The answer the paper returns to the measurement question the text-valuation literature left open is therefore this: in most metropolitan markets a listing's language is priced for its content and not merely for the geography it encodes, with New York the documented exception. We release the code, the derived embeddings, the public-record sale prices, and an independent computational verification of every analytic claim (Appendix~\ref{app:verification}); the listing text and asking prices are scraped under a commercial platform's terms and are not redistributed, but the collection code that reconstructs them is.
+None of this is a clean causal elasticity, and we say so throughout. The estimates are associational, and a sensitivity analysis in the style of \citet{cinelli2020making} reports how strong an unobserved confounder would have to be to overturn each market's result, a threshold that none of the covariates we observe attains in any of the twelve, though it is small in absolute terms precisely where the effect it protects is small. Because the outcome is the asking price an agent sets together with the description, we ask finally whether the effect holds on the price a property actually fetches. Re-estimated across ten markets on a panel of recorded transactions rather than the asking price, the effect replicates on the price the market actually cleared and is individually significant in every one, with the exogenous county-assessor controls giving a larger, cleaner estimate than the agent-reported attributes that share an author with the description. The answer the paper returns to the measurement question the text-valuation literature left open is therefore this: in most metropolitan markets a listing's language is priced for its content and not merely for the geography it encodes, with New York the documented exception. We release the code, the derived embeddings, the public-record sale prices, and an independent computational verification of every analytic claim (Appendix~\ref{app:verification}); the listing text and asking prices are scraped under a commercial platform's terms and are not redistributed, but the collection code that reconstructs them is.
 
 The paper proceeds in the order a skeptical reader would want. Section~\ref{sec:related} places the question among the literatures it draws on. Section~\ref{sec:methods} sets out the estimand and the partialling-out estimator, and Section~\ref{sec:data} describes how the twelve-market corpus was assembled and audited for the duplication that scraped listings invite. The evidence occupies Section~\ref{sec:results}, which estimates the text effect under each encoder, checks how much location the representation encodes, holds the text fixed and moves geography on and off the controls to isolate the share that location explains, bounds the surviving effect with a sensitivity analysis, and confirms it on recorded sale prices; an auxiliary rewriting intervention and a cross-encoder comparison are reported alongside. The concept-erasure implementation and the formal treatment of the generated-regressor problem are developed in the appendices. Section~\ref{sec:conclusion} draws the line, for practice, between what a predictive-only evaluation of text-augmented valuation can and cannot support.
 
@@ -160,7 +160,7 @@ These threads meet in the setting we study, and they have begun to meet elsewher
 \input{drafts_jbes_2026/s6_5_sensitivity_v3}
 \input{drafts_jbes_2026/s6_6_meta_v3}
 \input{drafts_jbes_2026/s6_7_cross_method_v3}
-\input{drafts_jbes_2026/s6_8_saleprice_v3}
+\input{drafts_jbes_2026/s6_8_saleprice_v4}
 \input{drafts_jbes_2026/conclusion_v3}
 
 \section*{Acknowledgments}
@@ -527,6 +527,7 @@ The repair the simulation points to is a percentile bootstrap that resamples lis
 
 \input{drafts_jbes_2026/app_additions_v3}
 
+\input{drafts_jbes_2026/app_truncation_v1}
 
 \input{drafts_jbes_2026/s6_4_counterfactual_v3}
 

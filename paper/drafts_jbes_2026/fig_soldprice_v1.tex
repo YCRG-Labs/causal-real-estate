@@ -1,0 +1,40 @@
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    causalre, width=0.62\textwidth, height=7.4cm,
+    ytick={10,9,8,7,6,5,4,3,2,1}, yticklabels={Philadelphia,Chicago,San Francisco,Boston,Portland,Denver,Seattle,Phoenix,Atlanta,Washington},
+    xlabel={$\hat\theta$ per $\sigma$ (log sale price)},
+    xmin=-0.008, xmax=0.185, xtick={0,0.05,0.10,0.15},
+    scaled x ticks=false, xticklabels={$0$,$0.05$,$0.10$,$0.15$},
+    enlarge y limits=0.07,
+    extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
+    legend style={at={(0.97,0.06)}, anchor=south east}, legend cell align=left,
+]
+\draw[thin,gray] (axis cs:0.146,10.17)--(axis cs:0.169,10.17);
+\draw[thin,gray] (axis cs:0.136,9.17)--(axis cs:0.158,9.17);
+\draw[thin,gray] (axis cs:0.098,8.17)--(axis cs:0.131,8.17);
+\draw[thin,gray] (axis cs:0.093,7.17)--(axis cs:0.132,7.17);
+\draw[thin,gray] (axis cs:0.056,6.17)--(axis cs:0.069,6.17);
+\draw[thin,gray] (axis cs:0.052,5.17)--(axis cs:0.068,5.17);
+\draw[thin,gray] (axis cs:0.053,4.17)--(axis cs:0.065,4.17);
+\draw[thin,gray] (axis cs:0.025,3.17)--(axis cs:0.034,3.17);
+\draw[thin,gray] (axis cs:0.131,9.83)--(axis cs:0.150,9.83);
+\draw[thin,gray] (axis cs:0.093,8.83)--(axis cs:0.112,8.83);
+\draw[thin,gray] (axis cs:0.066,7.83)--(axis cs:0.087,7.83);
+\draw[thin,gray] (axis cs:0.045,6.83)--(axis cs:0.068,6.83);
+\draw[thin,gray] (axis cs:0.037,5.83)--(axis cs:0.051,5.83);
+\draw[thin,gray] (axis cs:0.036,4.83)--(axis cs:0.049,4.83);
+\draw[thin,gray] (axis cs:0.045,3.83)--(axis cs:0.054,3.83);
+\draw[thin,gray] (axis cs:0.016,2.83)--(axis cs:0.025,2.83);
+\draw[thin,gray] (axis cs:0.061,2.00)--(axis cs:0.078,2.00);
+\draw[thin,gray] (axis cs:0.053,1.00)--(axis cs:0.066,1.00);
+\addplot[only marks, mark=*, mark size=1.9pt, color=cNYC] coordinates {(0.159,10.17) (0.148,9.17) (0.115,8.17) (0.111,7.17) (0.064,6.17) (0.060,5.17) (0.059,4.17) (0.029,3.17)};
+\addlegendentry{assessor controls}
+\addplot[only marks, mark=o, mark size=2.1pt, line width=0.8pt, color=cYEL] coordinates {(0.140,9.83) (0.102,8.83) (0.076,7.83) (0.057,6.83) (0.044,5.83) (0.043,4.83) (0.049,3.83) (0.020,2.83) (0.069,2.00) (0.060,1.00)};
+\addlegendentry{listing controls}
+\end{axis}
+\end{tikzpicture}
+\caption{Per-market effect of the leading listing-text direction on log realized sale price, oriented so the effect is positive. Filled blue markers use exogenous county-assessor structural controls (the primary, controlled-direct-effect specification); open amber markers use agent-reported listing attributes (the bad-control sensitivity bound). Gray whiskers are $95\%$ tract cluster-bootstrap intervals ($B=300$); the dashed line marks the null. Washington and Atlanta lack a county structural source and carry only the listing specification. The listing effect lies inside the assessor effect in every market where both are estimated, the signature of controlling for text-entangled attributes. Numerical values appear in Table~\ref{tab:soldprice}.}
+\label{fig:soldprice-forest}
+\end{figure}

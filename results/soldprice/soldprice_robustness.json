@@ -1,0 +1,208 @@
+{
+  "spatial": [
+    {
+      "city": "boston",
+      "theta": -0.11108600004752427,
+      "n": 3337,
+      "se_conley_hac": 0.009516353584855374,
+      "se_salerno_jk": 0.008821358870652609,
+      "im_ci": [
+        -0.12834084958002842,
+        -0.09382340753835056
+      ],
+      "im_se": 0.006216121827342749,
+      "conley_excludes_0": true,
+      "im_excludes_0": true
+    },
+    {
+      "city": "sf",
+      "theta": -0.11452838531451066,
+      "n": 6585,
+      "se_conley_hac": 0.008841228518994066,
+      "se_salerno_jk": 0.010856080057090496,
+      "im_ci": [
+        -0.13894463234377874,
+        -0.09011213828524257
+      ],
+      "im_se": 0.008794067991316788,
+      "conley_excludes_0": true,
+      "im_excludes_0": true
+    },
+    {
+      "city": "philadelphia",
+      "theta": -0.15904150396756994,
+      "n": 29094,
+      "se_conley_hac": 0.013307435480941467,
+      "se_salerno_jk": 0.013360659190593186,
+      "im_ci": [
+        -0.16673126299425745,
+        -0.15135205987902356
+      ],
+      "im_se": 0.002769585302882885,
+      "conley_excludes_0": true,
+      "im_excludes_0": true
+    },
+    {
+      "city": "chicago",
+      "theta": -0.14762873497278162,
+      "n": 20245,
+      "se_conley_hac": 0.012161497296146408,
+      "se_salerno_jk": 0.011801643017619653,
+      "im_ci": [
+        -0.15037285938174436,
+        -0.14488461056381877
+      ],
+      "im_se": 0.000988358964427395,
+      "conley_excludes_0": true,
+      "im_excludes_0": true
+    },
+    {
+      "city": "seattle",
+      "theta": -0.05944764250351705,
+      "n": 17363,
+      "se_conley_hac": 0.004176801148827844,
+      "se_salerno_jk": 0.0036899892285940056,
+      "im_ci": [
+        -0.062105587291173416,
+        -0.056789458287559984
+      ],
+      "im_se": 0.0009573625269343672,
+      "conley_excludes_0": true,
+      "im_excludes_0": true
+    },
+    {
+      "city": "denver",
+      "theta": -0.06009294570115733,
+      "n": 22000,
+      "se_conley_hac": 0.004684979661368086,
+      "se_salerno_jk": 0.004555332296672446,
+      "im_ci": [
+        -0.06533977723929946,
+        -0.05484611416301523
+      ],
+      "im_se": 0.0018897659918863518,
+      "conley_excludes_0": true,
+      "im_excludes_0": true
+    },
+    {
+      "city": "portland",
+      "theta": -0.06445706636633922,
+      "n": 21653,
+      "se_conley_hac": 0.003984412081657242,
+      "se_salerno_jk": 0.003997970759707195,
+      "im_ci": [
+        -0.07085918224685346,
+        -0.05805411851347882
+      ],
+      "im_se": 0.0023060178120219705,
+      "conley_excludes_0": true,
+      "im_excludes_0": true
+    },
+    {
+      "city": "phoenix",
+      "theta": -0.029162004998096926,
+      "n": 39003,
+      "se_conley_hac": 0.004692427087419055,
+      "se_salerno_jk": 0.00456653447557925,
+      "im_ci": [
+        -0.03164016715169168,
+        -0.0266839660319853
+      ],
+      "im_se": 0.0008925444105535988,
+      "conley_excludes_0": true,
+      "im_excludes_0": true
+    }
+  ],
+  "egami": [
+    {
+      "city": "boston",
+      "n_test": 1712,
+      "theta_egami": -0.10824890781052865,
+      "se_egami": 0.00985597234680428
+    },
+    {
+      "city": "sf",
+      "n_test": 3291,
+      "theta_egami": -0.12065737239970124,
+      "se_egami": 0.008649928774251397
+    },
+    {
+      "city": "philadelphia",
+      "n_test": 14439,
+      "theta_egami": -0.15771731062395156,
+      "se_egami": 0.003606815491011477
+    },
+    {
+      "city": "chicago",
+      "n_test": 10110,
+      "theta_egami": -0.14914075747606237,
+      "se_egami": 0.004435753691765124
+    },
+    {
+      "city": "seattle",
+      "n_test": 8637,
+      "theta_egami": -0.05893486975072359,
+      "se_egami": 0.0028746179785516025
+    },
+    {
+      "city": "denver",
+      "n_test": 10875,
+      "theta_egami": -0.05670068368592562,
+      "se_egami": 0.003047640695880526
+    },
+    {
+      "city": "portland",
+      "n_test": 10898,
+      "theta_egami": -0.06332630188909974,
+      "se_egami": 0.0031080056867842983
+    },
+    {
+      "city": "phoenix",
+      "n_test": 19288,
+      "theta_egami": -0.02735225377640986,
+      "se_egami": 0.0020078023902508403
+    }
+  ],
+  "pc1_time": [
+    {
+      "city": "boston",
+      "pc1_on_quarter_r2": 0.005382063929008862
+    },
+    {
+      "city": "sf",
+      "pc1_on_quarter_r2": 0.003859650236266443
+    },
+    {
+      "city": "dc",
+      "pc1_on_quarter_r2": 0.00460336291088892
+    },
+    {
+      "city": "philadelphia",
+      "pc1_on_quarter_r2": 0.006113516018934728
+    },
+    {
+      "city": "chicago",
+      "pc1_on_quarter_r2": 0.00778329036591896
+    },
+    {
+      "city": "seattle",
+      "pc1_on_quarter_r2": 0.017583025226765803
+    },
+    {
+      "city": "denver",
+      "pc1_on_quarter_r2": 0.004622792628675598
+    },
+    {
+      "city": "atlanta",
+      "pc1_on_quarter_r2": 0.0034618403759032468
+    },
+    {
+      "city": "portland",
+      "pc1_on_quarter_r2": 0.014949648817953243
+    },
+    {
+      "city": "phoenix",
+      "pc1_on_quarter_r2": 0.0026636724432699266
+    }
+  ]
+}

@@ -82,6 +82,18 @@ holds (Chernozhukov et al.\ 2018, Thm.~4.1, eq.~(4.5)).
 \end{enumerate}
 \end{theorem}
 
+\begin{remark}\label{rem:jk-finite}
+Part~(v) is asymptotic: $\widehat V_{\rm JK}$ is consistent for $\sigma_\perp^2$, and
+carries no finite-sample calibration guarantee. At the sample sizes of the empirical
+panel the fold correlation that cross-fitting induces leaves the plain jackknife-HAC
+and Conley intervals mildly anticonservative, a gap documented by the paper's
+finite-sample coverage study. The intervals reported in the sale-price analysis therefore use the
+self-normalized cluster-$t$ construction of Ibragimov and M\"uller 2010, which is
+conservative under exactly this dependence; part~(v) supplies the large-sample
+justification for the variance object those intervals normalize rather than the
+finite-sample reporting rule.
+\end{remark}
+
 
 
 \begin{proof}[Proof of Theorem~\ref{thm:main}]

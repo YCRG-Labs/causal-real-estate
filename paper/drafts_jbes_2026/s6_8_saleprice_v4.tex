@@ -1,0 +1,79 @@
+\subsection{The effect on realized transaction prices}
+\label{sec:saleprice}
+
+The outcome studied so far is the asking price, which the listing agent sets jointly
+with the description and which therefore shares a common author with the treatment.
+A natural concern is that part of the estimated association reflects the agent
+pricing their own prose rather than the market valuing the property's language. The
+cleanest answer is to re-estimate the effect on the price the market actually
+cleared. We assemble a panel of recorded sales by collecting sold listings across
+the ten metropolitan areas for which a public sold feed carries both the marketing
+description and the realized sale price on the same transaction, together with the
+sale date and the structural attributes. After restricting to residential
+single-unit dwellings with a usable description, a recorded price, and a geocode,
+the panel holds roughly two hundred and ninety thousand transactions closed between
+2023 and 2026, two orders of magnitude larger than the description samples used
+elsewhere in the paper. The treatment is the same pooled leading text direction,
+re-estimated on the sold descriptions and held fixed across the estimation, and the
+outcome is the log recorded sale price. Because sale prices span three years of
+nominal, appreciating-market dollars, we add sale-quarter fixed effects to the
+control set so the flexible nuisance learner absorbs the price cycle
+\citep{rosen1974hedonic, case1989efficiency}.
+
+The estimand requires care about which attributes to control. The description and
+the agent-reported structural fields are authored together, so conditioning on the
+listing's own bedroom count or square footage risks blocking a pathway that runs
+through the very language we study, a bad control in the sense of
+\citet{cinelli2024crash}. We therefore take the exogenous county-assessor record as
+the primary control set, which is authored independently of the listing, and read
+the resulting estimate as a controlled direct effect of the text net of the
+property's structural characteristics. County structural records are available for
+eight of the ten markets; for the remaining two, Washington and Atlanta, we report
+the agent-reported specification alone. The estimand is further conditional on sale,
+since the panel observes only transactions that closed. We do not attempt a
+selection correction, for which no credible exclusion restriction exists, and state
+the effect as the average text effect among properties that sell, a standard
+conditional estimand in this literature \citep{heckman1979selection,
+munneke2000empirical}.
+
+The effect survives the change of outcome in every market. Table~\ref{tab:soldprice}
+and Figure~\ref{fig:soldprice-forest} report the per-market estimates. On the assessor specification a one-standard-deviation
+shift along the leading text direction moves log sale price by between three
+and sixteen percent, individually significant in all eight markets under
+tract cluster-bootstrap inference, and the heterogeneity mirrors the asking-price
+panel: the effect is largest in the older, architecturally heterogeneous markets
+(Philadelphia, Chicago, San Francisco, Boston) and smallest in the newer, more
+uniform Sun Belt markets (Phoenix, Seattle, Denver, Portland). The sign of the
+coefficient is a normalization of the leading component and is not itself
+interpretable; the magnitude and its cross-market ordering are. The agent-reported
+specification is significant in all ten markets but is uniformly smaller than the
+assessor specification in every market where both are estimated, which is the
+signature of the bad-control channel we anticipated, since controlling for
+text-entangled attributes absorbs part of the effect.
+
+The result is robust along the three dimensions most likely to threaten it.
+Spatial dependence is addressed beyond the tract cluster bootstrap by a Conley
+spatial HAC standard error and by the self-normalized cluster-$t$ interval of
+\citet{ibragimov2010t}, which is the better-calibrated of the available
+spatial procedures under cross-fitting \citep{salerno2026spatially}; the effect
+excludes zero in all eight assessor markets under every one of these procedures. The
+concern that the estimated text direction is a generated regressor is addressed by
+the split-sample discipline of \citet{egami2022texts}: estimating the leading
+direction on a random half of the listings and the effect on the disjoint half
+returns the same per-market estimates to within a thousandth, so the effect is not
+an artifact of discovering and estimating the text measure on the same data.
+Finally, the leading text direction is almost uncorrelated with the sale quarter,
+with an $R^2$ below two percent in every market, so the effect is not a repackaged
+market-cycle trend and the sale-quarter controls are not load-bearing. Because the
+sold descriptions arrive truncated at a fixed character length, we report the
+assessor estimate both raw and corrected by the validation-sample attenuation factor
+of Appendix~\ref{sec:truncation}; the correction widens the effects modestly and
+changes no conclusion. That the effect is present, heterogeneous in the same pattern,
+and robust on the transaction the market actually cleared, in every market where that
+transaction is observable, is the strongest evidence the available data affords that
+the listing-text association is a feature of market valuation rather than an artifact
+of how agents price their own language.
+
+\input{drafts_jbes_2026/tab_soldprice_v1.tex}
+
+\input{drafts_jbes_2026/fig_soldprice_v1.tex}
