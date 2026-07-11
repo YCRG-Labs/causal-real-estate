@@ -1,0 +1,632 @@
+[
+ {
+  "city": "sf",
+  "n": 986,
+  "n_conf": 30,
+  "r2_y_X": 0.20714415051300483,
+  "r2_t_X": 0.0691523319633417,
+  "kappa": 1.0742896333502103,
+  "denom_E_Tt2": 0.9308476680366583,
+  "final_r2": 0.02254416885253463,
+  "theta": 0.008168743556892469,
+  "cond_X": 87.47381089209334,
+  "degen_cols": [],
+  "top_corr_Y": [
+   [
+    "pct_hispanic",
+    0.312
+   ],
+   [
+    "pct_bachelors",
+    0.238
+   ],
+   [
+    "lot_area_sqft",
+    0.202
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "year_built",
+    0.175
+   ],
+   [
+    "pct_asian",
+    0.128
+   ],
+   [
+    "lot_area_sqft",
+    0.127
+   ]
+  ],
+  "max_leverage_col": [
+   "bldg_area_sqft",
+   5.9,
+   134,
+   15311.66
+  ],
+  "r2_y_X_winsor5": 0.20990733920969762
+ },
+ {
+  "city": "boston",
+  "n": 2610,
+  "n_conf": 28,
+  "r2_y_X": 0.1944926400499727,
+  "r2_t_X": 0.10287721628592528,
+  "kappa": 1.1146746221961001,
+  "denom_E_Tt2": 0.8971227837140748,
+  "final_r2": 0.026136871243193194,
+  "theta": -0.009257686084974232,
+  "cond_X": 9.305550874237133e+16,
+  "degen_cols": [
+   [
+    "crime_quality_of_life",
+    0.0,
+    0
+   ]
+  ],
+  "top_corr_Y": [
+   [
+    "pct_asian",
+    0.367
+   ],
+   [
+    "amenity_food_dining",
+    0.286
+   ],
+   [
+    "crime_violent",
+    0.281
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "lat",
+    0.218
+   ],
+   [
+    "lon",
+    0.183
+   ],
+   [
+    "amenity_services",
+    0.155
+   ]
+  ],
+  "max_leverage_col": [
+   "pct_white",
+   4.3,
+   114,
+   0.586
+  ],
+  "r2_y_X_winsor5": 0.1944926400499727
+ },
+ {
+  "city": "nyc",
+  "n": 15227,
+  "n_conf": 31,
+  "r2_y_X": 0.31080620096956735,
+  "r2_t_X": 0.44346352116432874,
+  "kappa": 1.796827410293208,
+  "denom_E_Tt2": 0.5565364788356711,
+  "final_r2": 0.021940627179727556,
+  "theta": -0.01061081325881619,
+  "cond_X": 22.86440162514518,
+  "degen_cols": [],
+  "top_corr_Y": [
+   [
+    "median_home_value",
+    0.415
+   ],
+   [
+    "median_household_income",
+    0.359
+   ],
+   [
+    "pct_bachelors",
+    0.302
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "median_household_income",
+    0.47
+   ],
+   [
+    "median_gross_rent",
+    0.465
+   ],
+   [
+    "pct_bachelors",
+    0.458
+   ]
+  ],
+  "max_leverage_col": [
+   "crime_quality_of_life",
+   11.8,
+   1177,
+   21.0
+  ],
+  "r2_y_X_winsor5": 0.31066020653591275
+ },
+ {
+  "city": "dc",
+  "n": 4015,
+  "n_conf": 34,
+  "r2_y_X": 0.33464515430833,
+  "r2_t_X": 0.26001466124804584,
+  "kappa": 1.3513781255268946,
+  "denom_E_Tt2": 0.7399853387519542,
+  "final_r2": 0.0008499993420353347,
+  "theta": 0.001899090694025695,
+  "cond_X": 8.469495111428578e+16,
+  "degen_cols": [
+   [
+    "crime_property",
+    0.0,
+    0
+   ]
+  ],
+  "top_corr_Y": [
+   [
+    "year_built",
+    0.478
+   ],
+   [
+    "pct_hispanic",
+    0.471
+   ],
+   [
+    "lon",
+    0.422
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "median_home_value",
+    0.345
+   ],
+   [
+    "dist_school_m",
+    0.332
+   ],
+   [
+    "dist_park_m",
+    0.332
+   ]
+  ],
+  "max_leverage_col": [
+   "pct_black",
+   4.4,
+   319,
+   0.221
+  ],
+  "r2_y_X_winsor5": 0.33464515430833
+ },
+ {
+  "city": "philadelphia",
+  "n": 7030,
+  "n_conf": 34,
+  "r2_y_X": 0.35693920955051117,
+  "r2_t_X": 0.23788521988069267,
+  "kappa": 1.312138310509412,
+  "denom_E_Tt2": 0.7621147801193074,
+  "final_r2": 0.19679830846088542,
+  "theta": 0.03521220833454561,
+  "cond_X": 36.231472721225224,
+  "degen_cols": [],
+  "top_corr_Y": [
+   [
+    "pct_bachelors",
+    0.507
+   ],
+   [
+    "median_household_income",
+    0.499
+   ],
+   [
+    "pct_hispanic",
+    0.483
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "pct_bachelors",
+    0.404
+   ],
+   [
+    "year_built",
+    0.4
+   ],
+   [
+    "pct_hispanic",
+    0.398
+   ]
+  ],
+  "max_leverage_col": [
+   "bedrooms",
+   5.6,
+   105,
+   9.0
+  ],
+  "r2_y_X_winsor5": 0.35696885934361133
+ },
+ {
+  "city": "chicago",
+  "n": 5576,
+  "n_conf": 34,
+  "r2_y_X": 0.1844109676211818,
+  "r2_t_X": 0.2748394346608164,
+  "kappa": 1.3790049373855073,
+  "denom_E_Tt2": 0.7251605653391835,
+  "final_r2": 0.13118962509417031,
+  "theta": 0.041311354818745365,
+  "cond_X": 99.84430851479573,
+  "degen_cols": [],
+  "top_corr_Y": [
+   [
+    "pct_bachelors",
+    0.374
+   ],
+   [
+    "pct_white",
+    0.354
+   ],
+   [
+    "year_built",
+    0.331
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "median_household_income",
+    0.461
+   ],
+   [
+    "pct_bachelors",
+    0.435
+   ],
+   [
+    "crime_total",
+    0.429
+   ]
+  ],
+  "max_leverage_col": [
+   "year_built",
+   4.9,
+   77,
+   -183061.495
+  ],
+  "r2_y_X_winsor5": 0.1844109676211818
+ },
+ {
+  "city": "seattle",
+  "n": 2884,
+  "n_conf": 34,
+  "r2_y_X": 0.14792349132803806,
+  "r2_t_X": 0.03732067582974152,
+  "kappa": 1.0387675053288472,
+  "denom_E_Tt2": 0.9626793241702585,
+  "final_r2": 0.010674962375770924,
+  "theta": 0.005070957043071755,
+  "cond_X": 155.76565114949108,
+  "degen_cols": [],
+  "top_corr_Y": [
+   [
+    "pct_hispanic",
+    0.292
+   ],
+   [
+    "pct_bachelors",
+    0.238
+   ],
+   [
+    "bldg_area_sqft",
+    0.234
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "lat",
+    0.157
+   ],
+   [
+    "pct_bachelors",
+    0.142
+   ],
+   [
+    "pct_hispanic",
+    0.123
+   ]
+  ],
+  "max_leverage_col": [
+   "bedrooms",
+   5.7,
+   155,
+   10.413
+  ],
+  "r2_y_X_winsor5": 0.14796208860527738
+ },
+ {
+  "city": "denver",
+  "n": 5280,
+  "n_conf": 34,
+  "r2_y_X": 0.2815648590886931,
+  "r2_t_X": 0.20047263137770177,
+  "kappa": 1.250738923075448,
+  "denom_E_Tt2": 0.7995273686222982,
+  "final_r2": 0.05027655268765463,
+  "theta": 0.011322881997434872,
+  "cond_X": 52.03369744871099,
+  "degen_cols": [],
+  "top_corr_Y": [
+   [
+    "pct_hispanic",
+    0.456
+   ],
+   [
+    "year_built",
+    0.405
+   ],
+   [
+    "bldg_area_sqft",
+    0.346
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "crime_property",
+    0.35
+   ],
+   [
+    "crime_quality_of_life",
+    0.345
+   ],
+   [
+    "pct_over_60",
+    0.343
+   ]
+  ],
+  "max_leverage_col": [
+   "amenity_retail",
+   5.8,
+   4,
+   18.0
+  ],
+  "r2_y_X_winsor5": 0.28192110505638557
+ },
+ {
+  "city": "atlanta",
+  "n": 6134,
+  "n_conf": 34,
+  "r2_y_X": 0.2884684112882965,
+  "r2_t_X": 0.251031249105918,
+  "kappa": 1.3351691893770592,
+  "denom_E_Tt2": 0.7489687508940818,
+  "final_r2": 0.09734647695651477,
+  "theta": 0.019815785644380985,
+  "cond_X": 99.21925276432671,
+  "degen_cols": [],
+  "top_corr_Y": [
+   [
+    "pct_hispanic",
+    0.496
+   ],
+   [
+    "pct_bachelors",
+    0.45
+   ],
+   [
+    "pct_white",
+    0.417
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "median_household_income",
+    0.406
+   ],
+   [
+    "pct_white",
+    0.405
+   ],
+   [
+    "pct_bachelors",
+    0.404
+   ]
+  ],
+  "max_leverage_col": [
+   "amenity_recreation",
+   5.0,
+   222,
+   88.0
+  ],
+  "r2_y_X_winsor5": 0.2884684112882965
+ },
+ {
+  "city": "portland",
+  "n": 4337,
+  "n_conf": 34,
+  "r2_y_X": 0.14419627724042194,
+  "r2_t_X": 0.17669241737572294,
+  "kappa": 1.2146128872183095,
+  "denom_E_Tt2": 0.8233075826242771,
+  "final_r2": 0.0171750588800047,
+  "theta": 0.007444534200934353,
+  "cond_X": 1.8545552836927562e+17,
+  "degen_cols": [
+   [
+    "pct_over_60",
+    0.0,
+    0
+   ],
+   [
+    "crime_violent",
+    0.0,
+    0
+   ],
+   [
+    "crime_property",
+    0.0,
+    0
+   ],
+   [
+    "crime_quality_of_life",
+    0.0,
+    0
+   ]
+  ],
+  "top_corr_Y": [
+   [
+    "year_built",
+    0.301
+   ],
+   [
+    "pct_hispanic",
+    0.274
+   ],
+   [
+    "bldg_area_sqft",
+    0.215
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "dist_park_m",
+    0.335
+   ],
+   [
+    "dist_restaurant_m",
+    0.329
+   ],
+   [
+    "dist_school_m",
+    0.31
+   ]
+  ],
+  "max_leverage_col": [
+   "amenity_retail",
+   7.4,
+   13,
+   18.0
+  ],
+  "r2_y_X_winsor5": 0.14414087557362876
+ },
+ {
+  "city": "phoenix",
+  "n": 7080,
+  "n_conf": 34,
+  "r2_y_X": 0.29644296604764275,
+  "r2_t_X": 0.10831310577119324,
+  "kappa": 1.12146988642787,
+  "denom_E_Tt2": 0.8916868942288068,
+  "final_r2": 0.0002692688812953037,
+  "theta": -0.0008542366926684909,
+  "cond_X": 4.742471006233221e+17,
+  "degen_cols": [
+   [
+    "pct_over_60",
+    0.0,
+    0
+   ],
+   [
+    "crime_violent",
+    0.0,
+    0
+   ],
+   [
+    "crime_property",
+    0.0,
+    0
+   ],
+   [
+    "crime_quality_of_life",
+    0.0,
+    0
+   ]
+  ],
+  "top_corr_Y": [
+   [
+    "pct_hispanic",
+    0.495
+   ],
+   [
+    "year_built",
+    0.39
+   ],
+   [
+    "median_household_income",
+    0.384
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "lon",
+    0.302
+   ],
+   [
+    "labor_force_participation",
+    0.169
+   ],
+   [
+    "lot_area_sqft",
+    0.161
+   ]
+  ],
+  "max_leverage_col": [
+   "amenity_food_dining",
+   10.4,
+   270,
+   48.0
+  ],
+  "r2_y_X_winsor5": 0.2973073739397939
+ },
+ {
+  "city": "dallas",
+  "n": 8007,
+  "n_conf": 34,
+  "r2_y_X": 0.3180932739437923,
+  "r2_t_X": 0.09897852217171499,
+  "kappa": 1.1098514570488165,
+  "denom_E_Tt2": 0.9010214778282851,
+  "final_r2": 0.07270465245665014,
+  "theta": 0.01571633678618124,
+  "cond_X": 58.92571860788693,
+  "degen_cols": [],
+  "top_corr_Y": [
+   [
+    "year_built",
+    0.466
+   ],
+   [
+    "median_household_income",
+    0.429
+   ],
+   [
+    "pct_bachelors",
+    0.412
+   ]
+  ],
+  "top_corr_T": [
+   [
+    "median_household_income",
+    0.208
+   ],
+   [
+    "pct_over_60",
+    0.186
+   ],
+   [
+    "pct_white",
+    0.185
+   ]
+  ],
+  "max_leverage_col": [
+   "crime_total",
+   9.0,
+   65,
+   59.0
+  ],
+  "r2_y_X_winsor5": 0.3184462305536472
+ }
+]

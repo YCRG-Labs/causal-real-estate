@@ -1,0 +1,34 @@
+{
+  "k": 12,
+  "R_methods_order": [
+    "shen",
+    "baur",
+    "cf"
+  ],
+  "cross_method_correlation_R": [
+    [
+      1.0,
+      0.9475148621196212,
+      0.39025446500096783
+    ],
+    [
+      0.9475148621196212,
+      1.0,
+      0.3687228848065784
+    ],
+    [
+      0.39025446500096783,
+      0.3687228848065784,
+      1.0
+    ]
+  ],
+  "R_eigenvalues": [
+    0.052193867933757146,
+    0.758160668809049,
+    2.189645463257194
+  ],
+  "effective_independent_dimensions": 1.6753290316392968,
+  "reference_distribution_naive": "chi2_3 (anti-conservative)",
+  "reference_distribution_corrected": "chi2_3 via Mahalanobis z' R^-1 z",
+  "caveat": "The naive p_chi2_3df_indep (= Sum_j z_j^2 ~ chi^2_3) assumes the three methods' z's are independent. They are not (shared listings, outcome, confounders, and correlated text representations), so the naive reference is anti-conservative and OVER-rejects. Primary inference should use p_chi2_3df_corr (Mahalanobis z' R^-1 z ~ chi^2_3). Caveat: R is estimated from only k cities, and the across-city z-correlation is a proxy for the within-market sampling correlation; co-movement of the true effects across markets can bias it. If per-city joint bootstrap draws become available, estimate R from them instead."
+}

@@ -1,0 +1,63 @@
+{
+  "paper": "Baur, Rosenfelder & Lutz 2023 (ESWA)",
+  "city": "sf",
+  "n": 310,
+  "engine": "lightgbm",
+  "n_structured_features": 30,
+  "embedding_dim": 768,
+  "k_folds": 5,
+  "cv_structured": {
+    "label": "structured",
+    "n": 310,
+    "n_features": 30,
+    "mae": 974526.3693450813,
+    "mae_sd": 201977.17194530048,
+    "mape": 0.6122864370013729,
+    "mape_sd": 0.08166873483547367,
+    "rmse": 1775027.8247349623,
+    "rmse_sd": 692145.9621646019
+  },
+  "cv_structured_plus_bert": {
+    "label": "structured+BERT",
+    "n": 310,
+    "n_features": 798,
+    "mae": 839673.4031243309,
+    "mae_sd": 193087.27665593743,
+    "mape": 0.4983583814168117,
+    "mape_sd": 0.08533327170112187,
+    "rmse": 1740833.4716225304,
+    "rmse_sd": 954137.8026673456
+  },
+  "predictive_gain": {
+    "delta_mae": 134852.96622075036,
+    "delta_mae_relative": 0.13837795514078974,
+    "delta_mape": 0.11392805558456115,
+    "delta_rmse": 34194.35311243194
+  },
+  "dml_bert": {
+    "label": "DML on BERT PC1",
+    "n": 310,
+    "theta": -0.04414334713795897,
+    "se": 0.04291925945815245,
+    "ci_low": -0.12635427804561913,
+    "ci_high": 0.0477858360170209,
+    "mde": 0.12025976500174317,
+    "contains_zero": true,
+    "se_if": 0.04041860859485417,
+    "n_boot": 500
+  },
+  "method_notes": {
+    "engine_planned": "lightgbm",
+    "engine_used": "lightgbm",
+    "engine_substituted": false,
+    "engine_substitution_reason": null,
+    "embedding_model": "all-mpnet-base-v2",
+    "embedding_dim_planned": 768,
+    "metric_basis": "log price \u2192 exponentiated to dollars",
+    "dml_pipeline": "causal_inference.dml_continuous_treatment"
+  },
+  "meta": {
+    "has_rich_confounders": true,
+    "crime_dropped": true
+  }
+}

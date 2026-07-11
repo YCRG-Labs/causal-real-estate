@@ -1,0 +1,82 @@
+{
+  "paper": "Shen & Ross 2021 (JUE) -- TF-IDF + KNN cousin construction",
+  "city": "nyc",
+  "n": 15227,
+  "n_confounders": 31,
+  "uniqueness_descriptive": {
+    "mean": 0.6317665085559556,
+    "sd": 0.1434466019970885,
+    "min": 0.014170289039611816,
+    "max": 0.972135066986084
+  },
+  "ols_uniqueness": {
+    "coef": 0.0008067244652687302,
+    "se": 0.005992714821017583,
+    "t": 0.13461752967776727,
+    "p": 0.8929142810920234,
+    "ci_low": -0.010938780753545128,
+    "ci_high": 0.012552229684082587,
+    "n": 15227,
+    "r2": 0.32114969239245994,
+    "adj_r2": 0.31971996948582304,
+    "coef_per_sd": 0.0008067244652687302,
+    "pct_per_sd": 0.08070499549710508
+  },
+  "dml_uniqueness": {
+    "label": "DML on TF-IDF uniqueness",
+    "n": 15227,
+    "theta": 0.0005689393065892301,
+    "se": 0.005980773783260602,
+    "ci_low": -0.01115337730860155,
+    "ci_high": 0.012291255921780011,
+    "mde": 0.01675812814069621,
+    "contains_zero": true,
+    "se_if": 0.005980773783260602,
+    "n_boot": null
+  },
+  "power_at_published_effect": {
+    "n_our": 15227,
+    "n_pub": 40000,
+    "theta_pub": 0.14,
+    "se_pub": 0.034,
+    "se_implied_at_our_n": 0.05510636174956143,
+    "z_alpha": 1.959963984540054,
+    "ncp": 2.540541519257787,
+    "alpha": 0.05,
+    "two_sided": true,
+    "power": 0.7192407812055107
+  },
+  "k_sweep_rank_corr": null,
+  "cell_fe_result": {
+    "method": "(zip,year) cell averages with cell FE",
+    "ols": {
+      "coef": 0.07214754833077815,
+      "se": 0.007160855752524483,
+      "t": 10.075269049420987,
+      "p": 7.106602617777951e-24,
+      "ci_low": 0.058112528957343694,
+      "ci_high": 0.08618256770421259,
+      "n": 15227,
+      "r2": 0.42502584946543276,
+      "adj_r2": 0.4177990013939402,
+      "coef_per_sd": 0.07214754833077815,
+      "pct_per_sd": 7.48139193644648
+    },
+    "uniqueness_descriptive": {
+      "mean": 0.6837500167776095,
+      "sd": 0.08442849746869538
+    }
+  },
+  "method_notes": {
+    "embedding": "doc2vec(dim=100, win=5, ep=40, dm=1)",
+    "peer_set": "K=5 lat/lon NN",
+    "ols_cov": "HC3",
+    "treatment_standardization": "z-score (per \u03c3)",
+    "dml_pipeline": "causal_inference.dml_continuous_treatment",
+    "framing_note": "This is a TF-IDF + lat/lon-KNN COUSIN of Shen & Ross (2021), not a strict replication. Shen uses Doc2Vec + MLS-Area x Year cell averages. Use --doc2vec and --cell_fe for closer alignment."
+  },
+  "meta": {
+    "has_rich_confounders": true,
+    "crime_dropped": true
+  }
+}
