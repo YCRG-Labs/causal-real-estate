@@ -1,4 +1,5 @@
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import _silence
+import os
 import sys
 import numpy as np
 import pandas as pd
@@ -43,6 +44,15 @@ def load_analysis_data(city, embedding_model=None):
         parcels = gpd.read_file(amenities_path, layer=city)
     else:
         parcels = None
+        import sys
+        strict = os.environ.get("CONFOUNDERS_STRICT", "") not in ("", "0", "false")
+        msg = (f"[load_analysis_data] {city}: no confounder file "
+               f"({micro_geo_path.name} / {amenities_path.name}); the analysis would "
+               f"fall back to a lat/lon+zip control set of ~2 features, which does NOT "
+               f"reproduce the rich-confounder canonical estimates.")
+        if strict:
+            raise FileNotFoundError(msg + " Set CONFOUNDERS_STRICT=0 to allow the fallback.")
+        print("WARNING: " + msg, file=sys.stderr, flush=True)
 
     return emb_df, parcels
 

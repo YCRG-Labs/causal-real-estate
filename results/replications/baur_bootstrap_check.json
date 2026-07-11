@@ -1,0 +1,8 @@
+{
+  "note": "Full-pipeline pairs bootstrap (B=500) vs influence-function intervals, on the markets whose rich-confounder inputs are intact. Confirms IF intervals for the ridge + fixed-pooled-PC1 estimator.",
+  "markets": {
+    "boston": {"theta": -0.073, "boot_ci": [-0.117, -0.033], "widen_vs_if_pct": -3},
+    "nyc":    {"theta": +0.009, "boot_ci": [-0.005, +0.021], "widen_vs_if_pct": -11},
+    "sf":     {"theta": -0.106, "boot_ci": [-0.154, -0.052], "widen_vs_if_pct": +2}
+  }
+}
