@@ -34,8 +34,8 @@ ALL_12 = ["boston", "nyc", "sf", "dc", "philadelphia", "chicago",
           "seattle", "denver", "atlanta", "portland", "phoenix", "dallas"]
 
 
-def _load_city_embeddings(parquet_dir: Path, city: str):
-    p = parquet_dir / f"{city}_embeddings.parquet"
+def _load_city_embeddings(parquet_dir: Path, city: str, suffix: str = ""):
+    p = parquet_dir / f"{city}_embeddings{suffix}.parquet"
     if not p.exists():
         return None
     df = pd.read_parquet(p)
@@ -59,6 +59,7 @@ def _load_city_embeddings(parquet_dir: Path, city: str):
 
 def compute_pooled_pca_treatment(
     cities, parquet_dir, n_components=1, within_city_center=True, seed=42,
+    embedding_suffix="",
 ):
     """Pooled within-group PCA on stacked sentence-BERT embeddings.
 
@@ -74,7 +75,7 @@ def compute_pooled_pca_treatment(
     blocks, ids, keys, city_lab = [], [], [], []
     n_per_city = {}
     for c in cities:
-        out = _load_city_embeddings(parquet_dir, c)
+        out = _load_city_embeddings(parquet_dir, c, suffix=embedding_suffix)
         if out is None:
             print(f"  [skip] {c}: no embeddings parquet")
             continue
@@ -122,6 +123,10 @@ def main():
     ap.add_argument("--cities", nargs="*", default=ALL_12)
     ap.add_argument("--parquet_dir", default=str(REPO / "data" / "processed"))
     ap.add_argument("--n_components", type=int, default=1)
+    ap.add_argument("--embedding_suffix", default="",
+                    help="appended to '{city}_embeddings' before .parquet, "
+                         "e.g. '_all_MiniLM_L6_v2' for the MiniLM robustness "
+                         "check embeddings")
     ap.add_argument("--out_csv",
                     default=str(REPO / "results" / "replications"
                                   / "pooled_pca_treatment.csv"))
@@ -134,6 +139,7 @@ def main():
     print(f"=== Pooled within-city-centered PCA on {len(args.cities)} cities ===")
     out, pca, n_per = compute_pooled_pca_treatment(
         args.cities, args.parquet_dir, n_components=args.n_components,
+        embedding_suffix=args.embedding_suffix,
     )
 
     out_csv = Path(args.out_csv)

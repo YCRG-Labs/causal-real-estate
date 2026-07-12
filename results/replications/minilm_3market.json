@@ -1,0 +1,79 @@
+{
+  "description": "MiniLM (all-MiniLM-L6-v2, 384-dim) encoder-robustness recomputation of the pooled within-city-centered PC1 Baur partially-linear DML, for the three markets with MiniLM embeddings on file (nyc, boston, sf), compared to the primary all-mpnet-base-v2 (768-dim) result for the same three markets.",
+  "minilm_source_files": {
+    "nyc": "data/processed/nyc_embeddings_all_MiniLM_L6_v2.parquet (384-dim, emb_0..emb_383, url column present)",
+    "boston": "data/processed/boston_embeddings_all_MiniLM_L6_v2.parquet (384-dim, emb_0..emb_383, url column present)",
+    "sf": "data/processed/sf_embeddings_all_MiniLM_L6_v2.parquet (384-dim, emb_0..emb_383, url column present)"
+  },
+  "data_quality_note": "The raw MiniLM parquet files contain 990/997/995 rows for nyc/boston/sf but only 347/349/348 unique urls -- each listing appears 1-3x (mostly exact duplicate rows, but ~2-25% of duplicate-url groups have distinct description text/embeddings, i.e. a re-scraped snapshot of the same listing). Deduped by keeping the first occurrence per url before running the PCA/DML pipeline, written to data/processed/{city}_embeddings_all_MiniLM_L6_v2_dedup.parquet. This is exactly the positional-merge-drift failure mode the content-key convention is designed to catch: the original (undeduped) files raise 'duplicate keys' in _attach_pooled_treatment rather than silently merging.",
+  "construction": "Same construction as pooled_pca_treatment.py: within-city-centered pooled PCA over nyc+boston+sf MiniLM embeddings (n=1044 pooled, dim=384), leading PC (explained variance ratio 0.0512), per-city z-scored. Content-keyed on url end to end (pooled_pca_treatment.py --embedding_suffix _all_MiniLM_L6_v2_dedup; baur_pooled_pca.py --embedding_model all-MiniLM-L6-v2_dedup). Baur DML: 5-fold ridge cross-fit, influence-function SE (--fast, no bootstrap), same canonical parcels_micro_geo confounder set as the mpnet run.",
+  "per_market_minilm": {
+    "boston": {
+      "n": 336,
+      "theta": 0.06851860306301315,
+      "se": 0.04279729976431635,
+      "ci_low": -0.015364104475046894,
+      "ci_high": 0.1524013106010732,
+      "excludes_zero": false
+    },
+    "nyc": {
+      "n": 347,
+      "theta": 0.19908349481483853,
+      "se": 0.042578650035662434,
+      "ci_low": 0.11562934074494016,
+      "ci_high": 0.28253764888473687,
+      "excludes_zero": true
+    },
+    "sf": {
+      "n": 348,
+      "theta": -0.0467219716921172,
+      "se": 0.0393255212687619,
+      "ci_low": -0.12379999337889051,
+      "ci_high": 0.030356049994656117,
+      "excludes_zero": false
+    }
+  },
+  "per_market_mpnet_reference": {
+    "boston": {
+      "theta": 0.073,
+      "ci_low": 0.03,
+      "ci_high": 0.116
+    },
+    "nyc": {
+      "theta": -0.016,
+      "ci_low": -0.031,
+      "ci_high": -0.002
+    },
+    "sf": {
+      "theta": 0.106,
+      "ci_low": 0.056,
+      "ci_high": 0.155
+    }
+  },
+  "comparison": {
+    "correlation_raw": -0.9752207345878873,
+    "correlation_abs": 0.9752207345878873,
+    "sign_agreement": {
+      "raw_orientation": {
+        "n_match": 1,
+        "of": 3,
+        "detail": {
+          "boston": true,
+          "nyc": false,
+          "sf": false
+        }
+      },
+      "flipped_orientation": {
+        "n_match": 2,
+        "of": 3,
+        "detail": {
+          "boston": false,
+          "nyc": true,
+          "sf": true
+        }
+      },
+      "note": "PC sign is not identified (each encoder's PCA independently sign-pinned by direction.sum()>=0), so the shared MiniLM axis can be globally flipped relative to the mpnet axis without changing its content. Best achievable sign agreement across the two feasible orientations is 2/3 (nyc, sf match under a global flip; boston does not match under either orientation). |correlation| is the sign-invariant summary statistic, matching this repo's existing convention (see baur_pooled_pca.py sign_note)."
+    }
+  },
+  "verdict": "Partial robustness: the two encoders' per-market effects are strongly |r|=0.975 correlated across the 3 markets, but that is driven almost entirely by nyc's large, significant MiniLM estimate and sf's near-mirror theta; boston's sign does not agree with mpnet under either orientation, and only nyc's MiniLM CI excludes zero (boston and sf's MiniLM CIs both contain zero, vs all three excluding zero under mpnet), on a MiniLM sample (n=336-348) roughly an order of magnitude smaller than the mpnet corpus (n=987-15,270) after deduplication."
+}

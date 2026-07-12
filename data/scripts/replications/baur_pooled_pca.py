@@ -116,9 +116,10 @@ def run_baur_pooled(
     k_folds: int = 5,
     fast: bool = False,
     n_boot: int | None = None,
+    embedding_model: str | None = None,
 ) -> dict:
     print(f"\n=== Baur (2023) pooled-PCA replication: {city} ===")
-    loaded = load_analysis_data(city)
+    loaded = load_analysis_data(city, embedding_model=embedding_model)
     if loaded is None:
         return {"city": city, "error": "no data"}
     emb_df, parcels = loaded
@@ -191,6 +192,11 @@ def main():
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--fast", action="store_true")
     ap.add_argument("--n_boot", type=int, default=None)
+    ap.add_argument("--embedding_model", default=None,
+                    help="passed through to load_analysis_data; selects "
+                         "'{city}_embeddings_<safe_name>.parquet' as the base "
+                         "listing set instead of the default mpnet parquet "
+                         "(e.g. 'all-MiniLM-L6-v2_dedup')")
     ap.add_argument("--pooled_csv",
                     default=str(REPO / "results" / "replications"
                                   / "pooled_pca_treatment_keyed.csv"),
@@ -212,7 +218,8 @@ def main():
         r = run_baur_pooled(c, pooled_csv=Path(args.pooled_csv),
                              n_subset=args.n, seed=args.seed,
                              k_folds=args.k_folds, fast=args.fast,
-                             n_boot=args.n_boot)
+                             n_boot=args.n_boot,
+                             embedding_model=args.embedding_model)
         out_path = args.out_dir / f"{c}.json"
         out_path.write_text(json.dumps(r, indent=2, default=float))
         rows.append(r)

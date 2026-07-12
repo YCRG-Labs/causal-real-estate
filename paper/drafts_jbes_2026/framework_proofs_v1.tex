@@ -47,9 +47,10 @@ Under Assumptions~\ref{as:id-U}--\ref{as:id-exog}, the treatment coefficient in
 \qquad
 \tilde Y=Y-\mathbb{E}[Y\mid L,x],\quad \tilde T=T-\mathbb{E}[T\mid L,x].
 \]
-The concept-erasure diagnostic consistently estimates $\mathbb{E}[\tilde T^{2}]$, and
-$\theta$ is point-identified if and only if $\mathbb{E}[\tilde T^{2}]>0$; as
-$R^2_{T\sim(L,x)}\to1$ the denominator vanishes and identification fails.
+The parameter $\theta$ is point-identified if and only if $\mathbb{E}[\tilde T^{2}]>0$;
+the concept-erasure diagnostic probes whether the treatment retains the
+location-orthogonal variation this requires, and as $R^2_{T\sim(L,x)}\to1$ the
+denominator vanishes and identification fails.
 \end{theorem}
 
 \begin{proof}
@@ -80,8 +81,10 @@ Assumption~\ref{as:id-overlap}, gives the stated functional.
 
 \emph{Step 5 (erasure diagnostic and the boundary).} $\mathbb{E}[\tilde
 T^{2}]=\operatorname{Var}(T-\mathbb{E}[T\mid L,x])$ is the treatment's variance
-orthogonal to $(L,x)$, which the held-out residual of the concept-erasure diagnostic
-estimates consistently. Writing $R^2_{T\sim(L,x)}=1-\mathbb{E}[\tilde
+orthogonal to $(L,x)$. The concept-erasure diagnostic probes for this orthogonal
+variation by recovering location from the embedding and driving its recoverable share
+to the floor, rather than estimating $\mathbb{E}[\tilde T^{2}]$ directly. Writing
+$R^2_{T\sim(L,x)}=1-\mathbb{E}[\tilde
 T^{2}]/\operatorname{Var}(T)$, as this share tends to one the Robinson denominator
 tends to zero and $\theta$ ceases to be point-identified. New York, whose leading
 text direction loads on borough and neighborhood names, is the empirical instance of

@@ -340,9 +340,7 @@ out of sample. The gap between what this fresh probe recovers and what the live
 discriminator reported at convergence is the consistent lower bound on residual
 leakage of Proposition~\ref{prop:frozen_probe}(b); the per-market values, and the
 contrast with the LEACE projection on which the paper relies, are reported in
-Section~\ref{sec:leace-12} and shown in Figure~\ref{fig:grl-foil} below, and the driver is
-\texttt{data/scripts/adversarial\_12city.py} with per-market certificates written to
-\texttt{results/adversarial\_12city/}.
+Section~\ref{sec:leace-12} and shown in Figure~\ref{fig:grl-foil} below.
 
 \begin{figure}[H]
 \centering
@@ -452,12 +450,12 @@ Let $\Phi$ be the class of linear logistic-regression classifiers $D_\psi(z) = \
 \item \textbf{Saddle.} For any $\alpha > 0$, $(\phi^\star, g^\star, h^\star)$ jointly minimize the task term to its floor, while the adversary $h^\star$ is Bayes-optimal in $\Phi$ given the encoder. Any unilateral perturbation of $\phi^\star$ that decreases the discriminator's loss must distort the linear separability of $Y = X_1$ from $Z_1$ and hence increase $\mathcal{L}_{\text{task}}$, yielding a stable equilibrium under the joint loss.
 \end{itemize}
 
-The gap at this saddle is therefore exactly $V_{\Phi'}(Z_{\phi^\star}; C) - V_\Phi(Z_{\phi^\star}; C) = \log 2 - 0 = H(C)$. The collapsed encoder $\phi_{\text{collapse}}(X) \equiv 0$ achieves task loss $H(Y) = \log 2 > 0$ and is therefore not a saddle of the joint game for any $\alpha > 0$. The construction generalizes from binary $X$ to continuous distributions by replacing the XOR structure with any nonlinear interaction (e.g., $C = \mathrm{sign}(X_1 X_2)$ for Gaussian $X_1, X_2$), at the cost of a vanishing $O(\delta)$ remainder controlling the off-diagonal probability mass. We verify all four bullets computationally in Appendix~\ref{app:verification} (script \texttt{07\_saddle\_verification.py}), including an explicit numerical demonstration that $\phi_{\text{collapse}}$ would be a saddle of the bare GRL game with $V_{\Phi'} = 0$, motivating the joint-game restriction. \qed
+The gap at this saddle is therefore exactly $V_{\Phi'}(Z_{\phi^\star}; C) - V_\Phi(Z_{\phi^\star}; C) = \log 2 - 0 = H(C)$. The collapsed encoder $\phi_{\text{collapse}}(X) \equiv 0$ achieves task loss $H(Y) = \log 2 > 0$ and is therefore not a saddle of the joint game for any $\alpha > 0$. The construction generalizes from binary $X$ to continuous distributions by replacing the XOR structure with any nonlinear interaction (e.g., $C = \mathrm{sign}(X_1 X_2)$ for Gaussian $X_1, X_2$), at the cost of a vanishing $O(\delta)$ remainder controlling the off-diagonal probability mass. We verify all four bullets computationally in Appendix~\ref{app:verification}, including an explicit numerical demonstration that $\phi_{\text{collapse}}$ would be a saddle of the bare GRL game with $V_{\Phi'} = 0$, motivating the joint-game restriction. \qed
 
 \subsection{Numerical verification}
 \label{app:frozen_probe_numerical}
 
-Three controlled experiments verify each part of Proposition~\ref{prop:frozen_probe} on synthetic data. Implementation in \texttt{data/scripts/theory/frozen\_probe\_gap.py}; raw results in \texttt{results/theory/frozen\_probe\_gap.json}.
+Three controlled experiments verify each part of Proposition~\ref{prop:frozen_probe} on synthetic data.
 
 \textbf{Experiment 1 (static XOR).} The exact construction of part (c). $Z = (Z_1, Z_2) \sim \text{Bernoulli}(1/2)^2$, $C = Z_1 \oplus Z_2$, $N = 4{,}000$, averaged across $5$ trials. True $I(Z; C) = \log 2 = 1$ bit. Linear logistic regression: $\hat V_\Phi = 0.0004$ bits, accuracy $46.1\%$ (chance). $2$-layer MLP $(16,16)$: $\hat V_{\Phi'} = 0.997$ bits, accuracy $100\%$. The diagnostic gap $\hat V_{\Phi'} - \hat V_\Phi = 0.997$ bits is $99.7\%$ of the true mutual information.
 
@@ -484,7 +482,7 @@ $\hat V_\Phi$ is monotone non-decreasing in capacity, asymptoting at the true mu
 \section{Computational verification of analytic claims}
 \label{app:verification}
 
-To complement the written proofs in Appendices~\ref{app:proofs} and~\ref{app:frozen_probe_proofs}, we provide a computational verification bundle in the \texttt{verification/} directory of the replication repository. For every theorem, lemma, proposition, and corollary, and for the estimation-side identities the analysis relies on, an independent open-source toolchain re-derives the result and asserts agreement with the written derivation. Each script writes a JSON certificate to \texttt{verification/results/} with a verdict (\texttt{PASS}/\texttt{FAIL}) and the numerical or symbolic quantities cited; the full suite is reproducible via \texttt{make verify} from pinned tool versions in \texttt{requirements.txt}.
+To complement the written proofs in Appendices~\ref{app:proofs} and~\ref{app:frozen_probe_proofs}, we provide a computational verification suite. For every theorem, lemma, proposition, and corollary, and for the estimation-side identities the analysis relies on, an independent open-source toolchain re-derives the result and asserts agreement with the written derivation. Each check records a pass-or-fail verdict and the numerical or symbolic quantities cited, and the full suite runs from pinned tool versions.
 
 \begin{table}[H]
 \centering
@@ -500,7 +498,7 @@ Corollary~1 (Zero Effect under True SCM, App.~\ref{app:proofs}) & No directed pa
 Proposition~1(a) (variational MI inequality, App.~\ref{app:frozen_probe_proofs}) & Symbolic KL nonneg + numerical $V$-chain & SymPy + PyTorch \\
 Proposition~1(b1) (algebraic identity) & Symbolic and numerical equality, $|\Delta| < 10^{-8}$ & SymPy + PyTorch \\
 Proposition~1(b2) (consistency of post-hoc $\hat V_{\Phi'}^{\text{post}}$) & Monte Carlo $n$-sweep; log-log slope vs.\ rate predicted by \citet{xu2020theory} Thm~3 & scikit-learn \\
-Proposition~1(c) (XOR saddle-gap, identity-encoder construction) & Wraps \texttt{frozen\_probe\_gap.py}; assertions on $V_\Phi$, $V_{\Phi'}$ & PyTorch \\
+Proposition~1(c) (XOR saddle-gap, identity-encoder construction) & Assertions on $V_\Phi$, $V_{\Phi'}$ & PyTorch \\
 Proposition~1(c) (joint-game saddle existence + collapsed-encoder counterexample) & Explicit construction at $\phi_{\text{id}}$ and $\phi_{\text{collapse}}$; sweep over joint-game weight $\alpha$ & PyTorch \\
 \midrule
 Robinson estimator (Eq.~\ref{eq:dml}) & Symbolic solution of the moment $\sum_i(\tilde Y_i-\theta\tilde T_i)\tilde T_i=0$ & SymPy \\

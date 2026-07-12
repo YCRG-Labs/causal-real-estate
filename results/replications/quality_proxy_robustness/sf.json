@@ -1,0 +1,36 @@
+{
+  "city": "sf",
+  "n": 986,
+  "proxy_name": "log_assessed_improvement_value_prop13",
+  "proxy_n_missing": 5,
+  "proxy_pct_missing": 0.5070993914807302,
+  "n_confounders_base": 30,
+  "n_confounders_with_proxy": 32,
+  "dml_baseline": {
+    "label": "baseline (no quality proxy)",
+    "n": 986,
+    "theta": -0.10565938237063881,
+    "se": 0.025299479919995566,
+    "ci_low": -0.1552463630138301,
+    "ci_high": -0.0560724017274475,
+    "mde": 0.07088914273582758,
+    "contains_zero": false,
+    "se_if": 0.025299479919995566,
+    "n_boot": null
+  },
+  "dml_with_proxy": {
+    "label": "with quality proxy",
+    "n": 986,
+    "theta": -0.08277596957479369,
+    "se": 0.025241127482444142,
+    "ci_low": -0.1322485794403842,
+    "ci_high": -0.03330335970920317,
+    "mde": 0.07072563920580849,
+    "contains_zero": false,
+    "se_if": 0.025241127482444142,
+    "n_boot": null
+  },
+  "pct_attenuation": 21.65771962926416,
+  "proxy_partial_r2_with_T": 0.017218223982507427,
+  "proxy_partial_r2_with_Y": 0.05881727036128075
+}

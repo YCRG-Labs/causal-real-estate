@@ -1,0 +1,36 @@
+{
+  "city": "nyc",
+  "n": 15255,
+  "proxy_name": "log_assessed_improvement_value_dof",
+  "proxy_n_missing": 168,
+  "proxy_pct_missing": 1.1012782694198624,
+  "n_confounders_base": 31,
+  "n_confounders_with_proxy": 33,
+  "dml_baseline": {
+    "label": "baseline (no quality proxy)",
+    "n": 15255,
+    "theta": 0.016261853816135298,
+    "se": 0.007413834947055903,
+    "ci_low": 0.0017307373199057282,
+    "ci_high": 0.030792970312364866,
+    "mde": 0.02077356552165064,
+    "contains_zero": false,
+    "se_if": 0.007413834947055903,
+    "n_boot": null
+  },
+  "dml_with_proxy": {
+    "label": "with quality proxy",
+    "n": 15255,
+    "theta": 0.016604883586647516,
+    "se": 0.007387673366413953,
+    "ci_low": 0.002125043788476168,
+    "ci_high": 0.031084723384818866,
+    "mde": 0.020700260772691898,
+    "contains_zero": false,
+    "se_if": 0.007387673366413953,
+    "n_boot": null
+  },
+  "pct_attenuation": -2.109413689181361,
+  "proxy_partial_r2_with_T": 0.0006926694463091018,
+  "proxy_partial_r2_with_Y": 0.006116619935479947
+}

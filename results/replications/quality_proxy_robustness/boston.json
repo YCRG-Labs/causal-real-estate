@@ -1,0 +1,36 @@
+{
+  "city": "boston",
+  "n": 2610,
+  "proxy_name": "assessor_condition_grade_ordinal_1to8",
+  "proxy_n_missing": 11,
+  "proxy_pct_missing": 0.421455938697318,
+  "n_confounders_base": 28,
+  "n_confounders_with_proxy": 30,
+  "dml_baseline": {
+    "label": "baseline (no quality proxy)",
+    "n": 2610,
+    "theta": -0.07323101621757071,
+    "se": 0.022014072918314347,
+    "ci_low": -0.11637859913746683,
+    "ci_high": -0.030083433297674586,
+    "mde": 0.0616834323171168,
+    "contains_zero": false,
+    "se_if": 0.022014072918314347,
+    "n_boot": null
+  },
+  "dml_with_proxy": {
+    "label": "with quality proxy",
+    "n": 2610,
+    "theta": -0.061426088098647295,
+    "se": 0.022121260545449054,
+    "ci_low": -0.10478375876772744,
+    "ci_high": -0.01806841742956715,
+    "mde": 0.06198377204834825,
+    "contains_zero": false,
+    "se_if": 0.022121260545449054,
+    "n_boot": null
+  },
+  "pct_attenuation": 16.12012058367557,
+  "proxy_partial_r2_with_T": 0.005331507489023621,
+  "proxy_partial_r2_with_Y": 0.0251916017409045
+}
