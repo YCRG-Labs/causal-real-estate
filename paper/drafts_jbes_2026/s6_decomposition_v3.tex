@@ -1,5 +1,5 @@
 
-\subsection{How much of the text-price effect is location}
+\subsection{How much of the text-price effect is location?}
 \label{sec:decomposition}
 
 The erasure diagnostic of Section~\ref{sec:leace-12} establishes that the
@@ -19,17 +19,17 @@ estimate.
 The instrument for that question is a fixed-treatment decomposition in the manner
 of \citet{gelbach2016covariates}, whose appeal is that the change in a coefficient
 when a block of controls is added does not depend on the order in which the blocks
-enter, so the share it assigns to geography is well defined rather than an
-artifact of sequencing. We estimate the per-standard-deviation effect of the
+enter, so the share it assigns to geography is well defined rather than a
+byproduct of the sequence in which the blocks enter. We estimate the per-standard-deviation effect of the
 leading text direction on log price twice, once controlling for the structured
 confounders alone and once adding a flexible location basis of latitude,
 longitude, their squares, and their interaction, and we read the gap between the
 two as the portion of the effect that location explains. The comparison appears in
 the left panel of Figure~\ref{fig:decomposition}, where the two estimates sit
 almost on top of one another in eleven of the twelve markets, the location
-adjustment moving the coefficient by at most about a hundredth of a log point
-outside New York and by under five percent of its size wherever the effect is
-non-trivial, with the per-market figures collected in
+adjustment moving the coefficient by under $0.02$ of a log point
+outside New York and by a small fraction of its size wherever the effect is
+clear, with the per-market figures collected in
 Appendix~\ref{app:decomposition}. Philadelphia, Chicago, Atlanta, and the other high-effect markets give up
 essentially nothing to the geography control, the small-effect markets give up
 nothing they had to begin with, and the per-market premium that the text channel
@@ -41,11 +41,11 @@ since a treatment that carried no geography in the first place would pass it for
 free, and the right panel of Figure~\ref{fig:decomposition} exists to meet that
 objection before it hardens into one. The share of the treatment's own variance
 that the location basis explains is nowhere near zero across the panel, reaching
-$0.42$ in New York and exceeding a tenth in six markets, so the leading text
+$0.42$ in New York and exceeding a tenth in six other markets, so the leading text
 direction does in fact encode location through much of the country. That the price
 effect survives adjustment even where the treatment is substantially geographic is
 the whole of the result, because it means the geographic component of the language
-is real, the model can see it, and it still does not carry the effect of the
+is present, the model can see it, and it still does not carry the effect of the
 language on price. The worry that has hung over this literature is therefore one
 that can be answered rather than only raised, and the answer across eleven of
 twelve markets is that the text is doing more than reading the map back to itself.
@@ -53,7 +53,7 @@ twelve markets is that the text is doing more than reading the map back to itsel
 New York is where the adjustment does bite, and it bites in precisely the place
 the diagnostic says it should. The market whose text direction is the most
 geographic of the twelve, at an $R^2$ of $0.42$, is also the market where folding
-in location moves the effect most, from $-0.119$ to $-0.152$, a shift of about a
+in location moves the effect most, from $-0.122$ to $-0.154$, a shift of about a
 quarter of its magnitude that leaves the sign intact, so that the place with the
 most location in its language is the place that location matters most for the
 estimate. We read this less as a crack in the broader finding than as its
@@ -65,14 +65,14 @@ The market the diagnostic singles out also reads differently once one looks at t
 language behind the direction. Interpreting the leading text direction by the
 vocabulary that loads on it, in the way \citet{nowak2017textual} read implicit
 prices off listing tokens and the construct-validity approach of
-\citet{fang2022construct} formalises for embeddings, shows that what the New York
+\citet{fang2022construct} formalizes for embeddings, shows that what the New York
 direction is built from is location. Its heaviest terms are boroughs and
 neighborhoods and the transit that joins them, Manhattan and Brooklyn and Midtown
 and SoHo, the subway and the avenue, alongside the housing nouns peculiar to the
 city such as the apartment and the studio. The same exercise in a market the
 adjustment leaves untouched returns condition and finish instead, so that in Dallas
 the owner suite and the kitchen and the open dining space carry the high-price end
-while the city and its suburbs load only at the low end. New York's listings locate
+while the city and its suburbs load only at the low end (Table~\ref{tab:nyc-vocab}). New York's listings locate
 a property where Dallas's describe one, and a direction made of place names is
 mechanically a direction that geography can move. That location is so heavily
 written into the words is itself a property of the market, since where submarkets
@@ -129,13 +129,14 @@ isotropic metric is physical, captures far more of the treatment's spatial
 structure than the quadratic does, raising the average share of the leading text
 direction that location explains from about $0.13$ to about $0.21$ and from $0.42$
 to $0.52$ in New York, and yet the price effect after adjustment barely responds.
-The location-adjusted estimate moves by at most $0.059$ of a log point across the
-twelve markets, in New York, and by under $0.03$ in every other market, with no
-market of detectable effect changing sign and the pooled effect shifting from
-$+0.129$ to $+0.121$. New York aside, a basis flexible enough to absorb twice the
+Measured from the structured-only baseline the spline moves the New York estimate
+to $-0.181$, a total geography adjustment of about $0.059$ of a log point and the
+largest in the panel; but almost all of that movement is already accomplished by
+the quadratic, and the further shift the spline buys beyond it is only $0.028$ in
+New York and under $0.02$ in every other market, with no market of detectable
+effect changing sign. New York aside, a basis flexible enough to absorb twice the
 geography leaves the semantic estimate essentially where the quadratic left it; in
-New York the finer grain takes a little more, moving the estimate by about
-$0.059$, still without overturning it. The finer spatial grain the
+New York the finer grain takes a little more, still without overturning it. The finer spatial grain the
 polynomial could not bend to turns out, where the data can see it, not to carry
 the price effect either, and the per-market comparison is released with the
 replication code.
@@ -202,11 +203,11 @@ the estimate by about a quarter of its magnitude, $0.032$, without changing its
 sign. Panel (b) reports the share of the treatment's own variance that the
 location basis explains, which reaches $0.42$ in New York and exceeds $0.10$ in
 seven markets, so
-the robustness in panel (a) is not an artifact of a treatment that carries no
+the robustness in panel (a) does not merely reflect a treatment that carries no
 geography: the text direction does encode location, yet that location component
-does not drive its price effect. Panel (a) plots point estimates; in every market
-the shift from the unadjusted to the location-adjusted estimate is small relative
-to the estimate's own standard error, so the near-coincidence does not mask a
-noisy difference.}
+does not drive its price effect. Panel (a) plots point estimates; outside New York
+the adjustment shifts every estimate by at most $0.015$ of a log point, so the
+near-coincidence reflects a small movement in the estimate rather than a feature of
+how it is drawn.}
 \label{fig:decomposition}
 \end{figure}

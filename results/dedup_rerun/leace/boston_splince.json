@@ -1,0 +1,89 @@
+{
+  "city": "boston",
+  "variant": "splince",
+  "n_train": 226,
+  "n_test": 97,
+  "n_zips": 33,
+  "routing": "continuous_latlon",
+  "power_diagnostic": {
+    "n_test": 97,
+    "K": 33,
+    "chance_p": 0.030303030303030304,
+    "critical_acc": 0.07216494845360824,
+    "p_min_80pct": 0.09278350515463918,
+    "power_at_p_alt": null,
+    "detectable_gain_80pct": 0.062480474851608875,
+    "alpha": 0.05
+  },
+  "guardedness_residual": 1.3877787807814457e-17,
+  "splince_cov_preservation_max_err": 5.551115123125783e-17,
+  "splince_variance_preserved": true,
+  "continuous": {
+    "raw": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -2.1624334926546585,
+      "r2_per_target_test": [
+        -2.0182209680433254,
+        -2.306646017265991
+      ],
+      "r2_per_target_train": [
+        0.9996556442543061,
+        0.9996032998643962
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 226,
+      "n_test": 97,
+      "max_coef": 0.20273567008239515
+    },
+    "erased": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -0.02911688321454131,
+      "r2_per_target_test": [
+        -0.020336009508724384,
+        -0.03789775692035824
+      ],
+      "r2_per_target_train": [
+        1.1102230246251565e-16,
+        0.0
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 226,
+      "n_test": 97,
+      "max_coef": 1.6088079551842432e-13
+    }
+  },
+  "mlp_continuous": {
+    "raw": {
+      "r2_avg_test": -1.5848029834200938,
+      "r2_per_target_test": [
+        -1.4243866478117422,
+        -1.7452193190284455
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    },
+    "erased": {
+      "r2_avg_test": -0.029991664266308393,
+      "r2_per_target_test": [
+        -0.03266165614840366,
+        -0.027321672384213125
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    }
+  },
+  "categorical": {
+    "note": "categorical probe suppressed: per-class test count 2.94 below floor 5 (continuous lat/lon probe is the headline)."
+  },
+  "linear_guardedness_holds": true
+}

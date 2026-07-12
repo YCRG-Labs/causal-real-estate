@@ -12,3 +12,8 @@ scikit-learn
 umap-learn
 lightgbm
 joblib
+concept-erasure
+gensim
+statsmodels
+sympy
+aiohttp

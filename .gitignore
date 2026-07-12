@@ -241,3 +241,8 @@ data/raw/seattle/
 results/census_bg/
 results/assessor/
 results/_brev_run/
+
+# large intermediate embedding artifacts (regenerable; exceed GitHub limits)
+results/soldprice/emb/
+results/experiment_length/*.parquet
+results/experiment_length_full/*.parquet

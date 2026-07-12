@@ -1,0 +1,13 @@
+{
+  "n_redfin": 268,
+  "n_dof_armslength_residential": 438159,
+  "n_dof_unique_bbl_latest": 182254,
+  "n_join": 156,
+  "spearman_rho_log_prices": 0.7629112359596484,
+  "pearson_rho_log_prices": 0.6592552255266708,
+  "median_price_ratio_redfin_over_dof": 1.1868414154652687,
+  "mean_log_diff": 0.258616465751792,
+  "std_log_diff": 0.7667948806206074,
+  "p25_log_diff": -0.04899185841191711,
+  "p75_log_diff": 0.47953732529038673
+}

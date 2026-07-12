@@ -311,7 +311,7 @@
 \draw[cSF, line width=0.32pt] (axis cs:-0.2573,99.167) -- (axis cs:-0.1966,99.167);
 \draw[cSF, line width=0.32pt] (axis cs:-0.2751,99.500) -- (axis cs:-0.2142,99.500);
 \draw[cSF, line width=0.32pt] (axis cs:-0.2626,99.833) -- (axis cs:-0.2035,99.833);
-\node[anchor=south west, font=\scriptsize] at (axis cs:-0.275,2) {cov.\ 78\%};
+\node[anchor=south west, font=\scriptsize] at (axis cs:-0.275,2) {cov.\ 74\%};
 \end{axis}
 \begin{axis}[
     causalre, at={(zpA.east)}, anchor=west, xshift=0.7cm, name=zpB,
@@ -626,7 +626,7 @@
 \draw[cSF, line width=0.32pt] (axis cs:-0.2593,99.833) -- (axis cs:-0.2007,99.833);
 \addlegendimage{cNYC, line width=1.2pt}\addlegendentry{covers}
 \addlegendimage{cSF, line width=1.2pt}\addlegendentry{misses}
-\node[anchor=south west, font=\scriptsize] at (axis cs:-0.275,2) {cov.\ 89\%};
+\node[anchor=south west, font=\scriptsize] at (axis cs:-0.275,2) {cov.\ 86\%};
 \end{axis}
 \begin{axis}[
     causalre, at={(zpB.east)}, anchor=west, xshift=0.7cm, name=zpC,
@@ -938,9 +938,9 @@
 \draw[cSF, line width=0.32pt] (axis cs:0.0282,99.167) -- (axis cs:0.1768,99.167);
 \draw[cSF, line width=0.32pt] (axis cs:-0.1836,99.500) -- (axis cs:-0.0365,99.500);
 \draw[cSF, line width=0.32pt] (axis cs:-0.1869,99.833) -- (axis cs:-0.0391,99.833);
-\node[anchor=south west, font=\scriptsize] at (axis cs:-0.275,2) {cov.\ 96\%};
+\node[anchor=south west, font=\scriptsize] at (axis cs:-0.275,2) {cov.\ 97\%};
 \end{axis}
 \end{tikzpicture}
-\caption{Zip plot of nominal $95\%$ confidence-interval coverage \citep{morris2019using} at the strong-effect, small-sample cell ($n=500$, per-$\sigma$ direct effect $0.10$), $300$ replications. Each horizontal segment is one replication's interval, sorted bottom-to-top by the absolute $z$-statistic against the estimand (the estimator's probability limit, gray vertical line); intervals that cover the estimand are blue and those that miss are orange, so the height at which the colour switches is the empirical coverage. The doubly-robust interval switches at the dashed nominal $95$ line, the cross-fit DML interval close to it, and the in-sample DML influence-function interval well below it: its misses are too frequent and fan out symmetrically, the visual signature of an anticonservative variance rather than bias.}
+\caption{Zip plot of nominal $95\%$ confidence-interval coverage \citep{morris2019using} at the strong-effect, small-sample cell ($n=500$, per-$\sigma$ direct effect $0.10$), $300$ replications. Each horizontal segment is one replication's interval, sorted bottom-to-top by the absolute $z$-statistic against the estimand (the estimator's probability limit, gray vertical line); intervals that cover the estimand are blue and those that miss are orange, so the height at which the color switches is the empirical coverage. The doubly-robust interval switches at the dashed nominal $95$ line, the cross-fit DML interval close to it, and the in-sample DML influence-function interval well below it: its misses are too frequent and fan out symmetrically, the visual signature of an anticonservative variance rather than bias.}
 \label{fig:sim-coverage}
 \end{figure}

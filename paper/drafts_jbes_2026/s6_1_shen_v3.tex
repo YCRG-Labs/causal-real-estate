@@ -17,7 +17,7 @@ intervals are formed from the cross-fitting influence-function standard error.
 Table~\ref{tab:shen-12city} reports the per-$\sigma$ uniqueness effect for each
 of the twelve metropolitan markets, together with the influence-function
 confidence interval and the indicator for whether that interval excludes zero.
-The panel is clean throughout, with no degenerate market and no exclusion, and
+The panel is well-behaved throughout, with no degenerate market and no exclusion, and
 the per-market samples range from $986$ deduplicated listings in San Francisco to
 $15{,}087$ in New York. The DML interval excludes zero in ten of the twelve
 markets, and every one of those ten carries a positive uniqueness premium. The
@@ -71,16 +71,16 @@ random-effects combination with Hartung-Knapp-Sidik-Jonkman small-sample
 intervals places the pooled uniqueness premium at $+0.060$ per standard deviation
 with $95\%$ confidence interval $[+0.018, +0.102]$ and two-sided $p = 0.009$, and
 the REML variant returns $+0.083$ with $p = 0.006$. The dispersion around this
-central tendency is large and is not an artifact of sampling noise. The
+central tendency is large and is not merely sampling noise. The
 heterogeneity statistic is $I^2 = 98.6\%$ with Cochran's $Q = 777$ on eleven
 degrees of freedom, so almost all of the variation across markets reflects
-genuine between-market differences in the operative effect rather than estimation
+true between-market differences in the operative effect rather than estimation
 error within markets. Section~\ref{sec:meta-regression-12} takes up this
 heterogeneity directly with a random-effects meta-regression and a moderator
 scan, and we defer that analysis to there rather than adjudicate it here.
 
-\paragraph{Design analysis.} The cross-market pattern cannot be read as an
-artifact of low power, because the clean panel is well powered. A Gelman-Carlin
+\paragraph{Design analysis.} The cross-market pattern cannot be read as
+a symptom of low power, because the panel, free of any degenerate market, is well powered. A Gelman-Carlin
 \citep{gelman2014beyond} retrodesign of each per-market estimator against the
 published Shen-Ross Atlanta estimate of $+0.140$ per standard deviation, used as
 the external benchmark true effect, returns a per-market power at or near $1.00$
@@ -111,5 +111,5 @@ forty thousand listings under MLS-area-by-year fixed effects. Our Atlanta
 estimate of $+0.033$ recovers the same sign at a fraction of that
 magnitude, and the pooled $+0.060$ sits below that single-market benchmark, so
 the panel as a whole is consistent with a positive Shen-Ross uniqueness premium
-that is real, heterogeneous across markets, and smaller on average than the
+that is present, heterogeneous across markets, and smaller on average than the
 single-market published benchmark would suggest.

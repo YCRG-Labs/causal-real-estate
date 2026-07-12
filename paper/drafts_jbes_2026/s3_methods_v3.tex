@@ -19,7 +19,7 @@ The difficulty is that an accuracy gain cannot say what kind of information the
 text carried. An agent who writes ``sun-drenched and steps from the park'' is
 describing a property, but the same phrase is also a near-deterministic signal of
 which block the property sits on, because language and location are produced
-together by an author who observes both. A predictive model that prices genuine
+together by an author who observes both. A predictive model that prices substantive
 semantic content and a predictive model that prices laundered geography make
 identical out-of-sample predictions, so the gain on its own leaves an analyst
 unable to tell which of the two has been bought. Our object of interest is the
@@ -36,7 +36,7 @@ the effect of a single latent feature unless the others it travels with are eith
 independent of it or irrelevant to price. We do not impose that condition, so the
 quantity we isolate is the price effect of the leading text direction
 marginalizing over whatever else the language encodes, an associational object
-rather than the effect of a cleanly separated semantic attribute, and we are
+rather than the effect of a fully separated semantic attribute, and we are
 explicit about that reading throughout. A second lesson from this literature bears
 on estimation rather than interpretation, since \citet{egami2022texts} establish
 that when the treatment representation is learned from the documents it must be
@@ -84,7 +84,7 @@ feeds the property attributes $x$, the contextual features $c$, the listing text
 $t$, and the price $y$. The two highlighted edges $\ell \rightarrow t$ and
 $\ell \rightarrow y$ form the spatial-confounding backdoor, the reason text and
 price are associated in part simply because both depend on where the property
-sits. The dashed edge labelled $\theta$ is the direct effect of text on price, the
+sits. The dashed edge labeled $\theta$ is the direct effect of text on price, the
 quantity we estimate, and the empirical question is how much of the text-price
 association is that direct edge rather than the backdoor through $\ell$.
 Conditioning on $\{\ell, x, c\}$ blocks the backdoor and identifies $\theta$;
@@ -239,7 +239,7 @@ decomposition below then connects to how much location actually moves the price.
 The erasure diagnostic of the previous subsection rests on probing, and probing
 carries a subtlety that bears on how its verdicts should be read. The natural way
 to check that a concept has left a representation is to train a probe of the
-concept on the cleaned representation and confirm that it does no better than
+concept on the erased representation and confirm that it does no better than
 chance, yet a probe that fails establishes only that this particular probe, at
 this capacity, cannot recover the concept, and not that the representation has
 shed it, since a fresh classifier of higher capacity fit after the fact can

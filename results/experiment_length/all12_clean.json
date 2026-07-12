@@ -1,0 +1,314 @@
+[
+  {
+    "city": "boston",
+    "n": 2599,
+    "pct_nonres": 1.8853405155829166,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.24774700292210977,
+      "se": 0.09119455649441591,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.1780228643567908,
+      "se": 0.07280285948916473,
+      "covers_zero": false
+    },
+    "drop_nonres": {
+      "abs_theta": 0.179338169552712,
+      "se": 0.03024292672073389,
+      "covers_zero": false
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.11162019878807204,
+      "se": 0.019556049303619632,
+      "covers_zero": false
+    }
+  },
+  {
+    "city": "nyc",
+    "n": 15087,
+    "pct_nonres": 1.1599390203486446,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.11919853148822944,
+      "se": 0.016082786681849943,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.046770069128716674,
+      "se": 0.019820029153850068,
+      "covers_zero": false
+    },
+    "drop_nonres": {
+      "abs_theta": 0.11728791126907477,
+      "se": 0.013545017876014885,
+      "covers_zero": false
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.04653670109375988,
+      "se": 0.01768116558273093,
+      "covers_zero": false
+    }
+  },
+  {
+    "city": "sf",
+    "n": 981,
+    "pct_nonres": 3.567787971457696,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.19303979939575294,
+      "se": 0.02076966250866817,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.1848995785298052,
+      "se": 0.020754709319044697,
+      "covers_zero": false
+    },
+    "drop_nonres": {
+      "abs_theta": 0.1891750728774266,
+      "se": 0.01913985351707619,
+      "covers_zero": false
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.18283704679317858,
+      "se": 0.019256645254190467,
+      "covers_zero": false
+    }
+  },
+  {
+    "city": "dc",
+    "n": 3996,
+    "pct_nonres": 2.6026026026026026,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.04297378290216083,
+      "se": 0.1272618880322355,
+      "covers_zero": true
+    },
+    "plus_length": {
+      "abs_theta": 0.0918744821686886,
+      "se": 0.15802202062848236,
+      "covers_zero": true
+    },
+    "drop_nonres": {
+      "abs_theta": 0.025393617672863487,
+      "se": 0.09308520843348507,
+      "covers_zero": true
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.0054516224547532825,
+      "se": 0.0711330439992969,
+      "covers_zero": true
+    }
+  },
+  {
+    "city": "philadelphia",
+    "n": 7005,
+    "pct_nonres": 19.657387580299787,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.12225487599635618,
+      "se": 0.032209428107247466,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.017078321140156408,
+      "se": 0.07826576499320588,
+      "covers_zero": true
+    },
+    "drop_nonres": {
+      "abs_theta": 0.12143887349287798,
+      "se": 0.007585274371447357,
+      "covers_zero": false
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.08250656835641158,
+      "se": 0.009875359958202174,
+      "covers_zero": false
+    }
+  },
+  {
+    "city": "chicago",
+    "n": 5403,
+    "pct_nonres": 12.400518230612622,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.2430036714853291,
+      "se": 0.015360410654781921,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.11041016586505004,
+      "se": 0.016698861451363702,
+      "covers_zero": false
+    },
+    "drop_nonres": {
+      "abs_theta": 0.16041967832390425,
+      "se": 0.00978330733139819,
+      "covers_zero": false
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.10065297801682045,
+      "se": 0.011040684578622941,
+      "covers_zero": false
+    }
+  },
+  {
+    "city": "seattle",
+    "n": 2879,
+    "pct_nonres": 5.2101424105592224,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.055460865042277346,
+      "se": 0.012039425412164038,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.04236276177251108,
+      "se": 0.012456615966011966,
+      "covers_zero": false
+    },
+    "drop_nonres": {
+      "abs_theta": 0.04877742336235742,
+      "se": 0.009614606865267756,
+      "covers_zero": false
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.04041199959798551,
+      "se": 0.010230466641006708,
+      "covers_zero": false
+    }
+  },
+  {
+    "city": "denver",
+    "n": 5270,
+    "pct_nonres": 2.6375711574952563,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.11828379934977541,
+      "se": 0.045174230756576984,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.11100633742789008,
+      "se": 0.047208171027605064,
+      "covers_zero": false
+    },
+    "drop_nonres": {
+      "abs_theta": 0.10681869542806335,
+      "se": 0.039869678703496884,
+      "covers_zero": false
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.09915887102892851,
+      "se": 0.04139428829606071,
+      "covers_zero": false
+    }
+  },
+  {
+    "city": "atlanta",
+    "n": 6116,
+    "pct_nonres": 7.079790712884238,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.12516316730339935,
+      "se": 0.010542116774875312,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.09952881674709303,
+      "se": 0.010727582278641805,
+      "covers_zero": false
+    },
+    "drop_nonres": {
+      "abs_theta": 0.099512078476527,
+      "se": 0.009537927871928316,
+      "covers_zero": false
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.07461755800805299,
+      "se": 0.009394780187386502,
+      "covers_zero": false
+    }
+  },
+  {
+    "city": "portland",
+    "n": 4328,
+    "pct_nonres": 5.591497227356747,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.07002903847296922,
+      "se": 0.024928803396354636,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.037235832944550296,
+      "se": 0.02004668521365892,
+      "covers_zero": true
+    },
+    "drop_nonres": {
+      "abs_theta": 0.06594495487422714,
+      "se": 0.02134460611083113,
+      "covers_zero": false
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.035307689312003315,
+      "se": 0.017906724725658296,
+      "covers_zero": false
+    }
+  },
+  {
+    "city": "phoenix",
+    "n": 7083,
+    "pct_nonres": 4.602569532683891,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.04905601073341935,
+      "se": 0.012037381818875193,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.03016486458079922,
+      "se": 0.011440770674112411,
+      "covers_zero": false
+    },
+    "drop_nonres": {
+      "abs_theta": 0.03216654998713336,
+      "se": 0.010936795921066727,
+      "covers_zero": false
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.014221767237083167,
+      "se": 0.009841485200388715,
+      "covers_zero": true
+    }
+  },
+  {
+    "city": "dallas",
+    "n": 8000,
+    "pct_nonres": 7.225,
+    "n_confounders": 21,
+    "base": {
+      "abs_theta": 0.09094517284309749,
+      "se": 0.007643249624064665,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.062047093727378225,
+      "se": 0.008176383989602324,
+      "covers_zero": false
+    },
+    "drop_nonres": {
+      "abs_theta": 0.06607442540084067,
+      "se": 0.0058351777493807705,
+      "covers_zero": false
+    },
+    "drop_nonres_plus_length": {
+      "abs_theta": 0.042683944473205004,
+      "se": 0.006278411051516447,
+      "covers_zero": false
+    }
+  }
+]

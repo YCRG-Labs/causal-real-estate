@@ -1,0 +1,160 @@
+{
+  "city": "portland",
+  "variant": "leace",
+  "n_train": 3035,
+  "n_test": 1302,
+  "n_zips": 49,
+  "routing": "categorical_zip",
+  "power_diagnostic": {
+    "n_test": 1302,
+    "K": 49,
+    "chance_p": 0.02040816326530612,
+    "critical_acc": 0.027649769585253458,
+    "p_min_80pct": 0.0314900153609831,
+    "power_at_p_alt": null,
+    "detectable_gain_80pct": 0.01108185209567698,
+    "alpha": 0.05
+  },
+  "guardedness_residual": 4.1253093751324445e-05,
+  "postnl_igbp": false,
+  "igbp_history": null,
+  "continuous": {
+    "raw": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": 0.286710898494749,
+      "r2_per_target_test": [
+        0.32374910229921383,
+        0.2496726946902842
+      ],
+      "r2_per_target_train": [
+        0.6724498448363151,
+        0.6143675507369555
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 3035,
+      "n_test": 1302,
+      "max_coef": 0.4442140616483629
+    },
+    "erased": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -0.00015762503446958842,
+      "r2_per_target_test": [
+        -0.00010154562241004861,
+        -0.00021370444652912823
+      ],
+      "r2_per_target_train": [
+        7.903603305159379e-08,
+        3.874842757767283e-08
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 3035,
+      "n_test": 1302,
+      "max_coef": 0.0002031798435342015
+    }
+  },
+  "mlp_continuous": {
+    "raw": {
+      "r2_avg_test": 0.38767294808847985,
+      "r2_per_target_test": [
+        0.4175997175702967,
+        0.357746178606663
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    },
+    "erased": {
+      "r2_avg_test": 0.14550161849838517,
+      "r2_per_target_test": [
+        0.132440035226698,
+        0.15856320177007233
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    }
+  },
+  "categorical": {
+    "raw": {
+      "linear_acc": 0.4018475750577367,
+      "chance_acc_majority": 0.08083140877598152,
+      "chance_acc_uniform": 0.021739130434782608,
+      "n_classes_train": 46,
+      "n_test_kept": 1299,
+      "max_coef": 2.135716798198487
+    },
+    "erased": {
+      "linear_acc": 0.08083140877598152,
+      "chance_acc_majority": 0.08083140877598152,
+      "chance_acc_uniform": 0.021739130434782608,
+      "n_classes_train": 46,
+      "n_test_kept": 1299,
+      "max_coef": 0.12253084229937844
+    }
+  },
+  "mlp_categorical": {
+    "raw": {
+      "probe_acc": 0.24884793162345886,
+      "baseline_acc": 0.08064516129032258,
+      "leakage": 0.1682027703331363
+    },
+    "erased": {
+      "probe_acc": 0.08064515888690948,
+      "baseline_acc": 0.08064516129032258,
+      "leakage": -2.403413093543527e-09
+    }
+  },
+  "mdl_codelength": {
+    "raw": {
+      "K": 49,
+      "n_train": 3035,
+      "n_test": 1302,
+      "uniform_codelength_bits": 17040.644376889657,
+      "online_codelength_bits": 13889.117803135005,
+      "compression": 1.2269061734823288,
+      "final_probe_acc": 0.1820276528596878,
+      "timesteps": [
+        3,
+        6,
+        12,
+        24,
+        49,
+        190,
+        379,
+        759,
+        1518,
+        3035
+      ]
+    },
+    "erased": {
+      "K": 49,
+      "n_train": 3035,
+      "n_test": 1302,
+      "uniform_codelength_bits": 17040.644376889657,
+      "online_codelength_bits": 15987.792185152291,
+      "compression": 1.06585350744771,
+      "final_probe_acc": 0.08064515888690948,
+      "timesteps": [
+        3,
+        6,
+        12,
+        24,
+        49,
+        190,
+        379,
+        759,
+        1518,
+        3035
+      ]
+    }
+  },
+  "linear_guardedness_holds": true
+}

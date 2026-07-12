@@ -1,0 +1,160 @@
+{
+  "city": "boston",
+  "variant": "leace",
+  "n_train": 1826,
+  "n_test": 784,
+  "n_zips": 43,
+  "routing": "categorical_zip",
+  "power_diagnostic": {
+    "n_test": 784,
+    "K": 43,
+    "chance_p": 0.023255813953488372,
+    "critical_acc": 0.03316326530612245,
+    "p_min_80pct": 0.039540816326530615,
+    "power_at_p_alt": null,
+    "detectable_gain_80pct": 0.016285002373042243,
+    "alpha": 0.05
+  },
+  "guardedness_residual": 1.0504147408564555e-05,
+  "postnl_igbp": false,
+  "igbp_history": null,
+  "continuous": {
+    "raw": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": 0.34785416344147996,
+      "r2_per_target_test": [
+        0.2612421816597852,
+        0.4344661452231747
+      ],
+      "r2_per_target_train": [
+        0.7762017638949472,
+        0.8636451635132611
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 1826,
+      "n_test": 784,
+      "max_coef": 0.45422714027665184
+    },
+    "erased": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -0.0006375347041363,
+      "r2_per_target_test": [
+        -1.4853769074285594e-05,
+        -0.0012602156391983144
+      ],
+      "r2_per_target_train": [
+        3.6288524407623868e-09,
+        3.3016556300058397e-07
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 1826,
+      "n_test": 784,
+      "max_coef": 0.00047510540753763734
+    }
+  },
+  "mlp_continuous": {
+    "raw": {
+      "r2_avg_test": 0.5970205274126471,
+      "r2_per_target_test": [
+        0.5053206730286508,
+        0.6887203817966434
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    },
+    "erased": {
+      "r2_avg_test": 0.18047810030733447,
+      "r2_per_target_test": [
+        0.14036403423095278,
+        0.22059216638371615
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    }
+  },
+  "categorical": {
+    "raw": {
+      "linear_acc": 0.5172855313700384,
+      "chance_acc_majority": 0.08322663252240717,
+      "chance_acc_uniform": 0.025,
+      "n_classes_train": 40,
+      "n_test_kept": 781,
+      "max_coef": 1.8997782174868632
+    },
+    "erased": {
+      "linear_acc": 0.08194622279129321,
+      "chance_acc_majority": 0.08322663252240717,
+      "chance_acc_uniform": 0.025,
+      "n_classes_train": 40,
+      "n_test_kept": 781,
+      "max_coef": 0.019021045291239966
+    }
+  },
+  "mlp_categorical": {
+    "raw": {
+      "probe_acc": 0.3482142984867096,
+      "baseline_acc": 0.08290816326530612,
+      "leakage": 0.26530613522140345
+    },
+    "erased": {
+      "probe_acc": 0.08163265138864517,
+      "baseline_acc": 0.08290816326530612,
+      "leakage": -0.0012755118766609452
+    }
+  },
+  "mdl_codelength": {
+    "raw": {
+      "K": 43,
+      "n_train": 1826,
+      "n_test": 784,
+      "uniform_codelength_bits": 9908.35944208603,
+      "online_codelength_bits": 8477.318975791079,
+      "compression": 1.168808142100305,
+      "final_probe_acc": 0.22576530277729034,
+      "timesteps": [
+        2,
+        4,
+        7,
+        15,
+        29,
+        114,
+        228,
+        456,
+        913,
+        1826
+      ]
+    },
+    "erased": {
+      "K": 43,
+      "n_train": 1826,
+      "n_test": 784,
+      "uniform_codelength_bits": 9908.35944208603,
+      "online_codelength_bits": 9435.928865899721,
+      "compression": 1.0500672040771326,
+      "final_probe_acc": 0.08163265138864517,
+      "timesteps": [
+        2,
+        4,
+        7,
+        15,
+        29,
+        114,
+        228,
+        456,
+        913,
+        1826
+      ]
+    }
+  },
+  "linear_guardedness_holds": true
+}

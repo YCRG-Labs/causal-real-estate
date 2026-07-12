@@ -1,0 +1,160 @@
+{
+  "city": "seattle",
+  "variant": "leace",
+  "n_train": 2018,
+  "n_test": 866,
+  "n_zips": 35,
+  "routing": "categorical_zip",
+  "power_diagnostic": {
+    "n_test": 866,
+    "K": 35,
+    "chance_p": 0.02857142857142857,
+    "critical_acc": 0.03926096997690531,
+    "p_min_80pct": 0.04503464203233257,
+    "power_at_p_alt": null,
+    "detectable_gain_80pct": 0.016463213460903996,
+    "alpha": 0.05
+  },
+  "guardedness_residual": 2.532231503188286e-05,
+  "postnl_igbp": false,
+  "igbp_history": null,
+  "continuous": {
+    "raw": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": 0.21464171818243727,
+      "r2_per_target_test": [
+        0.18567665733373329,
+        0.24360677903114125
+      ],
+      "r2_per_target_train": [
+        0.6875704587230563,
+        0.6857035544815354
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 2018,
+      "n_test": 866,
+      "max_coef": 0.5047818881564378
+    },
+    "erased": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -0.001655771994869104,
+      "r2_per_target_test": [
+        -0.0015424575099107773,
+        -0.0017690864798274308
+      ],
+      "r2_per_target_train": [
+        2.1465754396210457e-08,
+        3.1560165592026124e-10
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 2018,
+      "n_test": 866,
+      "max_coef": 0.00013577228126154564
+    }
+  },
+  "mlp_continuous": {
+    "raw": {
+      "r2_avg_test": 0.4001100731500653,
+      "r2_per_target_test": [
+        0.3788300660996342,
+        0.4213900802004964
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    },
+    "erased": {
+      "r2_avg_test": 0.0039193602709197695,
+      "r2_per_target_test": [
+        -0.014200768630416638,
+        0.022039489172256177
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    }
+  },
+  "categorical": {
+    "raw": {
+      "linear_acc": 0.45127610208816704,
+      "chance_acc_majority": 0.06728538283062645,
+      "chance_acc_uniform": 0.03225806451612903,
+      "n_classes_train": 31,
+      "n_test_kept": 862,
+      "max_coef": 1.589047351307035
+    },
+    "erased": {
+      "linear_acc": 0.06728538283062645,
+      "chance_acc_majority": 0.06728538283062645,
+      "chance_acc_uniform": 0.03225806451612903,
+      "n_classes_train": 31,
+      "n_test_kept": 862,
+      "max_coef": 0.050584279357999744
+    }
+  },
+  "mlp_categorical": {
+    "raw": {
+      "probe_acc": 0.2817552089691162,
+      "baseline_acc": 0.06697459584295612,
+      "leakage": 0.2147806131261601
+    },
+    "erased": {
+      "probe_acc": 0.06697459518909454,
+      "baseline_acc": 0.06697459584295612,
+      "leakage": -6.538615759943411e-10
+    }
+  },
+  "mdl_codelength": {
+    "raw": {
+      "K": 35,
+      "n_train": 2018,
+      "n_test": 866,
+      "uniform_codelength_bits": 10350.893128194943,
+      "online_codelength_bits": 8803.15639039823,
+      "compression": 1.1758161128984213,
+      "final_probe_acc": 0.19745957851409912,
+      "timesteps": [
+        2,
+        4,
+        8,
+        16,
+        32,
+        126,
+        252,
+        504,
+        1009,
+        2018
+      ]
+    },
+    "erased": {
+      "K": 35,
+      "n_train": 2018,
+      "n_test": 866,
+      "uniform_codelength_bits": 10350.893128194943,
+      "online_codelength_bits": 10064.17809496191,
+      "compression": 1.0284886684762227,
+      "final_probe_acc": 0.06697459518909454,
+      "timesteps": [
+        2,
+        4,
+        8,
+        16,
+        32,
+        126,
+        252,
+        504,
+        1009,
+        2018
+      ]
+    }
+  },
+  "linear_guardedness_holds": true
+}

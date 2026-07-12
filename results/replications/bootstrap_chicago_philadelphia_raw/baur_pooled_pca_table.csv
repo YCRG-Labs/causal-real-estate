@@ -1,0 +1,2 @@
+city,n,dml_theta,dml_se,dml_ci_low,dml_ci_high,dml_excludes_zero
+philadelphia,7030,0.3740154607387978,0.008547728233481877,0.35863985644329893,0.39107437483194235,True

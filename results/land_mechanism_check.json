@@ -1,0 +1,66 @@
+[
+  {
+    "city": "boston",
+    "n": 2610,
+    "n_land": 49,
+    "pct_land": 1.8773946360153257,
+    "auc_land_given_confounders": 0.5021914271370399,
+    "auc_land_given_text_pc1": 0.9538764353847747,
+    "theta_full": 0.07326551106221224,
+    "theta_drop_land": 0.007500147429392533,
+    "theta_drop_tail_nonland": 0.0981796165853782,
+    "theta_drop_random_nonland": {
+      "mean": 0.0770982312432568,
+      "sd": 0.002819721794381916,
+      "p2.5": 0.0720147118292499,
+      "p97.5": 0.08241405991844744
+    },
+    "drop_land_percentile_of_random_null": 0.0,
+    "pct_attenuation": 89.76305860608288,
+    "pct_attenuation_net_of_rescaling": 89.23727772484628
+  },
+  {
+    "city": "sf",
+    "n": 986,
+    "n_land": 35,
+    "pct_land": 3.5496957403651117,
+    "auc_land_given_confounders": 0.6737869911371489,
+    "auc_land_given_text_pc1": 0.9130839717590506,
+    "theta_full": 0.10564588067208756,
+    "theta_drop_land": 0.06058523818103023,
+    "theta_drop_tail_nonland": 0.1408308906452706,
+    "theta_drop_random_nonland": {
+      "mean": 0.10854039069750922,
+      "sd": 0.0063634382406058485,
+      "p2.5": 0.09459184496705372,
+      "p97.5": 0.1191059515788876
+    },
+    "drop_land_percentile_of_random_null": 0.0,
+    "pct_attenuation": 42.65253146113693,
+    "pct_attenuation_net_of_rescaling": 39.509491144048404
+  },
+  {
+    "city": "nyc",
+    "n": 15255,
+    "n_land": 179,
+    "pct_land": 1.1733857751556866,
+    "auc_land_given_confounders": 0.46809535596923446,
+    "auc_land_given_text_pc1": 0.5436049527829945,
+    "theta_full": 0.008806343364078824,
+    "theta_drop_land": 0.007314792900939836,
+    "theta_drop_tail_nonland": 0.002153974998808916,
+    "theta_drop_random_nonland": {
+      "mean": 0.008864793164826088,
+      "sd": 0.0007181064834000656,
+      "p2.5": 0.007577973183293411,
+      "p97.5": 0.01035726662871696
+    },
+    "drop_land_percentile_of_random_null": 0.5,
+    "pct_attenuation": 16.937228103358304,
+    "pct_attenuation_net_of_rescaling": 17.033512725565092
+  },
+  {
+    "city": "philadelphia",
+    "skipped": "confounders are lat/lon only"
+  }
+]

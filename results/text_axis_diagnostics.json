@@ -1,0 +1,374 @@
+[
+  {
+    "city": "boston",
+    "n": 2599,
+    "entity_rate": 0.6487110427087341,
+    "corr_entity_pc1": -0.10427704827113703,
+    "corr_length_pc1": -0.3064034477453728,
+    "median_len_non_residential": 388.0,
+    "median_len_residential": 953.0,
+    "pct_non_residential": 1.8853405155829166,
+    "base": {
+      "abs_theta": 0.39674050984432274,
+      "se": 0.14426534702414046,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.3254002981699068,
+      "se": 0.1257534147645094,
+      "covers_zero": false
+    },
+    "plus_property_type": {
+      "abs_theta": 0.44606325891675447,
+      "se": 0.1393224136386764,
+      "covers_zero": false
+    },
+    "plus_both": {
+      "abs_theta": 0.387932045176991,
+      "se": 0.12546166744236525,
+      "covers_zero": false
+    },
+    "pct_attenuation_from_length": 17.981579875069777
+  },
+  {
+    "city": "nyc",
+    "n": 15057,
+    "entity_rate": 0.5713621571362157,
+    "corr_entity_pc1": -0.06280725524844116,
+    "corr_length_pc1": -0.2836679959057836,
+    "median_len_non_residential": 456.0,
+    "median_len_residential": 1253.0,
+    "pct_non_residential": 1.1489672577538685,
+    "base": {
+      "abs_theta": 0.12863022892907736,
+      "se": 0.009731293839753267,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.0801142629818519,
+      "se": 0.010392275851284483,
+      "covers_zero": false
+    },
+    "plus_property_type": {
+      "abs_theta": 0.1400533511561778,
+      "se": 0.007296802373060555,
+      "covers_zero": false
+    },
+    "plus_both": {
+      "abs_theta": 0.10146746811207828,
+      "se": 0.005643479998556625,
+      "covers_zero": false
+    },
+    "pct_attenuation_from_length": 37.71739065626295
+  },
+  {
+    "city": "sf",
+    "n": 981,
+    "entity_rate": 0.2273190621814475,
+    "corr_entity_pc1": 0.10046401353607812,
+    "corr_length_pc1": -0.337207088180973,
+    "median_len_non_residential": 759.0,
+    "median_len_residential": 1185.0,
+    "pct_non_residential": 3.567787971457696,
+    "base": {
+      "abs_theta": 0.21531097725519965,
+      "se": 0.020976603916439313,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.2056131469611788,
+      "se": 0.021155397301425537,
+      "covers_zero": false
+    },
+    "plus_property_type": {
+      "abs_theta": 0.2093589372518539,
+      "se": 0.023910036164036887,
+      "covers_zero": false
+    },
+    "plus_both": {
+      "abs_theta": 0.19505569548556215,
+      "se": 0.023881606275131816,
+      "covers_zero": false
+    },
+    "pct_attenuation_from_length": 4.504103979114083
+  },
+  {
+    "city": "dc",
+    "n": 3996,
+    "entity_rate": 0.6621621621621622,
+    "corr_entity_pc1": -0.2520125762546511,
+    "corr_length_pc1": -0.4500522140551162,
+    "median_len_non_residential": 434.5,
+    "median_len_residential": 1267.0,
+    "pct_non_residential": 2.6026026026026026,
+    "base": {
+      "abs_theta": 0.01971978616029766,
+      "se": 0.10867725126475036,
+      "covers_zero": true
+    },
+    "plus_length": {
+      "abs_theta": 0.03499867821007986,
+      "se": 0.14376107825891687,
+      "covers_zero": true
+    },
+    "plus_property_type": {
+      "abs_theta": 0.052452154694538344,
+      "se": 0.0837274844338864,
+      "covers_zero": true
+    },
+    "plus_both": {
+      "abs_theta": 0.008312317577068688,
+      "se": 0.12859507730827538,
+      "covers_zero": true
+    },
+    "pct_attenuation_from_length": -77.48000878703026
+  },
+  {
+    "city": "philadelphia",
+    "n": 7005,
+    "entity_rate": 0.5379014989293361,
+    "corr_entity_pc1": -0.282258574611192,
+    "corr_length_pc1": -0.5794326718324874,
+    "median_len_non_residential": 292.0,
+    "median_len_residential": 1037.0,
+    "pct_non_residential": 19.657387580299787,
+    "base": {
+      "abs_theta": 0.3043707817818444,
+      "se": 0.013808888597803435,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.15629250226558772,
+      "se": 0.05347134036500623,
+      "covers_zero": false
+    },
+    "plus_property_type": {
+      "abs_theta": 0.262510494768041,
+      "se": 0.018101290691293962,
+      "covers_zero": false
+    },
+    "plus_both": {
+      "abs_theta": 0.13846713553882856,
+      "se": 0.05741265506336183,
+      "covers_zero": false
+    },
+    "pct_attenuation_from_length": 48.65062232628845
+  },
+  {
+    "city": "chicago",
+    "n": 5402,
+    "entity_rate": 0.2012217697149204,
+    "corr_entity_pc1": -0.09075444590658188,
+    "corr_length_pc1": -0.3684757358071067,
+    "median_len_non_residential": 289.0,
+    "median_len_residential": 955.0,
+    "pct_non_residential": 12.384302110329507,
+    "base": {
+      "abs_theta": 0.18177697825300274,
+      "se": 0.015124043624655758,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.13027260310955238,
+      "se": 0.014564185895726922,
+      "covers_zero": false
+    },
+    "plus_property_type": {
+      "abs_theta": 0.17278744898599308,
+      "se": 0.013430222667065112,
+      "covers_zero": false
+    },
+    "plus_both": {
+      "abs_theta": 0.13618849229702137,
+      "se": 0.012744079939736459,
+      "covers_zero": false
+    },
+    "pct_attenuation_from_length": 28.333827329754047
+  },
+  {
+    "city": "seattle",
+    "n": 2879,
+    "entity_rate": 0.7540812782216048,
+    "corr_entity_pc1": -0.11047276813535328,
+    "corr_length_pc1": -0.2841518586636352,
+    "median_len_non_residential": 622.5,
+    "median_len_residential": 1035.0,
+    "pct_non_residential": 5.2101424105592224,
+    "base": {
+      "abs_theta": 0.08262264345715788,
+      "se": 0.013286170895601477,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.0678132028399647,
+      "se": 0.013135930344869344,
+      "covers_zero": false
+    },
+    "plus_property_type": {
+      "abs_theta": 0.09575574969207773,
+      "se": 0.014560070211180396,
+      "covers_zero": false
+    },
+    "plus_both": {
+      "abs_theta": 0.08317184189869276,
+      "se": 0.015466242842961714,
+      "covers_zero": false
+    },
+    "pct_attenuation_from_length": 17.92419123562935
+  },
+  {
+    "city": "denver",
+    "n": 5270,
+    "entity_rate": 0.6931688804554079,
+    "corr_entity_pc1": -0.066534639415594,
+    "corr_length_pc1": -0.19768241654032875,
+    "median_len_non_residential": 772.0,
+    "median_len_residential": 1396.0,
+    "pct_non_residential": 2.6375711574952563,
+    "base": {
+      "abs_theta": 0.16321445686165817,
+      "se": 0.056295871324849554,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.15153386248739198,
+      "se": 0.058237901716395056,
+      "covers_zero": false
+    },
+    "plus_property_type": {
+      "abs_theta": 0.16861310555798006,
+      "se": 0.05812080523466999,
+      "covers_zero": false
+    },
+    "plus_both": {
+      "abs_theta": 0.16098232527154316,
+      "se": 0.06063081544850674,
+      "covers_zero": false
+    },
+    "pct_attenuation_from_length": 7.156592987450095
+  },
+  {
+    "city": "atlanta",
+    "n": 6115,
+    "entity_rate": 0.5780866721177432,
+    "corr_entity_pc1": -0.09508256069988398,
+    "corr_length_pc1": -0.3009461980600277,
+    "median_len_non_residential": 597.0,
+    "median_len_residential": 1246.5,
+    "pct_non_residential": 7.080948487326247,
+    "base": {
+      "abs_theta": 0.11388009089116086,
+      "se": 0.009384341240913394,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.09400678409591189,
+      "se": 0.009395513221293325,
+      "covers_zero": false
+    },
+    "plus_property_type": {
+      "abs_theta": 0.11934429710683159,
+      "se": 0.009019787426696792,
+      "covers_zero": false
+    },
+    "plus_both": {
+      "abs_theta": 0.09831029378740126,
+      "se": 0.009007681573088733,
+      "covers_zero": false
+    },
+    "pct_attenuation_from_length": 17.45108090424917
+  },
+  {
+    "city": "portland",
+    "n": 4328,
+    "entity_rate": 0.6635859519408502,
+    "corr_entity_pc1": -0.09907784914392037,
+    "corr_length_pc1": -0.29561906987286946,
+    "median_len_non_residential": 580.0,
+    "median_len_residential": 1144.5,
+    "pct_non_residential": 5.591497227356747,
+    "base": {
+      "abs_theta": 0.12616083519606675,
+      "se": 0.04587494319865977,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.07827323350985355,
+      "se": 0.03603239217045833,
+      "covers_zero": false
+    },
+    "plus_property_type": {
+      "abs_theta": 0.12870148601891282,
+      "se": 0.04406492761733176,
+      "covers_zero": false
+    },
+    "plus_both": {
+      "abs_theta": 0.09898148729988182,
+      "se": 0.03427570437004239,
+      "covers_zero": false
+    },
+    "pct_attenuation_from_length": 37.95758137760503
+  },
+  {
+    "city": "phoenix",
+    "n": 7082,
+    "entity_rate": 0.2838181304716182,
+    "corr_entity_pc1": 0.011789559610639138,
+    "corr_length_pc1": -0.11864741070357339,
+    "median_len_non_residential": 565.0,
+    "median_len_residential": 785.0,
+    "pct_non_residential": 4.5890991245410895,
+    "base": {
+      "abs_theta": 0.046364458478627815,
+      "se": 0.008140352030483175,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.0340621692751891,
+      "se": 0.008061591329481076,
+      "covers_zero": false
+    },
+    "plus_property_type": {
+      "abs_theta": 0.03280363139301714,
+      "se": 0.0076322080883748315,
+      "covers_zero": false
+    },
+    "plus_both": {
+      "abs_theta": 0.022438881300054513,
+      "se": 0.007596402290321863,
+      "covers_zero": false
+    },
+    "pct_attenuation_from_length": 26.533878766446904
+  },
+  {
+    "city": "dallas",
+    "n": 8000,
+    "entity_rate": 0.60125,
+    "corr_entity_pc1": -0.14738653091308013,
+    "corr_length_pc1": -0.378843622452195,
+    "median_len_non_residential": 557.0,
+    "median_len_residential": 1112.0,
+    "pct_non_residential": 7.225,
+    "base": {
+      "abs_theta": 0.13450257766715212,
+      "se": 0.009459069610244822,
+      "covers_zero": false
+    },
+    "plus_length": {
+      "abs_theta": 0.09565898263331438,
+      "se": 0.00994130129833447,
+      "covers_zero": false
+    },
+    "plus_property_type": {
+      "abs_theta": 0.12978683095222607,
+      "se": 0.009337590903300233,
+      "covers_zero": false
+    },
+    "plus_both": {
+      "abs_theta": 0.0971375782040843,
+      "se": 0.009120951144652894,
+      "covers_zero": false
+    },
+    "pct_attenuation_from_length": 28.87944283860667
+  }
+]

@@ -61,9 +61,18 @@ results/         per-market estimates and intermediate outputs
 
 ## Reproducing the analysis
 
+For an exact reproduction, use the pinned conda environment, which is the
+authoritative dependency set for this project:
+
 ```bash
-pip install -r requirements.txt
+conda env create -f data/scripts/environment_pin.yml -n cre
+conda activate cre
 ```
+
+`requirements.txt` is a lighter-weight, unpinned alternative for exploring the
+code (`pip install -r requirements.txt`); it now covers every import used by
+the in-scope scripts, but does not guarantee the exact versions behind the
+paper's reported numbers.
 
 The released package ships the derived embeddings, structured covariates, and
 public-record sale prices, which are enough to rerun the estimators end to end:

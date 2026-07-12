@@ -1,15 +1,17 @@
 """Emit pgfplots coordinate blocks for the v3 figures, straight from results/.
 
-Run: /usr/bin/python3 data/scripts/make_fig_coords.py
+Run: python3 data/scripts/make_fig_coords.py
 Prints, per figure, the exact `(x,y)` / `(x,y) +- (e,0)` lines to paste into the
 causalre TikZ blocks, so the figures carry the canonical numbers with no manual
 transcription.
 """
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
-REPO = "/Users/jacobcrainic/causal-real-estate"
-R = f"{REPO}/results"
+REPO = Path(__file__).resolve().parents[2]
+R = REPO / "results"
 z = 1.959963985
 
 CITY = {"boston":"Boston","nyc":"New York","sf":"San Francisco","dc":"Washington",

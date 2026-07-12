@@ -145,8 +145,9 @@ def _vectorize_doc2vec(descriptions: list[str], vector_size: int = 100,
         ) from e
     tagged = [TaggedDocument(simple_preprocess(d), [i])
               for i, d in enumerate(descriptions)]
-    import multiprocessing as _mp
-    n_workers = min(_mp.cpu_count(), 8)
+    n_workers = 1  # gensim's async SGD across worker threads is not seed-
+    # reproducible even with `seed=` fixed; workers=1 is required for
+    # bit-for-bit reproducible Doc2Vec runs.
     model = Doc2Vec(documents=tagged, vector_size=vector_size, window=window,
                     epochs=epochs, dm=dm, min_count=2, workers=n_workers,
                     seed=seed)

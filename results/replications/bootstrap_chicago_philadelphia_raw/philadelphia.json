@@ -1,0 +1,18 @@
+{
+  "city": "philadelphia",
+  "n": 7030,
+  "engine": "ridge",
+  "treatment": "pooled_within_city_centered_pca_pc1",
+  "dml": {
+    "label": "DML on pooled BERT PC1",
+    "n": 7030,
+    "theta": -0.3740154607387978,
+    "se": 0.008547728233481877,
+    "ci_low": -0.39107437483194235,
+    "ci_high": -0.35863985644329893,
+    "mde": 0.02395073451021622,
+    "contains_zero": false,
+    "se_if": 0.009237388371813286,
+    "n_boot": 500
+  }
+}

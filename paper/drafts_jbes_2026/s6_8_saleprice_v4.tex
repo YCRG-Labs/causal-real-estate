@@ -5,14 +5,17 @@ The outcome studied so far is the asking price, which the listing agent sets joi
 with the description and which therefore shares a common author with the treatment.
 A natural concern is that part of the estimated association reflects the agent
 pricing their own prose rather than the market valuing the property's language. The
-cleanest answer is to re-estimate the effect on the price the market actually
-cleared. We assemble a panel of recorded sales by collecting sold listings across
+most direct answer is to re-estimate the effect on the price the market actually
+cleared. This does not sever the simultaneity outright, since a realized sale price
+anchors on the list price the same agent set \citep{genesove2001loss}, but it
+replaces the agent's stated number with a market-tested one and so weakens the
+channel that a purely asking-price outcome leaves open. We assemble a panel of recorded sales by collecting sold listings across
 the ten metropolitan areas for which a public sold feed carries both the marketing
 description and the realized sale price on the same transaction, together with the
-sale date and the structural attributes. After restricting to residential
+sale date and the structural attributes. After we restrict to residential
 single-unit dwellings with a usable description, a recorded price, and a geocode,
-the panel holds roughly two hundred and ninety thousand transactions closed between
-2023 and 2026, two orders of magnitude larger than the description samples used
+the panel holds roughly one hundred ninety thousand transactions closed between
+2023 and 2026, close to three times the pooled description corpus used
 elsewhere in the paper. The treatment is the same pooled leading text direction,
 re-estimated on the sold descriptions and held fixed across the estimation, and the
 outcome is the log recorded sale price. Because sale prices span three years of
@@ -74,7 +77,7 @@ concern that the estimated text direction is a generated regressor is addressed 
 the split-sample discipline of \citet{egami2022texts}: estimating the leading
 direction on a random half of the listings and the effect on the disjoint half
 returns the same per-market estimates to within a thousandth, so the effect is not
-an artifact of discovering and estimating the text measure on the same data.
+a product of how the text measure is discovered and estimated on the same data.
 Finally, the leading text direction is almost uncorrelated with the sale quarter,
 with an $R^2$ below two percent in every market, so the effect is not a repackaged
 market-cycle trend and the sale-quarter controls are not load-bearing. Because the
@@ -84,7 +87,7 @@ of Appendix~\ref{sec:truncation}; the correction widens the effects modestly and
 changes no conclusion. That the effect is present, heterogeneous in the same pattern,
 and robust on the transaction the market actually cleared, in every market where that
 transaction is observable, is the strongest evidence the available data affords that
-the listing-text association is a feature of market valuation rather than an artifact
+the listing-text association is a feature of market valuation rather than a quirk
 of how agents price their own language.
 
 \input{drafts_jbes_2026/tab_soldprice_v1.tex}

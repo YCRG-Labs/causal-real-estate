@@ -193,7 +193,7 @@ treatment and log price to drive the estimate to zero, following
 robust in Philadelphia ($0.18$) and San Francisco ($0.14$) and most fragile in
 the markets whose point estimates are already near zero. The modest robustness
 values in several markets are the reason we read the per-market estimates as
-associational and sensitivity-bounded rather than cleanly causal.}
+associational and sensitivity-bounded rather than causal.}
 \label{fig:sensitivity-rv}
 \end{figure}
 
@@ -202,9 +202,14 @@ associational and sensitivity-bounded rather than cleanly causal.}
 
 The robustness values of Table~\ref{tab:confounder-sensitivity-12} benchmark the
 strength an unobserved confounder would need against the strength of the strongest
-confounder we do observe, following \citet{cinelli2020making}. That benchmark has a
-blind spot that a text-derived treatment walks directly into, and this section
-names it, bounds it, and turns it into a pre-registered diagnostic.
+confounder we do observe, following \citet{cinelli2020making}. That the
+observed-covariate benchmark can mislead is not itself new: \citet{diegert2026axiomatic}
+prove the standard benchmarking comparison is inconsistent and non-monotonic as a way
+of ranking confounders, and the fragility of informal benchmarking is acknowledged in
+the sensitivity literature more broadly. What a text-derived treatment adds is a
+particular and severe form of the failure, an omitted category the treatment nearly
+sorts yet the structured controls cannot see, and this section names that case,
+bounds it, and turns it into a diagnostic tailored to it.
 
 Consider an omitted categorical covariate $C$, property type being the concrete
 instance and vacant land the sharpest case, with three properties that hold in the
@@ -216,7 +221,7 @@ cross-fitted classifier of the vacant-land indicator on the full confounder set
 runs at an AUC of $0.50$ in Boston and $0.47$ in New York, while the same indicator
 is recovered from the text direction at an AUC above $0.95$. The nearest-parcel
 join that supplies the structured controls cannot represent landness, since for a
-vacant lot it returns a neighbouring built parcel's attributes, so the design is
+vacant lot it returns a neighboring built parcel's attributes, so the design is
 blind to exactly the attribute the text encodes. The bias from omitting such a $C$
 is bounded by the partial-$R^2$ omitted-variable-bias inequality of
 \citet{cinelli2020making} and its double-machine-learning generalization in
@@ -242,24 +247,35 @@ benchmark is computed. The robustness value reported against the observed benchm
 is therefore numerically well defined but uninformative about $C$.
 \end{proposition}
 
-The argument is short. Partialling $X$ out of $T$ and of $C$ leaves residuals whose
-correlation obeys the recursive identity
-$\rho_{TC \mid X} = (\rho_{TC} - \rho_{TX}\rho_{CX}) /
-\sqrt{(1 - \rho_{TX}^2)(1 - \rho_{CX}^2)}$, whose protective subtraction
-$\rho_{TX}\rho_{CX}$ vanishes as $\mathrm{Cor}(C, X) \to 0$, leaving
-$\rho_{TC \mid X} \to \rho_{TC} / \sqrt{1 - \rho_{TX}^2}$, no smaller than the raw
-correlation; the same holds on the outcome side, which gives part (i). A computer-
-algebra check confirms both this identity and the fact that for a single omitted
-confounder the \citet{cinelli2020making} bias expression equals the exact bias
-rather than merely bounding it, so the bound the audit reasons about is tight; the
-verification is released with the replication code. Part (ii)
+The argument is short. Write $\tilde T$, $\tilde C$, and $\tilde Y$ for the
+residuals of $T$, $C$, and $Y$ after partialling out the full control vector $X$ by
+population regression, the objects the partially-linear score is built on, so that
+the partial quantities $r_D$ and $r_Y$ in the bias bound are functions of the
+correlations among these residuals. As $R^2(C \mid X) \to 0$ the residual $\tilde C$
+converges to $C$ centered, because $X$ carries no linear information about $C$ to
+remove, so the confounder's residual variation is undiminished by conditioning and
+$r_D \to R^2_{T \sim C}/(1 - R^2_{T \sim X})$, no smaller than its raw counterpart;
+the outcome side is identical, which gives part (i). For a single scalar control
+this residual statement reduces to the familiar recursive partial-correlation
+identity $\rho_{TC \mid X} = (\rho_{TC} - \rho_{TX}\rho_{CX}) /
+\sqrt{(1 - \rho_{TX}^2)(1 - \rho_{CX}^2)}$, in which the protective subtraction
+$\rho_{TX}\rho_{CX}$ vanishes with $\mathrm{Cor}(C, X)$; the high-dimensional case
+replaces that scalar identity with the residual construction just given rather than
+relying on it. A computer-
+algebra check confirms the scalar identity, the vector-control residual limit just
+used, in which the partial strength at orthogonality equals
+$R^2_{T \sim C}/(1 - R^2_{T \sim X})$ with $R^2_{T \sim X}$ the multiple coefficient
+of determination of $T$ on the whole control block, and the fact that for a single
+omitted confounder the \citet{cinelli2020making} bias expression equals the exact
+bias rather than merely bounding it, so the bound the audit reasons about is tight;
+the verification is released with the replication code. Part (ii)
 is the operational reading: the benchmark's premise is that an omitted confounder
 is comparable in strength to an observed covariate, and a classifier of $C$ on $X$
 running at chance is direct evidence that $C$ lives outside the space that premise
 is calibrated on. We are careful about what this does and does not establish. It is
-not that the formal bound cannot detect $C$; \citet{cinelli2020making} show in
-their own Section~6.2 that the correctly computed bound recovers the right answer
-for a confounder orthogonal to the controls when the analyst sets the benchmark
+not that the formal bound cannot detect $C$; the \citet{cinelli2020making} bound,
+correctly computed, recovers the right answer for a confounder orthogonal to the
+controls once the analyst sets the benchmark
 strength correctly. It is that the routine heuristic of setting that strength by
 analogy to observed covariates has no anchor once $R^2(C \mid X) \approx 0$, and
 this is precisely the regime in which an analyst is most likely to feel wrongly
@@ -289,31 +305,44 @@ number above $10^6$ or any confounder column has collapsed to a constant, either
 which signals a design-matrix degeneracy rather than a treatment effect. Step two
 screens composition: flag a market if a candidate omitted category is
 chance-predictable from the controls, $\mathrm{AUC}(C \mid X) < 0.60$, yet strongly
-predictable from the treatment, $\mathrm{AUC}(C \mid T) > 0.75$. The prescribed
+predictable from the treatment, $\mathrm{AUC}(C \mid T) > 0.75$, the near-separation
+of treatment from an omitted category that \citet{damour2021overlap} show
+breaks overlap in high dimensions. The prescribed
 correction differs by step. A conditioning flag is a pipeline repair. A composition
 flag calls for adjusting for the category, and the natural instinct, adding a
 property-type dummy to the regularized nuisance, backfires, because the ridge
 penalty shrinks a rare category toward no effect: in Boston, where non-residential
 listings are $1.9\%$ of the sample, adding the dummy raises $|\hat\theta|$ from
 $0.40$ to $0.45$. Exact within-category demeaning of the treatment and the outcome,
-which is unpenalized, is the correct adjustment and lowers the Boston estimate to
-$0.34$. Across the panel the composition adjustment materially moves only the two
-markets with the largest non-residential share, Philadelphia and Chicago, and
-leaves the rest, including the New York exception, essentially unchanged, which is
-consistent with the mechanism the proposition describes.
+which is unpenalized, is the correct adjustment; in Boston it returns $0.44$. These
+figures are on the raw within-market treatment scale of the demeaning exercise,
+several times the oriented pooled-axis magnitudes of
+Table~\ref{tab:baur-12city}, so they index the direction and stability of the
+adjustment rather than the headline effect size. What the corrected adjustment shows
+across the panel is that property-type composition is not what drives the result:
+exact demeaning attenuates $|\hat\theta|$ toward zero in only two of the twelve
+markets and leaves or slightly raises it in the other ten, so in no market does
+controlling for composition explain the text effect away, and the rank of a
+market's non-residential share does not track how much its estimate moves. The
+blind spot the proposition identifies is therefore a possibility in principle and, once
+corrected for, empty in practice on this panel.
 
 A calibration study confirms that the two steps discriminate the two failure modes
 rather than firing together. Across a grid of category shares and confounder
-strengths, with $200$ replications per cell, the conditioning step fires on a
+strengths, with $150$ replications per cell, the conditioning step fires on a
 simulated design degeneracy in every replication and never on a composition
 confound, while the composition step fires on a material composition confound, one
 strong enough to lift $\mathrm{AUC}(C \mid T)$ above the threshold, in more than
-nine of ten replications and never on a design degeneracy; the false-positive rate
-of each step on the other's failure mode is zero. The audit therefore separates a
-numerical artifact from a substantive confound on data the analysis already has,
+nine of ten replications, and on a weak composition confound in fewer than one in
+twenty, so its power is concentrated where the composition signal is material rather
+than spread evenly across strengths; it never fires on a design degeneracy, and the
+false-positive rate of each step on the other's failure mode is zero. The audit therefore separates a
+numerical accident from a substantive confound on data the analysis already has,
 and it does so before the estimate is read, which is what a pre-registered
 diagnostic is meant to do. We claim for it neither a new estimator nor a new limit
-theorem, only the connection of two existing literatures, the omitted-variable-bias
-bounds of \citet{cinelli2020making} and \citet{chernozhukov2022long} and the
-conditioning diagnostics of \citet{saco2025illconditioned}, into a screen fitted to
-the specific way a text-derived treatment fails.
+theorem, only the connection of several existing literatures, the omitted-variable-bias
+bounds of \citet{cinelli2020making} and \citet{chernozhukov2022long}, the critique of
+observed-covariate benchmarking in \citet{diegert2026axiomatic}, the high-dimensional
+overlap diagnostics of \citet{damour2021overlap}, and the conditioning diagnostics of
+\citet{saco2025illconditioned}, into a screen fitted to the specific way a
+text-derived treatment fails.

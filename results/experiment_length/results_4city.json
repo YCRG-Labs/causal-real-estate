@@ -1,0 +1,112 @@
+[
+  {
+    "treatment": "T0_published",
+    "city": "boston",
+    "n": 2610,
+    "rich": true,
+    "theta": -0.07326551106221224,
+    "abs_theta": 0.07326551106221224,
+    "se": 0.022013644619301633,
+    "covers0": false
+  },
+  {
+    "treatment": "T0_published",
+    "city": "sf",
+    "n": 986,
+    "rich": true,
+    "theta": -0.10564588067208756,
+    "abs_theta": 0.10564588067208756,
+    "se": 0.025299281825427143,
+    "covers0": false
+  },
+  {
+    "treatment": "T0_published",
+    "city": "dc",
+    "n": 4015,
+    "rich": false,
+    "theta": -0.08005118370341978,
+    "abs_theta": 0.08005118370341978,
+    "se": 0.015412266141740166,
+    "covers0": false
+  },
+  {
+    "treatment": "T1_html_fixed",
+    "city": "boston",
+    "n": 2610,
+    "rich": true,
+    "theta": -0.0020919609139470976,
+    "abs_theta": 0.0020919609139470976,
+    "se": 0.021781499458594335,
+    "covers0": true
+  },
+  {
+    "treatment": "T1_html_fixed",
+    "city": "nyc",
+    "n": 15255,
+    "rich": true,
+    "theta": 0.10286496744519026,
+    "abs_theta": 0.10286496744519026,
+    "se": 0.007787728772233979,
+    "covers0": false
+  },
+  {
+    "treatment": "T1_html_fixed",
+    "city": "sf",
+    "n": 986,
+    "rich": true,
+    "theta": -0.11384147673561888,
+    "abs_theta": 0.11384147673561888,
+    "se": 0.027251717528961345,
+    "covers0": false
+  },
+  {
+    "treatment": "T1_html_fixed",
+    "city": "dc",
+    "n": 4015,
+    "rich": false,
+    "theta": 0.055005086734731735,
+    "abs_theta": 0.055005086734731735,
+    "se": 0.013847331961709331,
+    "covers0": false
+  },
+  {
+    "treatment": "T2_len_resid",
+    "city": "boston",
+    "n": 2610,
+    "rich": true,
+    "theta": 0.31497953737952555,
+    "abs_theta": 0.31497953737952555,
+    "se": 0.01802112118403097,
+    "covers0": false
+  },
+  {
+    "treatment": "T2_len_resid",
+    "city": "nyc",
+    "n": 15255,
+    "rich": true,
+    "theta": 0.2344588578024356,
+    "abs_theta": 0.2344588578024356,
+    "se": 0.006290763661469704,
+    "covers0": false
+  },
+  {
+    "treatment": "T2_len_resid",
+    "city": "sf",
+    "n": 986,
+    "rich": true,
+    "theta": 0.0765474294007138,
+    "abs_theta": 0.0765474294007138,
+    "se": 0.023401755602809944,
+    "covers0": false
+  },
+  {
+    "treatment": "T2_len_resid",
+    "city": "dc",
+    "n": 4015,
+    "rich": false,
+    "theta": 0.363492487563872,
+    "abs_theta": 0.363492487563872,
+    "se": 0.012134877639361982,
+    "covers0": false
+  }
+]

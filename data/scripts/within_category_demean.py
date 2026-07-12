@@ -24,16 +24,24 @@ No rows are dropped.
 
 Per market:
 
-    raw       theta(T,          X,               Y)     published listing-level spec
+    raw       theta(T,          X,               Y)     listing-level spec, de-leaked block
     dummy     theta(T,          [X, pt_dummies], Y)     dummies inside the ridge (backfires)
-    demean    theta(T_dm,       X_dm,            Y_dm)   within-property_type FWL demeaning
+    demean    theta(T_dm,       X,               Y_dm)   within-property_type FWL demeaning
 
-with X the listing-level block [lat, lon, beds, baths, sqft, year_built]. The
-composition screen reports the cross-fitted AUC of the land indicator on a
-non-leaking imputed structural block (median-imputed, no missingness signature,
-which a zero-fill would turn into a perfect land classifier) versus on the text
-direction. The published-design blindness (AUC ~0.50 on the parcel confounder
-block) is measured separately by land_mechanism_check.py on boston, nyc and sf.
+with X the listing-level block [lat, lon, beds, baths, sqft, year_built],
+median-imputed with a per-field missingness flag rather than zero-filled: a
+zero-fill plants an out-of-distribution value that is itself a near-perfect
+land classifier in markets where non-residential listings are missing
+structure far more often than residential ones (DC: 96-98% vs 2-4%), so raw,
+dummy and demean would otherwise already be comparing designs that encode
+property_type through the fill value, not through the stated confounder set.
+X itself is never demeaned, only T and Y; the composition screen separately
+reports the cross-fitted AUC of the land indicator on a median-imputed
+structural block WITHOUT the missingness flags (so it carries no missingness
+signature, which a zero-fill would turn into a perfect land classifier)
+versus on the text direction. The published-design blindness (AUC ~0.50 on
+the parcel confounder block) is measured separately by land_mechanism_check.py
+on boston, nyc and sf.
 
     python data/scripts/within_category_demean.py --all_12
 """
@@ -57,7 +65,7 @@ sys.path.insert(0, str(REPO / "data" / "scripts"))
 from replications.compare_to_dml import _ridge_dml_core, run_dml
 
 POOLED_CSV = REPO / "results" / "replications" / "pooled_pca_treatment.csv"
-OUT_JSON = REPO / "results" / "within_category_demean.json"
+OUT_JSON = REPO / "results" / "within_category_demean_deleaked.json"
 
 ALL_12 = ["boston", "nyc", "sf", "dc", "philadelphia", "chicago",
           "seattle", "denver", "atlanta", "portland", "phoenix", "dallas"]
@@ -81,19 +89,33 @@ def _load(city: str):
     return df, Y
 
 
-def _zerofill_block(df: pd.DataFrame) -> np.ndarray:
-    lat = pd.to_numeric(df.latitude, errors="coerce").to_numpy(float)
-    lon = pd.to_numeric(df.longitude, errors="coerce").to_numpy(float)
-    S = df[STRUCT].apply(pd.to_numeric, errors="coerce").to_numpy(float)
-    return np.column_stack([lat, lon, np.nan_to_num(S, nan=0.0)])
-
-
 def _impute_block(df: pd.DataFrame) -> np.ndarray:
     lat = pd.to_numeric(df.latitude, errors="coerce").to_numpy(float)
     lon = pd.to_numeric(df.longitude, errors="coerce").to_numpy(float)
     S = df[STRUCT].apply(pd.to_numeric, errors="coerce")
     S = S.fillna(S.median()).to_numpy(float)
     return np.column_stack([lat, lon, S])
+
+
+def _impute_missing_block(df: pd.DataFrame) -> np.ndarray:
+    """Median-imputed structural block plus a per-field missingness flag.
+
+    Zero-filling beds/baths/sqft/year_built (the pipeline default) plants an
+    out-of-distribution value that is itself a near-perfect land indicator in
+    markets where non-residential listings are missing structure at a far
+    higher rate than residential ones (DC: 96-98% vs 2-4%), so the theta
+    comparisons below would be comparing designs that already encode
+    property_type through the fill value rather than through the confounder
+    set. Median imputation removes that magnitude leak; the added binary
+    flags keep genuine missingness in the control set for both the T and Y
+    nuisance models without smuggling it in as an extreme numeric value.
+    """
+    lat = pd.to_numeric(df.latitude, errors="coerce").to_numpy(float)
+    lon = pd.to_numeric(df.longitude, errors="coerce").to_numpy(float)
+    S = df[STRUCT].apply(pd.to_numeric, errors="coerce")
+    miss = S.isna().to_numpy(float)
+    Simp = S.fillna(S.median()).to_numpy(float)
+    return np.column_stack([lat, lon, Simp, miss])
 
 
 def _demean_within(M: np.ndarray, codes: np.ndarray) -> np.ndarray:
@@ -139,7 +161,7 @@ def run_city(city: str) -> dict:
     t_sd = float(np.std(T_raw, ddof=1))
     T = (T_raw - T_raw.mean()) / t_sd if t_sd > 0 else T_raw
 
-    X = _zerofill_block(df)
+    X = _impute_missing_block(df)
     ptype = df.property_type.astype(str)
     codes = pd.Categorical(ptype).codes
     nonres = ptype.str.contains(NON_RESIDENTIAL, case=False, na=False)

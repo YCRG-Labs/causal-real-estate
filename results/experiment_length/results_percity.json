@@ -1,0 +1,110 @@
+[
+  {
+    "city": "boston",
+    "n": 2610,
+    "rich": true,
+    "corr_pc1_len_raw": 0.1855157694504466,
+    "corr_pc1_len_resid": 8.693708121713728e-16,
+    "percity_raw": {
+      "abs_theta": 0.1498826713990407,
+      "se": 0.017409067993393926,
+      "covers0": false
+    },
+    "percity_resid": {
+      "abs_theta": 0.11211141544074706,
+      "se": 0.015665353530465435,
+      "covers0": false
+    },
+    "published": {
+      "abs_theta": 0.07326551106221224,
+      "se": 0.022013644619301633,
+      "covers0": false
+    },
+    "published_plus_len_ctrl": {
+      "abs_theta": 0.009608762802113043,
+      "se": 0.019846190078260995,
+      "covers0": true
+    }
+  },
+  {
+    "city": "nyc",
+    "n": 15255,
+    "rich": true,
+    "corr_pc1_len_raw": 0.6126167821445592,
+    "corr_pc1_len_resid": 6.736750466772915e-16,
+    "percity_raw": {
+      "abs_theta": 0.12813730075239482,
+      "se": 0.007670178334596841,
+      "covers0": false
+    },
+    "percity_resid": {
+      "abs_theta": 0.21963532026622606,
+      "se": 0.006221840786609142,
+      "covers0": false
+    },
+    "published": {
+      "abs_theta": 0.008806343364078824,
+      "se": 0.00653973066595727,
+      "covers0": true
+    },
+    "published_plus_len_ctrl": {
+      "abs_theta": 0.024158856550393435,
+      "se": 0.0063803776670370935,
+      "covers0": false
+    }
+  },
+  {
+    "city": "sf",
+    "n": 986,
+    "rich": true,
+    "corr_pc1_len_raw": 0.26225568293196205,
+    "corr_pc1_len_resid": 1.9473714452577785e-15,
+    "percity_raw": {
+      "abs_theta": 0.11420683048806018,
+      "se": 0.024436366613063573,
+      "covers0": false
+    },
+    "percity_resid": {
+      "abs_theta": 0.08381378808391757,
+      "se": 0.024206255687008425,
+      "covers0": false
+    },
+    "published": {
+      "abs_theta": 0.10564588067208756,
+      "se": 0.025299281825427143,
+      "covers0": false
+    },
+    "published_plus_len_ctrl": {
+      "abs_theta": 0.07131471033068565,
+      "se": 0.025924357626135524,
+      "covers0": false
+    }
+  },
+  {
+    "city": "dc",
+    "n": 4015,
+    "rich": false,
+    "corr_pc1_len_raw": 0.49935745141208054,
+    "corr_pc1_len_resid": 3.002370352522282e-14,
+    "percity_raw": {
+      "abs_theta": 0.05764322255849538,
+      "se": 0.013894355885842086,
+      "covers0": false
+    },
+    "percity_resid": {
+      "abs_theta": 0.2546739615548849,
+      "se": 0.010711798660602753,
+      "covers0": false
+    },
+    "published": {
+      "abs_theta": 0.08005118370341978,
+      "se": 0.015412266141740166,
+      "covers0": false
+    },
+    "published_plus_len_ctrl": {
+      "abs_theta": 0.004582406959023171,
+      "se": 0.015773413692447807,
+      "covers0": true
+    }
+  }
+]

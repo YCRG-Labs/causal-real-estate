@@ -22,7 +22,13 @@ Usage:
     python data/scripts/run_pipeline_jbes.py embeddings --cities new9
     python data/scripts/run_pipeline_jbes.py dml --cities new9
     python data/scripts/run_pipeline_jbes.py finalize --cities new9
+    python data/scripts/run_pipeline_jbes.py analysis
     python data/scripts/run_pipeline_jbes.py all --cities new9
+
+The `analysis` stage (meta-regression, cross-method concordance, sensitivity,
+counterfactual rollup) is not part of `all`: it depends on tables produced by
+baur_pooled_pca.py and run_counterfactual.py, which run outside this
+orchestrator, so it is invoked separately once those tables exist.
 """
 
 from __future__ import annotations
@@ -167,6 +173,21 @@ def cmd_confounders(args) -> int:
     print("=" * 60)
     print("CONFOUNDERS: ACS + Overpass + crime + parcel match")
     print("=" * 60)
+    # NOTE on the confounder-build path: this stage runs the
+    # download_census.py/download_amenities.py/download_crime.py ->
+    # attach_census.py/attach_amenities.py/attach_crime.py -> attach_micro_geo.py
+    # chain, which is the live path wired into the master pipeline for cities
+    # with status != "existing" (see city_endpoints.py). Separately,
+    # build_active_confounders.py + attach_crime_to_parcels.py exist in
+    # data/scripts/ as an alternate confounder builder that writes to the
+    # same artifact name ({city}_parcels_micro_geo.gpkg) as attach_micro_geo.py
+    # above. Per reviews/code_review_report.md and the referee2 round-1 report,
+    # which of the two actually produced the confounders behind the paper's
+    # current numbers has not been conclusively determined from the code
+    # alone. TODO: confirm which path is authoritative before wiring
+    # build_active_confounders.py/attach_crime_to_parcels.py here — running
+    # both against the same city risks one silently overwriting the other's
+    # output.
     cities = resolve_cities(args.cities)
     rc = 0
     for cfg in cities:
@@ -231,6 +252,24 @@ def cmd_finalize(args) -> int:
     return rc
 
 
+def cmd_analysis(args) -> int:
+    print("=" * 60)
+    print("ANALYSIS: meta-regression + cross-method concordance + sensitivity + counterfactual rollup")
+    print("=" * 60)
+    # These four scripts consume tables already written by cmd_finalize
+    # (shen_2021.py, leace_deconfound.py) plus baur_pooled_pca.py and
+    # run_counterfactual.py, which are run separately/manually and are not
+    # dispatched from this orchestrator. Each script below has its own
+    # default input paths under results/; rerun the upstream script first
+    # if a required table is missing.
+    rc = 0
+    rc |= run(["python3", "replications/meta_regression_12.py"], cwd=SCRIPTS_DIR)
+    rc |= run(["python3", "replications/cross_method_concordance.py"], cwd=SCRIPTS_DIR)
+    rc |= run(["python3", "replications/confounder_sensitivity_12.py", "--all_12"], cwd=SCRIPTS_DIR)
+    rc |= run(["python3", "replications/rollup_counterfactual_12.py"], cwd=SCRIPTS_DIR)
+    return rc
+
+
 def cmd_all(args) -> int:
     print("=" * 60)
     print("ALL: smoke -> acquire -> geocode -> confounders -> embeddings -> dml -> finalize")
@@ -250,7 +289,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Orchestrator for the 12-city JBES expansion")
     parser.add_argument("subcommand", choices=[
         "smoke", "acquire", "geocode", "confounders",
-        "embeddings", "dml", "finalize", "all",
+        "embeddings", "dml", "finalize", "analysis", "all",
     ])
     parser.add_argument("--cities", default="new9", help="new9 | all | comma-separated slugs")
     parser.add_argument("--max-listings", type=int, default=350)
@@ -266,6 +305,7 @@ def main() -> int:
         "embeddings": cmd_embeddings,
         "dml": cmd_dml,
         "finalize": cmd_finalize,
+        "analysis": cmd_analysis,
         "all": cmd_all,
     }
     return dispatch[args.subcommand](args)

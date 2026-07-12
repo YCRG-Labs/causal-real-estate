@@ -1,0 +1,647 @@
+[
+  {
+    "city": "boston",
+    "n_pre": 349,
+    "n_post": 307,
+    "dropped": 42,
+    "by_reason": {
+      "keyword": 42
+    },
+    "dropped_urls": {
+      "keyword": [
+        "/MA/Boston/54-Appleton-St-02116/unit-4/home/9262676",
+        "/MA/Boston/Undisclosed-address-02118/home/183157640",
+        "/MA/Roxbury/196-W-Brookline-St-02118/unit-2/home/114036937",
+        "/MA/Boston/36-Alleghany-St-02120/home/9297736",
+        "/MA/Boston/281-Newbury-St-02115/home/9266329",
+        "/MA/Dorchester/24-Buttonwood-St-02125/home/9064897",
+        "/MA/Boston/25-Isabella-St-02116/unit-502/home/201215061",
+        "/MA/Dorchester/132-Ellington-St-02121/home/9084213",
+        "/MA/Dorchester/18-20-Bentham-Rd-02122/home/196604482",
+        "/MA/Charlestown/72-Washington-St-02129/unit-1/home/173498904",
+        "/MA/Boston/49-Eutaw-St-02128/unit-1/home/173030725",
+        "/MA/Roxbury/1666-Washington-St-02118/unit-3/home/9285219",
+        "/MA/Dorchester/36-McLellan-St-02121/home/9086008",
+        "/MA/Boston/21-Bradford-St-02118/home/9281391",
+        "/MA/Charlestown/92-Bunker-Hill-St-02129/home/9062449",
+        "/MA/Jamaica-Plain/34-Roseway-St-02130/home/9142314",
+        "/MA/Boston/124-F-St-02127/home/187189500",
+        "/MA/Boston/7-Parkway-St-02124/home/172324234",
+        "/MA/Brighton/15-17-Peaceable-St-02135/home/196600574",
+        "/MA/Boston/22-Appleton-St-02116/unit-2/home/145254755",
+        "/MA/Dorchester/19-Dunlap-St-02124/home/9073195",
+        "/MA/Boston/667-Tremont-St-02118/Ph/home/192868697",
+        "/MA/Charlestown/52-Mystic-St-02129/unit-1/home/17064082",
+        "/MA/Hyde-Park/98-Clare-Ave-02136/home/9122946",
+        "/MA/Boston/32-E-Springfield-St-02118/unit-1/home/9320395",
+        "/MA/Hyde-Park/755-759-Truman-Pkwy-02136/home/196600679",
+        "/MA/Dorchester/61-Shepton-St-02124/home/9089447",
+        "/MA/South-Boston/858-E-2nd-St-02127/unit-2/home/52964018",
+        "/MA/Boston/47-Hancock-St-02114/unit-2/home/9276654",
+        "/MA/Boston/15-Dwight-St-02118/home/9280436",
+        "/MA/South-Boston/261-Silver-St-02127/unit-1/home/9185016",
+        "/MA/Boston/8-Fairfield-St-02116/home/9247389",
+        "/MA/Boston/360-Newbury-St-02115/unit-807/home/12439783",
+        "/MA/South-Boston/45-W-Broadway-02127/unit-111/home/9318341",
+        "/MA/Boston/50-Beacon-St-02108/unit-1/home/11838829",
+        "/MA/Boston/17-Albemarle-St-02115/unit-1/home/9255020",
+        "/MA/Boston/291-Beacon-St-02116/unit-1A/home/201297771",
+        "/MA/Mattapan/12-Hiawatha-Rd-02126/home/9156413",
+        "/MA/South-Boston/2-Humboldt-Pl-02127/home/114042936",
+        "/MA/Roxbury/1724-Washington-St-02118/unit-2/home/9311102",
+        "/MA/East-Boston/64-Bremen-St-02128/home/9116308",
+        "/MA/Brighton/1789-Commonwealth-Ave-02135/home/11833385"
+      ]
+    }
+  },
+  {
+    "city": "nyc",
+    "n_pre": 347,
+    "n_post": 312,
+    "dropped": 35,
+    "by_reason": {
+      "keyword": 35
+    },
+    "dropped_urls": {
+      "keyword": [
+        "/NY/Brooklyn/424-Macon-St-11233/home/189811283",
+        "/NY/Long-Island-City/2119-46th-Ave-11101/unit-1/home/173249843",
+        "/NY/Brooklyn/335-Warren-St-11201/unit-401/home/40669705",
+        "/NY/Glendale/7036-70th-St-11385/home/192274566",
+        "/NY/Staten-Island/55-Arbutus-Ave-10312/home/56019796",
+        "/NY/Brooklyn/262-95th-St-11209/home/40820056",
+        "/NY/New-York/442-W-23rd-St-10011/unit-E/home/45144360",
+        "/NY/New-York/135-E-83rd-St-10028/unit-67C/home/53322666",
+        "/NY/Brooklyn/128-S-1st-St-11249/unit-2/home/201409684",
+        "/NY/Forest-Hills/1-50-Burns-St-11375/unit-3A-5F-5H-6E/home/199662491",
+        "/NY/Brooklyn/418-Halsey-St-11233/home/21660841",
+        "/NY/Brooklyn/450-Hart-St-11221/unit-2A/home/173845113",
+        "/NY/Flushing/158-12-Riverside-Dr-11357/unit-12B/home/201409093",
+        "/NY/New-York/54-W-74th-St-10023/unit-210/home/45266683",
+        "/NY/New-York/105-W-118th-St-10026/home/45305533",
+        "/NY/Long-Island-City/4118-27th-St-11101/unit-8A/home/109707214",
+        "/NY/Brooklyn/Undisclosed-address-11234/home/40879101",
+        "/NY/Bronx/206-208-Balcom-Ave-10465/home/194557903",
+        "/NY/Elmhurst/8715-58th-Ave-11373/home/20900998",
+        "/NY/Brooklyn/1786-E-34th-St-11234/home/40875044",
+        "/NY/Bronx/340-E-234th-St-10470/home/44719384",
+        "/NY/Bronx/4518-Richardson-Ave-10470/home/177347168",
+        "/NY/New-York/34-W-74th-St-10023/unit-PHB/home/178246782",
+        "/NY/Glen-Oaks/260-17-75th-Ave-11004/unit-Duplex/home/201405936",
+        "/NY/Brooklyn/598-Pacific-St-11217/home/182958623",
+        "/NY/New-York/167-W-136th-St-10030/unit-1/home/45135675",
+        "/NY/New-York/2-E-80th-St-10075/unit-2/home/45183858",
+        "/NY/Forest-Hills/1-50-Burns-St-11375/unit-6E5F5G3A/home/201405058",
+        "/NY/New-York/985-Park-Ave-10028/unit-10-11/home/45209540",
+        "/NY/Brooklyn/433-Warren-St-11217/unit-2C/home/40674905",
+        "/NY/Staten-Island/425-Philip-Ave-10312/home/201388868",
+        "/NY/New-York/1-W-67th-St-10023/unit-616-6E/home/115586751",
+        "/NY/Brooklyn/460-9th-St-11215/home/201107863",
+        "/NY/Bronx/3585-Greystone-Ave-10463/unit-3E/home/44755491",
+        "/NY/Staten-Island/181-Mosely-Ave-10312/home/56106698"
+      ]
+    }
+  },
+  {
+    "city": "sf",
+    "n_pre": 348,
+    "n_post": 310,
+    "dropped": 38,
+    "by_reason": {
+      "keyword": 38
+    },
+    "dropped_urls": {
+      "keyword": [
+        "/CA/San-Francisco/66-68-Cook-St-94118/home/194790271",
+        "/CA/San-Francisco/839-De-Haro-St-94107/home/1124679",
+        "/CA/San-Francisco/2122-Mason-St-94133/home/543274",
+        "/CA/San-Francisco/834-Page-St-94117/home/170508265",
+        "/CA/San-Francisco/282-Roosevelt-Way-94114/home/668228",
+        "/CA/San-Francisco/790-792-32nd-Ave-94121/home/201053111",
+        "/CA/San-Francisco/161-163-Eureka-St-94114/home/201104876",
+        "/CA/San-Francisco/403-Arkansas-St-94107/home/173337136",
+        "/CA/San-Francisco/2327-Bryant-St-94110/home/201110575",
+        "/CA/San-Francisco/1350-California-St-94109/unit-302/home/1554341",
+        "/CA/San-Francisco/52-Casa-Way-94123/home/201036180",
+        "/CA/San-Francisco/3130-Octavia-St-94123/home/201080129",
+        "/CA/San-Francisco/130-Grand-View-Ave-94114/home/676390",
+        "/CA/San-Francisco/471-23rd-Ave-94121/unit-1/home/182100284",
+        "/CA/San-Francisco/1401-Rhode-Island-St-94107/home/201051594",
+        "/CA/San-Francisco/1608-Folsom-St-94103/home/199885419",
+        "/CA/San-Francisco/2950-21st-St-94110/home/76510710",
+        "/CA/San-Francisco/1577-Shrader-St-94117/home/2036114",
+        "/CA/San-Francisco/1628-Grove-St-94117/home/1285485",
+        "/CA/San-Francisco/1953-1955-Eddy-St-94115/home/200998909",
+        "/CA/San-Francisco/751-753-Capp-St-94110/unit-753A/home/200010761",
+        "/CA/San-Francisco/600-Silliman-St-94134/home/1240835",
+        "/CA/San-Francisco/1945-Washington-St-94109/unit-506/home/564773",
+        "/CA/San-Francisco/751-753-Capp-St-94110/unit-753/home/200010887",
+        "/CA/San-Francisco/331-Woolsey-St-94134/home/1576610",
+        "/CA/San-Francisco/600-39th-Ave-94121/home/187345832",
+        "/CA/San-Francisco/571-Capp-St-94110/home/1221263",
+        "/CA/San-Francisco/751-753-Capp-St-94110/unit-751/home/200971957",
+        "/CA/San-Francisco/2065-Larkin-St-94109/home/1391343",
+        "/CA/San-Francisco/751-753-Capp-St-94110/home/194789965",
+        "/CA/San-Francisco/1016-Washington-St-94108/home/1817048",
+        "/CA/San-Francisco/169-Bernard-St-94109/home/172687719",
+        "/CA/San-Francisco/1875-California-St-94109/home/570841",
+        "/CA/San-Francisco/1668-Washington-St-94109/home/2012632",
+        "/CA/San-Francisco/815-Ofarrell-St-94109/home/1331774",
+        "/CA/San-Francisco/755-Bush-St-94108/home/921102",
+        "/CA/San-Francisco/675-Ofarrell-St-94109/home/555630",
+        "/CA/San-Francisco/1163-Pine-St-94109/home/1578534"
+      ]
+    }
+  },
+  {
+    "city": "dc",
+    "n_pre": 349,
+    "n_post": 334,
+    "dropped": 15,
+    "by_reason": {
+      "keyword": 11,
+      "sqft>8000.0": 3,
+      "bldg_area_sqft>8000.0": 3,
+      "price<75000.0": 1
+    },
+    "dropped_urls": {
+      "keyword": [
+        "https://www.redfin.com/DC/Washington/507-Brandywine-St-SE-20032/home/10332320",
+        "https://www.redfin.com/DC/Washington/4651-Q-St-NW-20007/home/9939014",
+        "https://www.redfin.com/DC/Washington/3621-39th-St-NW-20016/unit-B320/home/9966928",
+        "https://www.redfin.com/DC/Washington/176-N-Carolina-Ave-SE-20003/home/9890249",
+        "https://www.redfin.com/DC/Washington/1348-Nicholson-St-NW-20011/home/10023991",
+        "https://www.redfin.com/DC/Washington/525-Water-St-SW-20024/unit-431/home/113745606",
+        "https://www.redfin.com/DC/Washington/1268-16th-St-NE-20002/home/10097978",
+        "https://www.redfin.com/DC/Washington/2204-16th-St-SE-20020/home/10157614",
+        "https://www.redfin.com/DC/Washington/1379-Bryant-St-NE-20018/home/10091281",
+        "https://www.redfin.com/DC/Washington/1801-Otis-St-NE-20018/unit-1/home/177105958",
+        "https://www.redfin.com/DC/Washington/1362-E-St-SE-20003/home/9914925"
+      ],
+      "sqft>8000.0": [
+        "https://www.redfin.com/DC/Washington/3939-52nd-St-NW-20016/home/179430449",
+        "https://www.redfin.com/DC/Washington/4920-Loughboro-Rd-NW-20016/home/9943060",
+        "https://www.redfin.com/DC/Washington/5361-MacArthur-Blvd-NW-20016/home/9943586"
+      ],
+      "bldg_area_sqft>8000.0": [
+        "https://www.redfin.com/DC/Washington/3939-52nd-St-NW-20016/home/179430449",
+        "https://www.redfin.com/DC/Washington/4920-Loughboro-Rd-NW-20016/home/9943060",
+        "https://www.redfin.com/DC/Washington/5361-MacArthur-Blvd-NW-20016/home/9943586"
+      ],
+      "price<75000.0": [
+        "https://www.redfin.com/DC/Washington/1311-Delaware-Ave-SW-20024/unit-S240/home/201215038"
+      ]
+    }
+  },
+  {
+    "city": "philadelphia",
+    "n_pre": 349,
+    "n_post": 311,
+    "dropped": 38,
+    "by_reason": {
+      "keyword": 29,
+      "beds>8": 1,
+      "bedrooms>8": 1,
+      "sqft>8000.0": 1,
+      "bldg_area_sqft>8000.0": 1,
+      "price<75000.0": 7
+    },
+    "dropped_urls": {
+      "keyword": [
+        "https://www.redfin.com/PA/Philadelphia/5234-Jackson-St-19124/home/39434160",
+        "https://www.redfin.com/PA/Philadelphia/7034-Valley-Ave-19128/home/38580186",
+        "https://www.redfin.com/PA/Philadelphia/1516-Arrott-St-19124/home/38632747",
+        "https://www.redfin.com/PA/Philadelphia/149-W-Sharpnack-St-19119/unit-3/home/202066064",
+        "https://www.redfin.com/PA/Philadelphia/6536-Theodore-St-19142/home/39216102",
+        "https://www.redfin.com/PA/Philadelphia/1316-Friendship-St-19111/home/186216125",
+        "https://www.redfin.com/PA/Philadelphia/1432-67th-Ave-19126/home/38264514",
+        "https://www.redfin.com/PA/Philadelphia/6013-Spruce-St-19139/home/38117337",
+        "https://www.redfin.com/PA/Philadelphia/840-N-63rd-St-19151/home/38953094",
+        "https://www.redfin.com/PA/Philadelphia/315-N-65th-St-19139/home/38936711",
+        "https://www.redfin.com/PA/Philadelphia/238-E-Queen-Ln-19144/home/38321847",
+        "https://www.redfin.com/PA/Philadelphia/610-Green-Ln-19128/home/38561555",
+        "https://www.redfin.com/PA/Philadelphia/5212-Harlan-St-19131/home/39246700",
+        "https://www.redfin.com/PA/Philadelphia/10751-E-Keswick-Rd-19154/home/39457274",
+        "https://www.redfin.com/PA/Philadelphia/2122-Estaugh-St-19140/home/38310984",
+        "https://www.redfin.com/PA/Philadelphia/4815-Fairmount-Ave-19139/home/39244286",
+        "https://www.redfin.com/PA/Philadelphia/5407-Walnut-St-19139/home/39401910",
+        "https://www.redfin.com/PA/Philadelphia/1944-N-8th-St-19122/home/40565435",
+        "https://www.redfin.com/PA/Philadelphia/234-W-Erie-Ave-19140/home/38220262",
+        "https://www.redfin.com/PA/Philadelphia/115-N-Peach-St-19139/home/39244215",
+        "https://www.redfin.com/PA/Philadelphia/1841-N-33rd-St-19121/home/38870582",
+        "https://www.redfin.com/PA/Philadelphia/2213-N-Camac-St-19133/home/39049187",
+        "https://www.redfin.com/PA/Philadelphia/3217-Turner-St-19121/home/38870950",
+        "https://www.redfin.com/PA/Philadelphia/2306-N-15th-St-19132/home/40561037",
+        "https://www.redfin.com/PA/Philadelphia/2212-N-3rd-St-19133/home/39474759",
+        "https://www.redfin.com/PA/Philadelphia/2128-N-19th-St-19121/home/40571995",
+        "https://www.redfin.com/PA/Philadelphia/2133-N-19th-St-19121/home/38851322",
+        "https://www.redfin.com/PA/Philadelphia/2112-N-19th-St-19121/home/40571994",
+        "https://www.redfin.com/PA/Philadelphia/2848-Coral-St-19134/home/40568244"
+      ],
+      "beds>8": [
+        "https://www.redfin.com/PA/Philadelphia/6417-Wissahickon-Ave-19119/home/38629358"
+      ],
+      "bedrooms>8": [
+        "https://www.redfin.com/PA/Philadelphia/6417-Wissahickon-Ave-19119/home/38629358"
+      ],
+      "sqft>8000.0": [
+        "https://www.redfin.com/PA/Philadelphia/1900-John-F-Kennedy-Blvd-19103/unit-1101/home/202047862"
+      ],
+      "bldg_area_sqft>8000.0": [
+        "https://www.redfin.com/PA/Philadelphia/1900-John-F-Kennedy-Blvd-19103/unit-1101/home/202047862"
+      ],
+      "price<75000.0": [
+        "https://www.redfin.com/PA/Philadelphia/1823-N-Ringgold-St-19121/home/38855975",
+        "https://www.redfin.com/PA/Philadelphia/1444-N-Robinson-St-19151/home/38931302",
+        "https://www.redfin.com/PA/Philadelphia/2636-N-Jessup-St-19133/home/39048098",
+        "https://www.redfin.com/PA/Philadelphia/3442-N-Sydenham-St-19140/home/38313863",
+        "https://www.redfin.com/PA/Philadelphia/2530-W-Oxford-St-19121/home/38777636",
+        "https://www.redfin.com/PA/Philadelphia/6244-Limekiln-Pike-19141/home/38447408",
+        "https://www.redfin.com/PA/Philadelphia/3103-Clifford-St-19121/home/38870705"
+      ]
+    }
+  },
+  {
+    "city": "chicago",
+    "n_pre": 350,
+    "n_post": 304,
+    "dropped": 46,
+    "by_reason": {
+      "keyword": 36,
+      "beds>8": 11,
+      "bedrooms>8": 11,
+      "price<75000.0": 2
+    },
+    "dropped_urls": {
+      "keyword": [
+        "https://www.redfin.com/IL/Chicago/560-W-Arlington-Pl-60614/home/202050370",
+        "https://www.redfin.com/IL/Chicago/843-W-Grace-St-60613/unit-1E/home/13384094",
+        "https://www.redfin.com/IL/Chicago/1149-W-Wellington-Ave-60657/home/202028702",
+        "https://www.redfin.com/IL/Chicago/1638-N-Orchard-St-60614/unit-1/home/202041070",
+        "https://www.redfin.com/IL/Chicago/1638-N-Orchard-St-60614/unit-3/home/202041021",
+        "https://www.redfin.com/IL/Chicago/6127-S-Champlain-Ave-60637/home/202073540",
+        "https://www.redfin.com/IL/Chicago/2839-N-Central-Park-Ave-60618/home/13447537",
+        "https://www.redfin.com/IL/Cicero/1625-S-47th-Ct-60804/home/13236002",
+        "https://www.redfin.com/IL/Chicago/3252-E-136th-St-60633/home/13030723",
+        "https://www.redfin.com/IL/Chicago/1660-N-Hudson-Ave-60614/unit-1J/home/13346177",
+        "https://www.redfin.com/IL/Chicago/4821-W-Washington-Blvd-60644/home/13263651",
+        "https://www.redfin.com/IL/Chicago/2914-N-Sheffield-Ave-60657/unit-4N/home/12659820",
+        "https://www.redfin.com/IL/Chicago/3346-N-Central-Park-Ave-60618/home/13453994",
+        "https://www.redfin.com/IL/Chicago/70-E-18th-St-60616/unit-4E/home/12607515",
+        "https://www.redfin.com/IL/Chicago/2733-N-Lincoln-Ave-60614/unit-A/home/12741036",
+        "https://www.redfin.com/IL/Chicago/2207-N-Orchard-St-60614/unit-1/home/175186301",
+        "https://www.redfin.com/IL/Chicago/2703-S-Hillock-Ave-60608/home/14080623",
+        "https://www.redfin.com/IL/Chicago/3820-W-George-St-60618/home/202055019",
+        "https://www.redfin.com/IL/Chicago/937-W-59th-St-60621/home/13938769",
+        "https://www.redfin.com/IL/Chicago/8024-S-Vernon-Ave-60619/home/13225622",
+        "https://www.redfin.com/IL/Chicago/8232-S-Marshfield-Ave-60620/home/13907306",
+        "https://www.redfin.com/IL/Chicago/Undisclosed-address-60620/home/183716805",
+        "https://www.redfin.com/IL/Chicago/503-N-Wells-St-60654/unit-3/home/14101391",
+        "https://www.redfin.com/IL/Chicago/1517-W-Adams-St-60607/unit-2/home/12606104",
+        "https://www.redfin.com/IL/Chicago/4854-W-North-Ave-60639/home/13423913",
+        "https://www.redfin.com/IL/Chicago/13729-S-Brainard-Ave-60633/home/13030006",
+        "https://www.redfin.com/IL/Chicago/544-N-Lawndale-Ave-60624/home/202059177",
+        "https://www.redfin.com/IL/Chicago/5756-S-Princeton-Ave-60621/home/183889387",
+        "https://www.redfin.com/IL/Chicago/945-N-Honore-St-60622/unit-3/home/12696718",
+        "https://www.redfin.com/IL/Chicago/2006-N-Mohawk-St-60614/unit-1/home/189483680",
+        "https://www.redfin.com/IL/Chicago/3036-N-Kedzie-Ave-60618/home/200569568",
+        "https://www.redfin.com/IL/Chicago/3618-N-Bell-Ave-60618/home/13389343",
+        "https://www.redfin.com/IL/Chicago/2038-N-Bingham-St-60647/unit-1E/home/13417038",
+        "https://www.redfin.com/IL/Chicago/6923-S-Sangamon-St-60621/home/13931374",
+        "https://www.redfin.com/IL/Chicago/3806-W-Armitage-Ave-60647/home/201373938",
+        "https://www.redfin.com/IL/Chicago/Undisclosed-address-60610/home/14111849"
+      ],
+      "beds>8": [
+        "https://www.redfin.com/IL/Chicago/Undisclosed-address-60622/home/13289443",
+        "https://www.redfin.com/IL/Chicago/6343-N-Oakley-Ave-60659/home/13408446",
+        "https://www.redfin.com/IL/Chicago/3346-N-Central-Park-Ave-60618/home/13453994",
+        "https://www.redfin.com/IL/Chicago/35-N-Mayfield-Ave-60644/home/183740461",
+        "https://www.redfin.com/IL/Chicago/4854-W-North-Ave-60639/home/13423913",
+        "https://www.redfin.com/IL/Chicago/13729-S-Brainard-Ave-60633/home/13030006",
+        "https://www.redfin.com/IL/Chicago/3139-N-Clifton-Ave-60657/home/39519896",
+        "https://www.redfin.com/IL/Chicago/6316-S-Evans-Ave-60637/home/147834633",
+        "https://www.redfin.com/IL/Chicago/1908-S-Loomis-St-60608/home/14084998",
+        "https://www.redfin.com/IL/Chicago/927-W-Cullerton-St-60608/home/14085343",
+        "https://www.redfin.com/IL/Chicago/2039-W-18th-Pl-60608/home/14088356"
+      ],
+      "bedrooms>8": [
+        "https://www.redfin.com/IL/Chicago/Undisclosed-address-60622/home/13289443",
+        "https://www.redfin.com/IL/Chicago/6343-N-Oakley-Ave-60659/home/13408446",
+        "https://www.redfin.com/IL/Chicago/3346-N-Central-Park-Ave-60618/home/13453994",
+        "https://www.redfin.com/IL/Chicago/35-N-Mayfield-Ave-60644/home/183740461",
+        "https://www.redfin.com/IL/Chicago/4854-W-North-Ave-60639/home/13423913",
+        "https://www.redfin.com/IL/Chicago/13729-S-Brainard-Ave-60633/home/13030006",
+        "https://www.redfin.com/IL/Chicago/3139-N-Clifton-Ave-60657/home/39519896",
+        "https://www.redfin.com/IL/Chicago/6316-S-Evans-Ave-60637/home/147834633",
+        "https://www.redfin.com/IL/Chicago/1908-S-Loomis-St-60608/home/14084998",
+        "https://www.redfin.com/IL/Chicago/927-W-Cullerton-St-60608/home/14085343",
+        "https://www.redfin.com/IL/Chicago/2039-W-18th-Pl-60608/home/14088356"
+      ],
+      "price<75000.0": [
+        "https://www.redfin.com/IL/Chicago/742-N-Christiana-Ave-60624/home/13261080",
+        "https://www.redfin.com/IL/Chicago/701-S-Wells-St-60607/unit-P99/home/12693484"
+      ]
+    }
+  },
+  {
+    "city": "seattle",
+    "n_pre": 350,
+    "n_post": 336,
+    "dropped": 14,
+    "by_reason": {
+      "keyword": 12,
+      "beds>8": 2,
+      "bedrooms>8": 2,
+      "sqft>8000.0": 2,
+      "bldg_area_sqft>8000.0": 2
+    },
+    "dropped_urls": {
+      "keyword": [
+        "https://www.redfin.com/WA/Seattle/267-E-Newton-St-98102/home/131965",
+        "https://www.redfin.com/WA/Seattle/2905-E-Olive-St-98122/home/2070890",
+        "https://www.redfin.com/WA/Seattle/5821-3rd-Ave-NW-98107/home/494397",
+        "https://www.redfin.com/WA/Seattle/6238-Woodlawn-Ave-N-98103/home/305469",
+        "https://www.redfin.com/WA/Seattle/414-N-46th-St-98103/home/299004",
+        "https://www.redfin.com/WA/Seattle/1573-NW-90th-St-98117/home/100241",
+        "https://www.redfin.com/WA/Seattle/900-Warren-Ave-N-98109/unit-302/home/2062373",
+        "https://www.redfin.com/WA/Seattle/1621-E-Spring-St-98122/unit-1A/home/2068633",
+        "https://www.redfin.com/WA/Seattle/2629-14th-Ave-W-98119/home/177877631",
+        "https://www.redfin.com/WA/Seattle/601-21st-Ave-98122/home/2063314",
+        "https://www.redfin.com/WA/Seattle/10033-Des-Moines-Memorial-Dr-S-98168/home/22683413",
+        "https://www.redfin.com/WA/Seattle/9242-Woodlawn-Ave-N-98103/unit-B/home/69867"
+      ],
+      "beds>8": [
+        "https://www.redfin.com/WA/Seattle/115-30th-Ave-98122/home/2063378",
+        "https://www.redfin.com/WA/Seattle/2629-14th-Ave-W-98119/home/177877631"
+      ],
+      "bedrooms>8": [
+        "https://www.redfin.com/WA/Seattle/115-30th-Ave-98122/home/2063378",
+        "https://www.redfin.com/WA/Seattle/2629-14th-Ave-W-98119/home/177877631"
+      ],
+      "sqft>8000.0": [
+        "https://www.redfin.com/WA/Seattle/4911-NE-Laurelcrest-Ln-98105/home/121589",
+        "https://www.redfin.com/WA/Seattle/2629-14th-Ave-W-98119/home/177877631"
+      ],
+      "bldg_area_sqft>8000.0": [
+        "https://www.redfin.com/WA/Seattle/4911-NE-Laurelcrest-Ln-98105/home/121589",
+        "https://www.redfin.com/WA/Seattle/2629-14th-Ave-W-98119/home/177877631"
+      ]
+    }
+  },
+  {
+    "city": "denver",
+    "n_pre": 350,
+    "n_post": 327,
+    "dropped": 23,
+    "by_reason": {
+      "keyword": 23,
+      "beds>8": 2,
+      "bedrooms>8": 2
+    },
+    "dropped_urls": {
+      "keyword": [
+        "https://www.redfin.com/CO/Denver/310-S-Clay-St-80219/home/34132473",
+        "https://www.redfin.com/CO/Denver/620-S-Stuart-St-80219/home/34026139",
+        "https://www.redfin.com/CO/Denver/2196-S-Washington-St-80210/home/34021437",
+        "https://www.redfin.com/CO/Denver/2280-S-Bannock-St-80223/home/34157616",
+        "https://www.redfin.com/CO/Denver/2255-Meade-St-80211/home/34016503",
+        "https://www.redfin.com/CO/Denver/620-W-2nd-Ave-80223/home/49770175",
+        "https://www.redfin.com/CO/Denver/3526-Mariposa-St-80211/home/170658197",
+        "https://www.redfin.com/CO/Denver/2045-S-Acoma-St-80223/home/34157859",
+        "https://www.redfin.com/CO/Denver/644-N-Logan-St-80203/home/34105338",
+        "https://www.redfin.com/CO/Denver/1808-S-Pennsylvania-St-80210/home/34145671",
+        "https://www.redfin.com/CO/Denver/2657-Perry-St-80212/home/161381849",
+        "https://www.redfin.com/CO/Denver/3200-W-27th-Ave-80211/home/34078520",
+        "https://www.redfin.com/CO/Denver/55-W-Alameda-Ave-80223/home/192597144",
+        "https://www.redfin.com/CO/Denver/928-S-Harrison-St-80209/home/34125318",
+        "https://www.redfin.com/CO/Denver/2339-Irving-St-80211/home/201265849",
+        "https://www.redfin.com/CO/Denver/8015-E-16th-Ave-80220/home/202039546",
+        "https://www.redfin.com/CO/Denver/3885-Stuart-St-80212/home/34061079",
+        "https://www.redfin.com/CO/Denver/2479-S-Broadway-80210/home/45361320",
+        "https://www.redfin.com/CO/Denver/2397-S-Locust-St-80222/home/34195707",
+        "https://www.redfin.com/CO/Denver/2816-Federal-Blvd-80211/home/185112735",
+        "https://www.redfin.com/CO/Denver/982-S-Sheridan-Blvd-80226/home/34019791",
+        "https://www.redfin.com/CO/Denver/1610-E-14th-Ave-80218/unit-B/home/34010354",
+        "https://www.redfin.com/CO/Denver/425-E-Ellsworth-Ave-80209/home/34117659"
+      ],
+      "beds>8": [
+        "https://www.redfin.com/CO/Denver/2479-S-Broadway-80210/home/45361320",
+        "https://www.redfin.com/CO/Denver/982-S-Sheridan-Blvd-80226/home/34019791"
+      ],
+      "bedrooms>8": [
+        "https://www.redfin.com/CO/Denver/2479-S-Broadway-80210/home/45361320",
+        "https://www.redfin.com/CO/Denver/982-S-Sheridan-Blvd-80226/home/34019791"
+      ]
+    }
+  },
+  {
+    "city": "atlanta",
+    "n_pre": 347,
+    "n_post": 333,
+    "dropped": 14,
+    "by_reason": {
+      "keyword": 7,
+      "beds>8": 1,
+      "bedrooms>8": 1,
+      "sqft>8000.0": 5,
+      "bldg_area_sqft>8000.0": 5,
+      "price<75000.0": 2
+    },
+    "dropped_urls": {
+      "keyword": [
+        "https://www.redfin.com/GA/Atlanta/152-Berean-Ave-SE-30316/home/24649897",
+        "https://www.redfin.com/GA/Atlanta/1351-Oxford-Rd-NE-30307/home/162647465",
+        "https://www.redfin.com/GA/Atlanta/219-Joseph-E-Lowery-Blvd-SW-30314/home/24831345",
+        "https://www.redfin.com/GA/Atlanta/1339-Miller-Reed-Ave-SE-30315/home/24606814",
+        "https://www.redfin.com/GA/Atlanta/204-Mayson-Ave-NE-30307/home/23771962",
+        "https://www.redfin.com/GA/Atlanta/892-Ridge-Ave-NW-30318/home/24842167",
+        "https://www.redfin.com/GA/Atlanta/522-James-P-Brawley-Dr-NW-30318/home/24826495"
+      ],
+      "beds>8": [
+        "https://www.redfin.com/GA/Atlanta/1351-Oxford-Rd-NE-30307/home/162647465"
+      ],
+      "bedrooms>8": [
+        "https://www.redfin.com/GA/Atlanta/1351-Oxford-Rd-NE-30307/home/162647465"
+      ],
+      "sqft>8000.0": [
+        "https://www.redfin.com/GA/Atlanta/4715-Northside-Dr-30327/home/24680773",
+        "https://www.redfin.com/GA/Atlanta/2079-Old-Settlement-Rd-NW-30327/home/24796896",
+        "https://www.redfin.com/GA/Sandy-Springs/725-Londonberry-Rd-30327/home/24826966",
+        "https://www.redfin.com/GA/Atlanta/105-Wilderbluff-Ct-30328/home/24806664",
+        "https://www.redfin.com/GA/Brookhaven/3157-Woodrow-Way-NE-30319/home/23723227"
+      ],
+      "bldg_area_sqft>8000.0": [
+        "https://www.redfin.com/GA/Atlanta/4715-Northside-Dr-30327/home/24680773",
+        "https://www.redfin.com/GA/Atlanta/2079-Old-Settlement-Rd-NW-30327/home/24796896",
+        "https://www.redfin.com/GA/Sandy-Springs/725-Londonberry-Rd-30327/home/24826966",
+        "https://www.redfin.com/GA/Atlanta/105-Wilderbluff-Ct-30328/home/24806664",
+        "https://www.redfin.com/GA/Brookhaven/3157-Woodrow-Way-NE-30319/home/23723227"
+      ],
+      "price<75000.0": [
+        "https://www.redfin.com/GA/Atlanta/1159-Hillcrest-Dr-SE-30316/home/23881964",
+        "https://www.redfin.com/GA/Atlanta/1427-Andrews-St-NW-30314/home/24554617"
+      ]
+    }
+  },
+  {
+    "city": "portland",
+    "n_pre": 350,
+    "n_post": 319,
+    "dropped": 31,
+    "by_reason": {
+      "keyword": 27,
+      "beds>8": 7,
+      "bedrooms>8": 7,
+      "sqft>8000.0": 4,
+      "bldg_area_sqft>8000.0": 4,
+      "price<75000.0": 3
+    },
+    "dropped_urls": {
+      "keyword": [
+        "https://www.redfin.com/OR/Portland/1830-NE-132nd-Ave-97230/home/26526394",
+        "https://www.redfin.com/OR/Portland/6552-NE-8th-Ave-97211/home/26544735",
+        "https://www.redfin.com/OR/Portland/535-NE-Knott-St-97212/home/26436214",
+        "https://www.redfin.com/OR/Portland/305-NE-26th-Ave-97232/home/202062927",
+        "https://www.redfin.com/OR/Portland/4103-SE-73rd-Ave-97206/home/26319910",
+        "https://www.redfin.com/OR/Portland/4032-SE-Main-St-97214/home/26468486",
+        "https://www.redfin.com/OR/Portland/2333-NE-Schuyler-St-97212/home/26312521",
+        "https://www.redfin.com/OR/Portland/8818-SE-Rhone-St-97266/home/26324764",
+        "https://www.redfin.com/OR/Portland/6619-SE-Woodstock-Blvd-97206/home/188626116",
+        "https://www.redfin.com/OR/Portland/2167-SW-Yamhill-St-97205/home/26603101",
+        "https://www.redfin.com/OR/Portland/2230-NE-15th-Ave-97212/home/25893126",
+        "https://www.redfin.com/OR/Portland/3206-S-Kelly-Ave-97239/home/200272247",
+        "https://www.redfin.com/OR/Portland/7916-SE-Main-St-97215/home/26393828",
+        "https://www.redfin.com/OR/Portland/4501-N-Montana-Ave-97217/home/195784156",
+        "https://www.redfin.com/OR/Portland/7661-N-Vancouver-Ave-97217/home/202047670",
+        "https://www.redfin.com/OR/Portland/8928-SE-Rhone-St-97266/home/201525896",
+        "https://www.redfin.com/OR/Portland/6408-SE-Lambert-St-97206/home/26651385",
+        "https://www.redfin.com/OR/Portland/1940-SE-143rd-Ave-97233/home/26329960",
+        "https://www.redfin.com/OR/Portland/844-SE-117th-Ave-97216/home/26335375",
+        "https://www.redfin.com/OR/Portland/8107-NE-Failing-St-97213/home/26573190",
+        "https://www.redfin.com/OR/Portland/3320-SE-90th-Pl-97266/home/26416828",
+        "https://www.redfin.com/OR/Portland/2607-SE-101st-Ave-97266/home/189688715",
+        "https://www.redfin.com/OR/Portland/6603-N-Seneca-St-97203/home/202032152",
+        "https://www.redfin.com/OR/Portland/9726-SE-Clinton-St-97266/home/26448545",
+        "https://www.redfin.com/OR/Portland/2456-NE-7th-Ave-97212/home/26400726",
+        "https://www.redfin.com/OR/Portland/2451-SE-Yamhill-St-97214/home/26645387",
+        "https://www.redfin.com/OR/Portland/3951-SE-Holgate-Blvd-97202/home/196591864"
+      ],
+      "beds>8": [
+        "https://www.redfin.com/OR/Portland/2167-SW-Yamhill-St-97205/home/26603101",
+        "https://www.redfin.com/OR/Portland/1304-N-Emerson-St-97217/home/202064994",
+        "https://www.redfin.com/OR/Portland/350-NE-61st-Ave-97213/home/190506831",
+        "https://www.redfin.com/OR/Portland/1940-SE-143rd-Ave-97233/home/26329960",
+        "https://www.redfin.com/OR/Portland/3320-SE-90th-Pl-97266/home/26416828",
+        "https://www.redfin.com/OR/Portland/2607-SE-101st-Ave-97266/home/189688715",
+        "https://www.redfin.com/OR/Portland/6603-N-Seneca-St-97203/home/202032152"
+      ],
+      "bedrooms>8": [
+        "https://www.redfin.com/OR/Portland/2167-SW-Yamhill-St-97205/home/26603101",
+        "https://www.redfin.com/OR/Portland/1304-N-Emerson-St-97217/home/202064994",
+        "https://www.redfin.com/OR/Portland/350-NE-61st-Ave-97213/home/190506831",
+        "https://www.redfin.com/OR/Portland/1940-SE-143rd-Ave-97233/home/26329960",
+        "https://www.redfin.com/OR/Portland/3320-SE-90th-Pl-97266/home/26416828",
+        "https://www.redfin.com/OR/Portland/2607-SE-101st-Ave-97266/home/189688715",
+        "https://www.redfin.com/OR/Portland/6603-N-Seneca-St-97203/home/202032152"
+      ],
+      "sqft>8000.0": [
+        "https://www.redfin.com/OR/Portland/2167-SW-Yamhill-St-97205/home/26603101",
+        "https://www.redfin.com/OR/Portland/11648-S-Military-Ln-97219/home/25846071",
+        "https://www.redfin.com/OR/Portland/3320-SE-90th-Pl-97266/home/26416828",
+        "https://www.redfin.com/OR/Portland/2607-SE-101st-Ave-97266/home/189688715"
+      ],
+      "bldg_area_sqft>8000.0": [
+        "https://www.redfin.com/OR/Portland/2167-SW-Yamhill-St-97205/home/26603101",
+        "https://www.redfin.com/OR/Portland/11648-S-Military-Ln-97219/home/25846071",
+        "https://www.redfin.com/OR/Portland/3320-SE-90th-Pl-97266/home/26416828",
+        "https://www.redfin.com/OR/Portland/2607-SE-101st-Ave-97266/home/189688715"
+      ],
+      "price<75000.0": [
+        "https://www.redfin.com/OR/Portland/4103-SE-73rd-Ave-97206/home/26319910",
+        "https://www.redfin.com/OR/Portland/8818-SE-Rhone-St-97266/home/26324764",
+        "https://www.redfin.com/OR/Portland/11803-SE-Division-St-97266/unit-38/home/26431655"
+      ]
+    }
+  },
+  {
+    "city": "phoenix",
+    "n_pre": 349,
+    "n_post": 329,
+    "dropped": 20,
+    "by_reason": {
+      "keyword": 15,
+      "beds>8": 1,
+      "bedrooms>8": 1,
+      "price<75000.0": 5
+    },
+    "dropped_urls": {
+      "keyword": [
+        "https://www.redfin.com/AZ/Phoenix/2202-N-12th-St-85006/home/27492371",
+        "https://www.redfin.com/AZ/Phoenix/1413-E-Cheryl-Dr-85020/home/28024398",
+        "https://www.redfin.com/AZ/Phoenix/746-W-Coolidge-St-85013/home/202063023",
+        "https://www.redfin.com/AZ/Phoenix/1331-W-Monroe-St-85007/home/27721679",
+        "https://www.redfin.com/AZ/Phoenix/4429-N-53rd-Ln-85031/home/28045592",
+        "https://www.redfin.com/AZ/Phoenix/940-E-Rose-Ln-85014/home/28048372",
+        "https://www.redfin.com/AZ/Phoenix/2336-N-11th-St-85006/home/28244881",
+        "https://www.redfin.com/AZ/Phoenix/1317-W-Monroe-St-85007/home/28183603",
+        "https://www.redfin.com/AZ/Phoenix/1235-E-Wood-St-85040/home/28243786",
+        "https://www.redfin.com/AZ/Phoenix/32-W-Jones-Ave-85041/unit-5/home/202048041",
+        "https://www.redfin.com/AZ/Phoenix/26-W-Jones-Ave-85041/unit-4/home/202048038",
+        "https://www.redfin.com/AZ/Phoenix/20-W-Jones-Ave-85041/unit-3/home/202047996",
+        "https://www.redfin.com/AZ/Phoenix/108-W-Jones-Ave-85041/unit-10/home/202048069",
+        "https://www.redfin.com/AZ/Phoenix/102-W-Jones-Ave-85041/unit-9/home/202048039",
+        "https://www.redfin.com/AZ/Phoenix/136-W-Jones-Ave-85041/unit-14/home/202048070"
+      ],
+      "beds>8": [
+        "https://www.redfin.com/AZ/Phoenix/4429-N-53rd-Ln-85031/home/28045592"
+      ],
+      "bedrooms>8": [
+        "https://www.redfin.com/AZ/Phoenix/4429-N-53rd-Ln-85031/home/28045592"
+      ],
+      "price<75000.0": [
+        "https://www.redfin.com/AZ/Phoenix/3334-E-Southern-Ave-85040/unit-30b/home/189781950",
+        "https://www.redfin.com/AZ/Phoenix/5201-W-Camelback-Rd-85031/unit-H241/home/202066794",
+        "https://www.redfin.com/AZ/Phoenix/2650-W-Union-Hills-Dr-85027/unit-62/home/198838942",
+        "https://www.redfin.com/AZ/Phoenix/2650-W-Union-Hills-Dr-85027/unit-295/home/202042935",
+        "https://www.redfin.com/AZ/Phoenix/452-N-68th-Ln-85043/unit-153/home/202043104"
+      ]
+    }
+  },
+  {
+    "city": "dallas",
+    "n_pre": 350,
+    "n_post": 329,
+    "dropped": 21,
+    "by_reason": {
+      "keyword": 17,
+      "price<75000.0": 4
+    },
+    "dropped_urls": {
+      "keyword": [
+        "https://www.redfin.com/TX/Dallas/5736-Tremont-St-75214/home/30801659",
+        "https://www.redfin.com/TX/Dallas/2220-Bombay-Ave-75235/home/30849022",
+        "https://www.redfin.com/TX/Dallas/3193-Stag-Rd-75241/home/188123766",
+        "https://www.redfin.com/TX/Dallas/105-E-6th-St-75203/home/30829858",
+        "https://www.redfin.com/TX/Dallas/18915-Tupelo-Ln-75287/home/32959322",
+        "https://www.redfin.com/TX/Dallas/6322-Covington-Ln-75214/home/30802336",
+        "https://www.redfin.com/TX/Dallas/7254-Pineberry-Rd-75249/home/31115989",
+        "https://www.redfin.com/TX/Dallas/7257-Pineberry-Rd-75249/home/31116098",
+        "https://www.redfin.com/TX/Dallas/718-Grandview-Ave-75223/home/30800795",
+        "https://www.redfin.com/TX/Dallas/6671-Nyman-Dr-75236/home/31156656",
+        "https://www.redfin.com/TX/Dallas/217-W-Yarmouth-St-75208/home/198864017",
+        "https://www.redfin.com/TX/Dallas/731-W-10th-St-75208/home/30827403",
+        "https://www.redfin.com/TX/Dallas/10316-Ridge-Oak-St-75227/home/31145913",
+        "https://www.redfin.com/TX/Dallas/6241-Rincon-Way-75214/home/30869336",
+        "https://www.redfin.com/TX/Dallas/15825-El-Estado-Dr-75248/home/31083658",
+        "https://www.redfin.com/TX/Dallas/4512-Swiss-Ave-75204/home/30793880",
+        "https://www.redfin.com/TX/Dallas/4740-Cranfill-Dr-75216/home/31106620"
+      ],
+      "price<75000.0": [
+        "https://www.redfin.com/TX/Dallas/9803-Walnut-St-75243/unit-B207/home/202048883",
+        "https://www.redfin.com/TX/Dallas/2421-Cedar-Crest-Blvd-75203/home/178251137",
+        "https://www.redfin.com/TX/Dallas/5404-Railroad-Ave-75215/home/182205449",
+        "https://www.redfin.com/TX/Duncanville/1010-N-Cedar-Ridge-Dr-75116/home/32077439"
+      ]
+    }
+  }
+]

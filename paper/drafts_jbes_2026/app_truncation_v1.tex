@@ -1,0 +1,106 @@
+\subsection{Correcting for description truncation in the transaction-price panel}
+\label{sec:truncation}
+
+The realized-transaction panel is assembled from a bulk listings interface that
+returns each property's description capped at a fixed length of six hundred and
+ninety-nine characters, a limit that truncates between roughly half and two thirds
+of descriptions before they are embedded. Because the treatment is the leading
+principal component of the description embedding rather than one of the controls,
+this truncation perturbs the treatment itself, and left uncorrected it biases the
+estimated price effect rather than merely inflating its variance.
+
+We first establish the sign and magnitude of the bias on the full-text corpus,
+where the untruncated description is available for the same listings. Recomputing
+the treatment from descriptions cut to the same character limit and re-estimating
+the effect with the treatment and controls otherwise held fixed, we find that
+truncation attenuates the effect toward zero in every market with a detectable
+effect, by between fifteen and twenty-seven percent, with the per-market estimates
+collected in Table~\ref{tab:truncation}. The distortion is not a byproduct of the
+embedding model's own context window, which admits close to four hundred tokens
+against a median description of under two hundred, so the character cap discards
+text the encoder would otherwise read.
+
+We do not treat this as classical measurement error. The truncation is a
+deterministic function of the description that always removes its tail, and the
+removed text is longer for more elaborate listings, so the induced error is
+correlated with the true treatment and with omitted quality rather than being
+independent additive noise. This is the generated-regressor structure of
+\citet{pagan1984econometric} and \citet{murphy1985twostep}, and in its modern
+data-mined form the problem studied by \citet{yang2020datamined}, rather than the
+classical errors-in-variables model. Under non-classical error the direction of the
+bias is not guaranteed in advance \citep{bound2001measurement}, and for latent,
+text-derived predictors a naive reliability-ratio correction can enlarge the bias
+rather than remove it \citep{jerzak2025attenuation}. We therefore measure the
+attenuation on validation data instead of assuming it.
+
+The full-text corpus is an external validation sample in the sense of
+\citet{chen2008semiparametric} and \citet{carroll2006measurement}, since it carries
+both the truncated and the untruncated treatment on the same units. We summarize the
+attenuation by the factor $\lambda = \hat\theta_{\text{trunc}}/\hat\theta_{\text{full}}$,
+which is scale-free and absorbs the partialling of the controls. Across the six
+markets with a detectable effect the factor is stable at $0.79$ with a standard
+deviation of $0.05$ and a range from $0.73$ to $0.85$; markets whose effect is
+statistically indistinguishable from zero leave the ratio undefined but require no
+correction, because a near-null estimate stays near-null under any rescaling and,
+as Table~\ref{tab:truncation} shows, none of them is pushed into significance by the
+correction. Precision-weighting across all markets, which down-weights the
+near-null cases whose ratios are imprecise, gives a pooled factor of $0.81$ with a
+standard error of $0.02$, an attenuation of nineteen percent and a correction
+factor of $1.24$.
+
+Two checks support applying this factor to the transaction panel, whose treatment
+is only available in truncated form. A leave-one-market-out exercise, in which each
+market's truncated effect is corrected by the factor estimated on the remaining
+markets, recovers the held-out market's untruncated effect to within $0.011$ in the
+units of $\theta$, or under six percent, comfortably inside the market-level
+confidence intervals; the factor therefore transports across markets. Regression
+calibration, which replaces the truncated treatment with its conditional expectation
+given the truncated value and the controls and re-estimates the effect, moves each
+estimate in the same direction and closes fifty-four percent of the truncation gap.
+It under-corrects, which is the expected behavior of regression calibration when the
+error is non-classical \citep{carroll2006measurement}, and we accordingly take the
+measured attenuation factor as the primary correction and read the calibration
+estimate as a conservative floor. As a further robustness option the same paired
+validation sample supports a simulation-extrapolation correction
+\citep{cook1994simex}, which we do not need here given the stability of the measured
+factor.
+
+We report transaction-price effects after dividing the truncated estimate by
+$\lambda$, propagating the uncertainty of both the effect and the factor through the
+delta method; because the effect and the factor are estimated on disjoint samples
+their errors are independent and the corrected standard error is
+$\sqrt{\hat\theta_{\text{trunc}}^2\,\widehat{\mathrm{Var}}(\lambda)/\lambda^4
++ \widehat{\mathrm{Var}}(\hat\theta_{\text{trunc}})/\lambda^2}$. To our knowledge
+this truncation is not confronted in the earlier real-estate text literature, which
+represents descriptions through bag-of-words or dictionary features that carry no
+fixed context window \citep{nowak2017textual, shen2021information}; the problem is
+specific to fixed-window sentence-embedding features, and the attenuation we
+document is the pricing-model counterpart of the classification-accuracy loss that
+\citet{sun2019finetune} report for head-only truncation of long documents.
+
+\begin{table}[H]
+\centering
+\caption{Description-truncation attenuation, measured on the full-text validation
+corpus. For each market with a detectable text effect we report the DML effect of
+the leading text direction estimated from the untruncated description and from the
+description cut to the interface's character limit, both with identical controls,
+and the attenuation factor $\lambda=\hat\theta_{\text{trunc}}/\hat\theta_{\text{full}}$.
+The pooled factor is precision-weighted across all ten markets and used to correct
+the transaction-price panel.}
+\label{tab:truncation}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Market & $\hat\theta_{\text{full}}$ & $\hat\theta_{\text{trunc}}$ & $\lambda$ \\
+\midrule
+Boston       & $-0.245$ & $-0.209$ & $0.85$ \\
+San Francisco& $-0.202$ & $-0.171$ & $0.85$ \\
+Chicago      & $-0.222$ & $-0.175$ & $0.79$ \\
+Denver       & $-0.126$ & $-0.099$ & $0.79$ \\
+Atlanta      & $-0.138$ & $-0.105$ & $0.76$ \\
+Philadelphia & $-0.167$ & $-0.122$ & $0.73$ \\
+\midrule
+Pooled ($1/\lambda=1.24$) & \multicolumn{3}{r}{$\lambda=0.81\ (0.02)$, attenuation $19\%$} \\
+\bottomrule
+\end{tabular}
+\end{table}

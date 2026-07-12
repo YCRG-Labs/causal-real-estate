@@ -1,0 +1,82 @@
+[
+  {
+    "city": "boston",
+    "n": 14601,
+    "assessor_arm": true,
+    "demo_missing_pct": 4.0,
+    "list_sqft_missing_pct": 0.1,
+    "tracts": 198
+  },
+  {
+    "city": "sf",
+    "n": 14141,
+    "assessor_arm": true,
+    "demo_missing_pct": 0.1,
+    "list_sqft_missing_pct": 6.8,
+    "tracts": 233
+  },
+  {
+    "city": "dc",
+    "n": 17280,
+    "assessor_arm": false,
+    "demo_missing_pct": 2.5,
+    "list_sqft_missing_pct": 0.9,
+    "tracts": 202
+  },
+  {
+    "city": "philadelphia",
+    "n": 35454,
+    "assessor_arm": true,
+    "demo_missing_pct": 1.3,
+    "list_sqft_missing_pct": 0.4,
+    "tracts": 385
+  },
+  {
+    "city": "chicago",
+    "n": 58109,
+    "assessor_arm": true,
+    "demo_missing_pct": 0.0,
+    "list_sqft_missing_pct": 31.6,
+    "tracts": 854
+  },
+  {
+    "city": "seattle",
+    "n": 23877,
+    "assessor_arm": true,
+    "demo_missing_pct": 0.0,
+    "list_sqft_missing_pct": 0.1,
+    "tracts": 192
+  },
+  {
+    "city": "denver",
+    "n": 28525,
+    "assessor_arm": true,
+    "demo_missing_pct": 12.6,
+    "list_sqft_missing_pct": 0.0,
+    "tracts": 176
+  },
+  {
+    "city": "atlanta",
+    "n": 31567,
+    "assessor_arm": false,
+    "demo_missing_pct": 4.2,
+    "list_sqft_missing_pct": 4.9,
+    "tracts": 299
+  },
+  {
+    "city": "portland",
+    "n": 26887,
+    "assessor_arm": true,
+    "demo_missing_pct": 21.1,
+    "list_sqft_missing_pct": 0.4,
+    "tracts": 175
+  },
+  {
+    "city": "phoenix",
+    "n": 42648,
+    "assessor_arm": true,
+    "demo_missing_pct": 0.0,
+    "list_sqft_missing_pct": 1.2,
+    "tracts": 423
+  }
+]

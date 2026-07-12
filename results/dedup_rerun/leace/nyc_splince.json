@@ -1,0 +1,89 @@
+{
+  "city": "nyc",
+  "variant": "splince",
+  "n_train": 235,
+  "n_test": 102,
+  "n_zips": 126,
+  "routing": "continuous_latlon",
+  "power_diagnostic": {
+    "n_test": 102,
+    "K": 126,
+    "chance_p": 0.007936507936507936,
+    "critical_acc": 0.029411764705882353,
+    "p_min_80pct": 0.049019607843137254,
+    "power_at_p_alt": null,
+    "detectable_gain_80pct": 0.04108309990662932,
+    "alpha": 0.05
+  },
+  "guardedness_residual": 1.3444106938820255e-17,
+  "splince_cov_preservation_max_err": 8.283304597789254e-17,
+  "splince_variance_preserved": true,
+  "continuous": {
+    "raw": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -2.1624458250526146,
+      "r2_per_target_test": [
+        -2.290566558818219,
+        -2.0343250912870103
+      ],
+      "r2_per_target_train": [
+        0.995224864988087,
+        0.9983231998763523
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 235,
+      "n_test": 102,
+      "max_coef": 0.2101675543542229
+    },
+    "erased": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -0.014560338100304993,
+      "r2_per_target_test": [
+        -0.013823752923847854,
+        -0.015296923276762131
+      ],
+      "r2_per_target_train": [
+        1.1102230246251565e-16,
+        1.1102230246251565e-16
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 235,
+      "n_test": 102,
+      "max_coef": 2.5768632444810603e-13
+    }
+  },
+  "mlp_continuous": {
+    "raw": {
+      "r2_avg_test": -1.3634477383460821,
+      "r2_per_target_test": [
+        -1.2824794647022841,
+        -1.4444160119898801
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    },
+    "erased": {
+      "r2_avg_test": -0.2826360130581679,
+      "r2_per_target_test": [
+        -0.2667639100538155,
+        -0.29850811606252026
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    }
+  },
+  "categorical": {
+    "note": "categorical probe suppressed: per-class test count 0.81 below floor 5 (continuous lat/lon probe is the headline)."
+  },
+  "linear_guardedness_holds": true
+}

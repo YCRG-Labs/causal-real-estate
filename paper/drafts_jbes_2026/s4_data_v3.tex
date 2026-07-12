@@ -1,5 +1,5 @@
 
-\section{Dataset Construction}
+\section{Dataset construction}
 \label{sec:data}
 
 \subsection{A twelve-market corpus of listings}
@@ -26,12 +26,14 @@ the property's most recent prior-sale date, which we recover from the listing pa
 for every property and release with the data, enters only as a covariate and is in
 any case essentially uncorrelated with the asking price within each market, the
 absolute correlation no larger than $0.20$ and the $R^2$ below $0.04$.
+Table~\ref{tab:corpus-12} summarizes the twelve markets with their analysis sizes
+and median prices.
 
 \begin{table}[H]
 \centering
 \caption{The twelve-market corpus. \emph{Listings} is the per-market analysis
 sample after deduplication to one row per listing and removal of rows missing a
-required field; the markets together contribute $69{,}173$ listings. Median sale
+required field; the markets together contribute $69{,}204$ listings. Median sale
 price and median description length are computed on the analysis sample. The
 panel ranges over more than an order of magnitude in size and roughly fivefold in
 price.}
@@ -41,12 +43,12 @@ price.}
 \toprule
 Market & Listings & Median price & Median words \\
 \midrule
-New York      & $15{,}227$ & \$975{,}000   & $183$ \\
+New York      & $15{,}255$ & \$975{,}000   & $183$ \\
 Dallas        & $8{,}008$  & \$439{,}000   & $161$ \\
-Phoenix       & $7{,}086$  & \$514{,}990   & $117$ \\
+Phoenix       & $7{,}087$  & \$514{,}990   & $117$ \\
 Philadelphia  & $7{,}030$  & \$255{,}000   & $134$ \\
-Atlanta       & $6{,}134$  & \$384{,}000   & $178$ \\
-Chicago       & $5{,}576$  & \$374{,}900   & $129$ \\
+Atlanta       & $6{,}135$  & \$384{,}000   & $178$ \\
+Chicago       & $5{,}577$  & \$374{,}900   & $129$ \\
 Denver        & $5{,}280$  & \$525{,}000   & $207$ \\
 Portland      & $4{,}337$  & \$559{,}000   & $166$ \\
 Washington    & $4{,}015$  & \$599{,}000   & $187$ \\
@@ -54,7 +56,7 @@ Seattle       & $2{,}884$  & \$750{,}000   & $152$ \\
 Boston        & $2{,}610$  & \$999{,}000   & $137$ \\
 San Francisco & $986$      & \$1{,}295{,}000 & $174$ \\
 \midrule
-Total         & $69{,}173$ & & \\
+Total         & $69{,}204$ & & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -70,11 +72,11 @@ plausible price band to remove data-entry errors and non-arm's-length transfers,
 and we guard the structured covariates with a per-column robust winsorizer that
 clips each feature at its median plus or minus five median absolute deviations and
 imputes the rare non-finite entry at the median. The winsorizer matters more than
-its routine description suggests. A single parcel-join artifact, a year-built value
+its routine description suggests. A single parcel-join mistake, a year-built value
 tens of standard deviations from any plausible construction date, was enough to
 make the partialling-out estimator in one market ill-conditioned and to drive its
 coefficient to an impossible magnitude with a deceptively small standard error,
-and clipping the genuine outliers without touching clean data restored that market
+and clipping the true outliers without touching the well-behaved rows restored that market
 to the range of the others while leaving every well-behaved market unchanged. The
 clip is applied uniformly across the twelve markets and is the only manipulation of
 the structured covariates we perform.
@@ -106,15 +108,16 @@ scrape, the geocoding, and the census, crime, and amenity joins.
 Before encoding, each description is stripped of markup and boilerplate, lowercased,
 and cleared of explicit street addresses, which are replaced with anonymization
 tokens so that a model cannot recover location by reading an address out of the
-text rather than out of the language. The cleaned text then feeds the two encodings
+text rather than out of the language. The preprocessed text then feeds the two encodings
 that Section~\ref{sec:methods-channels} defines. The Doc2Vec uniqueness score that
 drives the Shen-Ross channel measures how far a listing's language sits from its
 market's corpus norm, and the sentence-transformer embedding that drives the Baur
 channel is the $768$-dimensional representation of \texttt{all-mpnet-base-v2}
 \citep{reimers2019sentence}, from which we take the standardized leading principal
-component as the text treatment. We recompute the full analysis on a second,
-smaller transformer to confirm that the conclusions are not an artifact of one
-encoder's geometry, and the deconfounding and erasure diagnostics of
-Sections~\ref{sec:leace-12} and~\ref{sec:decomposition} operate on the same
+component as the text treatment. Robustness to the choice of encoder is taken up
+directly in Section~\ref{sec:cross-method-12}, where a Doc2Vec uniqueness axis and
+the sentence-BERT component recover a concordant per-market signal, so the effect
+does not hinge on one encoder's geometry; the deconfounding and erasure diagnostics
+of Sections~\ref{sec:leace-12} and~\ref{sec:decomposition} operate on the same
 mpnet embedding so that what they remove is the geography the Baur treatment itself
 carries.

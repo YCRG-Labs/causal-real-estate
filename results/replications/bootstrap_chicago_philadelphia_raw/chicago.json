@@ -1,0 +1,18 @@
+{
+  "city": "chicago",
+  "n": 5577,
+  "engine": "ridge",
+  "treatment": "pooled_within_city_centered_pca_pc1",
+  "dml": {
+    "label": "DML on pooled BERT PC1",
+    "n": 5577,
+    "theta": -0.4642253435053499,
+    "se": 0.018471320404545667,
+    "ci_low": -0.5001268862774242,
+    "ci_high": -0.426738554536581,
+    "mde": 0.051756639773536964,
+    "contains_zero": false,
+    "se_if": 0.018695380557738953,
+    "n_boot": 500
+  }
+}

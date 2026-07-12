@@ -7,7 +7,7 @@ MAX_LISTINGS ?= 350
 SCRIPTS := data/scripts
 RUNNER := $(PY) $(SCRIPTS)/run_pipeline_jbes.py
 
-.PHONY: help env smoke acquire geocode confounders embeddings dml finalize verify all clean-manifest
+.PHONY: help env smoke acquire geocode confounders embeddings dml finalize analysis verify all clean-manifest
 
 help:
 	@echo "Targets:"
@@ -19,6 +19,8 @@ help:
 	@echo "  embeddings   - sentence-BERT mpnet-base-v2 on CUDA"
 	@echo "  dml          - per-city DML + bootstrap (B=$(B))"
 	@echo "  finalize     - Shen replication + LEACE + IGBP + hash verify"
+	@echo "  analysis     - meta-regression + concordance + sensitivity + counterfactual rollup"
+	@echo "                 (requires baur_pooled_pca / run_counterfactual tables to already exist)"
 	@echo "  all          - run smoke -> finalize end-to-end (~90 min)"
 	@echo "  verify       - rehash all artifacts and write run_hashes table"
 	@echo ""
@@ -47,6 +49,9 @@ dml:
 
 finalize:
 	$(RUNNER) finalize --cities $(CITIES)
+
+analysis:
+	$(RUNNER) analysis
 
 all:
 	$(RUNNER) all --cities $(CITIES) --max-listings $(MAX_LISTINGS) --B $(B)

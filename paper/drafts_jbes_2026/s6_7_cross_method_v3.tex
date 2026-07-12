@@ -31,19 +31,19 @@ effect is non-negative, the principal-component sign being a disclosed conventio
 Market & Shen $\hat\theta$ & Baur $\hat\theta$ & Submarket-swap \\
 \midrule
 Boston        & $+0.020\;(0.015)$ & $+0.073\;(0.022)$ & $-0.012$ \\
-New York      & $+0.002\;(0.006)$ & $-0.009\;(0.007)$ & $-0.067$ \\
+New York      & $+0.002\;(0.006)$ & $-0.016\;(0.007)$ & $-0.067$ \\
 San Francisco & $+0.117\;(0.025)$ & $+0.106\;(0.025)$ & $+0.015$ \\
 Washington    & $+0.046\;(0.011)$ & $+0.151\;(0.013)$ & $+0.003$ \\
 Philadelphia  & $+0.222\;(0.010)$ & $+0.374\;(0.009)$ & $+0.045$ \\
-Chicago       & $+0.280\;(0.018)$ & $+0.358\;(0.018)$ & $+0.025$ \\
+Chicago       & $+0.280\;(0.018)$ & $+0.464\;(0.019)$ & $+0.025$ \\
 Seattle       & $+0.042\;(0.012)$ & $+0.030\;(0.016)$ & $-0.005$ \\
 Denver        & $+0.072\;(0.009)$ & $+0.061\;(0.009)$ & $+0.039$ \\
-Atlanta       & $+0.033\;(0.007)$ & $+0.110\;(0.009)$ & $+0.001$ \\
+Atlanta       & $+0.033\;(0.007)$ & $+0.134\;(0.011)$ & $+0.001$ \\
 Portland      & $+0.042\;(0.009)$ & $+0.076\;(0.013)$ & $-0.008$ \\
-Phoenix       & $+0.054\;(0.008)$ & $+0.028\;(0.009)$ & $-0.000$ \\
+Phoenix       & $+0.054\;(0.008)$ & $+0.055\;(0.013)$ & $-0.000$ \\
 Dallas        & $+0.082\;(0.008)$ & $+0.142\;(0.010)$ & $-0.007$ \\
 \midrule
-Pooled (RE)   & $+0.060\;(0.019)$ & $+0.125\;(0.035)$ & $+0.002$ \\
+Pooled (RE)   & $+0.060\;(0.019)$ & $+0.137\;(0.041)$ & $+0.002$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -59,18 +59,24 @@ cross-market correlation between any two channels is invariant in magnitude
 under a global sign flip of either one. The orientation fixes only how the
 shared signal is displayed, not whether it is shared.
 
-\paragraph{The two embedding channels recover one signal.}
+\paragraph{The two embedding channels track a shared signal.}
 Table~\ref{tab:cross-method-12} reports the per-market point estimates, and
 Figure~\ref{fig:forest-12} arranges all three channels as per-market intervals
 side by side. Across
 the twelve markets the Shen and Baur estimates move together closely,
-with a Pearson correlation of $+0.91$ (Figure~\ref{fig:concordance}), a Spearman rank correlation of $+0.64$
-($p = 0.026$), and a Lin concordance coefficient of $+0.79$, and they share the
-sign of their point estimate in eleven of the twelve markets. We read this not
+with a Pearson correlation of $+0.94$ (Figure~\ref{fig:concordance}), a Spearman rank correlation of $+0.66$
+($p = 0.018$), and a Lin concordance coefficient of $+0.74$, and they share the
+sign of their point estimate in eleven of the twelve markets. This full-panel
+correlation is driven by leverage: Chicago and Philadelphia, the two markets both
+channels place far above the rest, dominate it, and dropping the two leaves a
+Pearson of only $+0.47$ that is no longer significant at conventional levels
+($p = 0.18$). The concordance is therefore best read as strong agreement on the
+sign and ranking of the markets that carry a clear effect rather than as a tight
+point-by-point identity across the whole panel. We read it not
 as two independent methods corroborating one another but as a robustness result
 about a single underlying quantity. The Shen and Baur channels are two
 encodings of the same listing text, applied to the same listings under the same
-confounder adjustment, so a near-perfect correlation establishes that the
+confounder adjustment, so their agreement establishes that the
 text-on-price signal does not depend on whether the text is summarized by a
 Doc2Vec rarity score or by a sentence-BERT principal component, without adding an
 independent, bias-disjoint observation of that effect. The single market where
@@ -80,7 +86,7 @@ oriented Baur axis points opposite the pooled direction.
 
 \paragraph{The counterfactual channel is weaker and more nearly distinct.}
 The LLM rewriting differential is the one channel whose bias structure is not
-shared with the embedding channels, since it leverages a within-listing
+shared with the embedding channels, since it relies on a within-listing
 minimal-edit substitution rather than the cross-listing geometry of a fixed
 encoder. It is also the weakest. Its rank correlation with the Shen channel is
 $+0.77$ ($p = 0.003$) and with the Baur channel $+0.57$ ($p = 0.05$), but its
@@ -96,15 +102,16 @@ Appendix~\ref{sec:counterfactual-12}.
 \paragraph{Identification overlap.} A more decision-relevant summary than rank
 agreement is which markets each channel identifies at the $95\%$ level, where
 the per-method interval excludes zero. The Shen channel identifies ten of the
-twelve markets, the counterfactual channel nine, and the Baur channel ten, with
-New York and Seattle the two markets whose Baur interval covers zero. Six markets,
+twelve markets, the counterfactual channel nine, and the Baur channel eleven, with
+Seattle the one market whose Baur interval covers zero and New York a small but
+distinguishable negative. Six markets,
 San Francisco, Washington, Philadelphia, Denver, Portland, and Phoenix, are
-identified by all three channels jointly, eleven of the twelve are identified by
+identified by all three channels jointly, all twelve are identified by
 at least two, and no market is left unidentified by every channel.
 The breadth of the Baur identification set should be read together with the
 collinearity above and with the sensitivity analysis of
 Section~\ref{sec:sensitivity-12}: the embedding channel detects an association
-in ten of the twelve markets, but whether that association survives unmeasured confounding is
+in eleven of the twelve markets, but whether that association survives unmeasured confounding is
 the separate question those robustness values address, and it is there rather
 than in the count of identified markets that the strength of the causal claim is
 adjudicated.
@@ -112,7 +119,7 @@ adjudicated.
 \paragraph{How many independent measurements the panel carries.} Because the two
 embedding channels are nearly collinear, the three per-market $z$-statistics do
 not constitute three independent observations. The across-market correlation
-matrix of the standardized estimates has a Shen-Baur entry of $+0.91$ and
+matrix of the standardized estimates has a Shen-Baur entry of $+0.94$ and
 Shen-counterfactual and Baur-counterfactual entries near $+0.39$, and its
 effective dimension, computed as $\operatorname{tr}(R)^2 / \operatorname{tr}(R^2)$,
 is $1.7$ of a possible $3$. The panel thus carries on the order of one and
@@ -196,24 +203,24 @@ section rests.
     title={(b) sentence-BERT},
     extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
 ]
-\draw[thin,gray] (axis cs:-0.022,New York)--(axis cs:0.004,New York);
+\draw[thin,gray] (axis cs:-0.031,New York)--(axis cs:-0.002,New York);
 \draw[thin,gray] (axis cs:0.030,Boston)--(axis cs:0.116,Boston);
 \draw[thin,gray] (axis cs:-0.002,Seattle)--(axis cs:0.062,Seattle);
-\draw[thin,gray] (axis cs:0.010,Phoenix)--(axis cs:0.045,Phoenix);
+\draw[thin,gray] (axis cs:0.030,Phoenix)--(axis cs:0.081,Phoenix);
 \draw[thin,gray] (axis cs:0.126,Washington)--(axis cs:0.176,Washington);
 \draw[thin,gray] (axis cs:0.123,Dallas)--(axis cs:0.162,Dallas);
 \draw[thin,gray] (axis cs:0.051,Portland)--(axis cs:0.101,Portland);
 \draw[thin,gray] (axis cs:0.043,Denver)--(axis cs:0.078,Denver);
-\draw[thin,gray] (axis cs:0.092,Atlanta)--(axis cs:0.127,Atlanta);
+\draw[thin,gray] (axis cs:0.113,Atlanta)--(axis cs:0.155,Atlanta);
 \draw[thin,gray] (axis cs:0.056,San Francisco)--(axis cs:0.155,San Francisco);
-\draw[thin,gray] (axis cs:0.322,Chicago)--(axis cs:0.394,Chicago);
+\draw[thin,gray] (axis cs:0.428,Chicago)--(axis cs:0.501,Chicago);
 \draw[thin,gray] (axis cs:0.356,Philadelphia)--(axis cs:0.392,Philadelphia);
 \addplot[only marks, mark=square*, mark size=1.8pt, color=cSF] coordinates {
-  (-0.009,New York) (0.073,Boston) (0.030,Seattle) (0.028,Phoenix) (0.151,Washington)
-  (0.142,Dallas) (0.076,Portland) (0.061,Denver) (0.110,Atlanta) (0.106,San Francisco)
-  (0.358,Chicago) (0.374,Philadelphia)};
-\draw[thin,gray] (axis cs:0.047,Pooled)--(axis cs:0.202,Pooled);
-\addplot[only marks, mark=diamond*, mark size=3.2pt, color=cSF] coordinates {(0.125,Pooled)};
+  (-0.016,New York) (0.073,Boston) (0.030,Seattle) (0.055,Phoenix) (0.151,Washington)
+  (0.142,Dallas) (0.076,Portland) (0.061,Denver) (0.134,Atlanta) (0.106,San Francisco)
+  (0.464,Chicago) (0.374,Philadelphia)};
+\draw[thin,gray] (axis cs:0.048,Pooled)--(axis cs:0.227,Pooled);
+\addplot[only marks, mark=diamond*, mark size=3.2pt, color=cSF] coordinates {(0.137,Pooled)};
 \end{axis}
 \begin{axis}[
     causalre, width=0.27\textwidth, height=7.0cm,
@@ -268,19 +275,19 @@ and \ref{tab:counterfactual-12}.}
     ylabel={sentence-BERT $\hat\theta$ per $\sigma$ (oriented)},
     xmin=-0.05, xmax=0.50, ymin=-0.05, ymax=0.50,
     xtick={0,0.1,0.2,0.3,0.4}, ytick={0,0.1,0.2,0.3,0.4},
-    title={Cross-channel concordance ($r = 0.91$)},
+    title={Cross-channel concordance ($r = 0.94$)},
 ]
 \addplot[black, dashed, thin, forget plot] coordinates {(-0.05,-0.05) (0.50,0.50)};
 \addplot[only marks, mark=*, mark size=1.8pt, color=cNYC] coordinates {
-  (0.020,0.073) (0.002,-0.009) (0.117,0.106) (0.046,0.151) (0.222,0.374) (0.280,0.358)
-  (0.042,0.030) (0.072,0.061) (0.033,0.110) (0.042,0.076) (0.054,0.028) (0.082,0.142)};
+  (0.020,0.073) (0.002,-0.016) (0.117,0.106) (0.046,0.151) (0.222,0.374) (0.280,0.464)
+  (0.042,0.030) (0.072,0.061) (0.033,0.134) (0.042,0.076) (0.054,0.055) (0.082,0.142)};
 \end{axis}
 \end{tikzpicture}
 \caption{Per-market estimates of the two embedding channels against each other,
 with the $45^\circ$ identity line. The two channels co-move closely
-across markets (Pearson $r = 0.91$), so they recover one underlying signal under
-two encodings rather than two independent measurements; the systematic departure
-from the identity line reflects that the sentence-BERT axis is roughly twice the
+across markets (Pearson $r = 0.94$), though the full-panel correlation is carried
+by Chicago and Philadelphia and falls to $+0.47$ without them; the departure
+from the identity line reflects that the sentence-BERT axis runs roughly twice the
 Shen channel in magnitude, not a difference in which markets carry the signal.}
 \label{fig:concordance}
 \end{figure}

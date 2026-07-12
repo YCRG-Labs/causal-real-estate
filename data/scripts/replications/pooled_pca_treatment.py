@@ -9,8 +9,12 @@ captures the within-market dimension of listing language that the DML
 score treats as the treatment.
 
 Output: results/replications/pooled_pca_treatment.csv with columns
-[city, listing_id, treatment, treatment_z], where treatment is the
-projection on the global axis and treatment_z is per-city standardized.
+[city, listing_id, key, treatment, treatment_z], where treatment is the
+projection on the global axis, treatment_z is per-city standardized, and
+key is a stable content key (url, falling back to source_html_sha256) that
+downstream consumers should merge on instead of the positional listing_id
+-- listing_id is an arange() over the CURRENT read of the embeddings
+parquet and silently drifts whenever that parquet is rewritten.
 
 The DML estimand then has the interpretation 'per per-city-sigma move
 along the common axis', directly comparable across markets.
@@ -42,7 +46,15 @@ def _load_city_embeddings(parquet_dir: Path, city: str):
     if id_col is None or id_col not in df.columns:
         df["listing_id"] = np.arange(len(df))
         id_col = "listing_id"
-    return df, emb_cols, id_col
+    if "url" in df.columns:
+        key_col = "url"
+    elif "source_html_sha256" in df.columns:
+        key_col = "source_html_sha256"
+    else:
+        raise AssertionError(
+            f"{city}: embeddings parquet has neither 'url' nor "
+            "'source_html_sha256' to key the treatment on")
+    return df, emb_cols, id_col, key_col
 
 
 def compute_pooled_pca_treatment(
@@ -59,22 +71,23 @@ def compute_pooled_pca_treatment(
     Ethayarajh 2019 anisotropy guidance).
     """
     parquet_dir = Path(parquet_dir)
-    blocks, ids, city_lab = [], [], []
+    blocks, ids, keys, city_lab = [], [], [], []
     n_per_city = {}
     for c in cities:
         out = _load_city_embeddings(parquet_dir, c)
         if out is None:
             print(f"  [skip] {c}: no embeddings parquet")
             continue
-        df, emb_cols, id_col = out
+        df, emb_cols, id_col, key_col = out
         X = df[emb_cols].to_numpy(dtype=float)
         if within_city_center:
             X = X - X.mean(axis=0, keepdims=True)
         blocks.append(X)
         ids.append(df[id_col].to_numpy())
+        keys.append(df[key_col].astype(str).to_numpy())
         city_lab.extend([c] * len(df))
         n_per_city[c] = len(df)
-        print(f"  [{c}] n={len(df)}, embed_dim={len(emb_cols)}")
+        print(f"  [{c}] n={len(df)}, embed_dim={len(emb_cols)}, key_col={key_col}")
     X_all = np.vstack(blocks)
     print(f"\n  pooled n={X_all.shape[0]}, dim={X_all.shape[1]}")
 
@@ -86,7 +99,8 @@ def compute_pooled_pca_treatment(
     scores = X_all @ direction.T
 
     out = pd.DataFrame({"city": city_lab,
-                         "listing_id": np.concatenate(ids)})
+                         "listing_id": np.concatenate(ids),
+                         "key": np.concatenate(keys)})
     if n_components == 1:
         out["treatment"] = scores[:, 0]
         out["treatment_z"] = out.groupby("city")["treatment"].transform(

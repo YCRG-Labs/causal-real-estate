@@ -18,7 +18,7 @@ What changed vs v1 (each item flagged with correctness preservation):
       Sec. 1.2 explicitly lists ridge alongside lasso/RF/boosting. At
       n~340, d~34 the bias-variance tradeoff favors ridge with closed-form
       GCV-LOOCV over a depth-3 boosted tree ensemble that fits 200 trees
-      on 280 training rows. See Bach et al. (2024, arXiv:2604.17239)
+      on 280 training rows. See Lin & Han (2026, arXiv:2604.17239)
       Remark 2.2 for bootstrap-DML with linear nuisances.]
       Empirical: theta matches LightGBM to 2 decimals on real data
       (sf -0.038 vs -0.021, nyc 0.168 vs 0.169, boston -0.016 vs -0.026).
@@ -86,8 +86,9 @@ Usage:
     python fast_bootstrap_dml_v2.py --no-cache          # bypass parcels cache
 
 References (same as v1 plus):
-  Lam (2022, JASA) "A Cheap Bootstrap Method for Fast Inference" arXiv:2202.00090
-  Bach et al. (2024) "Bootstrap consistency for general DML" arXiv:2604.17239
+  Lam (2022) "A Cheap Bootstrap Method for Fast Inference" arXiv:2202.00090 [preprint]
+  Lin & Han (2026) "Bootstrap consistency for general double/debiased
+  machine learning estimators" arXiv:2604.17239
   Ohlendorff et al. (2025) "Cheap Subsampling bootstrap CIs" arXiv:2501.10289
   Golub, Heath, Wahba (1979) "Generalized Cross-Validation as a method for
     choosing a good ridge parameter" Technometrics 21(2).

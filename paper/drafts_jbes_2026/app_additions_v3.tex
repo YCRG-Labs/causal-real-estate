@@ -1,5 +1,5 @@
 
-\section{The Spatial-Confounding Decomposition}
+\section{The spatial-confounding decomposition}
 \label{app:decomposition}
 
 The headline deconfounding test of Section~\ref{sec:decomposition} rests on the order-invariant covariate decomposition of \citet{gelbach2016covariates}, and we give here the estimand, the spatial basis, and the per-market numbers behind Figure~\ref{fig:decomposition}.
@@ -9,58 +9,58 @@ Fix the treatment $T$ at the oriented leading principal component of the sentenc
 \Delta_{\text{geo}} = \hat\theta_{\text{base}} - \hat\theta_{\text{geo}}
 \label{eq:gelbach}
 \end{equation}
-is the contribution the location block makes to the text-price coefficient, and that this contribution is well defined rather than an artifact of the order in which control blocks enter. We read $\Delta_{\text{geo}}$ as the part of the apparent text effect that explicit geography accounts for.
+is the contribution the location block makes to the text-price coefficient, and that this contribution is well defined rather than an accident of the order in which control blocks enter. We read $\Delta_{\text{geo}}$ as the part of the apparent text effect that explicit geography accounts for.
 
 \begin{table}[H]
 \centering
-\caption{Spatial-confounding decomposition by market. $\hat\theta_{\text{base}}$ is the per-standard-deviation text coefficient with the structured and contextual controls only; $\hat\theta_{\text{geo}}$ adds the location basis $G$; $\Delta_{\text{geo}}$ is their difference, the share of the coefficient that geography explains; and $R^2_{T\sim G}$ is the share of the treatment's own variance the location basis explains, the diagnostic that makes the decomposition non-vacuous. Markets are ordered by $\hat\theta_{\text{base}}$.}
+\caption{Spatial-confounding decomposition by market. $\hat\theta_{\text{base}}$ is the per-standard-deviation text coefficient with the structured and contextual controls only; $\hat\theta_{\text{geo}}$ adds the location basis $G$; $\Delta_{\text{geo}}$ is their difference, the share of the coefficient that geography explains; and $R^2_{T\sim G}$ is the share of the treatment's own variance the location basis explains, the diagnostic that makes the decomposition non-vacuous. Markets are ordered by $\hat\theta_{\text{base}}$. All four columns are point estimates; the formal per-market $95\%$ influence-function interval on the text coefficient is given in Table~\ref{tab:baur-12city}.}
 \label{tab:decomposition-12}
 \small
 \begin{tabular}{lrrrr}
 \toprule
 Market & $\hat\theta_{\text{base}}$ & $\hat\theta_{\text{geo}}$ & $\Delta_{\text{geo}}$ & $R^2_{T\sim G}$ \\
 \midrule
-Chicago       & $+0.461$ & $+0.469$ & $-0.008$ & $0.187$ \\
-Philadelphia  & $+0.408$ & $+0.405$ & $+0.003$ & $0.116$ \\
-Atlanta       & $+0.253$ & $+0.250$ & $+0.003$ & $0.148$ \\
-Dallas        & $+0.200$ & $+0.199$ & $+0.001$ & $0.059$ \\
-Denver        & $+0.154$ & $+0.158$ & $-0.004$ & $0.165$ \\
-Boston        & $+0.127$ & $+0.126$ & $+0.001$ & $0.053$ \\
-San Francisco & $+0.111$ & $+0.109$ & $+0.002$ & $0.035$ \\
-Portland      & $+0.098$ & $+0.095$ & $+0.003$ & $0.158$ \\
-Seattle       & $+0.064$ & $+0.065$ & $-0.001$ & $0.034$ \\
-Washington    & $+0.015$ & $+0.013$ & $+0.002$ & $0.121$ \\
-Phoenix       & $+0.009$ & $-0.002$ & $+0.011$ & $0.097$ \\
-New York      & $-0.119$ & $-0.152$ & $+0.033$ & $0.417$ \\
+Chicago       & $+0.463$ & $+0.472$ & $-0.009$ & $0.187$ \\
+Philadelphia  & $+0.367$ & $+0.363$ & $+0.003$ & $0.117$ \\
+Dallas        & $+0.146$ & $+0.147$ & $-0.001$ & $0.059$ \\
+Washington    & $+0.129$ & $+0.120$ & $+0.010$ & $0.120$ \\
+Boston        & $+0.126$ & $+0.125$ & $+0.001$ & $0.054$ \\
+Atlanta       & $+0.124$ & $+0.129$ & $-0.004$ & $0.148$ \\
+San Francisco & $+0.122$ & $+0.119$ & $+0.003$ & $0.035$ \\
+Portland      & $+0.076$ & $+0.085$ & $-0.010$ & $0.161$ \\
+Denver        & $+0.067$ & $+0.082$ & $-0.015$ & $0.164$ \\
+Seattle       & $+0.046$ & $+0.044$ & $+0.002$ & $0.035$ \\
+Phoenix       & $+0.004$ & $-0.009$ & $+0.013$ & $0.097$ \\
+New York      & $-0.122$ & $-0.154$ & $+0.032$ & $0.419$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The shift is small in absolute terms throughout: $|\Delta_{\text{geo}}|$ is at most $0.033$ of a log point, in New York, and at most $0.011$ in every other market. Expressed as a fraction of the coefficient it stays under five percent in every market that carries a non-trivial effect, New York alone excepted at about a quarter; the two near-null markets, Phoenix and Washington, have absolute shifts of a hundredth of a log point or less, so their fraction is large but uninformative. The decomposition is non-vacuous because $R^2_{T\sim G}$ is far from zero, reaching $0.42$ in New York and exceeding a tenth in six markets, so the text direction does encode location, yet that location component does not carry the effect of the language on price except in New York. The location basis is a smooth coordinate polynomial laid over roughly thirty structured controls, so confounding at a finer spatial grain, or through pathways those controls miss, is outside what the comparison can rule out.
+The shift is small in absolute terms throughout: $|\Delta_{\text{geo}}|$ is at most $0.032$ of a log point, in New York, and at most $0.015$ in every other market. Relative to each coefficient it is negligible in the markets that carry a clear effect, staying below a twentieth of the estimate in Chicago, Philadelphia, Dallas, Atlanta, San Francisco, and Boston. It grows as a fraction only where the base coefficient is itself small, in Denver and Portland and the near-null Phoenix, and it is largest in New York, where it reaches about a quarter of the coefficient. The decomposition is non-vacuous because $R^2_{T\sim G}$ is far from zero, reaching $0.42$ in New York and exceeding a tenth in six other markets, so the text direction does encode location, yet that location component does not carry the effect of the language on price except in New York. The location basis is a smooth coordinate polynomial laid over roughly thirty structured controls, so confounding at a finer spatial grain, or through pathways those controls miss, is outside what the comparison can rule out.
 
-To test whether the small shifts above are an artifact of that coarse polynomial, we replace it with a rank-thirty thin-plate regression spline over latitude and longitude, projected to meters, the flexible low-rank smoother the spatial-statistics literature prefers when the scale of confounding is unknown \citep{keller2020selecting,gilbert2021causal}. Table~\ref{tab:decomposition-tprs} reports the geography-adjusted coefficient under each basis. The spline captures far more of the treatment's spatial structure, with $R^2_{T\sim G}$ roughly doubling on average and rising from $0.42$ to $0.52$ in New York, yet the adjusted coefficient moves by at most $0.030$ of a log point, again in New York, and by under $0.02$ in every other market, with no market changing sign. A basis flexible enough to absorb twice the geography therefore leaves the semantic estimate essentially where the quadratic left it, which is the response the spatial-confounding critique calls for.
+To test whether the small shifts above are a byproduct of that coarse polynomial, we replace it with a rank-thirty thin-plate regression spline over latitude and longitude, projected to meters, the flexible low-rank smoother the spatial-statistics literature prefers when the scale of confounding is unknown \citep{keller2020selecting,gilbert2021causal}. Table~\ref{tab:decomposition-tprs} reports the geography-adjusted coefficient under each basis, visualized in Figure~\ref{fig:decomposition-tprs}. The spline captures far more of the treatment's spatial structure, with $R^2_{T\sim G}$ rising by more than half on average and climbing from $0.42$ to $0.52$ in New York, yet the adjusted coefficient moves by at most $0.028$ of a log point, again in New York, and by under $0.02$ in every other market, with no market changing sign. A basis flexible enough to absorb twice the geography therefore leaves the semantic estimate essentially where the quadratic left it, which is the response the spatial-confounding critique calls for.
 
 \begin{table}[H]
 \centering
-\caption{Spatial basis robustness. $\hat\theta_{\text{geo}}$ is the per-standard-deviation text coefficient after the location adjustment, under the quadratic basis of Table~\ref{tab:decomposition-12} and under a rank-thirty thin-plate regression spline; $\Delta$ is their difference; $R^2_{T\sim G}$ is the share of the treatment's own variance the location basis explains under each. Markets ordered as in Table~\ref{tab:decomposition-12}.}
+\caption{Spatial basis robustness. $\hat\theta_{\text{geo}}$ is the per-standard-deviation text coefficient after the location adjustment, under the quadratic basis of Table~\ref{tab:decomposition-12} and under a rank-thirty thin-plate regression spline; $\Delta$ is their difference; $R^2_{T\sim G}$ is the share of the treatment's own variance the location basis explains under each. Markets ordered as in Table~\ref{tab:decomposition-12}. As in Table~\ref{tab:decomposition-12}, entries are point estimates, with the influence-function interval on the underlying coefficient given in Table~\ref{tab:baur-12city}.}
 \label{tab:decomposition-tprs}
 \small
 \begin{tabular}{lrrrrr}
 \toprule
 Market & $\hat\theta_{\text{geo}}$ (quad) & $\hat\theta_{\text{geo}}$ (TPRS) & $\Delta$ & $R^2_{T\sim G}$ quad & $R^2_{T\sim G}$ TPRS \\
 \midrule
-Chicago       & $+0.469$ & $+0.463$ & $-0.006$ & $0.187$ & $0.290$ \\
-Philadelphia  & $+0.405$ & $+0.388$ & $-0.017$ & $0.116$ & $0.269$ \\
-Atlanta       & $+0.250$ & $+0.255$ & $+0.004$ & $0.148$ & $0.285$ \\
-Dallas        & $+0.199$ & $+0.200$ & $+0.001$ & $0.059$ & $0.104$ \\
-Denver        & $+0.158$ & $+0.169$ & $+0.012$ & $0.165$ & $0.226$ \\
-Boston        & $+0.126$ & $+0.114$ & $-0.012$ & $0.053$ & $0.137$ \\
-San Francisco & $+0.109$ & $+0.105$ & $-0.004$ & $0.035$ & $0.095$ \\
-Portland      & $+0.095$ & $+0.081$ & $-0.014$ & $0.158$ & $0.215$ \\
-Seattle       & $+0.065$ & $+0.057$ & $-0.007$ & $0.034$ & $0.059$ \\
-Washington    & $+0.013$ & $+0.008$ & $-0.005$ & $0.121$ & $0.224$ \\
-Phoenix       & $-0.002$ & $-0.010$ & $-0.009$ & $0.097$ & $0.145$ \\
-New York      & $-0.152$ & $-0.183$ & $-0.030$ & $0.417$ & $0.523$ \\
+Chicago       & $+0.472$ & $+0.461$ & $-0.012$ & $0.187$ & $0.301$ \\
+Philadelphia  & $+0.363$ & $+0.353$ & $-0.011$ & $0.117$ & $0.273$ \\
+Dallas        & $+0.147$ & $+0.147$ & $\phantom{+}0.000$ & $0.059$ & $0.104$ \\
+Washington    & $+0.120$ & $+0.116$ & $-0.004$ & $0.120$ & $0.230$ \\
+Boston        & $+0.125$ & $+0.114$ & $-0.011$ & $0.054$ & $0.136$ \\
+Atlanta       & $+0.129$ & $+0.129$ & $\phantom{+}0.000$ & $0.148$ & $0.289$ \\
+San Francisco & $+0.119$ & $+0.112$ & $-0.008$ & $0.035$ & $0.095$ \\
+Portland      & $+0.085$ & $+0.075$ & $-0.010$ & $0.161$ & $0.220$ \\
+Denver        & $+0.082$ & $+0.098$ & $+0.016$ & $0.164$ & $0.225$ \\
+Seattle       & $+0.044$ & $+0.044$ & $\phantom{+}0.000$ & $0.035$ & $0.061$ \\
+Phoenix       & $-0.009$ & $-0.015$ & $-0.006$ & $0.097$ & $0.146$ \\
+New York      & $-0.154$ & $-0.181$ & $-0.028$ & $0.419$ & $0.516$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -70,34 +70,34 @@ New York      & $-0.152$ & $-0.183$ & $-0.030$ & $0.417$ & $0.523$ \\
 \begin{tikzpicture}
 \begin{axis}[
     causalre, width=0.56\textwidth, height=6.6cm,
-    symbolic y coords={New York,Phoenix,Washington,Seattle,Portland,San Francisco,Boston,Denver,Dallas,Atlanta,Philadelphia,Chicago},
+    symbolic y coords={New York,Phoenix,Seattle,Denver,Portland,San Francisco,Washington,Boston,Atlanta,Dallas,Philadelphia,Chicago},
     ytick=data, enlarge y limits=0.06,
     xlabel={$\hat\theta_{\text{geo}}$ per $\sigma$ (log price)}, xmin=-0.24, xmax=0.53,
     xtick={-0.2,-0.1,0,0.2,0.4},
     extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
     legend style={font=\scriptsize, draw=none, fill=none, at={(0,1.07)}, anchor=south west, legend columns=2, /tikz/every even column/.append style={column sep=10pt}},
 ]
-\draw[thin,gray] (axis cs:-0.152,New York)--(axis cs:-0.183,New York);
-\draw[thin,gray] (axis cs:-0.002,Phoenix)--(axis cs:-0.010,Phoenix);
-\draw[thin,gray] (axis cs:0.013,Washington)--(axis cs:0.008,Washington);
-\draw[thin,gray] (axis cs:0.065,Seattle)--(axis cs:0.057,Seattle);
-\draw[thin,gray] (axis cs:0.095,Portland)--(axis cs:0.081,Portland);
-\draw[thin,gray] (axis cs:0.109,San Francisco)--(axis cs:0.105,San Francisco);
-\draw[thin,gray] (axis cs:0.126,Boston)--(axis cs:0.114,Boston);
-\draw[thin,gray] (axis cs:0.158,Denver)--(axis cs:0.169,Denver);
-\draw[thin,gray] (axis cs:0.199,Dallas)--(axis cs:0.200,Dallas);
-\draw[thin,gray] (axis cs:0.250,Atlanta)--(axis cs:0.255,Atlanta);
-\draw[thin,gray] (axis cs:0.405,Philadelphia)--(axis cs:0.388,Philadelphia);
-\draw[thin,gray] (axis cs:0.469,Chicago)--(axis cs:0.463,Chicago);
+\draw[thin,gray] (axis cs:-0.154,New York)--(axis cs:-0.181,New York);
+\draw[thin,gray] (axis cs:-0.009,Phoenix)--(axis cs:-0.015,Phoenix);
+\draw[thin,gray] (axis cs:0.044,Seattle)--(axis cs:0.044,Seattle);
+\draw[thin,gray] (axis cs:0.082,Denver)--(axis cs:0.098,Denver);
+\draw[thin,gray] (axis cs:0.085,Portland)--(axis cs:0.075,Portland);
+\draw[thin,gray] (axis cs:0.119,San Francisco)--(axis cs:0.112,San Francisco);
+\draw[thin,gray] (axis cs:0.120,Washington)--(axis cs:0.116,Washington);
+\draw[thin,gray] (axis cs:0.125,Boston)--(axis cs:0.114,Boston);
+\draw[thin,gray] (axis cs:0.129,Atlanta)--(axis cs:0.129,Atlanta);
+\draw[thin,gray] (axis cs:0.147,Dallas)--(axis cs:0.147,Dallas);
+\draw[thin,gray] (axis cs:0.363,Philadelphia)--(axis cs:0.353,Philadelphia);
+\draw[thin,gray] (axis cs:0.472,Chicago)--(axis cs:0.461,Chicago);
 \addplot[only marks, mark=o, mark size=2.2pt, color=cMUTE, line width=0.9pt] coordinates {
-  (-0.152,New York) (-0.002,Phoenix) (0.013,Washington) (0.065,Seattle) (0.095,Portland)
-  (0.109,San Francisco) (0.126,Boston) (0.158,Denver) (0.199,Dallas) (0.250,Atlanta)
-  (0.405,Philadelphia) (0.469,Chicago)};
+  (-0.154,New York) (-0.009,Phoenix) (0.044,Seattle) (0.082,Denver) (0.085,Portland)
+  (0.119,San Francisco) (0.120,Washington) (0.125,Boston) (0.129,Atlanta) (0.147,Dallas)
+  (0.363,Philadelphia) (0.472,Chicago)};
 \addlegendentry{quadratic basis}
 \addplot[only marks, mark=*, mark size=1.7pt, color=cNYC] coordinates {
-  (-0.183,New York) (-0.010,Phoenix) (0.008,Washington) (0.057,Seattle) (0.081,Portland)
-  (0.105,San Francisco) (0.114,Boston) (0.169,Denver) (0.200,Dallas) (0.255,Atlanta)
-  (0.388,Philadelphia) (0.463,Chicago)};
+  (-0.181,New York) (-0.015,Phoenix) (0.044,Seattle) (0.098,Denver) (0.075,Portland)
+  (0.112,San Francisco) (0.116,Washington) (0.114,Boston) (0.129,Atlanta) (0.147,Dallas)
+  (0.353,Philadelphia) (0.461,Chicago)};
 \addlegendentry{thin-plate spline (rank 30)}
 \end{axis}
 \end{tikzpicture}
@@ -111,7 +111,7 @@ semantic estimate essentially in place.}
 \label{fig:decomposition-tprs}
 \end{figure}
 
-\section{Counterfactual-Rewriting Protocol}
+\section{Counterfactual-rewriting protocol}
 \label{app:counterfactual}
 
 The intervention of Appendix~\ref{sec:counterfactual-12} treats each listing description as one draw from a population of descriptions for the same property and manipulates the language directly. A frozen instruction-tuned language model receives the original description, a structured summary of the property's attributes, and a target submarket, and returns a rewritten description; the rewrite is then re-priced under the same automated valuation model and the change in predicted log price is read off. The primary generator is Qwen~2.5 32B Instruct, run on $n = 200$ listings per market; a secondary cross-generator check uses Llama~3.3 70B Instruct on a separate $n = 100$ draw, an unmatched probe of direction and rough magnitude rather than a tight replication. The exact prompts and decoding settings are in the replication repository.
@@ -125,7 +125,7 @@ Each contrast is a product, $\hat\delta = \hat\theta \, \overline{\Delta\mathrm{
 \end{equation}
 where $\widehat{\mathrm{Var}}(\hat\theta)$ is the influence-function variance of the DML coefficient and $\widehat{\mathrm{Var}}(\overline{\Delta\mathrm{PC1}})$ comes from a within-listing cluster bootstrap over the rewritten listings in the manner of \citet{cameron2008bootstrap}. Adding the coefficient's contribution rather than conditioning on a fitted $\hat\theta$ is what widens the intervals materially: the pooled style-stripped statistic is $t = 3.66$ under Equation~\eqref{eq:cf-delta}, against the implausible $t \approx 13$ a coefficient-conditional interval would report. Because the cross-world independence conditions that identify a formal mediation decomposition are not met, we call these model-based contrasts rather than natural direct or indirect effects and report no natural-indirect-effect quantity.
 
-\section{Hyperparameters and Computational Environment}
+\section{Hyperparameters and computational environment}
 \label{app:hyperparams}
 
 Table~\ref{tab:hyperparams} consolidates the settings scattered through the methods and the implementation appendices, so the estimates can be reproduced from the paper together with the replication repository.
@@ -143,7 +143,7 @@ DML cross-fitting & $K = 5$ folds, out-of-fold residualization \citep{chernozhuk
 Nuisance learner & gradient boosting (LightGBM, $\text{num\_leaves}=8$, $\text{max\_bin}=63$) for the embedding channels; ridge regression for the Shen-Ross uniqueness channel \\
 Treatment direction & leading principal component of the embedding, $z$-scored, fitted once on the pooled sample (in-sample) for the per-market panel \\
 Text encoders & sentence-BERT \texttt{all-mpnet-base-v2} ($768$-d, primary); \texttt{all-MiniLM-L6-v2} ($384$-d, robustness); Doc2Vec uniqueness score (Shen channel) \\
-LEACE / IGBP erasure & continuous latitude-longitude concept; IGBP run for five outer passes with a multilayer-perceptron probe; single-precision \\
+LEACE / iterative gradient-based projection (IGBP) erasure & continuous latitude-longitude concept; IGBP run for five outer passes with a multilayer-perceptron probe; single-precision \\
 GRL foil (App.~\ref{app:adversarial}) & top-$50$ PCs $\rightarrow$ $64$-d encoder; three discriminator heads (ZIP, lat-lon, income quintile); $\lambda$ annealed $0.1\!\to\!1.0$; Adam, $150$ epochs, $70/30$ split \\
 Counterfactual rewriting & Qwen~2.5 32B Instruct ($n=200$/market); Llama~3.3 70B Instruct ($n=100$, cross-generator) \\
 Interval method & influence-function intervals for the Baur and Shen per-market panel; tract cluster bootstrap ($B=300$) for the sale-price panel; within-listing cluster bootstrap for the counterfactual contrast \\

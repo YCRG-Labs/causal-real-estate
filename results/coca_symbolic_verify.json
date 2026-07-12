@@ -21,5 +21,17 @@
     "d_rD_d_rho_TX": "2*rho_TC**2*rho_TX/(rho_TX**2 - 1)**2",
     "r_D_grows_freely_in_rho_TC": true,
     "note": "r_D depends on rho_TC (the confounder's own strength), which no observed statistic bounds once rho_CX=0; the observed rho_TX only rescales it. The benchmark 'C no stronger than X_j' has no anchor."
+  },
+  "D": {
+    "partial_corr_orthogonal": "t_c*(w**2 - 1)/(sqrt((w**2 - 1)*(a1**2 - 2*a1*a2*w + a2**2 + w**2 - 1)/(a1**2 - 2*a1*a2*w + a2**2 - t_c**2*w**2 + t_c**2 + w**2 - 1)**2)*(a1**2 - 2*a1*a2*w + a2**2 - t_c**2*w**2 + t_c**2 + w**2 - 1))",
+    "target_rho_over_sqrt_1_minus_R2TX": "t_c/sqrt((-a1*(-a1 + a2*w) - a2*(a1*w - a2) + w**2 - 1)/(w**2 - 1))",
+    "partial_sq_minus_target_sq_simplified": "0",
+    "vector_limit_matches_scalar_form": true,
+    "R2_TX_multiple": "(-a1*(a1 - a2*w) + a2*(a1*w - a2))/(w**2 - 1)",
+    "r_D_vector_minus_target_simplified": "0",
+    "r_D_vector_matches_R2TC_over_1_minus_R2TX": true,
+    "protective_term_dpartial_db_at_bzero": "sqrt((w**2 - 1)*(a1**2 - 2*a1*a2*w + a2**2 + w**2 - 1)/(a1**2 - 2*a1*a2*w + a2**2 - t_c**2*w**2 + t_c**2 + w**2 - 1)**2)*(a1 - a2*w)*(a1**2 - 2*a1*a2*w + a2**2 - t_c**2*w**2 + t_c**2 + w**2 - 1)/((w**2 - 1)*(a1**2 - 2*a1*a2*w + a2**2 + w**2 - 1))",
+    "protective_mechanism_active_when_C_correlated_with_X": true,
+    "note": "With a 2-control block, the partial correlation at C-orthogonality is rho_TC/sqrt(1-R^2_{T~X}) with R^2_{T~X} the MULTIPLE R^2 of T on X, so r_D -> R^2_{T~C}/(1-R^2_{T~X}) holds for vector X, confirming the residual proof rather than the scalar Yule identity."
   }
 }

@@ -1,0 +1,29 @@
+{
+  "note": "Full-pipeline pairs bootstrap (B=500, ridge + content-keyed fixed-pooled-PC1 estimator, same procedure as results/replications/baur_bootstrap_check.json for boston/nyc/sf) extended to chicago and philadelphia, the two highest-leverage markets. Produced via baur_pooled_pca.py --city {chicago,philadelphia} --fast --n_boot 500 --pooled_csv results/replications/pooled_pca_treatment_keyed.csv, BOOSTER_NJOBS=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1, seed=42. theta/CI signs are raw (unoriented), matching the sign convention of baur_bootstrap_check.json.",
+  "markets": {
+    "chicago": {
+      "n": 5577,
+      "theta": -0.4642,
+      "if_se": 0.018695,
+      "if_ci": [-0.5009, -0.4276],
+      "boot_se": 0.018471,
+      "boot_ci": [-0.5001, -0.4267],
+      "widen_vs_if_pct": 0.1
+    },
+    "philadelphia": {
+      "n": 7030,
+      "theta": -0.3740,
+      "if_se": 0.009237,
+      "if_ci": [-0.3921, -0.3559],
+      "boot_se": 0.008548,
+      "boot_ci": [-0.3911, -0.3586],
+      "widen_vs_if_pct": -10.4
+    }
+  },
+  "comparison_to_boston_nyc_sf": {
+    "boston": {"theta": -0.073, "boot_ci": [-0.117, -0.033], "widen_vs_if_pct": -3},
+    "nyc":    {"theta": 0.009,  "boot_ci": [-0.005, 0.021],  "widen_vs_if_pct": -11},
+    "sf":     {"theta": -0.106, "boot_ci": [-0.154, -0.052], "widen_vs_if_pct": 2}
+  },
+  "interpretation": "Both chicago and philadelphia show the bootstrap CI essentially coincident with the influence-function CI (chicago: boot width 0.0734 vs IF width 0.0733, +0.1%; philadelphia: boot width 0.0324 vs IF width 0.0362, -10.4%, i.e. the bootstrap is somewhat narrower, same direction and similar magnitude as the -11% seen for nyc). Both CIs exclude zero with wide margin in both markets under either method -- the full-pipeline resample confirms the IF-SE headline is not an artifact of generated-regressor variance being understated for these two high-effect cities."
+}

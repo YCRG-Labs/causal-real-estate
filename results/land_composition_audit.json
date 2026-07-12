@@ -1,0 +1,389 @@
+{
+  "per_city": [
+    {
+      "city": "boston",
+      "n_total": 2610,
+      "n_land": 49,
+      "pct_land": 1.8773946360153257,
+      "n_confounders": 28,
+      "has_rich_confounders": true,
+      "full": {
+        "n": 2610,
+        "theta": -0.07326551106221224,
+        "se": 0.022013644619301633,
+        "ci_low": -0.11641225451604345,
+        "ci_high": -0.030118767608381038,
+        "abs_theta": 0.07326551106221224,
+        "sd_T": 0.999925938543658,
+        "excludes_zero": true
+      },
+      "no_land": {
+        "n": 2561,
+        "theta": -0.007500147429392533,
+        "se": 0.017960406731348022,
+        "ci_low": -0.042702544622834654,
+        "ci_high": 0.027702249764049586,
+        "abs_theta": 0.007500147429392533,
+        "sd_T": 0.9510775219722744,
+        "excludes_zero": false
+      },
+      "pct_attenuation": 89.76305860608288,
+      "pct_attenuation_net_of_rescaling": 89.23727772484628
+    },
+    {
+      "city": "nyc",
+      "n_total": 15255,
+      "n_land": 179,
+      "pct_land": 1.1733857751556866,
+      "n_confounders": 31,
+      "has_rich_confounders": true,
+      "full": {
+        "n": 15255,
+        "theta": 0.008806343364078824,
+        "se": 0.00653973066595727,
+        "ci_low": -0.004011528741197425,
+        "ci_high": 0.02162421546935507,
+        "abs_theta": 0.008806343364078824,
+        "sd_T": 0.9986732981302144,
+        "excludes_zero": false
+      },
+      "no_land": {
+        "n": 15076,
+        "theta": 0.007314792900939836,
+        "se": 0.006565081850518918,
+        "ci_low": -0.005552767526077242,
+        "ci_high": 0.020182353327956915,
+        "abs_theta": 0.007314792900939836,
+        "sd_T": 0.9998322827320382,
+        "excludes_zero": false
+      },
+      "pct_attenuation": 16.937228103358304,
+      "pct_attenuation_net_of_rescaling": 17.033512725565092
+    },
+    {
+      "city": "sf",
+      "n_total": 986,
+      "n_land": 35,
+      "pct_land": 3.5496957403651117,
+      "n_confounders": 30,
+      "has_rich_confounders": true,
+      "full": {
+        "n": 986,
+        "theta": -0.10564588067208756,
+        "se": 0.025299281825427143,
+        "ci_low": -0.15523247304992477,
+        "ci_high": -0.056059288294250366,
+        "abs_theta": 0.10564588067208756,
+        "sd_T": 1.0003759414806483,
+        "excludes_zero": true
+      },
+      "no_land": {
+        "n": 951,
+        "theta": -0.06058523818103023,
+        "se": 0.024725427084415618,
+        "ci_low": -0.10904707526648484,
+        "ci_high": -0.012123401095575623,
+        "abs_theta": 0.06058523818103023,
+        "sd_T": 0.9483971769474134,
+        "excludes_zero": true
+      },
+      "pct_attenuation": 42.65253146113693,
+      "pct_attenuation_net_of_rescaling": 39.509491144048404
+    },
+    {
+      "city": "dc",
+      "n_total": 4015,
+      "n_land": 105,
+      "pct_land": 2.6151930261519305,
+      "n_confounders": 2,
+      "has_rich_confounders": false,
+      "full": {
+        "n": 4015,
+        "theta": -0.08005118370341978,
+        "se": 0.015412266141740166,
+        "ci_low": -0.1102592253412305,
+        "ci_high": -0.04984314206560905,
+        "abs_theta": 0.08005118370341978,
+        "sd_T": 0.9997438841619757,
+        "excludes_zero": true
+      },
+      "no_land": {
+        "n": 3910,
+        "theta": -0.01691443873698986,
+        "se": 0.012814127726939429,
+        "ci_low": -0.04203012908179114,
+        "ci_high": 0.008201251607811422,
+        "abs_theta": 0.01691443873698986,
+        "sd_T": 0.9356349928677573,
+        "excludes_zero": false
+      },
+      "pct_attenuation": 78.8704701736131,
+      "pct_attenuation_net_of_rescaling": 77.42269327229614
+    },
+    {
+      "city": "philadelphia",
+      "n_total": 7030,
+      "n_land": 1377,
+      "pct_land": 19.587482219061165,
+      "n_confounders": 2,
+      "has_rich_confounders": false,
+      "full": {
+        "n": 7030,
+        "theta": -0.6056981603766226,
+        "se": 0.010624155795551336,
+        "ci_low": -0.6265215057359033,
+        "ci_high": -0.584874815017342,
+        "abs_theta": 0.6056981603766226,
+        "sd_T": 0.9998418141554387,
+        "excludes_zero": true
+      },
+      "no_land": {
+        "n": 5653,
+        "theta": -0.27322836060930317,
+        "se": 0.010083690189554243,
+        "ci_low": -0.2929923933808295,
+        "ci_high": -0.25346432783777684,
+        "abs_theta": 0.27322836060930317,
+        "sd_T": 0.8094150550814866,
+        "excludes_zero": true
+      },
+      "pct_attenuation": 54.89034332886037,
+      "pct_attenuation_net_of_rescaling": 44.277635214654346
+    },
+    {
+      "city": "chicago",
+      "n_total": 5577,
+      "n_land": 695,
+      "pct_land": 12.461897077281693,
+      "n_confounders": 2,
+      "has_rich_confounders": false,
+      "full": {
+        "n": 5577,
+        "theta": -0.4480907076412806,
+        "se": 0.017797395544315732,
+        "ci_low": -0.48297360290813945,
+        "ci_high": -0.4132078123744218,
+        "abs_theta": 0.4480907076412806,
+        "sd_T": 1.0002332567228798,
+        "excludes_zero": true
+      },
+      "no_land": {
+        "n": 4882,
+        "theta": -0.10173244669025606,
+        "se": 0.011713467739224657,
+        "ci_low": -0.12469084345913639,
+        "ci_high": -0.07877404992137574,
+        "abs_theta": 0.10173244669025606,
+        "sd_T": 0.8672700305636459,
+        "excludes_zero": true
+      },
+      "pct_attenuation": 77.29646141832112,
+      "pct_attenuation_net_of_rescaling": 73.81572804962768
+    },
+    {
+      "city": "seattle",
+      "n_total": 2884,
+      "n_land": 152,
+      "pct_land": 5.270457697642163,
+      "n_confounders": 2,
+      "has_rich_confounders": false,
+      "full": {
+        "n": 2884,
+        "theta": -0.06861934670539412,
+        "se": 0.015786786978149413,
+        "ci_low": -0.09956144918256696,
+        "ci_high": -0.03767724422822127,
+        "abs_theta": 0.06861934670539412,
+        "sd_T": 1.0003592856236214,
+        "excludes_zero": true
+      },
+      "no_land": {
+        "n": 2732,
+        "theta": -0.03721251670618498,
+        "se": 0.013162000548886743,
+        "ci_low": -0.063010037782003,
+        "ci_high": -0.011414995630366964,
+        "abs_theta": 0.03721251670618498,
+        "sd_T": 0.872281712183841,
+        "excludes_zero": true
+      },
+      "pct_attenuation": 45.76964297554332,
+      "pct_attenuation_net_of_rescaling": 37.80697169922348
+    },
+    {
+      "city": "denver",
+      "n_total": 5280,
+      "n_land": 139,
+      "pct_land": 2.6325757575757573,
+      "n_confounders": 2,
+      "has_rich_confounders": false,
+      "full": {
+        "n": 5280,
+        "theta": -0.14797126802740818,
+        "se": 0.010580106878063138,
+        "ci_low": -0.16870827750841194,
+        "ci_high": -0.1272342585464044,
+        "abs_theta": 0.14797126802740818,
+        "sd_T": 0.9996086237703184,
+        "excludes_zero": true
+      },
+      "no_land": {
+        "n": 5141,
+        "theta": -0.14786002810360924,
+        "se": 0.0101946830623022,
+        "ci_low": -0.16784160690572156,
+        "ci_high": -0.12787844930149692,
+        "abs_theta": 0.14786002810360924,
+        "sd_T": 0.9433937668842034,
+        "excludes_zero": true
+      },
+      "pct_attenuation": 0.0751767051008434,
+      "pct_attenuation_net_of_rescaling": -5.879134037745715
+    },
+    {
+      "city": "atlanta",
+      "n_total": 6135,
+      "n_land": 434,
+      "pct_land": 7.074164629176854,
+      "n_confounders": 2,
+      "has_rich_confounders": false,
+      "full": {
+        "n": 6135,
+        "theta": -0.21492780980715084,
+        "se": 0.011607682980659525,
+        "ci_low": -0.23767886844924352,
+        "ci_high": -0.19217675116505817,
+        "abs_theta": 0.21492780980715084,
+        "sd_T": 1.0003035640957836,
+        "excludes_zero": true
+      },
+      "no_land": {
+        "n": 5701,
+        "theta": -0.13212116983107886,
+        "se": 0.010120400755582898,
+        "ci_low": -0.15195715531202134,
+        "ci_high": -0.11228518435013637,
+        "abs_theta": 0.13212116983107886,
+        "sd_T": 0.8758558730039248,
+        "excludes_zero": true
+      },
+      "pct_attenuation": 38.52765263386447,
+      "pct_attenuation_net_of_rescaling": 29.79323418499944
+    },
+    {
+      "city": "portland",
+      "n_total": 4337,
+      "n_land": 245,
+      "pct_land": 5.64906617477519,
+      "n_confounders": 2,
+      "has_rich_confounders": false,
+      "full": {
+        "n": 4337,
+        "theta": -0.09392204949926983,
+        "se": 0.012581108005490182,
+        "ci_low": -0.11858102119003058,
+        "ci_high": -0.06926307780850907,
+        "abs_theta": 0.09392204949926983,
+        "sd_T": 0.9967409398400423,
+        "excludes_zero": true
+      },
+      "no_land": {
+        "n": 4092,
+        "theta": -0.057175229968007786,
+        "se": 0.01172362224914153,
+        "ci_low": -0.08015352957632518,
+        "ci_high": -0.03419693035969039,
+        "abs_theta": 0.057175229968007786,
+        "sd_T": 0.8776452612752469,
+        "excludes_zero": true
+      },
+      "pct_attenuation": 39.12480586525927,
+      "pct_attenuation_net_of_rescaling": 30.86409635865731
+    },
+    {
+      "city": "phoenix",
+      "n_total": 7087,
+      "n_land": 328,
+      "pct_land": 4.628192465076902,
+      "n_confounders": 2,
+      "has_rich_confounders": false,
+      "full": {
+        "n": 7087,
+        "theta": -0.07164582464158524,
+        "se": 0.010087272149329267,
+        "ci_low": -0.0914168780542706,
+        "ci_high": -0.05187477122889988,
+        "abs_theta": 0.07164582464158524,
+        "sd_T": 0.9999052234589135,
+        "excludes_zero": true
+      },
+      "no_land": {
+        "n": 6759,
+        "theta": -0.0563174576308517,
+        "se": 0.009347457996717864,
+        "ci_low": -0.07463847530441871,
+        "ci_high": -0.03799643995728469,
+        "abs_theta": 0.0563174576308517,
+        "sd_T": 0.9092390747715173,
+        "excludes_zero": true
+      },
+      "pct_attenuation": 21.39464105188975,
+      "pct_attenuation_net_of_rescaling": 13.55638886963899
+    },
+    {
+      "city": "dallas",
+      "n_total": 8008,
+      "n_land": 581,
+      "pct_land": 7.255244755244755,
+      "n_confounders": 2,
+      "has_rich_confounders": false,
+      "full": {
+        "n": 8008,
+        "theta": -0.2763297435534454,
+        "se": 0.011447634795509767,
+        "ci_low": -0.2987671077526446,
+        "ci_high": -0.25389237935424624,
+        "abs_theta": 0.2763297435534454,
+        "sd_T": 1.0000584586875452,
+        "excludes_zero": true
+      },
+      "no_land": {
+        "n": 7427,
+        "theta": -0.22643687057016065,
+        "se": 0.009203083343318595,
+        "ci_low": -0.24447491392306508,
+        "ci_high": -0.20839882721725622,
+        "abs_theta": 0.22643687057016065,
+        "sd_T": 0.8442830929627263,
+        "excludes_zero": true
+      },
+      "pct_attenuation": 18.05555650350571,
+      "pct_attenuation_net_of_rescaling": 2.936308278376676
+    }
+  ],
+  "warning_thin_confounders": [
+    "dc",
+    "philadelphia",
+    "chicago",
+    "seattle",
+    "denver",
+    "atlanta",
+    "portland",
+    "phoenix",
+    "dallas"
+  ],
+  "pooled_full": {
+    "theta": 0.05925750756987213,
+    "se": 0.03248535067339884,
+    "tau2": 0.0027977232626553764,
+    "k": 3
+  },
+  "pooled_no_land": {
+    "theta": 0.017628137519151543,
+    "se": 0.013158581472430634,
+    "tau2": 0.0002875826021473197,
+    "k": 3
+  },
+  "corr_pct_land_vs_theta_full": 0.913078699918119,
+  "corr_pct_land_vs_theta_no_land": 0.958379706668143
+}

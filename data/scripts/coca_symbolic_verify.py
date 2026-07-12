@@ -122,8 +122,68 @@ def part_C():
     }
 
 
+def part_D():
+    """Vector-control case: the proposition's proof now runs through residuals from
+    multivariate regression on X, not the scalar Yule identity. Verify with a genuine
+    2-dimensional control block X=(X1,X2). All variances standardized to 1.
+
+    Partial correlation of T and C given (X1,X2) is computed from the precision matrix
+    of the full 4x4 covariance. We show that when C is block-orthogonal to X
+    (Cov(C,X1)=Cov(C,X2)=0), the partial correlation collapses to
+    rho_TC / sqrt(1 - R^2_{T~X}) -- exactly the scalar-case limit of part (A), but now
+    with R^2_{T~X} the MULTIPLE coefficient of determination of T on the whole X block.
+    Hence r_D -> R^2_{T~C}/(1 - R^2_{T~X}) in the vector case too, with no protective
+    shrinkage, and the protective subtraction (the analogue of rho_TX*rho_CX) is a term
+    that vanishes to first order in the C-X covariances.
+    """
+    t_c, a1, a2, b1, b2, w = sp.symbols("t_c a1 a2 b1 b2 w", real=True)
+    Sigma = sp.Matrix([
+        [1,  t_c, a1, a2],
+        [t_c, 1,  b1, b2],
+        [a1, b1,  1,  w],
+        [a2, b2,  w,  1],
+    ])
+    P = Sigma.inv()
+    partial = -P[0, 1] / sp.sqrt(P[0, 0] * P[1, 1])
+
+    # multiple R^2 of T on the X block: a^T Sigma_XX^{-1} a
+    Sxx = sp.Matrix([[1, w], [w, 1]])
+    a = sp.Matrix([a1, a2])
+    R2_TX = (a.T * Sxx.inv() * a)[0, 0]
+
+    # orthogonal case: C block-orthogonal to X
+    partial_orth = sp.simplify(partial.subs({b1: 0, b2: 0}))
+    target = t_c / sp.sqrt(1 - R2_TX)
+    matches = sp.simplify(partial_orth**2 - target**2)  # compare squares (sign convention)
+
+    # r_D in the vector orthogonal case equals R^2_{T~C}/(1-R^2_{T~X}); R^2_{T~C}=t_c^2
+    r_D_vec = sp.simplify(partial_orth**2)
+    r_D_target = sp.simplify(t_c**2 / (1 - R2_TX))
+    r_D_matches = sp.simplify(r_D_vec - r_D_target)
+
+    # protective subtraction: first-order sensitivity of the partial correlation to the
+    # C-X covariances, evaluated at b=0 -- the vector analogue of the rho_TX*rho_CX term.
+    dpart_db1 = sp.simplify(sp.diff(partial, b1).subs({b1: 0, b2: 0}))
+    protective_present = bool(dpart_db1 != 0)  # nonzero => conditioning does shrink when C~X
+    return {
+        "partial_corr_orthogonal": str(partial_orth),
+        "target_rho_over_sqrt_1_minus_R2TX": str(sp.simplify(target)),
+        "partial_sq_minus_target_sq_simplified": str(matches),
+        "vector_limit_matches_scalar_form": bool(matches == 0),
+        "R2_TX_multiple": str(sp.simplify(R2_TX)),
+        "r_D_vector_minus_target_simplified": str(r_D_matches),
+        "r_D_vector_matches_R2TC_over_1_minus_R2TX": bool(r_D_matches == 0),
+        "protective_term_dpartial_db_at_bzero": str(dpart_db1),
+        "protective_mechanism_active_when_C_correlated_with_X": protective_present,
+        "note": ("With a 2-control block, the partial correlation at C-orthogonality is "
+                 "rho_TC/sqrt(1-R^2_{T~X}) with R^2_{T~X} the MULTIPLE R^2 of T on X, so "
+                 "r_D -> R^2_{T~C}/(1-R^2_{T~X}) holds for vector X, confirming the "
+                 "residual proof rather than the scalar Yule identity."),
+    }
+
+
 def main():
-    A, B, C = part_A(), part_B(), part_C()
+    A, B, C, D = part_A(), part_B(), part_C(), part_D()
 
     print("=== (A) partial-correlation identity and the protective term ===")
     print(f"  partial corr = {A['partial_corr_expr']}")
@@ -143,11 +203,20 @@ def main():
     print(f"  d r_D / d rho_TC                       : {C['d_rD_d_rho_TC']}")
     print(f"  r_D is a free function of rho_TC       : {C['r_D_grows_freely_in_rho_TC']}")
 
-    OUT.write_text(json.dumps({"A": A, "B": B, "C": C}, indent=2))
+    print("\n=== (D) VECTOR control block (X = X1, X2): the residual proof ===")
+    print(f"  partial corr at C-orthogonality        : {D['partial_corr_orthogonal']}")
+    print(f"  multiple R^2 of T on X                 : {D['R2_TX_multiple']}")
+    print(f"  simplify(partial^2 - [rho_TC^2/(1-R2_TX)]) : {D['partial_sq_minus_target_sq_simplified']}")
+    print(f"  vector limit matches scalar form       : {D['vector_limit_matches_scalar_form']}")
+    print(f"  r_D_vec == R^2(T~C)/(1-R^2(T~X))        : {D['r_D_vector_matches_R2TC_over_1_minus_R2TX']}")
+
+    OUT.write_text(json.dumps({"A": A, "B": B, "C": C, "D": D}, indent=2))
     print(f"\nwrote {OUT}")
-    ok = B["exact_equality_holds"] and B["theta_long_recovers_theta"]
-    print(f"\nCORE PROPOSITION (bias bound is exact for a single confounder): "
-          f"{'VERIFIED' if ok else 'FAILED'}")
+    ok = (B["exact_equality_holds"] and B["theta_long_recovers_theta"]
+          and D["vector_limit_matches_scalar_form"]
+          and D["r_D_vector_matches_R2TC_over_1_minus_R2TX"])
+    print(f"\nCORE PROPOSITION (exact single-confounder bias bound + vector-control "
+          f"residual limit): {'VERIFIED' if ok else 'FAILED'}")
 
 
 if __name__ == "__main__":

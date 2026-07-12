@@ -1,0 +1,115 @@
+{
+  "city": "nyc",
+  "variant": "leace",
+  "n_train": 10658,
+  "n_test": 4569,
+  "n_zips": 158,
+  "routing": "continuous_latlon",
+  "power_diagnostic": {
+    "n_test": 4569,
+    "K": 158,
+    "chance_p": 0.006329113924050633,
+    "critical_acc": 0.008535784635587657,
+    "p_min_80pct": 0.00984898227183191,
+    "power_at_p_alt": null,
+    "detectable_gain_80pct": 0.0035198683477812775,
+    "alpha": 0.05
+  },
+  "guardedness_residual": 4.365017895920087e-08,
+  "postnl_igbp": true,
+  "igbp_history": [
+    {
+      "outer": 1,
+      "v_unit_norm_check": 1.0,
+      "adv_train_mse_postproj": 0.6659191250801086
+    },
+    {
+      "outer": 2,
+      "v_unit_norm_check": 1.0,
+      "adv_train_mse_postproj": 0.6700811386108398
+    },
+    {
+      "outer": 3,
+      "v_unit_norm_check": 1.0,
+      "adv_train_mse_postproj": 0.636740505695343
+    },
+    {
+      "outer": 4,
+      "v_unit_norm_check": 1.0,
+      "adv_train_mse_postproj": 0.6551675796508789
+    },
+    {
+      "outer": 5,
+      "v_unit_norm_check": 0.9999999999999999,
+      "adv_train_mse_postproj": 0.6511661410331726
+    }
+  ],
+  "continuous": {
+    "raw": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": 0.5000959771891222,
+      "r2_per_target_test": [
+        0.5430720868562717,
+        0.45711986752197264
+      ],
+      "r2_per_target_train": [
+        0.609154357716211,
+        0.5407111942065483
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 10658,
+      "n_test": 4569,
+      "max_coef": 0.3436165153980255
+    },
+    "erased": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -0.0004085074184257964,
+      "r2_per_target_test": [
+        -0.00034979223088815736,
+        -0.00046722260596343546
+      ],
+      "r2_per_target_train": [
+        1.0405882489017415e-08,
+        4.872056247329226e-08
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 10658,
+      "n_test": 4569,
+      "max_coef": 0.004657977138726565
+    }
+  },
+  "mlp_continuous": {
+    "raw": {
+      "r2_avg_test": 0.5427694532328283,
+      "r2_per_target_test": [
+        0.5785223920957561,
+        0.5070165143699006
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    },
+    "erased": {
+      "r2_avg_test": 0.33834957294164003,
+      "r2_per_target_test": [
+        0.356669512913774,
+        0.32002963296950604
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    }
+  },
+  "categorical": {
+    "note": "categorical probe suppressed: per-class test count 28.92 below floor 5 (continuous lat/lon probe is the headline)."
+  },
+  "linear_guardedness_holds": true
+}

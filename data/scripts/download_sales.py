@@ -30,8 +30,10 @@ import argparse
 import io
 import json
 import sys
+import tempfile
 import urllib.parse
 import urllib.request
+import zipfile
 from pathlib import Path
 
 import pandas as pd
@@ -59,24 +61,50 @@ SOURCES = {
            "endpoint": "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Property_and_Land/MapServer",
            "note": "CAMA property sales / Owner Points carry SALEPRICE, SALEDATE, SSL. "
                    "Pin the live sales layer id (Owner Points 26 is retired); query /<id>/query."},
-    "phoenix": {"method": "download_zip",
-                "endpoint": "https://www.mcassessor.maricopa.gov/page/data_sales/",
-                "note": "Maricopa Sales Affidavits ZIP (pipe-delimited): APN, SalePrice, SaleDate, grantor/grantee. "
-                        "Join APN -> Maricopa parcels (api.mcassessor.maricopa.gov) for lat/lon."},
-    "seattle": {"method": "download", "verified": "rpsale_extr is the table",
-                "endpoint": "https://info.kingcounty.gov/assessor/datadownload/default.aspx",
-                "note": "King EXTR Real Property Sales (rpsale_extr): key=Major+Minor, SalePrice, DocumentDate. "
-                        "Join Major+Minor -> parcel_extr for geometry/lat-lon."},
-    "denver": {"method": "BLOCKED_likely",
-               "endpoint": "https://services1.arcgis.com/zdB7qR0BtYrg0Xpl/arcgis/rest/services/ODC_PROP_PARCELS_A/FeatureServer",
-               "note": "Denver open-data parcels carry geometry but NO sale price (verified). "
-                       "(An earlier endpoint on org ioennV6PpG5Xodq0 was Fairfax County VA, not Denver -- "
-                       "misattributed.) Denver sale prices live at property.spatialest.com (search tool, not bulk). "
-                       "Likely needs the assessor's non-open route or a vendor."},
-    "atlanta": {"method": "arcgis_or_qpublic",
-                "endpoint": "https://gisdata.fultoncountyga.gov/",
-                "note": "Fulton GIS property layer carries recorded sale date+price (GA is disclosure); "
-                        "find the parcels FeatureServer with sale fields + geometry."},
+    "phoenix": {"method": "agol_zip", "verified": True,
+                "endpoint": "https://www.arcgis.com/sharing/rest/content/items/f3484c72a938497286adc4e5de7e9963/data",
+                "note": "Maricopa Assessor 'Sales Affidavits' (pipe-delimited Sales_Affidavits.txt inside "
+                        "Sales_Affidavits.zip; the mcassessor.maricopa.gov/page/data_sales/ page's download "
+                        "button now points at this ArcGIS-Online item, NOT a raw FTP path). Cols: PARCELNUMBER, "
+                        "SALEDATE_MMYYYY (month/year only), SALEPRICE, DEEDDATE_MMDDYYYY (day-precision, use this "
+                        "for sale_date), DEEDTYPE, PROPERTYTYPECODE, SITUSADDRESS/CITY/ZIP, ASSESSORCODE (arms- "
+                        "length flag: 'X' = clean, 'R##' = ratio-study reject, 'W##' = warning, 'A##'/'B##' = "
+                        "exempt/other -- keep ASSESSORCODE=='X'). No lat/lon in this file; join PARCELNUMBER -> "
+                        "APN in the 'Parcel Points' shapefile (item dbf139379db946e1b10a2f15672c142d, same "
+                        "arcgis.com/.../data download pattern, EPSG:2868, reproject to 4326)."},
+    "seattle": {"method": "kingcounty_zip", "verified": True,
+                "endpoint": "https://aqua.kingcounty.gov/extranet/assessor/Real%20Property%20Sales.zip",
+                "note": "King County Assessor EXTR_RPSale.csv (comma-delimited, ~1.38M rows, weekly refresh). "
+                        "Key=Major+Minor->10-char PIN. Cols: ExciseTaxNbr,Major,Minor,DocumentDate,SalePrice,"
+                        "RecordingNbr,...,PropertyType,PrincipalUse,SaleInstrument,AFForestLand,AFCurrentUseLand,"
+                        "AFNonProfitUse,AFHistoricProperty,SaleReason,PropertyClass,SaleWarning. Code lookup is "
+                        "Lookup.zip -> EXTR_LookUp.csv (LUType 1=PropertyType, 2=PrincipalUse, 4=PropertyClass, "
+                        "5=SaleReason, 6=SaleInstrument, 7=SaleWarning). No lat/lon in EXTR_Parcel.csv; join "
+                        "Major+Minor -> PIN in the ArcGIS PARCEL_ADDRESS_PUB_AREA_3069 layer (has precomputed "
+                        "LAT/LON in WGS84, already used for the parcel confounders in city_endpoints.py)."},
+    "denver": {"method": "arcgis", "verified": True,
+               "endpoint": "https://services1.arcgis.com/zdB7qR0BtYrg0Xpl/arcgis/rest/services/ODC_PROP_PARCELS_A/FeatureServer/245",
+               "note": "CORRECTED vs the prior note in this file: Denver's OWN parcel layer (245, the same one "
+                       "city_endpoints.py already uses for confounders) carries SALE_DATE and SALE_PRICE directly "
+                       "-- no separate sales table or join needed. (A different WebSearch hit, a 'Sales' table on "
+                       "org hQZvdtFxRzJpMtdS, turned out to be Grant County on the same GIS-vendor template, NOT "
+                       "Denver -- verified and discarded, same misattribution trap as the earlier Fairfax note.) "
+                       "Fields: SCHEDNUM (parcel id), SALE_DATE, SALE_PRICE, ASAL_INSTR (deed/instrument type, "
+                       "the only arms-length proxy available -- there is no Washington/Colorado-style numeric "
+                       "qualification code on this layer), D_CLASS (property use, e.g. 110-119 SFR, 100s condo). "
+                       "Geometry is polygon in EPSG:2877 native but the /query endpoint returns clean WGS84 "
+                       "rings when outSR=4326 is requested (verified); centroid the ring for lat/lon."},
+    "atlanta": {"method": "BLOCKED_paid",
+                "endpoint": "https://www.gsccca.org/learn/search-systems/pt-61-index",
+                "note": "VERIFIED BLOCKED. Fulton's own open-data parcel layers (Tax_Parcels_2025 and the "
+                        "ARC-hosted FULTON_COUNTY_TAX_PARCELS mirror) carry only assessed/appraised values and "
+                        "ownership -- NO sale price or sale date field exists on either (checked the live field "
+                        "list). Georgia's actual disclosure source is the PT-61 real-estate transfer-tax "
+                        "affidavit, but that is indexed statewide by GSCCCA (Georgia Superior Court Clerks' "
+                        "Cooperative Authority), a paid subscription search portal with no free bulk export or "
+                        "API. qPublic (Schneider Corp) is a single-parcel lookup UI, not a bulk source, and "
+                        "blocks scripted fetches (403). Atlanta must be dropped, scraped from qPublic per-parcel "
+                        "(slow, ToS-risk), or sourced via a paid GSCCCA subscription / data vendor."},
     "portland": {"method": "download_shapefile",
                  "endpoint": "https://rlisdiscovery.oregonmetro.gov/datasets/9d3c396ffad44649bc7451465aa300f0",
                  "note": "RLIS Taxlots is a SHAPEFILE download (not a queryable API); typically carries "
@@ -302,8 +330,156 @@ def fetch_nyc(limit: int | None) -> pd.DataFrame:
     return df[["parcel_id", "address", "lat", "lon", "sale_price", "sale_date"]].dropna(subset=["lat", "lon"])
 
 
+def _download_zip_member(url: str, member_suffix: str, timeout: int = 300) -> bytes:
+    """Download a zip and return the bytes of the (single) member ending in
+    `member_suffix`. Used for both King County's aqua.kingcounty.gov extracts
+    and Maricopa's ArcGIS-Online 'CSV Collection' items, which are both plain
+    zips with one data file inside."""
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        blob = r.read()
+    z = zipfile.ZipFile(io.BytesIO(blob))
+    names = [n for n in z.namelist() if n.lower().endswith(member_suffix)]
+    if not names:
+        raise SystemExit(f"no *{member_suffix} member in {url}: {z.namelist()}")
+    return z.read(names[0])
+
+
+def fetch_seattle(limit: int | None) -> pd.DataFrame:
+    """King County Assessor EXTR_RPSale.csv joined to the ArcGIS parcel-address
+    layer (which carries precomputed WGS84 LAT/LON; EXTR_Parcel.csv itself has
+    no coordinates) on the 10-char Major+Minor PIN.
+
+    Arms-length filter: PropertyClass=='8' (Res-Improved property, per
+    EXTR_LookUp LUType=4) and SaleWarning blank (no ratio-study warning code,
+    per EXTR_LookUp LUType=7 -- IAAO's "generally invalid" categories, e.g.
+    corporate affiliates(11), estate/guardian(12), sheriff/tax sale(14),
+    gov't-to-gov't(16), quit claim(18), partial interest(22), forced sale(23),
+    related party(51), all map onto specific SaleWarning codes here).
+    """
+    s = SOURCES["seattle"]
+    raw = _download_zip_member(s["endpoint"], "extr_rpsale.csv")
+    sales = pd.read_csv(
+        io.BytesIO(raw),
+        usecols=["Major", "Minor", "DocumentDate", "SalePrice",
+                 "PropertyClass", "SaleWarning"],
+        dtype={"Major": str, "Minor": str, "PropertyClass": str, "SaleWarning": str},
+        encoding="latin-1",
+    )
+    sales["SaleWarning"] = sales["SaleWarning"].fillna("").str.strip()
+    sales["PropertyClass"] = sales["PropertyClass"].str.strip()
+    sales = sales[(sales["PropertyClass"] == "8") & (sales["SaleWarning"] == "")
+                  & (sales["SalePrice"] > 10000)].copy()
+    sales["pin"] = sales["Major"].str.zfill(6) + sales["Minor"].str.zfill(4)
+    sales["DocumentDate"] = pd.to_datetime(sales["DocumentDate"], errors="coerce", utc=True)
+    sales = sales.dropna(subset=["DocumentDate"]).sort_values("DocumentDate")
+    sales = sales.drop_duplicates("pin", keep="last")
+    if limit:
+        sales = sales.tail(limit)
+
+    parcels = _arcgis_query(
+        "https://services.arcgis.com/Ej0PsM5Aw677QF1W/arcgis/rest/services/"
+        "PARCEL_ADDRESS_PUB_AREA_3069/FeatureServer/0",
+        out_fields="PIN,ADDR_FULL,LAT,LON,CTYNAME",
+        where="CTYNAME='SEATTLE'", max_rows=None, geom=False)
+    parcels = parcels.dropna(subset=["LAT", "LON"]).drop_duplicates("PIN")
+
+    df = sales.merge(parcels, left_on="pin", right_on="PIN", how="inner")
+    df = df.rename(columns={"SalePrice": "sale_price", "DocumentDate": "sale_date",
+                             "ADDR_FULL": "address", "LAT": "lat", "LON": "lon"})
+    return df[["pin", "address", "lat", "lon", "sale_price", "sale_date"]].rename(
+        columns={"pin": "parcel_id"})
+
+
+def fetch_denver(limit: int | None) -> pd.DataFrame:
+    """Denver's own open-data parcel layer (ODC_PROP_PARCELS_A/245) carries
+    SALE_DATE/SALE_PRICE directly, so no join is needed. There is no numeric
+    qualification/validity code on this layer (unlike King County or
+    Maricopa); ASAL_INSTR (deed/instrument type) is the only arms-length
+    proxy available, so we keep warranty-deed-family instruments and drop
+    quit claims, trustee/sheriff/treasurer deeds, gifts, parcel splits, etc.
+    D_CLASS restricts to single-family/condo/duplex/triplex/rowhouse (100s-
+    190s), excluding larger apartment buildings (200s) and all commercial
+    classes.
+    """
+    ARMS_LENGTH_INSTR = {"WD: WARRANTY", "SW: SPECIAL WARRANTY",
+                          "BG: BARGAIN & SALE", "BS: BARGAIN & SALE"}
+    layer = SOURCES["denver"]["endpoint"]
+    df = _arcgis_query(
+        layer, out_fields="SCHEDNUM,SALE_DATE,SALE_PRICE,ASAL_INSTR,D_CLASS,"
+                           "SITUS_ADDR_NBR,SITUS_STR_NAME,SITUS_CITY",
+        where="SALE_PRICE > 10000 AND SALE_DATE IS NOT NULL", max_rows=limit, geom=True)
+    if df.empty:
+        raise SystemExit("denver: empty pull -- check field names/where clause")
+    df = df[df["ASAL_INSTR"].isin(ARMS_LENGTH_INSTR)]
+    df = df[df["D_CLASS"].astype(str).str.match(r"^(10\d|11\d|12[2-4]|13[2-4]|19\d|10S)$")]
+    df = df.dropna(subset=["lat", "lon"]).sort_values("SALE_DATE").drop_duplicates("SCHEDNUM", keep="last")
+    df["address"] = (df["SITUS_ADDR_NBR"].fillna("").astype(str) + " "
+                      + df["SITUS_STR_NAME"].fillna("").astype(str)).str.strip()
+    df["SALE_DATE"] = pd.to_datetime(df["SALE_DATE"], errors="coerce", utc=True, unit="ms")
+    df = df.rename(columns={"SCHEDNUM": "parcel_id", "SALE_PRICE": "sale_price", "SALE_DATE": "sale_date"})
+    return df[["parcel_id", "address", "lat", "lon", "sale_price", "sale_date"]]
+
+
+def fetch_phoenix(limit: int | None) -> pd.DataFrame:
+    """Maricopa Assessor 'Sales Affidavits' (pipe-delimited, no lat/lon) joined
+    to the 'Parcel Points' shapefile (has APN + point geometry in EPSG:2868)
+    on parcel number.
+
+    Arms-length filter: ASSESSORCODE=='X' (ABSENCE OF REJECT/WARNING/EXEMPT
+    CODE -- the R##/W##/A##/B## prefixes are ratio-study reject/warning/
+    exempt codes, e.g. R97 foreclosure, R3 related-party, R6 duress, R17
+    exchange, A3 gov't, A7 gift, B9 straw man). PROPERTYTYPECODE=='B' is
+    Single Family Residence; DEEDDATE has day precision, unlike SALEDATE
+    which is month/year only, so DEEDDATE is used for sale_date -- EXCEPT
+    that DEEDDATE has occasional single-digit-year typos at the source (e.g.
+    parcel 12922025B's actual recorded row is DEEDNUMBER=990808008 (a 1999
+    document number) with DEEDDATE_MMDDYYYY='08262099', a straight 1999->2099
+    transposition). We cross-check DEEDDATE's year against SALEDATE_MMYYYY's
+    year and fall back to the first of the SALEDATE month whenever they
+    disagree by more than a year, rather than trusting DEEDDATE blindly.
+    """
+    import geopandas as gpd
+
+    s = SOURCES["phoenix"]
+    raw = _download_zip_member(s["endpoint"], "sales_affidavits.txt")
+    sales = pd.read_csv(io.BytesIO(raw), sep="|", dtype=str, low_memory=False, encoding="latin-1")
+    sales["SALEPRICE"] = pd.to_numeric(sales["SALEPRICE"], errors="coerce")
+    sales = sales[(sales["ASSESSORCODE"] == "X")
+                  & (sales["PROPERTYTYPECODE"] == "B")
+                  & (sales["SALEPRICE"] > 10000)].copy()
+
+    deed_date = pd.to_datetime(sales["DEEDDATE_MMDDYYYY"], format="%m%d%Y", errors="coerce", utc=True)
+    sale_month = pd.to_datetime(sales["SALEDATE_MMYYYY"], format="%m%Y", errors="coerce", utc=True)
+    year_disagrees = (deed_date.dt.year - sale_month.dt.year).abs() > 1
+    sales["sale_date"] = deed_date.where(~year_disagrees, sale_month)
+    sales = sales.dropna(subset=["sale_date"]).sort_values("sale_date")
+    sales = sales.drop_duplicates("PARCELNUMBER", keep="last")
+    if limit:
+        sales = sales.tail(limit)
+
+    points_url = ("https://www.arcgis.com/sharing/rest/content/items/"
+                  "dbf139379db946e1b10a2f15672c142d/data")
+    raw_zip = urllib.request.urlopen(
+        urllib.request.Request(points_url, headers={"User-Agent": "Mozilla/5.0"}), timeout=300).read()
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td) / "ParcelPoints.zip"
+        tmp.write_bytes(raw_zip)
+        pts = gpd.read_file(f"zip://{tmp}!ParcelPoints.shp", columns=["APN"]).to_crs(4326)
+    pts["lon"] = pts.geometry.x
+    pts["lat"] = pts.geometry.y
+    pts = pts.dropna(subset=["lat", "lon"]).drop_duplicates("APN")
+
+    df = sales.merge(pts[["APN", "lat", "lon"]], left_on="PARCELNUMBER", right_on="APN", how="inner")
+    df["address"] = (df["SITUSADDRESS"].fillna("").astype(str) + ", "
+                      + df["SITUSCITY"].fillna("").astype(str)).str.strip(", ")
+    df = df.rename(columns={"PARCELNUMBER": "parcel_id", "SALEPRICE": "sale_price"})
+    return df[["parcel_id", "address", "lat", "lon", "sale_price", "sale_date"]]
+
+
 FETCHERS = {"philadelphia": fetch_philadelphia, "chicago": fetch_chicago,
-            "dc": fetch_dc, "nyc": fetch_nyc}
+            "dc": fetch_dc, "nyc": fetch_nyc, "seattle": fetch_seattle,
+            "denver": fetch_denver, "phoenix": fetch_phoenix}
 
 
 def main() -> int:

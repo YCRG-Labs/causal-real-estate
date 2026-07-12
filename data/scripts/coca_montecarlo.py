@@ -41,6 +41,7 @@ from sklearn.model_selection import KFold, cross_val_predict
 
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO / "results" / "coca_montecarlo.json"
+OUT_BYSTRENGTH = REPO / "results" / "coca_montecarlo_bystrength.json"
 ALPHAS = np.logspace(-3, 3, 13)
 COND_THRESH = 1e6
 AUC_X_THRESH = 0.60
@@ -150,6 +151,31 @@ def summarize(cells):
     }
 
 
+def summarize_by_strength(cells):
+    """Step-2 detection broken out by composition strength (a) and category share.
+
+    A single pooled composition_step2_detection average is misleading because
+    the grid mixes a weak-signal regime (a=1.0, share small -> Step 2 barely
+    fires) with a strong-signal regime (a=2.0 -> Step 2 fires almost always);
+    the pooled mean lands in between and represents neither regime.
+    """
+    comp = [c for c in cells if c["mode"] == "composition"]
+    strengths = sorted({c["a"] for c in comp})
+    by_strength = {}
+    for a in strengths:
+        at_a = sorted([c for c in comp if c["a"] == a], key=lambda c: c["share"])
+        per_share = {
+            f"share={c['share']:.2f}": {
+                "step2_rate": c["step2_rate"], "mean_auc_x": c["mean_auc_x"],
+                "mean_auc_t": c["mean_auc_t"], "n_rep": c["n_rep"],
+            }
+            for c in at_a
+        }
+        mean_rate = float(np.mean([c["step2_rate"] for c in at_a]))
+        by_strength[f"a={a:.1f}"] = {"per_share": per_share, "mean_step2_rate": mean_rate}
+    return {"by_strength": by_strength, "n_rep": comp[0]["n_rep"] if comp else None}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n_rep", type=int, default=200)
@@ -161,6 +187,17 @@ def main():
     for k, v in summary.items():
         print(f"  {k:34s} {v*100:5.1f}%")
     print(f"\nwrote {OUT}")
+
+    by_strength = summarize_by_strength(cells)
+    OUT_BYSTRENGTH.write_text(json.dumps({"cells": cells, "by_strength": by_strength}, indent=2))
+    print(f"\n=== Step-2 detection by composition strength and category share (n_rep={by_strength['n_rep']}) ===")
+    print(f"the pooled {summary['composition_step2_detection']*100:.1f}% above averages a bimodal result:")
+    for a_key, block in by_strength["by_strength"].items():
+        print(f"\n  {a_key}  (mean across shares: {block['mean_step2_rate']*100:5.1f}%)")
+        for share_key, r in block["per_share"].items():
+            print(f"    {share_key:12s} Step2 fires {r['step2_rate']*100:5.1f}%  "
+                  f"AUC(C|X)={r['mean_auc_x']:.2f} AUC(C|T)={r['mean_auc_t']:.2f}")
+    print(f"\nwrote {OUT_BYSTRENGTH}")
 
 
 if __name__ == "__main__":

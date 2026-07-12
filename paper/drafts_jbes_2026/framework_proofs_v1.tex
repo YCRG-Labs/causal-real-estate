@@ -1,0 +1,179 @@
+% Full proofs of Theorem 1 (identification) and Theorem 2 (decomposition
+% consistency) for the representation-derived-treatment framework.
+% STATUS: self-verified draft. Algebraic cores checked exactly in
+% data/scripts/theorem_symbolic_verify.py. The two previously-flagged steps are now
+% verified: Thm 1 Step 6 (necessity) reduces to the exact bias beta*b*d/(d^2+1);
+% Thm 2 Step 4 second-order coincidence confirmed numerically (gap ~ t^2) with the
+% justification corrected from a Taylor argument to Neyman orthogonality of the
+% Robinson moment. Compiles into the paper with zero undefined refs/cites. NOT yet
+% \input into the committed manuscript, pending the author's final read.
+
+\subsection{Identification of a representation-derived treatment}
+\label{sec:thm-id}
+
+Let $\ell$ denote location, $x$ the structured attributes, and $W$ the text
+embedding, and let the scalar treatment $T$ be a fixed linear summary of $W$, the
+oriented leading pooled principal component. Write $L=L(\ell)$ for a basis of
+functions of location used as controls. We take the outcome to follow the
+structural model
+\begin{equation}
+Y=\theta\,T+\beta\,U+f(x)+\varepsilon,
+\label{eq:struct}
+\end{equation}
+in which $U$ is an unobserved, spatially patterned driver of price.
+
+\begin{assumption}[Spatial confounder]\label{as:id-U}
+The unobserved confounder is location-measurable, $U=h(\ell)$ for a measurable $h$.
+\end{assumption}
+\begin{assumption}[Basis richness]\label{as:id-basis}
+$h$ lies in the closed linear span of $L$, so that $\mathbb{E}[U\mid L,x]=U$ almost
+surely. Concretely $L$ includes the discrete geographic identifiers (borough,
+neighborhood, school, and street indicators) through which the encoder leaks
+location; a coordinate-polynomial basis alone does not satisfy this when $h$ varies
+discontinuously across geographic units.
+\end{assumption}
+\begin{assumption}[Residual overlap]\label{as:id-overlap}
+$\mathbb{E}\big[(T-\mathbb{E}[T\mid L,x])^2\big]>0$.
+\end{assumption}
+\begin{assumption}[Exogeneity]\label{as:id-exog}
+$\mathbb{E}[\varepsilon\mid T,\ell,x]=0$.
+\end{assumption}
+
+\begin{theorem}[Identification]\label{thm:id}
+Under Assumptions~\ref{as:id-U}--\ref{as:id-exog}, the treatment coefficient in
+\eqref{eq:struct} equals the Robinson functional
+\[
+\theta=\frac{\mathbb{E}\!\left[\tilde Y\,\tilde T\right]}{\mathbb{E}\!\left[\tilde T^{2}\right]},
+\qquad
+\tilde Y=Y-\mathbb{E}[Y\mid L,x],\quad \tilde T=T-\mathbb{E}[T\mid L,x].
+\]
+The concept-erasure diagnostic consistently estimates $\mathbb{E}[\tilde T^{2}]$, and
+$\theta$ is point-identified if and only if $\mathbb{E}[\tilde T^{2}]>0$; as
+$R^2_{T\sim(L,x)}\to1$ the denominator vanishes and identification fails.
+\end{theorem}
+
+\begin{proof}
+\emph{Step 1 (the confounding is absorbed).} By
+Assumptions~\ref{as:id-U}--\ref{as:id-basis}, $U=h(\ell)$ with $h$ in the span of
+$L$, so $\beta U+f(x)=g(L,x)$ for the fixed $(L,x)$-measurable function
+$g:=\beta h+f$. Model \eqref{eq:struct} becomes $Y=\theta T+g(L,x)+\varepsilon$.
+
+\emph{Step 2 (exogeneity survives coarsening).} Since $(L,x)$ is
+$\sigma(\ell,x)$-measurable, iterated expectations and
+Assumption~\ref{as:id-exog} give
+$\mathbb{E}[\varepsilon\mid T,L,x]=\mathbb{E}\!\left[\mathbb{E}[\varepsilon\mid
+T,\ell,x]\mid T,L,x\right]=0$.
+
+\emph{Step 3 (partialling out).} Taking $\mathbb{E}[\,\cdot\mid L,x]$ of the model,
+$\mathbb{E}[Y\mid L,x]=\theta\,\mathbb{E}[T\mid L,x]+g(L,x)$, and subtracting yields
+$\tilde Y=\theta\,\tilde T+\varepsilon$.
+
+\emph{Step 4 (the moment).} Multiplying by $\tilde T$ and taking expectations,
+$\mathbb{E}[\tilde Y\tilde T]=\theta\,\mathbb{E}[\tilde T^{2}]+\mathbb{E}[\varepsilon
+\tilde T]$. The cross term vanishes: $\mathbb{E}[\varepsilon\tilde
+T]=\mathbb{E}[\varepsilon T]-\mathbb{E}[\varepsilon\,\mathbb{E}[T\mid L,x]]=0$, the
+first term by $\mathbb{E}[\varepsilon T]=\mathbb{E}[\mathbb{E}[\varepsilon\mid
+T,L,x]\,T]=0$ (Step 2) and the second by
+$\mathbb{E}[\varepsilon\,\mathbb{E}[T\mid L,x]]=\mathbb{E}[\mathbb{E}[\varepsilon\mid
+L,x]\,\mathbb{E}[T\mid L,x]]=0$. Dividing by $\mathbb{E}[\tilde T^{2}]$, positive by
+Assumption~\ref{as:id-overlap}, gives the stated functional.
+
+\emph{Step 5 (erasure diagnostic and the boundary).} $\mathbb{E}[\tilde
+T^{2}]=\operatorname{Var}(T-\mathbb{E}[T\mid L,x])$ is the treatment's variance
+orthogonal to $(L,x)$, which the held-out residual of the concept-erasure diagnostic
+estimates consistently. Writing $R^2_{T\sim(L,x)}=1-\mathbb{E}[\tilde
+T^{2}]/\operatorname{Var}(T)$, as this share tends to one the Robinson denominator
+tends to zero and $\theta$ ceases to be point-identified. New York, whose leading
+text direction loads on borough and neighborhood names, is the empirical instance of
+this boundary.
+
+\emph{Step 6 (necessity of Assumption~\ref{as:id-basis}).} If instead
+$h\notin\operatorname{span}L$, let $r=U-\mathbb{E}[U\mid L]$ be the unabsorbed
+remainder, which is $(L,x)$-orthogonal yet correlated with $\tilde T$ because $T$
+shares the discrete location channel. Then $\tilde Y=\theta\tilde T+\beta\tilde
+r+\varepsilon$ and the Robinson functional returns $\theta+\beta\,\mathbb{E}[\tilde
+r\tilde T]/\mathbb{E}[\tilde T^{2}]\neq\theta$. Modeling a smooth channel
+$\ell_s\in\operatorname{span}L$ and a discrete channel $\ell_d\notin
+\operatorname{span}L$ with $U=a\ell_s+b\ell_d$ and $T=c\ell_s+d\ell_d+\eta$ gives the
+exact bias $\beta\,b\,d/(d^{2}+1)$, zero if and only if the discrete channel is
+absent from either $U$ or $T$. This is why the basis must span the discrete
+geographic identifiers rather than coordinates alone.
+\end{proof}
+
+\subsection{The decomposition estimates the location-confounding bias}
+\label{sec:thm-decomp}
+
+Let $W_0=(x,c)$ be the base control set and $W_1=W_0\cup L$ the augmented set that
+adds the location basis. Write $\hat\theta_{\mathrm{base}}$ and
+$\hat\theta_{\mathrm{geo}}$ for the cross-fitted partially-linear DML coefficients on
+$T$ under $W_0$ and $W_1$, and $\hat\Delta=\hat\theta_{\mathrm{base}}-\hat\theta_{
+\mathrm{geo}}$.
+
+\begin{assumption}[Cross-fitting rates]\label{as:dml-rates}
+The nuisance estimators under both control sets satisfy the conditions of
+\citet{chernozhukov2018double}, with product errors $o_p(n^{-1/2})$ and finite
+second moments.
+\end{assumption}
+\begin{assumption}[Positivity]\label{as:dml-overlap}
+$\mathbb{E}[\tilde T_0^{2}]$ and $\mathbb{E}[\tilde T_1^{2}]$ are bounded away from
+zero, where $\tilde T_j$ residualizes $T$ on $W_j$.
+\end{assumption}
+
+\begin{theorem}[Decomposition consistency]\label{thm:decomp}
+Under Assumptions~\ref{as:dml-rates}--\ref{as:dml-overlap}:
+\begin{enumerate}
+\item[\textup{(i)}] $\hat\Delta$ is asymptotically linear with influence function
+$\psi_{\mathrm{base}}-\psi_{\mathrm{geo}}$, so $\hat\Delta\xrightarrow{p}\Delta:=
+\theta_{\mathrm{base}}-\theta_{\mathrm{geo}}$ and
+$\sqrt n(\hat\Delta-\Delta)\xrightarrow{d}\mathcal N\!\big(0,\
+\mathbb{E}[(\psi_{\mathrm{base}}-\psi_{\mathrm{geo}})^{2}]\big)$.
+\item[\textup{(ii)}] When the first-stage projections of $Y$ and $T$ on the controls
+are linear, $\Delta$ equals the \citet{gelbach2016covariates} order-invariant
+decomposition term for the location block, $\Delta=\gamma^{\top}\pi$, with $\gamma$
+the location coefficient in the full linear projection and
+$\pi_k=\mathbb{E}[\tilde T_0\tilde L_{0,k}]/\mathbb{E}[\tilde T_0^{2}]$.
+\item[\textup{(iii)}] In general $\Delta$ equals the omitted-variable-bias functional
+of \citet{chernozhukov2022long} for the location block, coinciding with the linear
+expression of \textup{(ii)} to second order in the first-stage approximation error by
+Neyman orthogonality of the Robinson moment.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\emph{Step 1 (asymptotic linearity of each coefficient).} Under
+Assumptions~\ref{as:dml-rates}--\ref{as:dml-overlap} and
+\citet[Theorems~3.1--3.2]{chernozhukov2018double}, each cross-fitted DML coefficient
+is asymptotically linear, $\sqrt n(\hat\theta_j-\theta_j)=n^{-1/2}\sum_i\psi_{j,i}+
+o_p(1)$ for $j\in\{\mathrm{base},\mathrm{geo}\}$, with the Robinson influence function
+$\psi_{j,i}=\mathbb{E}[\tilde T_j^{2}]^{-1}\,\tilde T_{j,i}\,(\tilde Y_{j,i}-\theta_j
+\tilde T_{j,i})$.
+
+\emph{Step 2 (the difference).} A difference of asymptotically linear estimators is
+asymptotically linear with influence function the difference, so $\sqrt
+n(\hat\Delta-\Delta)=n^{-1/2}\sum_i(\psi_{\mathrm{base},i}-\psi_{\mathrm{geo},i})+
+o_p(1)$; consistency and the central limit theorem follow, giving (i).
+
+\emph{Step 3 (linear case equals Gelbach).} Under linear first stages, nested-projection
+algebra gives the omitted-variable-bias identity $\theta_{\mathrm{base}}=
+\theta_{\mathrm{geo}}+\gamma^{\top}\pi$, with $\gamma$ the location coefficient in the
+long projection and $\pi_k=\mathbb{E}[\tilde T_0\tilde
+L_{0,k}]/\mathbb{E}[\tilde T_0^{2}]$ the coefficient of $L_k$ on $T$ after partialling
+$W_0$. This is exactly the \citet{gelbach2016covariates} share for a single covariate
+block, and his order-invariance result shows the assigned share is independent of the
+sequence in which blocks enter. A symbolic computation confirms
+$\theta_{\mathrm{base}}-\theta_{\mathrm{geo}}=(c\gamma_s+d\gamma_d)/(c^{2}+d^{2}+1)$
+equals $\gamma^{\top}\pi$ exactly in the two-channel model, giving (ii).
+
+\emph{Step 4 (general case equals the nonparametric OVB functional).} Without
+linearity, $\Delta$ is the difference of two Robinson estimands under nested control
+sets, the omitted-variable bias from dropping $L$, whose representation for a
+partially-linear DML functional is that of \citet{chernozhukov2022long}. The linear
+realization of Step 3 recovers this to second order in the first-stage approximation
+error, and not merely to first order, because the Robinson moment is Neyman-orthogonal
+to the first-stage projections: since $\mathbb{E}[\tilde T\mid W]=0$ by construction,
+the Gateaux derivative of the moment in the outcome and treatment nuisances vanishes
+at the truth \citep{chernozhukov2018double}, so replacing the true conditional
+expectations by their linear projections perturbs each estimand only at second order.
+A numerical check confirms the gap scales as the square of the first-stage
+nonlinearity. This gives (iii).
+\end{proof}

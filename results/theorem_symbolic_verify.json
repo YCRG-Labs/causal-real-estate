@@ -1,0 +1,10 @@
+{
+  "T1a_enriched_recovers_theta": true,
+  "T1a_value": "theta",
+  "T1b_coordonly_biased": "b*beta*d/(d**2 + 1)",
+  "T1b_bias_equals_beta_b_d_over_d2p1": true,
+  "T1b_bias_nonzero_iff_discrete_channel": "bias = 0  <=>  b*d = 0 (no discrete leakage or no discrete treatment content)",
+  "T2_delta": "(c*gamma_s + d*gamma_d)/(c**2 + d**2 + 1)",
+  "T2_ovb": "(c*gamma_s + d*gamma_d)/(c**2 + d**2 + 1)",
+  "T2_delta_equals_gelbach_ovb": true
+}

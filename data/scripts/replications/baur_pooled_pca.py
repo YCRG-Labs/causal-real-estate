@@ -36,26 +36,50 @@ ALL_12 = ["boston", "nyc", "sf", "dc", "philadelphia", "chicago",
 
 
 def _attach_pooled_treatment(city: str, emb_df: pd.DataFrame,
-                              pooled_csv: Path) -> np.ndarray | None:
+                              pooled_csv: Path) -> np.ndarray:
     """Merge the pre-computed pooled PCA scalar treatment onto each
-    listing's row in emb_df.  Returns a (n, 1) array aligned with emb_df.
+    listing's row in emb_df, keyed on a stable content key (url, falling
+    back to source_html_sha256) rather than positional row order.
+
+    The embeddings parquet this project reads is periodically rewritten
+    wholesale, so a positional listing_id = arange(len(df)) merge silently
+    drifts and mismatches rows against a treatment CSV built from an older
+    read of the same file. Content-keying makes that impossible; any row
+    that fails to match raises instead of being zero-filled, since a
+    zero-filled treatment is indistinguishable from a real null-effect
+    listing and would bias theta toward zero without warning.
+
+    Returns a (n, 1) array aligned with emb_df's row order.
     """
-    pool = pd.read_csv(pooled_csv)
+    pool = pd.read_csv(pooled_csv, dtype={"key": str})
+    if "key" not in pool.columns:
+        raise AssertionError(
+            f"{pooled_csv} has no 'key' column; regenerate it with "
+            "pooled_pca_treatment.py (writes city/listing_id/key/treatment_z)")
     pool_city = pool[pool["city"] == city].copy()
     if len(pool_city) == 0:
-        print(f"  [warn] no pooled-PCA rows for {city}")
-        return None
-    if "listing_id" not in emb_df.columns:
-        emb_df = emb_df.assign(listing_id=np.arange(len(emb_df)))
-    merged = emb_df[["listing_id"]].merge(
-        pool_city[["listing_id", "treatment_z"]],
-        on="listing_id", how="left",
+        raise AssertionError(f"no pooled-PCA rows for city={city} in {pooled_csv}")
+    if pool_city["key"].duplicated().any():
+        n_dup = int(pool_city["key"].duplicated().sum())
+        raise AssertionError(f"{city}: {n_dup} duplicate keys in pooled-PCA "
+                              "treatment table; merge would not be 1:1")
+
+    key_col = "url" if "url" in emb_df.columns else "source_html_sha256"
+    if key_col not in emb_df.columns:
+        raise AssertionError(
+            f"{city}: emb_df has neither 'url' nor 'source_html_sha256' "
+            "to key the pooled-PCA merge on")
+
+    merged = pd.DataFrame({"key": emb_df[key_col].astype(str).to_numpy()}).merge(
+        pool_city[["key", "treatment_z"]], on="key", how="left",
     )
-    n_missing = merged["treatment_z"].isna().sum()
-    if n_missing > 0:
-        print(f"  [warn] {n_missing} listings without pooled-PCA score; "
-              "filling with city mean (0 after z-score)")
-        merged["treatment_z"] = merged["treatment_z"].fillna(0.0)
+    assert len(merged) == len(emb_df), (
+        f"{city}: merge changed row count ({len(merged)} vs {len(emb_df)}); "
+        "duplicate keys on the emb_df side")
+    n_missing = int(merged["treatment_z"].isna().sum())
+    assert n_missing == 0, (
+        f"{city}: {n_missing}/{len(merged)} listings failed to match the "
+        f"pooled-PCA treatment on key='{key_col}'; refusing to zero-fill")
     return merged["treatment_z"].to_numpy().reshape(-1, 1)
 
 
@@ -86,7 +110,7 @@ def _random_effects_pool(theta, se):
 def run_baur_pooled(
     city: str = "sf",
     pooled_csv: Path = REPO / "results" / "replications"
-                          / "pooled_pca_treatment.csv",
+                          / "pooled_pca_treatment_keyed.csv",
     n_subset: int | None = None,
     seed: int = 42,
     k_folds: int = 5,
@@ -104,8 +128,6 @@ def run_baur_pooled(
     _T_emb, confounders, Y_log, meta = feats
 
     T_pooled = _attach_pooled_treatment(city, emb_df, pooled_csv)
-    if T_pooled is None:
-        return {"city": city, "error": "no pooled treatment"}
     valid_mask = np.asarray(meta["valid_mask"], dtype=bool)
     T_pooled = T_pooled[valid_mask]
     assert len(T_pooled) == len(confounders) == len(Y_log), (
@@ -171,7 +193,10 @@ def main():
     ap.add_argument("--n_boot", type=int, default=None)
     ap.add_argument("--pooled_csv",
                     default=str(REPO / "results" / "replications"
-                                  / "pooled_pca_treatment.csv"))
+                                  / "pooled_pca_treatment_keyed.csv"),
+                    help="content-keyed pooled-PCA treatment CSV "
+                         "(city/listing_id/key/treatment_z); merge is on "
+                         "'key', not the positional listing_id")
     ap.add_argument("--out_dir", type=Path,
                     default=REPO / "results" / "replications"
                               / "baur_pooled_pca")
