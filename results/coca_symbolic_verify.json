@@ -1,0 +1,25 @@
+{
+  "A": {
+    "partial_corr_expr": "(-rho_CX*rho_TX + rho_TC)/sqrt((1 - rho_CX**2)*(1 - rho_TX**2))",
+    "protective_subtraction": "rho_CX*rho_TX",
+    "protective_subtraction_at_rhoCX_0": "0",
+    "partial_corr_limit_rhoCX_to_0": "rho_TC/sqrt(1 - rho_TX**2)",
+    "note": "limit is rho_TC/sqrt(1-rho_TX^2), not bare rho_TC"
+  },
+  "B": {
+    "theta_short": "c_tc*gamma/v_t + theta",
+    "theta_long_minus_theta": "0",
+    "bias": "c_tc*gamma/v_t",
+    "CH_bound": "sqrt(1/((c_tc**2 - v_c*v_t)**2*(v_t*(2*c_tc*gamma*theta + gamma**2*v_c + theta**2*v_t + v_e) - (c_tc*gamma + theta*v_t)**2)))*sqrt(v_t*(2*c_tc*gamma*theta + gamma**2*v_c + theta**2*v_t + v_e) - (c_tc*gamma + theta*v_t)**2)*Abs(c_tc*gamma*(c_tc**2 - v_c*v_t))/v_t",
+    "bias_sq_minus_CH_sq_simplified": "0",
+    "exact_equality_holds": true,
+    "theta_long_recovers_theta": true
+  },
+  "C": {
+    "r_D_when_orthogonal": "rho_TC**2/(1 - rho_TX**2)",
+    "d_rD_d_rho_TC": "-2*rho_TC/(rho_TX**2 - 1)",
+    "d_rD_d_rho_TX": "2*rho_TC**2*rho_TX/(rho_TX**2 - 1)**2",
+    "r_D_grows_freely_in_rho_TC": true,
+    "note": "r_D depends on rho_TC (the confounder's own strength), which no observed statistic bounds once rho_CX=0; the observed rho_TX only rescales it. The benchmark 'C no stronger than X_j' has no anchor."
+  }
+}

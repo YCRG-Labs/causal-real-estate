@@ -229,10 +229,12 @@ fill it in.
 In the partially-linear model of Equation~\eqref{eq:plr}, let $C$ be an omitted
 covariate with $r_D := R^2_{T \sim C \mid X} > 0$ and
 $r_Y := R^2_{Y \sim C \mid T, X} > 0$, and suppose $R^2(C \mid X) \to 0$. Then (i)
-the partial strengths $r_D$ and $r_Y$ that enter the \citet{cinelli2020making} and
-\citet{chernozhukov2022long} bias bound converge to the raw marginal strengths
-$R^2_{T \sim C}$ and $R^2_{Y \sim C \mid T}$, so the shrinkage that conditioning on
-$X$ applies to a confounder correlated with the controls is absent; and (ii) the
+the protective subtraction that conditioning on $X$ applies to a confounder
+correlated with the controls, the cross term $\rho_{TX}\rho_{CX}$ in the partial
+correlation, vanishes, so the partial strengths $r_D$ and $r_Y$ that enter the
+\citet{cinelli2020making} and \citet{chernozhukov2022long} bias bound are not
+shrunk below their raw values, with $r_D \to R^2_{T \sim C}/(1 - R^2_{T \sim X})$ in
+the limit; and (ii) the
 observed-covariate benchmark, which calibrates the plausible magnitude of $C$ by
 that of the strongest observed covariate, carries no warrant, because $C$ by
 construction carries information orthogonal to the covariate space on which that
@@ -240,11 +242,17 @@ benchmark is computed. The robustness value reported against the observed benchm
 is therefore numerically well defined but uninformative about $C$.
 \end{proposition}
 
-The argument is short. Partialling $X$ out of $T$ and of $C$ leaves residuals
-whose correlation, by the recursive partial-correlation identity, tends to the raw
-correlation $\mathrm{Cor}(T, C)$ as $\mathrm{Cor}(C, X) \to 0$, because the term
-that subtracts the variance $C$ shares with $X$ vanishes and the normalizing factor
-tends to one; the same holds on the outcome side, which gives part (i). Part (ii)
+The argument is short. Partialling $X$ out of $T$ and of $C$ leaves residuals whose
+correlation obeys the recursive identity
+$\rho_{TC \mid X} = (\rho_{TC} - \rho_{TX}\rho_{CX}) /
+\sqrt{(1 - \rho_{TX}^2)(1 - \rho_{CX}^2)}$, whose protective subtraction
+$\rho_{TX}\rho_{CX}$ vanishes as $\mathrm{Cor}(C, X) \to 0$, leaving
+$\rho_{TC \mid X} \to \rho_{TC} / \sqrt{1 - \rho_{TX}^2}$, no smaller than the raw
+correlation; the same holds on the outcome side, which gives part (i). A computer-
+algebra check confirms both this identity and the fact that for a single omitted
+confounder the \citet{cinelli2020making} bias expression equals the exact bias
+rather than merely bounding it, so the bound the audit reasons about is tight; the
+verification is released with the replication code. Part (ii)
 is the operational reading: the benchmark's premise is that an omitted confounder
 is comparable in strength to an observed covariate, and a classifier of $C$ on $X$
 running at chance is direct evidence that $C$ lives outside the space that premise
