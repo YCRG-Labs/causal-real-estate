@@ -56,6 +56,11 @@ def make_regressor(
         identical to the old n_jobs=-1 behavior. Pass an explicit int only when
         you specifically want to pin it.
     """
+    if n_jobs is None:
+        _env_nj = os.environ.get("BOOSTER_NJOBS")
+        if _env_nj:
+            n_jobs = int(_env_nj)
+
     if force_sklearn or not _HAS_LIGHTGBM:
         sk_params = {
             "n_estimators": n_estimators,

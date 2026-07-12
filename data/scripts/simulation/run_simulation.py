@@ -146,7 +146,10 @@ def calibrate_truths(
         return f"{est}|{dgp_name}", float(np.mean(thetas))
 
     cells = [(est, dgp_name, beta) for est in estimators for dgp_name, beta in dgps]
-    results = [_one_cell(e, d, b) for e, d, b in cells]
+    from joblib import parallel_config
+    with parallel_config(backend="loky", inner_max_num_threads=1):
+        results = Parallel(n_jobs=n_jobs)(
+            delayed(_one_cell)(e, d, b) for e, d, b in cells)
     truths = dict(results)
     for k, v in truths.items():
         print(f"  truth[{k}] = {v:+.5f}", flush=True)
