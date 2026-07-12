@@ -226,3 +226,18 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# large regenerable data from the 2026-07 confounder rebuild (kept out of git; regen via city_downloaders + build_active_confounders)
+brev_input/
+data/raw/atlanta/
+data/raw/chicago/
+data/raw/dallas/
+data/raw/dc/
+data/raw/denver/
+data/raw/philadelphia/
+data/raw/phoenix/
+data/raw/portland/
+data/raw/seattle/
+results/census_bg/
+results/assessor/
+results/_brev_run/

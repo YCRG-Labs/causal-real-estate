@@ -17,7 +17,8 @@ ASSR = REPO / "results" / "assessor"
 
 FALLBACK = ["dc", "chicago", "seattle", "denver", "atlanta", "portland", "phoenix", "dallas"]
 UTM = {"dc": 32618, "chicago": 32616, "seattle": 32610, "denver": 32613,
-       "atlanta": 32616, "portland": 32610, "phoenix": 32612, "dallas": 32614}
+       "atlanta": 32616, "portland": 32610, "phoenix": 32612, "dallas": 32614,
+       "philadelphia": 32618}
 CENSUS_COLS = ["median_household_income", "median_home_value", "median_gross_rent",
                "pct_white", "pct_black", "pct_asian", "pct_hispanic", "pct_bachelors",
                "labor_force_participation", "pct_under_25", "pct_over_60"]

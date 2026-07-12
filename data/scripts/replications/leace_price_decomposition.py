@@ -86,9 +86,17 @@ def decompose_city(city: str, fast: bool, seed: int = 42,
     if not np.isfinite(lat).any() or not np.isfinite(lon).any():
         return {"city": city, "error": "no lat-lon"}
     conf = np.asarray(confounders, dtype=float)
+    T_emb = np.asarray(T_emb, dtype=float)
+    Y_log = np.asarray(Y_log, dtype=float)
     assert len(conf) == len(Y_log) == len(lat) == len(T_emb)
 
-    pc_raw = _oriented_pc1(np.asarray(T_emb, dtype=float), Y_log, seed)
+    finite = np.isfinite(lat) & np.isfinite(lon)
+    if not finite.all():
+        print(f"  dropping {int((~finite).sum())} row(s) with missing coordinates")
+        T_emb, conf, Y_log = T_emb[finite], conf[finite], Y_log[finite]
+        lat, lon = lat[finite], lon[finite]
+
+    pc_raw = _oriented_pc1(T_emb, Y_log, seed)
 
     cor = np.array([max(abs(np.corrcoef(conf[:, j], lat)[0, 1]),
                         abs(np.corrcoef(conf[:, j], lon)[0, 1]))

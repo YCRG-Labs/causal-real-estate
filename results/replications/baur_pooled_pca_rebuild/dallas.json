@@ -1,0 +1,18 @@
+{
+  "city": "dallas",
+  "n": 8008,
+  "engine": "ridge",
+  "treatment": "pooled_within_city_centered_pca_pc1",
+  "dml": {
+    "label": "DML on pooled BERT PC1",
+    "n": 8008,
+    "theta": -0.14233237096018722,
+    "se": 0.009865673187140876,
+    "ci_low": -0.16166909040698335,
+    "ci_high": -0.1229956515133911,
+    "mde": 0.027643616270368734,
+    "contains_zero": false,
+    "se_if": 0.009865673187140876,
+    "n_boot": null
+  }
+}

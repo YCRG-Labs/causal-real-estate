@@ -1,0 +1,117 @@
+{
+  "city": "boston",
+  "variant": "splince",
+  "n_train": 199,
+  "n_test": 86,
+  "n_zips": 33,
+  "routing": "continuous_latlon",
+  "power_diagnostic": {
+    "n_test": 86,
+    "K": 33,
+    "chance_p": 0.030303030303030304,
+    "critical_acc": 0.06976744186046512,
+    "p_min_80pct": 0.09302325581395349,
+    "power_at_p_alt": null,
+    "detectable_gain_80pct": 0.06272022551092318,
+    "alpha": 0.05
+  },
+  "guardedness_residual": 1.9949319973733282e-17,
+  "postnl_igbp": true,
+  "igbp_history": [
+    {
+      "outer": 1,
+      "v_unit_norm_check": 1.0000000000000002,
+      "adv_train_mse_postproj": 0.6199395681842851
+    },
+    {
+      "outer": 2,
+      "v_unit_norm_check": 1.0,
+      "adv_train_mse_postproj": 0.6096782844269162
+    },
+    {
+      "outer": 3,
+      "v_unit_norm_check": 1.0,
+      "adv_train_mse_postproj": 0.6013981680322664
+    },
+    {
+      "outer": 4,
+      "v_unit_norm_check": 1.0,
+      "adv_train_mse_postproj": 0.3846569611893529
+    },
+    {
+      "outer": 5,
+      "v_unit_norm_check": 0.9999999999999999,
+      "adv_train_mse_postproj": 0.5680831610474205
+    }
+  ],
+  "splince_cov_preservation_max_err": 4.7704895589362195e-17,
+  "splince_variance_preserved": true,
+  "continuous": {
+    "raw": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -1.9866371037068207,
+      "r2_per_target_test": [
+        -2.344457254526776,
+        -1.6288169528868655
+      ],
+      "r2_per_target_train": [
+        0.9995877322448959,
+        0.9995781946797215
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 199,
+      "n_test": 86,
+      "max_coef": 0.21413391375579477
+    },
+    "erased": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": -0.007022209511138633,
+      "r2_per_target_test": [
+        -0.0020925177751727198,
+        -0.011951901247104546
+      ],
+      "r2_per_target_train": [
+        0.0,
+        -2.220446049250313e-16
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 199,
+      "n_test": 86,
+      "max_coef": 1.563173511411612e-13
+    }
+  },
+  "mlp_continuous": {
+    "raw": {
+      "r2_avg_test": -1.1287090462971716,
+      "r2_per_target_test": [
+        -1.3366615316672728,
+        -0.9207565609270703
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    },
+    "erased": {
+      "r2_avg_test": -0.012330088000338413,
+      "r2_per_target_test": [
+        -0.005673306030582914,
+        -0.01898686997009391
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    }
+  },
+  "categorical": {
+    "note": "categorical probe suppressed: per-class test count 2.61 below floor 5 (continuous lat/lon probe is the headline)."
+  },
+  "linear_guardedness_holds": true
+}

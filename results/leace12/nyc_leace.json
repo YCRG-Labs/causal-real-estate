@@ -1,0 +1,160 @@
+{
+  "city": "nyc",
+  "variant": "leace",
+  "n_train": 10559,
+  "n_test": 4526,
+  "n_zips": 162,
+  "routing": "categorical_zip",
+  "power_diagnostic": {
+    "n_test": 4526,
+    "K": 162,
+    "chance_p": 0.006172839506172839,
+    "critical_acc": 0.008395934600088379,
+    "p_min_80pct": 0.009721608484312859,
+    "power_at_p_alt": null,
+    "detectable_gain_80pct": 0.0035487689781400194,
+    "alpha": 0.05
+  },
+  "guardedness_residual": 2.578533740085603e-05,
+  "postnl_igbp": false,
+  "igbp_history": null,
+  "continuous": {
+    "raw": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": 0.46944557285695615,
+      "r2_per_target_test": [
+        0.5105663976293802,
+        0.42832474808453214
+      ],
+      "r2_per_target_train": [
+        0.6198029174804569,
+        0.548874944958134
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 10559,
+      "n_test": 4526,
+      "max_coef": 0.2982771694660187
+    },
+    "erased": {
+      "ridge_alpha": 1.0,
+      "r2_avg_test": 0.00169655019417847,
+      "r2_per_target_test": [
+        -3.1389674601367545e-05,
+        0.0034244900629583075
+      ],
+      "r2_per_target_train": [
+        0.003096120438677019,
+        0.006520283391795889
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ],
+      "n_train": 10559,
+      "n_test": 4526,
+      "max_coef": 0.2568899095058441
+    }
+  },
+  "mlp_continuous": {
+    "raw": {
+      "r2_avg_test": 0.5197357999789811,
+      "r2_per_target_test": [
+        0.5468564417780282,
+        0.4926151581799342
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    },
+    "erased": {
+      "r2_avg_test": 0.0934512485569215,
+      "r2_per_target_test": [
+        0.09351627411883723,
+        0.09338622299500576
+      ],
+      "target_names": [
+        "lat_z",
+        "lon_z"
+      ]
+    }
+  },
+  "categorical": {
+    "raw": {
+      "linear_acc": 0.4522490582760913,
+      "chance_acc_majority": 0.023044538001329492,
+      "chance_acc_uniform": 0.006622516556291391,
+      "n_classes_train": 151,
+      "n_test_kept": 4513,
+      "max_coef": 2.71612286567688
+    },
+    "erased": {
+      "linear_acc": 0.022158209616662972,
+      "chance_acc_majority": 0.023044538001329492,
+      "chance_acc_uniform": 0.006622516556291391,
+      "n_classes_train": 151,
+      "n_test_kept": 4513,
+      "max_coef": 0.26355260610580444
+    }
+  },
+  "mlp_categorical": {
+    "raw": {
+      "probe_acc": 0.09058771282434464,
+      "baseline_acc": 0.022978347326557666,
+      "leakage": 0.06760936549778697
+    },
+    "erased": {
+      "probe_acc": 0.021431727334856987,
+      "baseline_acc": 0.022978347326557666,
+      "leakage": -0.001546619991700679
+    }
+  },
+  "mdl_codelength": {
+    "raw": {
+      "K": 161,
+      "n_train": 10559,
+      "n_test": 4526,
+      "uniform_codelength_bits": 77407.15131601224,
+      "online_codelength_bits": 66294.66561509545,
+      "compression": 1.167622622390699,
+      "final_probe_acc": 0.06827220320701599,
+      "timesteps": [
+        11,
+        21,
+        42,
+        84,
+        169,
+        660,
+        1320,
+        2640,
+        5280,
+        10559
+      ]
+    },
+    "erased": {
+      "K": 161,
+      "n_train": 10559,
+      "n_test": 4526,
+      "uniform_codelength_bits": 77407.15131601224,
+      "online_codelength_bits": 73466.33561798211,
+      "compression": 1.0536411087456707,
+      "final_probe_acc": 0.021431727334856987,
+      "timesteps": [
+        11,
+        21,
+        42,
+        84,
+        169,
+        660,
+        1320,
+        2640,
+        5280,
+        10559
+      ]
+    }
+  },
+  "linear_guardedness_holds": true
+}
