@@ -68,18 +68,20 @@
 
 {\tiny \date{}}
 
-\renewcommand{\headeright}{Preprint}
-\renewcommand{\undertitle}{Preprint}
+\renewcommand{\headeright}{}
+\renewcommand{\undertitle}{}
 \renewcommand{\shorttitle}{Does Listing Language Add Value Beyond Location?}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Automated valuation models increasingly price homes by reading the prose of a
-listing alongside its structured attributes, and the language reliably improves
-their predictions. Whether that improvement reflects information about the property
-or merely the neighborhood an agent's description encodes has not been tested, and
+Does the language of a property listing raise its price because it carries
+information about the property, or because it encodes the neighborhood the agent
+already knows? Automated valuation models increasingly price homes by reading the
+prose of a listing alongside its structured attributes, and the language reliably
+improves their predictions, but whether that improvement reflects the property or
+merely the neighborhood an agent's description encodes has not been tested, and
 the distinction matters: a model that prices laundered geography offers nothing
 beyond location and inherits its biases, while one that prices semantic content
 adds real information. We treat the leading direction of a listing embedding as a
@@ -109,7 +111,7 @@ None of this is a clean causal elasticity, and we say so throughout. The estimat
 
 The paper proceeds in the order the argument requires. Section~\ref{sec:related} places the question among the literatures it draws on. Section~\ref{sec:methods} sets out the estimand and the partialling-out estimator, and Section~\ref{sec:data} describes how the twelve-market corpus was assembled and audited for the duplication that scraped listings invite. The evidence occupies Section~\ref{sec:results}, which estimates the text effect under each encoder, checks how much location the representation encodes, holds the text fixed and moves geography on and off the controls to isolate the share that location explains, bounds the surviving effect with a sensitivity analysis, and confirms it on recorded sale prices; an auxiliary rewriting intervention and a cross-encoder comparison are reported alongside. The concept-erasure implementation and the formal treatment of the generated-regressor problem are developed in the appendices. Section~\ref{sec:conclusion} draws the line, for practice, between what a predictive-only evaluation of text-augmented valuation can and cannot support.
 
-\section{Related Work}
+\section{Literature}
 \label{sec:related}
 
 \subsection{Listing text in automated valuation, and the question it raises}
@@ -170,7 +172,7 @@ parcel and assessment records, and we acknowledge the U.S.\ Census Bureau for
 demographic data accessed through its API.
 
 \newpage
-\bibliographystyle{unsrtnat}
+\bibliographystyle{plainnat}
 \bibliography{references}
 
 \newpage

@@ -118,7 +118,35 @@ T = m(\ell, x, c) + \nu,
 \label{eq:plr}
 \end{equation}
 in which $\theta$ is the per-standard-deviation effect of the text direction on
-log price and the nuisance functions $g$ and $m$ are left unrestricted. The
+log price and the nuisance functions $g$ and $m$ are left unrestricted.
+
+\begin{assumption}[Unconfoundedness given controls]
+\label{as:unconf}
+Writing $W = (\ell, x, c)$ for the observed location, structured, and contextual
+controls, the potential outcome $Y(t)$ is mean-independent of the text direction
+given $W$, so that $E[Y(t) \mid T, W] = E[Y(t) \mid W]$ for every $t$ in the
+support of $T$, and the conditional-mean functions $m(W) = E[T \mid W]$ and
+$g(W) = E[Y \mid W]$ are estimable at faster than $n^{-1/4}$ rates.
+\end{assumption}
+
+Assumption~\ref{as:unconf} is what licenses reading $\theta$ as the causal effect
+of the text direction rather than as a residual association, and we do not defend
+it as true on priors. Descriptions are written with full knowledge of location,
+structure, and context, so the residual $\nu$ could in principle still carry
+price-relevant information the controls omit. What the paper offers is not an
+argument that the assumption holds but an accumulation of evidence against the
+specific channels through which it would most plausibly fail: the erasure
+diagnostic shows that the location the representation demonstrably encodes is
+linearly removable, the covariate decomposition of Section~\ref{sec:decomposition}
+shows that folding a flexible location basis into $W$ barely moves $\hat\theta$,
+and the sensitivity analysis of Section~\ref{sec:sensitivity-12} bounds the
+strength an unobserved confounder would need to overturn the estimate against the
+strength of the strongest control actually observed. The assumption is therefore
+not credible on its own but increasingly credible as those three probes fail to
+unseat it, which is the structure we ask the reader to weigh rather than a claim
+of ignorability by fiat.
+
+The
 Robinson partialling-out estimator \citep{robinson1988root} recovers $\theta$ from
 the residual-on-residual regression of $\tilde{Y} = Y - \hat{g}$ on
 $\tilde{T} = T - \hat{m}$. We fit the nuisances $\hat{g}$ and $\hat{m}$ by
@@ -154,7 +182,12 @@ anticonservative at the few thousand listings a single market affords, mildly so
 near the null and more seriously when the true effect is large, a pattern we
 document in a calibration study and repair with an out-of-fold construction of the
 treatment direction, the sample-splitting that \citet{egami2022texts} prescribe
-when the treatment is learned from the documents, in Appendix~\ref{app:simulation}. The point estimates are
+when the treatment is learned from the documents, in Appendix~\ref{app:simulation}. That the
+treatment is the leading spectral direction of the design rather than an exogenously fixed
+covariate places the construction alongside the spectral-deconfounding literature on inference
+when a leading-eigenvector transform of high-dimensional covariates interacts with hidden
+confounding \citep{cevid2020spectral, guo2022doubly}, and it is the same concern, the estimated
+direction carrying its own sampling variability, that the out-of-fold construction addresses. The point estimates are
 approximately unbiased throughout; it is the nominal coverage of the analytic
 interval, not the location of the estimate, that the calibration study qualifies.
 
