@@ -138,20 +138,21 @@ The more informative comparison is internal. The Doc2Vec uniqueness construct of
 \citet{shen2021information} runs in the same direction as the oriented BERT axis,
 both within markets and across the panel. In San Francisco, where both channels
 are estimated on the identical sample, the same DML pipeline recovers a
-uniqueness effect of $+0.114$ and a BERT-PC1 effect of $+0.106$, and pooled
-across the twelve markets the uniqueness effect is about $+0.07$ against the
-$+0.125$ of the BERT axis. The two text treatments therefore concord in sign and
-in cross-market ranking, with the BERT axis roughly twice the hedonic channel in
-pooled magnitude. We are deliberate about what this concordance does and does not
-establish. The two channels are alternative encodings of the same listing text
-applied to the same listings under the same confounder adjustment, and
-Section~\ref{sec:cross-method-12} shows they are nearly collinear across markets,
-so their agreement is evidence that the text-on-price signal is robust to the
-choice of text representation rather than evidence from two independent sources.
-Textual distinctiveness in the Shen sense and the utilitarian-to-amenity axis
-that the leading sentence-BERT component recovers price in the same direction,
-and the difference between them is one of magnitude and of which markets each
-detects, not of sign.
+uniqueness effect of $+0.114$ and a BERT-PC1 effect of $+0.106$, so where both
+are measured on the same listings they agree. Pooled across the twelve markets,
+however, the two channels part company. The sentence-BERT axis holds at $+0.125$,
+while the uniqueness effect collapses to a pooled value indistinguishable from
+zero once the full confounder block replaces the coordinate-only controls that
+the superseded panel had used for nine of the twelve markets. We read this
+divergence as a discriminating result rather than a failure. The two channels are
+alternative encodings of the same listing text, but they encode different things:
+the leading sentence-BERT component recovers a utilitarian-to-amenity axis of
+semantic content, whereas the Shen score measures how textually distinctive a
+description is relative to its neighbors, a quantity that is itself largely a
+function of neighborhood. That the semantic-content axis prices net of the
+neighborhood controls while the distinctiveness score does not is consistent with
+the paper's central claim, that it is the content of the language and not the
+geography it encodes that carries the effect.
 
 \paragraph{What the leading axis prices.} To make concrete what the leading axis
 encodes, we regress each listing's projection onto it on a TF-IDF vocabulary of

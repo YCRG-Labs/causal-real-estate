@@ -129,11 +129,13 @@ isotropic metric is physical, captures far more of the treatment's spatial
 structure than the quadratic does, raising the average share of the leading text
 direction that location explains from about $0.13$ to about $0.21$ and from $0.42$
 to $0.52$ in New York, and yet the price effect after adjustment barely responds.
-The location-adjusted estimate moves by at most $0.030$ of a log point across the
-twelve markets, in New York, and by under $0.02$ in every other market, with no
-market changing sign and the pooled effect shifting from $+0.144$ to $+0.137$, so
-that a basis flexible enough to absorb twice the geography leaves the semantic
-estimate essentially where the quadratic left it. The finer spatial grain the
+The location-adjusted estimate moves by at most $0.059$ of a log point across the
+twelve markets, in New York, and by under $0.03$ in every other market, with no
+market of detectable effect changing sign and the pooled effect shifting from
+$+0.129$ to $+0.121$. New York aside, a basis flexible enough to absorb twice the
+geography leaves the semantic estimate essentially where the quadratic left it; in
+New York the finer grain takes a little more, moving the estimate by about
+$0.059$, still without overturning it. The finer spatial grain the
 polynomial could not bend to turns out, where the data can see it, not to carry
 the price effect either, and the per-market comparison is released with the
 replication code.
@@ -143,7 +145,7 @@ replication code.
 \begin{tikzpicture}
 \begin{axis}[
     causalre, width=0.42\textwidth, height=6.6cm, name=dcA,
-    symbolic y coords={New York,Phoenix,Washington,Seattle,Portland,San Francisco,Boston,Denver,Dallas,Atlanta,Philadelphia,Chicago},
+    symbolic y coords={New York,Phoenix,Seattle,Denver,Portland,San Francisco,Atlanta,Boston,Washington,Dallas,Philadelphia,Chicago},
     ytick=data, enlarge y limits=0.06,
     xlabel={$\hat\theta$ per $\sigma$ (log price)}, xmin=-0.21, xmax=0.53,
     xtick={-0.1,0,0.2,0.4},
@@ -151,42 +153,42 @@ replication code.
     extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
     legend style={font=\scriptsize, draw=none, fill=none, at={(0,1.13)}, anchor=south west, legend columns=2, /tikz/every even column/.append style={column sep=10pt}},
 ]
-\draw[thin,gray] (axis cs:-0.119,New York)--(axis cs:-0.152,New York);
-\draw[thin,gray] (axis cs:0.009,Phoenix)--(axis cs:-0.002,Phoenix);
-\draw[thin,gray] (axis cs:0.015,Washington)--(axis cs:0.013,Washington);
-\draw[thin,gray] (axis cs:0.064,Seattle)--(axis cs:0.065,Seattle);
-\draw[thin,gray] (axis cs:0.098,Portland)--(axis cs:0.095,Portland);
-\draw[thin,gray] (axis cs:0.111,San Francisco)--(axis cs:0.109,San Francisco);
-\draw[thin,gray] (axis cs:0.127,Boston)--(axis cs:0.126,Boston);
-\draw[thin,gray] (axis cs:0.154,Denver)--(axis cs:0.158,Denver);
-\draw[thin,gray] (axis cs:0.200,Dallas)--(axis cs:0.199,Dallas);
-\draw[thin,gray] (axis cs:0.253,Atlanta)--(axis cs:0.250,Atlanta);
-\draw[thin,gray] (axis cs:0.408,Philadelphia)--(axis cs:0.405,Philadelphia);
-\draw[thin,gray] (axis cs:0.461,Chicago)--(axis cs:0.469,Chicago);
+\draw[thin,gray] (axis cs:-0.122,New York)--(axis cs:-0.154,New York);
+\draw[thin,gray] (axis cs:0.004,Phoenix)--(axis cs:-0.009,Phoenix);
+\draw[thin,gray] (axis cs:0.046,Seattle)--(axis cs:0.044,Seattle);
+\draw[thin,gray] (axis cs:0.067,Denver)--(axis cs:0.082,Denver);
+\draw[thin,gray] (axis cs:0.076,Portland)--(axis cs:0.085,Portland);
+\draw[thin,gray] (axis cs:0.122,San Francisco)--(axis cs:0.119,San Francisco);
+\draw[thin,gray] (axis cs:0.124,Atlanta)--(axis cs:0.129,Atlanta);
+\draw[thin,gray] (axis cs:0.126,Boston)--(axis cs:0.125,Boston);
+\draw[thin,gray] (axis cs:0.129,Washington)--(axis cs:0.120,Washington);
+\draw[thin,gray] (axis cs:0.146,Dallas)--(axis cs:0.147,Dallas);
+\draw[thin,gray] (axis cs:0.367,Philadelphia)--(axis cs:0.363,Philadelphia);
+\draw[thin,gray] (axis cs:0.463,Chicago)--(axis cs:0.472,Chicago);
 \addplot[only marks, mark=o, mark size=2.2pt, color=cMUTE, line width=0.9pt] coordinates {
-  (-0.119,New York) (0.009,Phoenix) (0.015,Washington) (0.064,Seattle) (0.098,Portland)
-  (0.111,San Francisco) (0.127,Boston) (0.154,Denver) (0.200,Dallas) (0.253,Atlanta)
-  (0.408,Philadelphia) (0.461,Chicago)};
+  (-0.122,New York) (0.004,Phoenix) (0.046,Seattle) (0.067,Denver) (0.076,Portland)
+  (0.122,San Francisco) (0.124,Atlanta) (0.126,Boston) (0.129,Washington) (0.146,Dallas)
+  (0.367,Philadelphia) (0.463,Chicago)};
 \addlegendentry{without location}
 \addplot[only marks, mark=*, mark size=1.7pt, color=cNYC] coordinates {
-  (-0.152,New York) (-0.002,Phoenix) (0.013,Washington) (0.065,Seattle) (0.095,Portland)
-  (0.109,San Francisco) (0.126,Boston) (0.158,Denver) (0.199,Dallas) (0.250,Atlanta)
-  (0.405,Philadelphia) (0.469,Chicago)};
+  (-0.154,New York) (-0.009,Phoenix) (0.044,Seattle) (0.082,Denver) (0.085,Portland)
+  (0.119,San Francisco) (0.129,Atlanta) (0.125,Boston) (0.120,Washington) (0.147,Dallas)
+  (0.363,Philadelphia) (0.472,Chicago)};
 \addlegendentry{with location}
 \end{axis}
 \begin{axis}[
     causalre, width=0.24\textwidth, height=6.6cm,
     at={(dcA.east)}, anchor=west, xshift=0.7cm,
-    symbolic y coords={New York,Phoenix,Washington,Seattle,Portland,San Francisco,Boston,Denver,Dallas,Atlanta,Philadelphia,Chicago},
+    symbolic y coords={New York,Phoenix,Seattle,Denver,Portland,San Francisco,Atlanta,Boston,Washington,Dallas,Philadelphia,Chicago},
     ytick=data, yticklabels={,,,,,,,,,,,},
     xlabel={PC1 geography $R^2$}, xmin=0, xmax=0.46, xtick={0,0.2,0.4},
     enlarge y limits=0.06,
     title={(b)},
 ]
 \addplot[only marks, mark=square*, mark size=1.8pt, color=cSF] coordinates {
-  (0.417,New York) (0.097,Phoenix) (0.121,Washington) (0.034,Seattle) (0.158,Portland)
-  (0.035,San Francisco) (0.053,Boston) (0.165,Denver) (0.059,Dallas) (0.148,Atlanta)
-  (0.116,Philadelphia) (0.187,Chicago)};
+  (0.419,New York) (0.097,Phoenix) (0.035,Seattle) (0.164,Denver) (0.161,Portland)
+  (0.035,San Francisco) (0.148,Atlanta) (0.054,Boston) (0.120,Washington) (0.059,Dallas)
+  (0.117,Philadelphia) (0.187,Chicago)};
 \end{axis}
 \end{tikzpicture}
 \caption{Is the per-market text-price effect spatially confounded? Holding the
@@ -194,11 +196,12 @@ leading text principal component fixed as the treatment, panel (a) plots its DML
 effect on log price controlling for the structured confounders without (open) and
 with (filled) a location adjustment that adds latitude, longitude, and their
 quadratic and interaction terms to the confounder set. The two estimates nearly
-coincide in eleven of twelve markets, with a confounded share below five percent
-of the effect; New York is the exception, where the location adjustment moves the
-estimate by about a quarter of its magnitude without changing its sign. Panel (b)
-reports the share of the treatment's own variance that the location basis
-explains, which reaches $0.42$ in New York and exceeds $0.10$ in six markets, so
+coincide in eleven of twelve markets, with the location adjustment moving the
+estimate by under $0.02$ of a log point; New York is the exception, where it moves
+the estimate by about a quarter of its magnitude, $0.032$, without changing its
+sign. Panel (b) reports the share of the treatment's own variance that the
+location basis explains, which reaches $0.42$ in New York and exceeds $0.10$ in
+seven markets, so
 the robustness in panel (a) is not an artifact of a treatment that carries no
 geography: the text direction does encode location, yet that location component
 does not drive its price effect. Panel (a) plots point estimates; in every market
