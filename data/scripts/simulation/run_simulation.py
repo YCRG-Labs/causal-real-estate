@@ -54,7 +54,7 @@ DEFAULT_RESULTS_DIR = (
     Path(__file__).resolve().parents[3] / "results" / "simulation"
 )
 
-EFFECT_SIZES = (0.01, 0.05, 0.10)
+EFFECT_SIZES = (0.01, 0.05, 0.10, 0.15, 0.20)
 
 
 @dataclass

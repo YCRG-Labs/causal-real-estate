@@ -196,3 +196,116 @@ values in several markets are the reason we read the per-market estimates as
 associational and sensitivity-bounded rather than cleanly causal.}
 \label{fig:sensitivity-rv}
 \end{figure}
+
+\subsection{A composition-and-conditioning audit for text-treatment DML}
+\label{sec:coca}
+
+The robustness values of Table~\ref{tab:confounder-sensitivity-12} benchmark the
+strength an unobserved confounder would need against the strength of the strongest
+confounder we do observe, following \citet{cinelli2020making}. That benchmark has a
+blind spot that a text-derived treatment walks directly into, and this section
+names it, bounds it, and turns it into a pre-registered diagnostic.
+
+Consider an omitted categorical covariate $C$, property type being the concrete
+instance and vacant land the sharpest case, with three properties that hold in the
+data. It shifts the treatment, $R^2_{T \sim C \mid X} > 0$, because a vacant lot is
+described in different language than a house. It shifts price net of the treatment
+and the observed controls, $R^2_{Y \sim C \mid T, X} > 0$. And it is nearly
+invisible to the observed confounder block, $R^2(C \mid X) \approx 0$: a
+cross-fitted classifier of the vacant-land indicator on the full confounder set
+runs at an AUC of $0.50$ in Boston and $0.47$ in New York, while the same indicator
+is recovered from the text direction at an AUC above $0.95$. The nearest-parcel
+join that supplies the structured controls cannot represent landness, since for a
+vacant lot it returns a neighbouring built parcel's attributes, so the design is
+blind to exactly the attribute the text encodes. The bias from omitting such a $C$
+is bounded by the partial-$R^2$ omitted-variable-bias inequality of
+\citet{cinelli2020making} and its double-machine-learning generalization in
+\citet{chernozhukov2022long}, and that bound holds whether or not $C$ is orthogonal
+to $X$. What the orthogonality changes is not the bound but the benchmark used to
+fill it in.
+
+\begin{proposition}[Orthogonal composition defeats the observed-covariate benchmark]
+\label{prop:coca}
+In the partially-linear model of Equation~\eqref{eq:plr}, let $C$ be an omitted
+covariate with $r_D := R^2_{T \sim C \mid X} > 0$ and
+$r_Y := R^2_{Y \sim C \mid T, X} > 0$, and suppose $R^2(C \mid X) \to 0$. Then (i)
+the partial strengths $r_D$ and $r_Y$ that enter the \citet{cinelli2020making} and
+\citet{chernozhukov2022long} bias bound converge to the raw marginal strengths
+$R^2_{T \sim C}$ and $R^2_{Y \sim C \mid T}$, so the shrinkage that conditioning on
+$X$ applies to a confounder correlated with the controls is absent; and (ii) the
+observed-covariate benchmark, which calibrates the plausible magnitude of $C$ by
+that of the strongest observed covariate, carries no warrant, because $C$ by
+construction carries information orthogonal to the covariate space on which that
+benchmark is computed. The robustness value reported against the observed benchmark
+is therefore numerically well defined but uninformative about $C$.
+\end{proposition}
+
+The argument is short. Partialling $X$ out of $T$ and of $C$ leaves residuals
+whose correlation, by the recursive partial-correlation identity, tends to the raw
+correlation $\mathrm{Cor}(T, C)$ as $\mathrm{Cor}(C, X) \to 0$, because the term
+that subtracts the variance $C$ shares with $X$ vanishes and the normalizing factor
+tends to one; the same holds on the outcome side, which gives part (i). Part (ii)
+is the operational reading: the benchmark's premise is that an omitted confounder
+is comparable in strength to an observed covariate, and a classifier of $C$ on $X$
+running at chance is direct evidence that $C$ lives outside the space that premise
+is calibrated on. We are careful about what this does and does not establish. It is
+not that the formal bound cannot detect $C$; \citet{cinelli2020making} show in
+their own Section~6.2 that the correctly computed bound recovers the right answer
+for a confounder orthogonal to the controls when the analyst sets the benchmark
+strength correctly. It is that the routine heuristic of setting that strength by
+analogy to observed covariates has no anchor once $R^2(C \mid X) \approx 0$, and
+this is precisely the regime in which an analyst is most likely to feel wrongly
+reassured, since orthogonal to the controls reads too easily as weak. The claim in
+part (i) that conditioning shrinks a correlated confounder's residual strength is
+generic rather than universal, since \citet{middleton2016bias} show that
+conditioning on covariates correlated with an unobserved confounder can amplify
+rather than shrink the bias in bad-control configurations, so it is the expected
+case and not a law.
+
+A second, distinct failure channel travels with the first. When $C$ nearly sorts
+the treatment, the residual treatment variance $E[(T - E[T \mid X, C])^2]$
+collapses and the orthogonal score becomes ill conditioned, a phenomenon
+\citet{saco2025illconditioned} characterize through the conditioning number
+$\kappa = 1/(1 - R^2_{\text{oof}}(T \mid X))$; that reference reports the diagnostic
+as a fragility assessment and deliberately proposes no universal threshold, and we
+follow it in treating $\kappa$ and the design-matrix condition number as flags read
+alongside the substantive analysis rather than as a test. The composition confound
+and the conditioning degeneracy are separate objects, and confusing one for the
+other misdiagnoses the fix: the first is corrected by adjusting for the omitted
+category, the second by repairing the design.
+
+These two channels motivate a two-step audit, run before the point estimate is
+inspected, that we call the composition-and-conditioning audit. Step one screens
+conditioning: flag a market if the standardized confounder matrix has condition
+number above $10^6$ or any confounder column has collapsed to a constant, either of
+which signals a design-matrix degeneracy rather than a treatment effect. Step two
+screens composition: flag a market if a candidate omitted category is
+chance-predictable from the controls, $\mathrm{AUC}(C \mid X) < 0.60$, yet strongly
+predictable from the treatment, $\mathrm{AUC}(C \mid T) > 0.75$. The prescribed
+correction differs by step. A conditioning flag is a pipeline repair. A composition
+flag calls for adjusting for the category, and the natural instinct, adding a
+property-type dummy to the regularized nuisance, backfires, because the ridge
+penalty shrinks a rare category toward no effect: in Boston, where non-residential
+listings are $1.9\%$ of the sample, adding the dummy raises $|\hat\theta|$ from
+$0.40$ to $0.45$. Exact within-category demeaning of the treatment and the outcome,
+which is unpenalized, is the correct adjustment and lowers the Boston estimate to
+$0.34$. Across the panel the composition adjustment materially moves only the two
+markets with the largest non-residential share, Philadelphia and Chicago, and
+leaves the rest, including the New York exception, essentially unchanged, which is
+consistent with the mechanism the proposition describes.
+
+A calibration study confirms that the two steps discriminate the two failure modes
+rather than firing together. Across a grid of category shares and confounder
+strengths, with $200$ replications per cell, the conditioning step fires on a
+simulated design degeneracy in every replication and never on a composition
+confound, while the composition step fires on a material composition confound, one
+strong enough to lift $\mathrm{AUC}(C \mid T)$ above the threshold, in more than
+nine of ten replications and never on a design degeneracy; the false-positive rate
+of each step on the other's failure mode is zero. The audit therefore separates a
+numerical artifact from a substantive confound on data the analysis already has,
+and it does so before the estimate is read, which is what a pre-registered
+diagnostic is meant to do. We claim for it neither a new estimator nor a new limit
+theorem, only the connection of two existing literatures, the omitted-variable-bias
+bounds of \citet{cinelli2020making} and \citet{chernozhukov2022long} and the
+conditioning diagnostics of \citet{saco2025illconditioned}, into a screen fitted to
+the specific way a text-derived treatment fails.

@@ -56,7 +56,20 @@ Spatial dependence is addressed beyond the tract cluster bootstrap by a Conley
 spatial HAC standard error and by the self-normalized cluster-$t$ interval of
 \citet{ibragimov2010t}, which is the better-calibrated of the available
 spatial procedures under cross-fitting \citep{salerno2026spatially}; the effect
-excludes zero in all eight assessor markets under every one of these procedures. The
+excludes zero in all eight assessor markets under every one of these procedures.
+Dependence across markets and across calendar quarters is addressed jointly by
+pooling the ten markets into a single panel with metro and sale-quarter fixed
+effects and reporting the two-way cluster-robust standard error of
+\citet{cameron2011robust} by metro and by sale-quarter: the pooled
+per-standard-deviation effect is $0.061$ with a two-way-clustered interval of
+$[0.026, 0.097]$ that excludes zero. We read this as a robustness check and not as
+the headline, because with ten metropolitan clusters the metro dimension sits well
+below the count at which two-way cluster-robust inference is dependable
+\citep{cameron2015practitioner}; the interval uses a $t$ reference on nine degrees
+of freedom, and the metro-clustered standard error alone, which inflates the
+influence-function standard error roughly twentyfold, already accounts for almost
+the entire two-way width, so the residual quarter dimension is not what carries the
+result. The
 concern that the estimated text direction is a generated regressor is addressed by
 the split-sample discipline of \citet{egami2022texts}: estimating the leading
 direction on a random half of the listings and the effect on the disjoint half
