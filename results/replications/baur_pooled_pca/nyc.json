@@ -1,17 +1,17 @@
 {
   "city": "nyc",
-  "n": 15227,
+  "n": 15255,
   "engine": "ridge",
   "treatment": "pooled_within_city_centered_pca_pc1",
   "dml": {
     "label": "DML on pooled BERT PC1",
     "n": 15255,
-    "theta": 0.0187598566020721,
-    "se": 0.0073885319999390025,
-    "ci_low": 0.0042783338821916535,
-    "ci_high": 0.03324137932195254,
+    "theta": 0.008806343364078824,
+    "se": 0.00653973066595727,
+    "ci_low": -0.004011528741197425,
+    "ci_high": 0.02162421546935507,
     "mde": 0.01832432532601227,
-    "contains_zero": false,
+    "contains_zero": true,
     "se_if": 0.00653973066595727,
     "n_boot": null
   }

@@ -13,24 +13,18 @@ metropolitan-level covariate moderates it across the twelve markets.
 \paragraph{Pooled effects.} Table~\ref{tab:meta-pooled-12} reports the
 random-effects pooled per-standard-deviation effects for both channels. The
 Shen-Ross uniqueness channel returns a Paule-Mandel and HKSJ pooled estimate of
-$-0.004$ with $95\%$ confidence interval $[-0.024, +0.016]$ and two-sided
-$p = 0.66$; the REML variant returns $+0.011$ with $p = 0.39$. On the
-reproducible confounder specification the uniqueness channel is not
-distinguishable from zero in the pool, and its per-market point estimates are
-mixed in sign, so the strong positive pool the lat-longitude-only specification
-of the superseded panel had produced does not survive the full confounder block.
-The Baur sentence-BERT axis, under the price-positive orientation convention of
+$+0.060$ with $95\%$ confidence interval $[+0.018, +0.102]$ and two-sided
+$p = 0.009$; the REML variant returns $+0.083$ with $p = 0.006$. The Baur
+sentence-BERT axis, under the price-positive orientation convention of
 Section~\ref{sec:baur-12city}, returns a pooled estimate of $+0.125$ with $95\%$
 confidence interval $[+0.047, +0.202]$, $t(11) = +3.55$, and two-sided
-$p = 0.005$. The sentence-BERT channel is therefore the one that survives full
-adjustment, and the divergence between it and the uniqueness channel is itself
-informative: the semantic-content axis carries a price effect net of the
-neighborhood controls, while the textual-distinctiveness score, once those
-controls are in place, does not. Between-market heterogeneity remains large on
-both channels, with a residual $I^2$ near ninety percent driven by the spread
-from negative estimates in New York to estimates several times the pooled mean in
-Philadelphia and Chicago, so the pooled figures summarize dispersed distributions
-rather than single generalizable means.
+$p = 0.005$. Both channels are positive and statistically detectable in the pool,
+and they point in the same direction, which is the cross-channel concordance
+Section~\ref{sec:cross-method-12} analyzes in detail. Between-market
+heterogeneity is large on both channels, with a residual $I^2$ in the high
+nineties driven by the spread from near-zero estimates in New York to estimates
+several times the pooled mean in Philadelphia and Chicago, so the pooled figures
+summarize dispersed distributions rather than single generalizable means.
 
 \paragraph{Weighting and the small-sample correction.} Two refinements a referee
 versed in small-sample meta-analysis would ask for leave these conclusions
@@ -64,7 +58,7 @@ variant.}
 \toprule
 Channel & PM/HKSJ $\hat\theta$ $[95\%~\mathrm{CI}]$, $p$ & REML $\hat\theta$, $p$ & $I^2$ \\
 \midrule
-Shen-Ross uniqueness     & $-0.004\;[-0.024,+0.016],\;0.66$ & $+0.011,\;0.39$ & $91\%$ \\
+Shen-Ross uniqueness     & $+0.060\;[+0.018,+0.102],\;0.009$ & $+0.083,\;0.006$ & $98\%$ \\
 Sentence-BERT pooled-PCA & $+0.125\;[+0.047,+0.202],\;0.005$ & $+0.125,\;0.005$ & $\approx 97\%$ \\
 \bottomrule
 \end{tabular}
@@ -77,17 +71,13 @@ share, a Simpson diversity index, median home value, median year built, and
 population density, reporting Hartung-Knapp $t$-tests with Benjamini-Hochberg and
 Storey false-discovery control and Romano-Wolf step-down adjusted $p$-values
 across the family. Table~\ref{tab:meta-moderators} reports the scan. No moderator
-on either channel survives false-discovery or Romano-Wolf adjustment. On the Shen
-channel the only coefficient reaching nominal significance is log population
-at $\hat\beta = -0.014$, whose raw two-sided $p$ of $0.044$ is the one value
-below five percent in the entire scan, but it does not survive
-Benjamini-Hochberg adjustment across the eight-test family
-($q_{\mathrm{BH}} = 0.29$). On the Baur channel no coefficient reaches nominal
-significance at all; the renter share carries the smallest raw $p$ at $0.086$ and
-fails every multiplicity correction ($q_{\mathrm{BH}} = 0.69$). The next-smallest
-raw $p$ values are the Shen population density at $0.076$ and the Baur median home
-value at $0.193$; every remaining coefficient on both channels has a raw $p$ above
-$0.10$.
+on either channel survives false-discovery or Romano-Wolf adjustment. No
+coefficient reaches nominal significance on either channel: the renter share
+carries the smallest raw $p$ on both, $0.080$ on the Shen channel and $0.086$ on
+the Baur channel, and neither survives Benjamini-Hochberg adjustment across the
+eight-test family ($q_{\mathrm{BH}} = 0.64$ and $0.69$). The next-smallest raw $p$
+values are the median home value at $0.197$ on the Shen channel and $0.193$ on the
+Baur; every remaining coefficient on both channels has a raw $p$ above $0.20$.
 
 \begin{table}[H]
 \centering
@@ -105,14 +95,14 @@ diagnostics, against a mean leverage of $p/k = 0.17$.}
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 Moderator & $\hat\beta$ & $p\;(q_{\mathrm{BH}})$ & $\hat\beta$ & $p\;(q_{\mathrm{BH}})$ & max Cook's $D$ \\
 \midrule
-Renter share      & $-0.012$ & $0.109\;(0.29)$ & $-0.063$ & $0.086\;(0.69)$ & $0.7$ (Phila) \\
-Median home value & $+0.001$ & $0.933\;(0.93)$ & $-0.050$ & $0.193\;(0.77)$ & $6.9$ (SF) \\
-Log population    & $-0.014$ & $0.044\;(0.29)$ & $+0.020$ & $0.602\;(0.91)$ & $6.6$ (NYC) \\
-Pop.\ density     & $-0.012$ & $0.076\;(0.29)$ & $+0.001$ & $0.982\;(0.98)$ & $8.2$ (NYC) \\
-Median HH income  & $+0.003$ & $0.804\;(0.93)$ & $-0.027$ & $0.492\;(0.91)$ & $0.6$ (Phila) \\
-Diversity index   & $-0.012$ & $0.249\;(0.50)$ & $+0.010$ & $0.808\;(0.92)$ & $0.6$ (Phila) \\
-College share     & $-0.002$ & $0.865\;(0.93)$ & $-0.016$ & $0.680\;(0.91)$ & $0.8$ (Phoenix) \\
-Median year built & $+0.008$ & $0.368\;(0.59)$ & $-0.031$ & $0.422\;(0.91)$ & $1.4$ (NYC) \\
+Renter share      & $-0.028$ & $0.080\;(0.64)$ & $-0.063$ & $0.086\;(0.69)$ & $0.7$ (Phila) \\
+Median home value & $-0.041$ & $0.197\;(0.74)$ & $-0.050$ & $0.193\;(0.77)$ & $6.9$ (SF) \\
+Log population    & $-0.012$ & $0.458\;(0.74)$ & $+0.020$ & $0.602\;(0.91)$ & $6.6$ (NYC) \\
+Pop.\ density     & $-0.014$ & $0.374\;(0.74)$ & $+0.001$ & $0.982\;(0.98)$ & $8.2$ (NYC) \\
+Median HH income  & $-0.016$ & $0.562\;(0.74)$ & $-0.027$ & $0.492\;(0.91)$ & $0.6$ (Phila) \\
+Diversity index   & $-0.013$ & $0.557\;(0.74)$ & $+0.010$ & $0.808\;(0.92)$ & $0.6$ (Phila) \\
+College share     & $-0.011$ & $0.648\;(0.74)$ & $-0.016$ & $0.680\;(0.91)$ & $0.8$ (Phoenix) \\
+Median year built & $+0.001$ & $0.977\;(0.98)$ & $-0.031$ & $0.422\;(0.91)$ & $1.4$ (NYC) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -129,9 +119,8 @@ are modest, the largest about $8$ for population density, and the leave-one-out
 coefficients change sign on only two of the sixteen moderator-by-channel fits, log
 population and population density on the Baur channel. With twelve markets no
 metropolitan covariate carries a coefficient stable and large enough to survive
-multiplicity correction, and the one coefficient that reaches nominal
-significance, log population on the Shen channel, does not survive it. We
-therefore report no moderator finding. An
+multiplicity correction, and no coefficient reaches nominal significance on either
+channel. We therefore report no moderator finding. An
 earlier draft of this paper reported a positive and significant renter-share
 moderator; that result was an artifact of a corrupted confounder in one market
 that the winsorization described in Section~\ref{sec:data} removed, after which

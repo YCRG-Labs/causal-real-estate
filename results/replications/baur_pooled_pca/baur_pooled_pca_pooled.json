@@ -1,9 +1,14 @@
 {
-  "theta_re": 0.1556268871290687,
-  "se_re": 0.04363558508652479,
-  "I2_pct": 99.32209980992434,
-  "tau2": 0.02261500204520565,
+  "theta_re": 0.12486882743934201,
+  "se_re": 0.03681684560583307,
+  "tau2": 0.01605761172754064,
+  "Q": 1491.505391924557,
+  "df": 11,
+  "I2_pct": 99.26249009493648,
+  "theta_fe": 0.1045609423751029,
+  "se_fe": 0.0030851504524801038,
   "k": 12,
   "oriented_flip": true,
-  "spec": "pooled_within_city_centered_pca_pc1; RE(DL) over 12 cities"
+  "spec": "pooled_within_city_centered_pca_pc1; RE(DL) over 12 cities",
+  "sign_note": "PC sign unidentified; oriented so pooled>=0; cross-method |corr| is sign-invariant"
 }
