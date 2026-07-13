@@ -112,7 +112,13 @@ unstable at twelve clusters, with fold-assignment sensitivity in the cross-fitte
 nuisances and pooled points that shifted across invocations on the same seed and
 data, so we combine the per-market estimates directly and report the stacked fit
 only as a check. Section~\ref{sec:meta-regression-12} develops the pooled figures
-and the null moderator scan.
+and the null moderator scan. Because listing text clusters geographically, the
+influence-function interval, which treats within-market listings as independent, is
+too narrow; clustering the influence function at the zip level, or applying a Conley
+spatial kernel on the coordinates, widens the per-market intervals by roughly forty
+percent, and the effect nonetheless remains significant in every market where the
+independent interval already excluded zero, so the spatially honest inference does
+not disturb the pattern (Appendix~\ref{app:simulation}).
 
 \paragraph{Magnitude and interpretation.} The pooled per-standard-deviation
 effect of $+0.137$ on log listing price is about a fifteen percent change in price,
