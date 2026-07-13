@@ -1,0 +1,89 @@
+\subsection{Design concerns and where each is addressed}
+\label{app:concerns}
+
+A text-as-treatment estimate read under spatial confounding invites a standard set
+of concerns, most of them raised in the methodological literatures the paper draws
+on. Table~\ref{tab:concerns} lists them, names the work that articulated each, and
+points to the analysis in this paper that meets it. The table is a reading guide
+rather than a new result, and every row is developed at length in the section it
+references.
+
+\begin{table}[H]
+\centering
+\caption{Field-standard concerns for a text-as-treatment design under spatial
+confounding, the work that raised each, and the analysis in this paper that
+addresses it.}
+\label{tab:concerns}
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{p{0.235\textwidth}p{0.215\textwidth}p{0.46\textwidth}}
+\toprule
+Concern & Raised by & Addressed in this paper \\
+\midrule
+The text treatment aliases the other latent features the same prose carries, so no
+separated semantic effect is identified &
+\citet{fong2023latent} &
+The estimand is stated as the price effect of the leading text direction
+marginalizing over whatever else the language encodes, an associational object
+rather than a separated attribute (Section~\ref{sec:decomposition}). \\
+
+The text effect is spatial information re-expressed, priced for the geography it
+encodes &
+\citet{gilbert2021causal} &
+The erasure diagnostic confirms the exposure retains non-spatial variation, and the
+deconfounding ladder holds location fixed by construction rather than by adjustment
+(Sections~\ref{sec:leace-12},~\ref{sec:decomposition}). \\
+
+The scale at which location is controlled is an unpinned modeling choice &
+\citet{keller2020selecting} &
+The control basis spans ZIP indicators and a quadratic in coordinates, and the
+identified direction moves little across the basis, attenuating only where the
+leading component is most geographic (Section~\ref{sec:identified-direction}). \\
+
+Location and non-spatial signal can be separated by design rather than assumed apart &
+\citet{guan2023spectral} &
+The identified direction is the embedding analogue of spectral separation, projecting
+the location-predictable subspace out of the text before estimation
+(Section~\ref{sec:identified-direction}). \\
+
+A treatment learned from the documents, formed on the same data as the outcome,
+leaves the influence-function interval anticonservative &
+\citet{egami2022texts} &
+Forming the direction on the pooled corpus shrinks the generated-regressor channel,
+an out-of-fold projection removes most of what remains, and a full-pipeline bootstrap
+carries the residual into the reported intervals (Appendix~\ref{app:simulation}). \\
+
+The estimate could depend on which machine learner fits the nuisances &
+\citet{chernozhukov2018double} &
+The cross-fitted Neyman-orthogonal score admits any learner converging faster than
+$n^{-1/4}$; the ridge headline and its gradient-boosted counterpart return the same
+per-market pattern and New York reversal (Appendix~\ref{app:simulation}). \\
+
+Concept erasure removes only the linear part of the encoded location &
+\citet{belrose2023leace} &
+Linear erasure is exact with a guardedness guarantee in every market, and the
+nonlinear residual a linear probe cannot see is bounded separately by iterative
+gradient-based projection (Section~\ref{sec:leace-12}). \\
+
+The prose carries omitted categorical structure the controls cannot represent, such
+as property type &
+\citet{roberts2020adjusting} &
+A composition-and-conditioning audit flags the vacant-land case and adjusts for it by
+exact within-category demeaning, which does not explain the effect away in any market
+(Section~\ref{sec:coca}). \\
+
+An unobserved confounder, unmeasured condition among them, drives the result &
+\citet{cinelli2020making} &
+A per-market robustness value is benchmarked against the observed spatial block and
+against a measured assessor quality grade where one exists, neither of which
+overturns the estimate (Section~\ref{sec:sensitivity-12}). \\
+
+Predictive accuracy from listing text may be redundant spatial encoding rather than
+new signal &
+\citet{nowak2017textual} &
+The erasure diagnostic and the decomposition separate the geography the representation
+merely encodes from the geography that moves the price, which is what distinguishes
+priced content from a linguistic proxy (Section~\ref{sec:decomposition}). \\
+\bottomrule
+\end{tabular}
+\end{table}
