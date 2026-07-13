@@ -76,25 +76,26 @@
 \maketitle
 
 \begin{abstract}
-Automated valuation models increasingly price homes from the prose of a listing as
-well as its structured attributes, and the added language reliably improves their
-predictions. Whether that improvement carries information about the property or
-merely the neighborhood the writing encodes has gone untested, and the two are
-observationally identical, one inheriting geography's biases and the other adding
-content of its own. We put the question to a design-based test rather than a
-predictive metric. Treating the
-leading direction of a sentence-embedding of the description as a scalar treatment,
-we estimate its effect on log price by partially linear double machine learning
-across twelve metropolitan markets, holding structured attributes and a flexible
-location basis fixed. Folding location into the controls leaves the
-per-standard-deviation effect almost where it began in eleven of the twelve markets,
-a pooled fifteen percent of price for the embedding channel, even though that same
-direction provably encodes location; New York, whose language is the most
-geographic, is the exception the test flags. The effect persists under a second text
-encoding, on nearly two hundred thousand realized sale prices, and against a
-sensitivity analysis bounding unobserved confounding. The estimates remain
-associational, but the worry that text-based valuation is mostly relabeled location
-does not, for most markets, bear out.
+Automated valuation models increasingly price homes from the prose of a listing, and
+the added language reliably improves their predictions. Whether it carries
+information about the property or merely the neighborhood the writing encodes has
+gone untested, since the two are observationally identical. We separate them not by
+adjusting for location but by a sequence of designs that hold it fixed ever more
+strictly. Estimating the effect of listing text on log price by partially linear
+double machine learning across twelve metropolitan markets, we show that the price
+effect depends on which direction through the sentence-embedding is read as the
+treatment, and that the direction stripping the location-predictable channel leaves
+it near seven percent per standard deviation. The effect survives holding the
+building itself fixed, where geography cannot vary, at three and a half percent, and
+survives at one percent between near-identical units in the same building. Each
+design removes more of what the estimate could be confounded with, and the premium
+falls as part of the raw association proves to be location and part unit quality, yet
+it never reaches zero. New York makes it vivid: its language is the most geographic
+in the panel, its naive effect a null, and every design that removes location
+recovers a significant premium there. The surviving premium is modest, but it is
+identified by holding geography fixed rather than by assuming it away, and the worry
+that text valuation is mostly relabeled location does not, on this evidence, bear
+out.
 \end{abstract}
 
 \keywords{Spatial confounding, Concept erasure, Double machine learning, Generated regressors, Text as data, Real estate valuation}
@@ -187,6 +188,8 @@ one. The analyses that close the section qualify this ladder rather than extend 
 bounding the unobserved confounding that could still overturn a per-market estimate,
 taking up the cross-market heterogeneity the panel exposes, and re-running the design
 on the price a property actually fetches rather than the one its agent posts.
+
+\input{drafts_jbes_2026/s6_ladder_table}
 
 \input{drafts_jbes_2026/s6_1_shen_v3}
 \input{drafts_jbes_2026/s6_2_baur_v3}
