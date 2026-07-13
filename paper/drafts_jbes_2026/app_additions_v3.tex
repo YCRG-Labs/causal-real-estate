@@ -140,13 +140,13 @@ Table~\ref{tab:hyperparams} consolidates the settings scattered through the meth
 Component & Setting \\
 \midrule
 DML cross-fitting & $K = 5$ folds, out-of-fold residualization \citep{chernozhukov2018double} \\
-Nuisance learner & gradient boosting (LightGBM, $\text{num\_leaves}=8$, $\text{max\_bin}=63$) for the embedding channels; ridge regression for the Shen-Ross uniqueness channel \\
+Nuisance learner & ridge regression for the embedding channels and the Shen-Ross uniqueness channel (headline); gradient boosting (LightGBM, $\text{num\_leaves}=8$, $\text{max\_bin}=63$) as the robustness alternative \\
 Treatment direction & leading principal component of the embedding, $z$-scored, fitted once on the pooled sample (in-sample) for the per-market panel \\
 Text encoders & sentence-BERT \texttt{all-mpnet-base-v2} ($768$-d, primary); \texttt{all-MiniLM-L6-v2} ($384$-d, robustness); Doc2Vec uniqueness score (Shen channel) \\
 LEACE / iterative gradient-based projection (IGBP) erasure & continuous latitude-longitude concept; IGBP run for five outer passes with a multilayer-perceptron probe; single-precision \\
 GRL foil (App.~\ref{app:adversarial}) & top-$50$ PCs $\rightarrow$ $64$-d encoder; three discriminator heads (ZIP, lat-lon, income quintile); $\lambda$ annealed $0.1\!\to\!1.0$; Adam, $150$ epochs, $70/30$ split \\
 Counterfactual rewriting & Qwen~2.5 32B Instruct ($n=200$/market); Llama~3.3 70B Instruct ($n=100$, cross-generator) \\
-Interval method & influence-function intervals for the Baur and Shen per-market panel; tract cluster bootstrap ($B=300$) for the sale-price panel; within-listing cluster bootstrap for the counterfactual contrast \\
+Interval method & influence-function intervals for the Baur and Shen per-market panel, reported with zip-clustered and Conley spatial-HAC widening in the text (Section~\ref{sec:baur-12city}) since the in-sample direction and cross-fitted nuisances leave the raw interval mildly anticonservative; tract cluster bootstrap ($B=300$) for the sale-price panel; within-listing cluster bootstrap for the counterfactual contrast \\
 Covariate winsorizer & per-column clip at median $\pm\,5$ median absolute deviations, non-finite entries imputed at the median \\
 Meta-analysis & Paule-Mandel $\tau^2$, Hartung-Knapp-Sidik-Jonkman $t$ intervals, Benjamini-Hochberg / Romano-Wolf multiplicity control \\
 Software & Python with scikit-learn, LightGBM, PyTorch, sentence-transformers, and the \texttt{concept-erasure} (LEACE) package; the GPU stages (erasure, GRL, counterfactual) run on a single accelerator \\
