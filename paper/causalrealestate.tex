@@ -157,26 +157,36 @@ These threads meet in the setting we study, and they have begun to meet elsewher
 \section{Empirical results}
 \label{sec:results}
 
-The evidence that follows is organized around one question, whether the price
-effect of listing language survives once the location the language encodes is held
-out of it, and each section earns its place by moving that question forward. We
-first establish that the association exists and does not hinge on a single encoder,
-estimating it through the Shen-Ross uniqueness channel and again through the leading
-principal component of a sentence-BERT embedding. With the effect in hand under both
-encodings, we confirm the premise the deflationary reading depends on, that the
-representation carries location, by recovering the latitude-longitude coordinate
-from the embedding with a concept-erasure probe. The decisive step then holds the
-text direction fixed and folds a flexible location basis into the controls, reading
-the change in the coefficient as the portion of the effect that geography accounts
-for; the answer it returns, that the coefficient barely moves in all but one market,
-is what the remaining analyses exist to qualify. A sensitivity analysis bounds the
-unobserved confounding that could overturn each estimate, a random-effects
-meta-analysis takes up the heterogeneity the per-market panel exposes, the two
-encodings are set against each other to see how far they agree, and the entire
-design is re-run on the price a property actually fetches rather than the one its
-agent posts. Every exhibit traces back to the same claim, that a text effect which
-rides on a representation encoding location is nonetheless not reducible to that
-location.
+The evidence is organized as a ladder. Two confounds could make a text-price
+association an illusion: the language could be encoding the neighborhood rather than
+the property, and within a neighborhood it could be tracking a unit's quality rather
+than its description. The sections that follow hold each of these fixed in turn,
+first by controls and then by design, and read the effect that survives each
+successive restriction as the part of the association that the restriction cannot
+explain away. We begin by establishing that the association exists and does not
+hinge on a single encoder, through the leading principal component of a
+sentence-BERT embedding and again through the Shen-Ross uniqueness channel, which
+move together across the panel. We then confirm the premise the deflationary reading
+depends on, that the representation carries location, by recovering the coordinate
+from the embedding with a concept-erasure probe. From there the restrictions
+tighten. Folding a flexible location basis into the controls leaves the coefficient
+nearly where it began; estimating on the direction that strips the
+location-predictable channel rather than the leading-variance one keeps the effect
+and, in the market where the naive direction had reported a null, recovers it;
+confining the comparison to units in the same building holds location fixed by
+construction; and confining it to near-identical units in the same building holds
+size fixed as well. The effect attenuates as each rung removes more of what it could
+be confounded with, from the location-controlled estimate down to a small premium
+between twin units, and it stays significant, pooled and in New York, at the most
+stringent rung the data support. New York carries the argument throughout. Its
+language is the most geographic in the panel, its naive estimate is a null, and
+every design that removes location recovers a positive effect there, so that the
+market first read as the exception becomes the clearest demonstration that the
+variance-maximal direction had been hiding a real effect rather than manufacturing
+one. The analyses that close the section qualify this ladder rather than extend it,
+bounding the unobserved confounding that could still overturn a per-market estimate,
+taking up the cross-market heterogeneity the panel exposes, and re-running the design
+on the price a property actually fetches rather than the one its agent posts.
 
 \input{drafts_jbes_2026/s6_1_shen_v3}
 \input{drafts_jbes_2026/s6_2_baur_v3}
