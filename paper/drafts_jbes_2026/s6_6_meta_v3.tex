@@ -17,18 +17,25 @@ small negative effect, so that dropping it lifts the market-weighted mean to
 $+0.152$. What moves the pool is the single market the rest of the paper already
 isolates.
 
-We looked for a metropolitan-level moderator of the effect and found none.
-Regressing each channel's per-market estimate on eleven metropolitan covariates,
-eight from the American Community Survey and three from federal series, no covariate
-reaches nominal significance on either channel; the renter share of the housing
-stock carries the smallest raw $p$, at $0.074$ on the Baur channel, and survives
-neither multiplicity adjustment nor the leave-one-out influence diagnostics. With
-twelve markets a regression on site-level estimates is underpowered by construction,
-so the honest reading is the absence of a moderator detectable at this sample size
-rather than a demonstrated absence of moderation, and a properly powered treatment
-would carry the covariate as an interaction in a stacked specification rather than a
-regression on twelve site estimates. We record one correction. An earlier draft
-reported a positive and significant renter-share moderator, which turned out to be
-produced by a corrupted confounder in a single market that the winsorization of
-Section~\ref{sec:data} removes; once corrected, the coefficient reverses sign and
-loses significance, and we report the null rather than carry the superseded claim.
+We looked for a metropolitan-level moderator of the effect and found none that
+survives correction. Regressing each channel's per-market estimate on eleven
+metropolitan covariates, eight from the American Community Survey and three from
+federal series, no covariate approaches significance on the sentence-BERT channel,
+where the smallest raw $p$, carried by the renter share of the housing stock, is
+$0.24$. On the Shen-Ross channel that same renter share does reach a nominal raw
+significance, at $p=0.03$ with a negative sign, but it survives neither the
+Romano-Wolf multiplicity adjustment across the eleven candidates, which lifts its
+$p$ to $0.10$, nor a leave-one-out check, which traces the association almost
+entirely to New York, whose Cook's distance dominates the regression and whose
+removal alone returns the coefficient to insignificance. With twelve markets a
+regression on site-level estimates is underpowered by construction, so the honest
+reading is the absence of a moderator that survives correction for multiplicity and
+influence rather than a demonstrated absence of moderation, and a properly powered
+treatment would carry the covariate as an interaction in a stacked specification
+rather than a regression on twelve site estimates. We record one correction. An
+earlier draft reported a positive and significant renter-share moderator, which
+turned out to be produced by a corrupted confounder in a single market that the
+winsorization of Section~\ref{sec:data} removes; once corrected the coefficient
+reverses sign, and what nominal significance remains rests on New York alone and
+does not survive the multiplicity adjustment, so we report the null rather than
+carry the superseded claim.

@@ -19,30 +19,30 @@ implicated in the text-as-spatial-proxy mechanism that motivates the paper.
 confounding, for all twelve markets ordered by robustness value. $RV_{q=1}$ is
 the \citet{cinelli2020making} robustness value, the partial $R^2$ an unobserved
 confounder must reach on both the treatment and log price to drive the estimate
-to zero; $f^2$ is the partial-$R^2$ benchmark of the strongest observed covariate
-on the same scale; $\Delta\hat\theta$ is the change in the estimate when the
-spatial control block, the latitude-longitude coordinates together with the ZIP
-indicators, is dropped. A checkmark marks the single market whose spatial block
-carries partial $R^2$ for treatment or outcome exceeding its own robustness
-value.}
+to zero; $R^2_{\mathrm{spatial}}$ is the partial $R^2$ that the observed spatial
+control block, the latitude-longitude coordinates together with the ZIP indicators,
+carries for the treatment or the outcome, whichever is larger, the strongest
+mechanism-relevant observed covariate on the same scale; $\Delta\hat\theta$ is the
+change in the estimate when that spatial block is dropped. A checkmark marks the
+single market whose spatial block partial $R^2$ exceeds its own robustness value.}
 \label{tab:confounder-sensitivity-12}
 \small
 \begin{tabular}{lrrrc}
 \toprule
-Market & $RV_{q=1}$ & $f^2$ & $\Delta\hat\theta_{\mathrm{spatial}}$ & Fragile \\
+Market & $RV_{q=1}$ & $R^2_{\mathrm{spatial}}$ & $\Delta\hat\theta_{\mathrm{spatial}}$ & Fragile \\
 \midrule
-Boston        & $0.005$ & $0.0000$ & $-0.0015$ & \checkmark \\
-Seattle       & $0.025$ & $0.0006$ & $+0.0002$ & \\
-New York      & $0.030$ & $0.0010$ & $+0.0024$ & \\
-Portland      & $0.040$ & $0.0017$ & $-0.0010$ & \\
-Washington    & $0.041$ & $0.0017$ & $-0.0011$ & \\
-Phoenix       & $0.048$ & $0.0024$ & $+0.0040$ & \\
-Dallas        & $0.051$ & $0.0027$ & $-0.0031$ & \\
-Atlanta       & $0.051$ & $0.0027$ & $-0.0007$ & \\
-Chicago       & $0.064$ & $0.0043$ & $+0.0020$ & \\
-Denver        & $0.065$ & $0.0045$ & $+0.0022$ & \\
-San Francisco & $0.140$ & $0.0229$ & $-0.0017$ & \\
-Philadelphia  & $0.183$ & $0.0411$ & $-0.0035$ & \\
+Boston        & $0.009$ & $0.0108$ & $-0.0014$ & \checkmark \\
+New York      & $0.022$ & $0.0057$ & $+0.0013$ & \\
+Atlanta       & $0.022$ & $0.0099$ & $+0.0018$ & \\
+Seattle       & $0.027$ & $0.0013$ & $-0.0007$ & \\
+Portland      & $0.028$ & $0.0088$ & $-0.0023$ & \\
+Washington    & $0.037$ & $0.0193$ & $-0.0036$ & \\
+Phoenix       & $0.060$ & $0.0068$ & $+0.0041$ & \\
+Dallas        & $0.063$ & $0.0058$ & $-0.0014$ & \\
+Chicago       & $0.068$ & $0.0034$ & $+0.0019$ & \\
+Denver        & $0.070$ & $0.0420$ & $+0.0142$ & \\
+San Francisco & $0.154$ & $0.0150$ & $-0.0023$ & \\
+Philadelphia  & $0.173$ & $0.0042$ & $+0.0006$ & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -51,29 +51,29 @@ Philadelphia  & $0.183$ & $0.0411$ & $-0.0035$ & \\
 measured as a partial $R^2$ on both the treatment and the outcome, that an
 unobserved confounder must reach to drive an estimate to zero, so that a larger
 value means a more robust finding. Table~\ref{tab:confounder-sensitivity-12}
-reports it for all twelve markets alongside the benchmark strength of the
-strongest covariate we actually observe, and Figure~\ref{fig:sensitivity-rv}
-orders the markets by it. Two markets clear the conventional $0.10$ threshold,
-Philadelphia at $0.183$ and San Francisco at $0.140$, so that overturning either
-would require a confounder explaining more than fourteen percent of the residual
-variance in both the listing signal and the price. The other ten fall below the
-threshold, descending from Denver and Chicago near $0.065$ through the cluster of
-mid-sized markets around $0.05$ to New York at $0.030$, Seattle at $0.025$, and
-Boston at $0.005$, the last of which has almost no effect to protect.
+reports it for all twelve markets alongside the benchmark strength of the observed
+spatial control block, and Figure~\ref{fig:sensitivity-rv} orders the markets by it.
+Two markets clear the conventional $0.10$ threshold, Philadelphia at $0.17$ and San
+Francisco at $0.15$, so that overturning either would require a confounder explaining
+more than fifteen percent of the residual variance in both the listing signal and the
+price. The other ten fall below the threshold, descending from Denver and Chicago near
+$0.07$ through Dallas and Phoenix around $0.06$ and the mid-sized markets near $0.03$
+to New York and Atlanta at $0.02$ and Boston at $0.009$, the last of which has almost
+no effect to protect.
 
-\paragraph{Observed-covariate benchmark.} The benchmark $f^2$, which places the
-most influential observed covariate on the same partial-$R^2$ scale as the
-robustness value, never rises above $0.041$, reaching its largest value in
-Philadelphia and its smallest, near $2\times10^{-5}$, in Boston. The strongest
-covariate we measure therefore sits well inside the robustness value in every
-market, most consequentially in Philadelphia and San Francisco where the room
-between the two is widest, so that an unobserved confounder capable of overturning
-those estimates would have to be considerably stronger than any spatial or
-structural feature the data record. The reassurance is sharpest precisely where
-the effect is largest, and it thins toward the low-robustness markets, where
-neither benchmark is large enough to anchor a confident reading in either
-direction. The bias geometry behind these per-market summaries is drawn out, for
-the two markets that clear the robustness threshold, in
+\paragraph{Observed-covariate benchmark.} The spatial control block, the observed
+covariate group most directly tied to the text-as-spatial-proxy mechanism, carries a
+partial $R^2$ with the treatment or the outcome that never exceeds $0.042$, reaching
+its largest value in Denver and its smallest, near $0.001$, in Seattle. In every
+market but Boston this observed spatial strength sits below the robustness value, so
+an unobserved confounder capable of overturning the estimate would have to be stronger
+than the location signal the controls already record. The room between the two is
+widest exactly where the effect is largest, in Philadelphia and San Francisco, whose
+robustness values near $0.17$ and $0.15$ dwarf spatial benchmarks of $0.004$ and
+$0.015$; it narrows toward the low-robustness markets, where the estimate is already
+small and neither quantity is large enough to anchor a confident reading in either
+direction. The bias geometry behind these per-market summaries is drawn out, for the
+two markets that clear the robustness threshold, in
 Figure~\ref{fig:sensitivity-contour}.
 
 \begin{figure}[H]
@@ -91,14 +91,14 @@ Figure~\ref{fig:sensitivity-contour}.
                   /tikz/every even column/.append style={column sep=6pt}},
 ]
 \addplot[gray, dotted, thick, domain=0:0.25, forget plot] {x};
-\addplot[cSF, thick, domain=0.085:0.25, samples=90] {0.02292*(1-x)/x};
+\addplot[cSF, thick, domain=0.085:0.25, samples=90] {0.02812*(1-x)/x};
 \addlegendentry{$\hat\theta_{\mathrm{adj}}=0$}
-\addplot[cSF, dashed, domain=0.023:0.25, samples=90] {0.00573*(1-x)/x};
+\addplot[cSF, dashed, domain=0.030:0.25, samples=90] {0.00703*(1-x)/x};
 \addlegendentry{$\hat\theta_{\mathrm{adj}}=\hat\theta/2$}
-\addplot[only marks, mark=*, mark size=2pt, color=black] coordinates {(0.140,0.140)};
+\addplot[only marks, mark=*, mark size=2pt, color=black] coordinates {(0.154,0.154)};
 \addlegendentry{robustness value}
-\addplot[only marks, mark=triangle*, mark size=2.6pt, color=cNYC] coordinates {(0.023,0.023)};
-\addlegendentry{strongest covariate}
+\addplot[only marks, mark=triangle*, mark size=2.6pt, color=cNYC] coordinates {(0.0004,0.0150)};
+\addlegendentry{spatial control block}
 \end{axis}
 \begin{axis}[
     causalre, width=0.44\textwidth, height=6.1cm,
@@ -108,11 +108,11 @@ Figure~\ref{fig:sensitivity-contour}.
     xtick={0,0.05,0.10,0.15,0.20}, ytick={0,0.05,0.10,0.15,0.20},
     title={(b) Philadelphia}, title style={font=\small},
 ]
-\addplot[cSF, thick, domain=0.142:0.25, samples=90] {0.04114*(1-x)/x};
-\addplot[cSF, dashed, domain=0.040:0.25, samples=90] {0.01029*(1-x)/x};
+\addplot[cSF, thick, domain=0.140:0.25, samples=90] {0.03611*(1-x)/x};
+\addplot[cSF, dashed, domain=0.040:0.25, samples=90] {0.00903*(1-x)/x};
 \addplot[gray, dotted, thick, domain=0:0.25] {x};
-\addplot[only marks, mark=*, mark size=2pt, color=black] coordinates {(0.183,0.183)};
-\addplot[only marks, mark=triangle*, mark size=2.6pt, color=cNYC] coordinates {(0.041,0.041)};
+\addplot[only marks, mark=*, mark size=2pt, color=black] coordinates {(0.173,0.173)};
+\addplot[only marks, mark=triangle*, mark size=2.6pt, color=cNYC] coordinates {(0.0042,0.0006)};
 \end{axis}
 \end{tikzpicture}
 \caption{Omitted-variable-bias sensitivity contours, in the manner of
@@ -123,11 +123,11 @@ solid curve is the locus along which such a confounder would drive the
 per-standard-deviation estimate to zero, and the dashed curve the locus along
 which it would halve it. The black dot, where the solid curve meets the dotted
 equal-strength diagonal, is the robustness value, the equal-strength confounder
-that just eliminates the effect, at $0.14$ in San Francisco and $0.18$ in
-Philadelphia. The triangle marks a confounder as strong
-as the most influential covariate actually observed, which falls far inside the
-kill curve in both markets, so an unobserved confounder would have to be several
-times stronger than any measured one to overturn the estimate.}
+that just eliminates the effect, at $0.15$ in San Francisco and $0.17$ in
+Philadelphia. The triangle marks the observed spatial control block, placed at its
+partial $R^2$ with the treatment and with the outcome, which falls far inside the
+kill curve in both markets, so an unobserved confounder would have to be
+substantially stronger than the measured location signal to overturn the estimate.}
 \label{fig:sensitivity-contour}
 \end{figure}
 
@@ -152,15 +152,17 @@ not exhaust the concern in the two markets without a direct proxy, but where
 condition can be measured it does not explain the effect away.
 
 \paragraph{Spatial-block leave-one-out.} Dropping the spatial control block and
-re-estimating moves the point estimate by at most four thousandths of a log point
-in any of the twelve markets, the largest shift falling in Phoenix at $+0.004$
-and the rest smaller still. That the estimates barely respond to removing the
-location controls is the pattern one would hope to see if the text signal were not
-merely spatial information re-expressed, since a coefficient that rode on
-geography would collapse once geography left the conditioning set rather than hold
-to within Monte Carlo noise of where it began. The leave-one-out thus localizes,
-market by market, the conclusion that the deconfounding decomposition of
-Section~\ref{sec:decomposition} reaches for the embedding channel as a whole.
+re-estimating moves the point estimate by about fourteen thousandths of a log point
+in Denver and by under half a percent in every other market, the next largest shift
+falling in Phoenix at $+0.004$. That the estimates barely respond to removing the
+location controls, holding to within a few thousandths of where they began in eleven
+of the twelve markets and to a fraction of Denver's already small effect in the
+twelfth, without a single sign change, is the pattern one would hope to see if the
+text signal were not merely spatial information re-expressed, since a coefficient that
+rode on geography would collapse once geography left the conditioning set rather than
+shift by so little. The leave-one-out thus localizes, market by market, the conclusion
+that the deconfounding decomposition of Section~\ref{sec:decomposition} reaches for
+the embedding channel as a whole.
 
 \paragraph{Fragility.} Under the same benchmarking convention a market is flagged
 when the partial $R^2$ that the spatial block carries for either the treatment or
@@ -168,9 +170,9 @@ the outcome exceeds that market's robustness value, the condition under which a
 confounder no stronger than the location controls already in the model could in
 principle account for the estimate. Only Boston trips the flag, and it does so
 because its robustness value is itself almost zero, the spatial block's
-explanatory power for the treatment, at $0.012$, edging past a robustness value of
-$0.005$ for an estimate that is statistically indistinguishable from zero to begin
-with. No market with a robustness value above $0.025$ is flagged, so the fragility
+explanatory power for the treatment, at $0.011$, edging past a robustness value of
+$0.009$ for an estimate that is statistically indistinguishable from zero to begin
+with. No market with a robustness value above $0.02$ is flagged, so the fragility
 check isolates the one place where there is no effect to confound rather than
 casting doubt on any market where an effect is present.
 
@@ -193,7 +195,7 @@ construct them are not uniformly available across the twelve per-market panels.
 \begin{tikzpicture}
 \begin{axis}[
     causalre, width=0.62\textwidth, height=6.6cm,
-    symbolic y coords={Boston,Seattle,New York,Portland,Washington,Phoenix,Dallas,Atlanta,Chicago,Denver,San Francisco,Philadelphia},
+    symbolic y coords={Boston,New York,Atlanta,Seattle,Portland,Washington,Phoenix,Dallas,Chicago,Denver,San Francisco,Philadelphia},
     ytick=data, enlarge y limits=0.06,
     xlabel={Robustness value $RV_{q=1}$ (residual share an unmeasured confounder must explain in both treatment and price)},
     xmin=0, xmax=0.21, xtick={0,0.05,0.10,0.15,0.20},
@@ -201,16 +203,16 @@ construct them are not uniformly available across the twelve per-market panels.
     title={Sensitivity of the per-market estimate to unmeasured confounding},
 ]
 \addplot[only marks, mark=*, mark size=2.0pt, color=cNYC] coordinates {
-  (0.005,Boston) (0.025,Seattle) (0.030,New York) (0.040,Portland) (0.041,Washington)
-  (0.048,Phoenix) (0.051,Dallas) (0.051,Atlanta) (0.064,Chicago) (0.065,Denver)
-  (0.140,San Francisco) (0.183,Philadelphia)};
+  (0.009,Boston) (0.022,New York) (0.022,Atlanta) (0.027,Seattle) (0.028,Portland)
+  (0.037,Washington) (0.060,Phoenix) (0.063,Dallas) (0.068,Chicago) (0.070,Denver)
+  (0.154,San Francisco) (0.173,Philadelphia)};
 \end{axis}
 \end{tikzpicture}
-\caption{Robustness value for each market's sentence-BERT estimate, the share of
-residual variance an unmeasured confounder would need to explain in both the
+\caption{Robustness value for each market's Shen-Ross uniqueness estimate, the share
+of residual variance an unmeasured confounder would need to explain in both the
 treatment and log price to drive the estimate to zero, following
 \citet{cinelli2020making}. Larger values are more robust. The estimate is most
-robust in Philadelphia ($0.18$) and San Francisco ($0.14$) and most fragile in
+robust in Philadelphia ($0.17$) and San Francisco ($0.15$) and most fragile in
 the markets whose point estimates are already near zero. The modest robustness
 values in several markets are the reason we read the per-market estimates as
 associational and sensitivity-bounded rather than causal.}

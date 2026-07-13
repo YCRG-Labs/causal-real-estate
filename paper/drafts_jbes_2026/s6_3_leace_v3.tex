@@ -92,47 +92,49 @@ fixed and geography is moved on and off the controls around it.
 \begin{tikzpicture}
 \begin{axis}[
     causalre, width=0.66\textwidth, height=6.8cm,
-    symbolic y coords={San Francisco,Seattle,Chicago,Philadelphia,Portland,Washington,Boston,Atlanta,Denver,Phoenix,Dallas,New York},
+    symbolic y coords={San Francisco,Chicago,Seattle,Philadelphia,Portland,Boston,Atlanta,Washington,Denver,Phoenix,Dallas,New York},
     ytick=data, enlarge y limits=0.06,
     xlabel={Held-out ridge $R^2$ for predicting (lat, lon) from the embedding},
-    xmin=-0.55, xmax=0.55, xtick={-0.5,-0.3,-0.1,0,0.1,0.3,0.5},
+    xmin=-0.42, xmax=0.56, xtick={-0.4,-0.2,0,0.2,0.4},
     extra x ticks={0}, extra x tick style={grid=major, grid style={black, dashed, thin}}, extra x tick labels={},
     legend style={font=\scriptsize, draw=none, fill=none, at={(0,1.02)}, anchor=south west, legend columns=2, /tikz/every even column/.append style={column sep=10pt}},
 ]
-\draw[thin,gray] (axis cs:-0.485,San Francisco)--(axis cs:0.000,San Francisco);
-\draw[thin,gray] (axis cs:0.154,Seattle)--(axis cs:0.000,Seattle);
-\draw[thin,gray] (axis cs:0.185,Chicago)--(axis cs:0.000,Chicago);
-\draw[thin,gray] (axis cs:0.198,Philadelphia)--(axis cs:0.000,Philadelphia);
-\draw[thin,gray] (axis cs:0.300,Portland)--(axis cs:0.000,Portland);
-\draw[thin,gray] (axis cs:0.325,Washington)--(axis cs:0.000,Washington);
-\draw[thin,gray] (axis cs:0.374,Boston)--(axis cs:0.000,Boston);
-\draw[thin,gray] (axis cs:0.382,Atlanta)--(axis cs:0.000,Atlanta);
-\draw[thin,gray] (axis cs:0.401,Denver)--(axis cs:0.000,Denver);
-\draw[thin,gray] (axis cs:0.410,Phoenix)--(axis cs:0.000,Phoenix);
-\draw[thin,gray] (axis cs:0.437,Dallas)--(axis cs:0.000,Dallas);
-\draw[thin,gray] (axis cs:0.469,New York)--(axis cs:0.000,New York);
+\draw[thin,gray] (axis cs:-0.330,San Francisco)--(axis cs:-0.0019,San Francisco);
+\draw[thin,gray] (axis cs:0.165,Chicago)--(axis cs:0.0000,Chicago);
+\draw[thin,gray] (axis cs:0.215,Seattle)--(axis cs:-0.0017,Seattle);
+\draw[thin,gray] (axis cs:0.239,Philadelphia)--(axis cs:-0.0008,Philadelphia);
+\draw[thin,gray] (axis cs:0.287,Portland)--(axis cs:-0.0001,Portland);
+\draw[thin,gray] (axis cs:0.348,Boston)--(axis cs:-0.0006,Boston);
+\draw[thin,gray] (axis cs:0.350,Atlanta)--(axis cs:-0.0015,Atlanta);
+\draw[thin,gray] (axis cs:0.357,Washington)--(axis cs:-0.0003,Washington);
+\draw[thin,gray] (axis cs:0.377,Denver)--(axis cs:-0.0009,Denver);
+\draw[thin,gray] (axis cs:0.380,Phoenix)--(axis cs:-0.0014,Phoenix);
+\draw[thin,gray] (axis cs:0.423,Dallas)--(axis cs:-0.0005,Dallas);
+\draw[thin,gray] (axis cs:0.500,New York)--(axis cs:-0.0004,New York);
 \addplot[only marks, mark=o, mark size=2.3pt, color=cMUTE, line width=0.9pt] coordinates {
-  (-0.485,San Francisco) (0.154,Seattle) (0.185,Chicago) (0.198,Philadelphia) (0.300,Portland)
-  (0.325,Washington) (0.374,Boston) (0.382,Atlanta) (0.401,Denver) (0.410,Phoenix)
-  (0.437,Dallas) (0.469,New York)};
+  (-0.330,San Francisco) (0.165,Chicago) (0.215,Seattle) (0.239,Philadelphia) (0.287,Portland)
+  (0.348,Boston) (0.350,Atlanta) (0.357,Washington) (0.377,Denver) (0.380,Phoenix)
+  (0.423,Dallas) (0.500,New York)};
 \addlegendentry{Raw embedding}
 \addplot[only marks, mark=*, mark size=2.1pt, color=cNYC] coordinates {
-  (0.000,San Francisco) (0.000,Seattle) (0.000,Chicago) (0.000,Philadelphia) (0.000,Portland)
-  (0.000,Washington) (0.000,Boston) (0.000,Atlanta) (0.000,Denver) (0.000,Phoenix)
-  (0.000,Dallas) (0.000,New York)};
-\addlegendentry{After LEACE $+$ IGBP (linear)}
+  (-0.0019,San Francisco) (0.0000,Chicago) (-0.0017,Seattle) (-0.0008,Philadelphia) (-0.0001,Portland)
+  (-0.0006,Boston) (-0.0015,Atlanta) (-0.0003,Washington) (-0.0009,Denver) (-0.0014,Phoenix)
+  (-0.0005,Dallas) (-0.0004,New York)};
+\addlegendentry{After LEACE (linear erasure)}
 \end{axis}
 \end{tikzpicture}
 \caption{Held-out ridge $R^2$ for recovering the continuous latitude-longitude
-coordinate from the sentence-BERT embedding, before (open) and after (filled)
-the composed linear concept erasure, in each of the twelve markets ordered by raw
-$R^2$. The raw embedding carries substantial linear spatial signal, recovering
-the coordinate at $R^2$ up to $0.47$ in New York; the negative San Francisco
-value reflects out-of-sample probe performance below the coordinate-mean
-baseline rather than absent signal. Linear erasure drives the recoverable signal
-to within Monte Carlo noise of zero in every market, the exact-guardedness
-property of LEACE. Residual \emph{nonlinear} leakage, which a linear probe cannot
-see, is quantified separately in Section~\ref{sec:leace-12}.}
+coordinate from the sentence-BERT embedding, before (open) and after (filled) the
+LEACE linear concept erasure, in each of the twelve markets ordered by raw $R^2$.
+The raw embedding carries substantial linear spatial signal, recovering the
+coordinate at $R^2$ up to $0.50$ in New York and $0.42$ in Dallas; the negative San
+Francisco value reflects out-of-sample probe performance below the coordinate-mean
+baseline rather than absent signal, on that market's small held-out fold of $296$
+listings. Linear erasure drives the recoverable signal to within $0.002$ of zero in
+every market, the filled points sitting on the zero line, which is the
+exact-guardedness property of LEACE read through a fresh out-of-fold probe rather
+than the guardedness residual itself. Residual \emph{nonlinear} leakage, which a
+linear probe cannot see, is quantified separately in Section~\ref{sec:leace-12}.}
 \label{fig:erasure-12}
 \end{figure}
 
