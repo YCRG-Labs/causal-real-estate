@@ -37,16 +37,34 @@ projects the location channel out of the text direction and one that differences
 building out of the design, agree that the New York effect is real and that the
 variance-maximal direction had been hiding it.
 
-Two limits keep this a strong check rather than a clean experiment. The building
-fixed effect differences out everything that varies at the building level, which
-removes the paper's primary threat but not a within-building one: a better-appointed
-unit may draw both richer language and a higher price, and while the structural
-controls for bedrooms, bathrooms, area, lot, and vintage absorb the coarse part of
-that, they do not absorb unmeasured interior quality. The design identifies against
-spatial confounding, not against unit quality. And the building key is coordinate
-rounding rather than a parcel identifier, so some genuine buildings are split and
-some neighbors are merged; both forms of grouping error attenuate the coefficient
-toward zero, which makes the surviving effect a conservative reading. What the design
-establishes is the claim the rest of the paper reaches by assumption, that a text
-effect riding on a representation that encodes location is not reducible to that
-location, now shown where location cannot vary at all.
+The confounder the building fixed effect leaves is unit quality, since a
+better-appointed unit in a building may draw both richer language and a higher
+price. The coarse part of that can be held fixed as well, by restricting the
+comparison to near-twin units, matching within building on bedrooms, bathrooms, and
+a square-footage bucket, so that the surviving text variation is between nearly
+identical units. The effect attenuates under this stricter design, as it should if
+part of the within-building estimate was unit size and layout, but it does not
+vanish. Pooled across the markets with enough matched units it is $+0.010$
+($t=4.0$), it is significant in the three with the largest matched samples, and it
+is significant once more in New York at $+0.024$ ($t=4.5$). Even between units that
+share a building and a floor plan, the language a listing uses carries a small but
+resolvable price premium.
+
+Two limits keep this a strong check rather than a clean experiment. The match on
+bedrooms, bathrooms, and area fixes the coarse dimensions of quality but not
+unmeasured interior condition, so a renovated unit that reads as renovated remains a
+possible channel; the design identifies against spatial confounding by construction
+and against gross quality by matching, but not against finish. And the building key
+is coordinate rounding rather than a parcel identifier, so some genuine buildings
+are split and some neighbors merged, and both forms of grouping error attenuate the
+coefficient toward zero, which makes the surviving effect a conservative reading.
+What the sequence of designs establishes is the claim the rest of the paper reaches
+by assumption. Controlling for location leaves the effect nearly intact; projecting
+the location channel out of the direction recovers it where the variance-maximal
+axis had hidden it; differencing the building out holds location fixed by
+construction; and matching near-twin units holds gross quality fixed as well. The
+effect survives each successive design and attenuates as each removes more of what
+it might have been confounded with, and it stays significant, pooled and in New
+York, at the most stringent rung the data can support. A text effect riding on a
+representation that encodes location is not reducible to that location, now shown
+where location cannot vary at all and unit size is held fixed.
