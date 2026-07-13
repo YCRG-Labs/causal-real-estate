@@ -1,0 +1,91 @@
+% Theorem 1' : direction-indexed spatial identification for an embedding-valued
+% exposure. Strengthens Theorem 1 from a fixed scalar treatment to a data-driven
+% linear summary of a high-dimensional spatially structured field. Verified
+% symbolically (theorem_1prime_verify.py) and numerically with flexible-ML DML
+% (theorem_1prime_numerical.py).
+
+\subsection{Identification is a property of the direction, not of the embedding}
+\label{sec:thm1prime}
+
+The treatment in a text-augmented valuation is not handed to the analyst as a
+scalar. It is a direction chosen inside a high-dimensional representation, and the
+same embedding admits a continuum of such directions, each a candidate summary of
+what the listing says. Whether the resulting effect is identified turns out to
+depend on which direction is chosen, and Theorem~\ref{thm:idprime} makes that
+dependence exact. The scalar identification result of
+Section~\ref{sec:identification} is the one-dimensional shadow of it.
+
+Let $W(\ell)\in\mathbb{R}^p$ be the residualized embedding at location $\ell$,
+carrying a smooth spatial channel that a coordinate control $L$ recovers, a
+non-smooth spatial channel that discrete identifiers such as neighborhood and
+school names load onto and that $L$ misses, and a location-orthogonal semantic
+channel. Write the projection of each channel onto a candidate unit direction $v$
+as $C(v)$, $D(v)$, and $E(v)$, so that the treatment $T=v'W$ decomposes as
+$C(v)$ times the smooth channel plus $D(v)$ times the missed channel plus $E(v)$
+times the semantic channel. The confounder $U=h(\ell)$ places weight $b$ on the
+missed channel, and the outcome follows the partially linear form
+$Y=\theta T+\beta U+\varepsilon$.
+
+\begin{theorem}[Direction-indexed identification]
+\label{thm:idprime}
+Under Assumptions~\ref{as:id-U}--\ref{as:id-exog}, the Robinson estimand of the
+effect of $T=v'W$ that conditions on $L$ equals
+\begin{equation}
+\theta(v)\;=\;\theta\;+\;\beta\,b\,\frac{D(v)}{D(v)^2+E(v)^2}.
+\label{eq:thetav}
+\end{equation}
+Consequently the effect is point identified, $\theta(v)=\theta$, if and only if
+$\beta b=0$ or $D(v)=0$, and the set of directions for which it is identified is
+the subspace $\mathcal{V}_0=\{v:D(v)=0\}$ orthogonal to the missed spatial channel.
+The residual-overlap quantity that Assumption~\ref{as:id-overlap} requires to be
+positive is $\mathbb{E}[\tilde T^2]=D(v)^2+E(v)^2$, so a direction lying entirely
+in the smooth spatial subspace violates positivity and leaves $\theta(v)$
+undefined.
+\end{theorem}
+
+\begin{proof}[Proof]
+Conditioning on $L$ removes the smooth channel, so the residualized treatment is
+$\tilde T=D(v)\,\ell_d+E(v)\,\eta$ in the orthonormal channel basis, where $\ell_d$
+is the missed spatial channel and $\eta$ the semantic one. The residualized
+outcome is $\tilde Y=\theta\tilde T+\beta\,b\,\ell_d$, since $U$ residualized on
+$L$ retains only its weight $b$ on $\ell_d$. Taking the Robinson ratio,
+\[
+\theta(v)=\frac{\mathbb{E}[\tilde Y\tilde T]}{\mathbb{E}[\tilde T^2]}
+=\frac{\theta\,(D(v)^2+E(v)^2)+\beta b\,D(v)}{D(v)^2+E(v)^2}
+=\theta+\beta b\,\frac{D(v)}{D(v)^2+E(v)^2},
+\]
+which is \eqref{eq:thetav}. The identification and positivity claims read off
+directly. The algebra is verified symbolically over a free-symbol channel model,
+and the estimand \eqref{eq:thetav} is recovered to within Monte Carlo error by a
+cross-fitted gradient-boosting estimator across a sweep of directions, including
+exact recovery of $\theta$ on $\mathcal{V}_0$.
+\end{proof}
+
+Three consequences deserve statement. The scalar identification result is the
+special case of a single unit-variance semantic channel, $D(v)=d$ and $E(v)=1$,
+where \eqref{eq:thetav} collapses to the bias $\beta bd/(d^2+1)$ of
+Theorem~\ref{thm:id}; the vector result is therefore a strict generalization
+rather than an analogy. The bias in \eqref{eq:thetav} is largest in magnitude
+where $|D(v)|=|E(v)|$, a direction that mixes the missed spatial channel and the
+semantic one in equal measure, and it decays as the direction tilts toward either
+the identified subspace or the smooth channel that positivity forbids. And because
+$\theta(v)$ varies continuously with $v$, a representation whose leading variance
+direction happens to load on the missed spatial channel will report an effect that
+is mostly laundered geography, while a direction chosen to maximize $E(v)$ relative
+to $D(v)$ reports the semantic effect the analyst intends. Identification here is
+not a property the embedding either has or lacks. It is a property of the direction
+drawn through it, and the leading principal component, chosen for variance rather
+than for identification, need not lie in the identified subspace.
+
+\paragraph{A spectral reading.} When the field is stationary with matrix spectral
+density $\Sigma_W(\omega)$ and the confounder concentrates its mass on a
+low-frequency band $\Omega_0$, the projected quantities become frequency integrals,
+$D(v)^2+E(v)^2=\int v'\Sigma_W(\omega)v\,d\omega$ and the confounding numerator
+$D(v)=\int_{\Omega_0} v'b(\omega)\,d\omega$ along the cross-spectrum $b(\omega)$
+between the confounder and the field. Identification then asks that the direction
+place energy outside the confounder's band, and the bias is bounded by a
+Cauchy--Schwarz alignment between the direction and the residual confounding mass
+that survives the control. This is the sense in which a text direction is
+identified when it carries the field's high-frequency, non-spatial content and
+confounded when it tracks the low-frequency geography the location control cannot
+fully absorb.

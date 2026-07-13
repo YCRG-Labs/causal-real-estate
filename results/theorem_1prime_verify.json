@@ -1,0 +1,10 @@
+{
+  "A_theta_v_formula": "(theta*(e1*v1 + e2*v2)**2 + (b*beta + theta*(d1*v1 + d2*v2))*(d1*v1 + d2*v2))/((d1*v1 + d2*v2)**2 + (e1*v1 + e2*v2)**2)",
+  "A_matches_claim": true,
+  "B_bias_zero_iff_D0": true,
+  "B_bias_zero_on_perp_direction_v=(d2,-d1)": true,
+  "C_overlap_equals_D2plusE2": true,
+  "C_overlap_expr": "(d1*v1 + d2*v2)**2 + (e1*v1 + e2*v2)**2",
+  "D_reduces_to_scalar_bbd_over_d2p1": true,
+  "E_bias_shape_maximized_at_|D|=|E|": true
+}
