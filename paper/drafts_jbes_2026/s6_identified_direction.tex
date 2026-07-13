@@ -4,47 +4,46 @@
 Theorem~\ref{thm:idprime} prescribes a direction. The effect it identifies is
 carried by the component of the text that survives after the location-predictable
 part of the embedding is removed, and the leading direction of largest variance,
-which the Baur channel uses, need not coincide with it. We therefore re-estimate
-the panel on the identified direction and read the difference as the portion of the
-leading-component effect that geography accounts for.
+which the Baur channel uses, need not coincide with it. We re-estimate the panel on
+the identified direction, holding the full confounder set fixed, and read the
+difference from the leading-component estimate as the geography the leading
+direction still carries.
 
 The construction follows the theorem. Within each market we residualize every
 coordinate of the sentence-BERT embedding on a location basis that includes a
 quadratic in latitude and longitude together with a full set of zip indicators, the
 discrete geographic channel Assumption~\ref{as:id-basis} requires the control basis
 to span, and we take the leading principal component of the pooled residualized
-embedding as the identified direction. It sits at a cosine of $0.96$ to the raw
-leading component, close but not identical, which is consistent with the
-decomposition of Section~\ref{sec:decomposition}: the two directions largely agree, so the
-coefficient moves only modestly when geography enters the controls, but they do not
-agree exactly, and the gap between them is exactly the confounded content the
-theorem isolates.
+embedding as the identified direction. It sits at a cosine of $0.98$ to the raw
+leading component, so the two directions largely agree, which is why the
+decomposition of Section~\ref{sec:decomposition} finds the coefficient moving only
+modestly when geography enters the controls. Where they disagree is exactly the
+confounded content the theorem isolates.
 
-Estimated on the identified direction, the effect survives at about two-thirds of
-its leading-component magnitude. Pooling across markets by inverse variance, the
-per-standard-deviation effect on log price is $+0.031$ ($t=17$) on the identified
-direction against $+0.047$ ($t=22$) on the leading component, a ratio of $0.66$,
-and the attenuation is similar across the markets where the effect is precisely
-estimated, with a median ratio of $0.64$. The effect remains significant in nine of
-the twelve markets and in every large one, Chicago at $+0.119$, Philadelphia at
-$+0.065$, and New York at $+0.029$, each with $t$ above seven, while it thins to
-marginal in the smallest markets, Portland and Seattle. The two markets whose
-leading component was already close to the identified direction, San Francisco and
-Washington, barely attenuate, and the two whose leading component was most
-geographic, Chicago and Philadelphia, attenuate most, which is the pattern
-Theorem~\ref{thm:idprime} predicts when a direction's confounded loading is what
-drives the gap.
+Estimated on the identified direction under the full confounder set, the effect is
+robust. Market by market it stays close to its leading-component value, with a
+median ratio of $0.91$, and it is significant in eleven of the twelve markets
+rather than ten. The direction earns its keep precisely where the leading component
+is most geographic. Chicago and Philadelphia, whose leading directions carry the
+most location, attenuate the most, from $+0.416$ to $+0.335$ and from $+0.138$ to
+$+0.096$, while the markets whose leading component already lay near the identified
+direction, San Francisco, Washington, and Denver among them, barely move. The most
+telling case is New York, whose leading direction is the most geographic in the
+panel and whose effect on that direction is an insignificant $+0.006$. Removing the
+location channel does not shrink the New York effect but uncovers it: on the
+identified direction it is a significant $+0.029$ ($t=4.7$). The variance-maximal
+component had been reporting a null because it pointed at borough and neighborhood
+names rather than at the text's pricing content, and the identified direction
+recovers the effect that geography had been masking.
 
 The reading this supports is the one the paper has argued throughout, now carried
 out on the direction the theory identifies rather than the one variance selects.
-The two-thirds that survives is text content orthogonal to location by
-construction, so it cannot be laundered geography; the third that does not is the
-confounded component the leading direction carries, and its size is now measured
-rather than bounded. Two qualifications belong with the number. These estimates use
-the reduced structural-and-coordinate control set rather than the full confounder
-block behind the headline Baur table, so the levels are not the panel's reported
-values and the transferable quantities are the roughly one-third geography share and
-the survival of the effect. And residualizing on the full zip basis removes some
-non-spatial variation along with the confound, so the identified estimate is a
-conservative floor, with the deconfounded effect lying between it and the
-leading-component estimate.
+The effect is not laundered geography, since it survives estimation on a direction
+orthogonal to location by construction; and the theorem is not decorative, since it
+changes the answer, trimming the inflated markets and recovering the suppressed one.
+One qualification belongs with the numbers. Residualizing on the full zip basis
+removes some non-spatial variation along with the confound, so for the markets that
+attenuate the identified estimate is a conservative floor, with the deconfounded
+effect lying between it and the leading-component value; the direction of the New
+York correction, where the identified estimate exceeds the leading one, is not
+subject to that caveat.
