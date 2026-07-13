@@ -1,0 +1,8 @@
+{
+  "treatment": "pooled within-city-centered leading PC (Baur)",
+  "pooled_theta_fe": 0.03519944638703141,
+  "pooled_se": 0.003254668291919411,
+  "pooled_t": 10.81506415705204,
+  "sig_markets": 6,
+  "n_markets": 12
+}

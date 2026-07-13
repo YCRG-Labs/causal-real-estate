@@ -1,0 +1,52 @@
+\subsection{A within-building design}
+\label{sec:within-building}
+
+Every estimate to this point identifies the text effect under an assumption, that
+the location basis captures the spatial confounder, and bounds what an unobserved
+violation could do. A subset of the data lets us replace that assumption with a
+design. Units in the same building share location exactly. They sit at the same
+coordinates, in the same neighborhood, the same school catchment, and the same
+amenity set, so any confounder that is a function of location is constant across
+them. Estimating the effect from variation in listing language between units of the
+same building therefore differences spatial confounding out by construction rather
+than adjusting it away, and what remains is identified by a design that holds
+geography fixed.
+
+The data support this on a scale worth using. Grouping listings by coordinates
+rounded to about eleven meters, roughly eighteen thousand listings sit in buildings
+that carry two or more, and the identifying variation is concentrated where it is
+most useful, with New York contributing 6{,}258 listings across 1{,}885 buildings.
+We add a building fixed effect, which is to say we demean the treatment, log price,
+and the structural controls within building, and estimate the partially linear DML
+coefficient on the within-building variation with standard errors clustered at the
+building. Location controls are unnecessary here because the fixed effect absorbs
+them.
+
+The effect survives the design. Pooled across the twelve markets the within-building
+coefficient is $+0.035$ ($t=10.8$), every market's point estimate is positive, and
+the effect is significant in six of the twelve, among them New York at $t=8.6$,
+Chicago at $t=8.6$, and Boston at $t=4.9$. The six that do not reach significance
+are the markets with the fewest within-building listings, between roughly three
+hundred and fifteen hundred, and each remains positive, so the pattern reads as
+limited power rather than as a sign that geography was carrying the effect. New York
+is the case that matters most. Its leading-component effect in the cross section was
+an insignificant $+0.006$, and holding the building fixed returns a clean $+0.045$
+at $t=8.6$, the same recovery the identified-direction estimator produced by a
+different route. Two deconfounding strategies that share no machinery, one that
+projects the location channel out of the text direction and one that differences the
+building out of the design, agree that the New York effect is real and that the
+variance-maximal direction had been hiding it.
+
+Two limits keep this a strong check rather than a clean experiment. The building
+fixed effect differences out everything that varies at the building level, which
+removes the paper's primary threat but not a within-building one: a better-appointed
+unit may draw both richer language and a higher price, and while the structural
+controls for bedrooms, bathrooms, area, lot, and vintage absorb the coarse part of
+that, they do not absorb unmeasured interior quality. The design identifies against
+spatial confounding, not against unit quality. And the building key is coordinate
+rounding rather than a parcel identifier, so some genuine buildings are split and
+some neighbors are merged; both forms of grouping error attenuate the coefficient
+toward zero, which makes the surviving effect a conservative reading. What the design
+establishes is the claim the rest of the paper reaches by assumption, that a text
+effect riding on a representation that encodes location is not reducible to that
+location, now shown where location cannot vary at all.
