@@ -13,8 +13,8 @@ carries location-targeted information into the leading principal component, the
 per-standard-deviation effect reported in Section~\ref{sec:baur-12city} inherits
 a spatial confounder mediated through the encoder, and the identification claim
 is correspondingly weaker. We assess how far this concern can be addressed by
-erasing the lat-lon concept from the representation, and we report honestly where
-the erasure is complete and where it is only partial.
+erasing the lat-lon concept from the representation, and we report where the erasure
+is complete and where it is only partial.
 
 The deconfounding runs a linear projection and then a nonlinear correction, and
 the linear step carries most of the load. Applying the LEACE projection of
@@ -43,7 +43,7 @@ resolution that matters here.
 
 What a linear projection cannot reach is the location the embedding encodes
 nonlinearly, and the iterative gradient-based correction of
-\citet{iskander2023shielded} is aimed precisely there, alternating between fitting
+\citet{iskander2023shielded} is aimed at exactly that residual, alternating between fitting
 a multilayer-perceptron probe of the coordinate on the residual and projecting out
 the direction in which that probe gathers its predictive mass. The correction cuts
 the nonlinear leakage substantially without removing it, taking the average

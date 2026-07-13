@@ -176,7 +176,7 @@ with. No market with a robustness value above $0.02$ is flagged, so the fragilit
 check isolates the one place where there is no effect to confound rather than
 casting doubt on any market where an effect is present.
 
-\paragraph{Interpretation.} The analysis is deliberately confined to the single
+\paragraph{Interpretation.} The analysis is confined by design to the single
 observed covariate group the per-market panels share and the one most tied to the
 mechanism this paper studies, so the robustness value carries the general bound
 while the spatial leave-one-out localizes how much of each estimate rides on
@@ -300,7 +300,7 @@ correctly computed, recovers the right answer for a confounder orthogonal to the
 controls once the analyst sets the benchmark
 strength correctly. It is that the routine heuristic of setting that strength by
 analogy to observed covariates has no anchor once $R^2(Q \mid X) \approx 0$, and
-this is precisely the regime in which an analyst is most likely to feel wrongly
+this is exactly the regime in which an analyst is most likely to feel wrongly
 reassured, since orthogonal to the controls reads too easily as weak. The claim in
 part (i) that conditioning shrinks a correlated confounder's residual strength is
 generic rather than universal, since \citet{middleton2016bias} show that
@@ -313,7 +313,7 @@ the treatment, the residual treatment variance $E[(T - E[T \mid X, Q])^2]$
 collapses and the orthogonal score becomes ill conditioned, a phenomenon
 \citet{saco2025illconditioned} characterize through the conditioning number
 $\kappa = 1/(1 - R^2_{\text{oof}}(T \mid X))$; that reference reports the diagnostic
-as a fragility assessment and deliberately proposes no universal threshold, and we
+as a fragility assessment and declines to propose a universal threshold, and we
 follow it in treating $\kappa$ and the design-matrix condition number as flags read
 alongside the substantive analysis rather than as a test. The composition confound
 and the conditioning degeneracy are separate objects, and confusing one for the
