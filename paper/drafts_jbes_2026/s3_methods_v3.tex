@@ -43,9 +43,12 @@ the causal-text program surveyed by \citet{keith2020text}, whose adjustment stra
 runs from the text-matching of \citet{roberts2020adjusting} to the
 linguistic-property effects of \citet{pryzant2021causal}. A second lesson from this
 literature bears on estimation rather than interpretation, since \citet{egami2022texts} establish
-that when the treatment representation is learned from the documents it must be
-formed on data held apart from the outcome, which is the role the out-of-fold
-construction of the treatment direction described below plays here.
+that when the treatment representation is learned from the documents its estimation
+error must not contaminate the outcome stage. We take that concern up in the
+calibration of Appendix~\ref{app:simulation}, where forming the direction on the
+pooled corpus rather than within each market shrinks the channel, an out-of-fold
+projection removes most of what remains, and a full-pipeline bootstrap carries the
+residual into the reported intervals.
 
 \subsection{A structural account of the confounding}
 
