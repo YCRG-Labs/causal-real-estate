@@ -1,0 +1,63 @@
+% BODY identification section. Promotes the identification setup, assumptions, and
+% Theorem 1 STATEMENT out of the appendix into the body (field norm: headline
+% identification theorem stated in body, proof in appendix; cf. Gilbert et al.
+% Biometrika 2024, Chiang et al. JBES 2022, Bia et al. JBES 2024). The proof of
+% Theorem 1 lives in Appendix~\ref{app:idproofs}. Theorem 1' (direction-indexed
+% identification) is stated with its short proof in \input{theorem_1prime} directly
+% after this file.
+
+\section{Identification}
+\label{sec:identification}
+
+Let $\ell$ denote location, $x$ the structured attributes, and $W$ the text
+embedding, and let the scalar treatment $T$ be a fixed linear summary of $W$, the
+oriented leading pooled principal component. Write $L=L(\ell)$ for a basis of
+functions of location used as controls. We take the outcome to follow the
+structural model
+\begin{equation}
+Y=\theta\,T+\beta\,U+f(x)+\varepsilon,
+\label{eq:struct}
+\end{equation}
+in which $U$ is an unobserved, spatially patterned driver of price.
+
+\begin{assumption}[Spatial confounder]\label{as:id-U}
+The unobserved confounder is location-measurable, $U=h(\ell)$ for a measurable $h$.
+\end{assumption}
+\begin{assumption}[Basis richness]\label{as:id-basis}
+$h$ lies in the closed linear span of $L$, so that $\mathbb{E}[U\mid L,x]=U$ almost
+surely. Concretely $L$ includes the discrete geographic identifiers (borough,
+neighborhood, school, and street indicators) through which the encoder leaks
+location; a coordinate-polynomial basis alone does not satisfy this when $h$ varies
+discontinuously across geographic units.
+\end{assumption}
+\begin{assumption}[Residual overlap]\label{as:id-overlap}
+$\mathbb{E}\big[(T-\mathbb{E}[T\mid L,x])^2\big]>0$.
+\end{assumption}
+\begin{assumption}[Exogeneity]\label{as:id-exog}
+$\mathbb{E}[\varepsilon\mid T,\ell,x]=0$.
+\end{assumption}
+
+\begin{theorem}[Identification]\label{thm:id}
+Under Assumptions~\ref{as:id-U}--\ref{as:id-exog}, the treatment coefficient in
+\eqref{eq:struct} equals the Robinson functional
+\[
+\theta=\frac{\mathbb{E}\!\left[\tilde Y\,\tilde T\right]}{\mathbb{E}\!\left[\tilde T^{2}\right]},
+\qquad
+\tilde Y=Y-\mathbb{E}[Y\mid L,x],\quad \tilde T=T-\mathbb{E}[T\mid L,x].
+\]
+The parameter $\theta$ is point-identified if and only if $\mathbb{E}[\tilde T^{2}]>0$;
+the concept-erasure diagnostic probes whether the treatment retains the
+location-orthogonal variation this requires, and as $R^2_{T\sim(L,x)}\to1$ the
+denominator vanishes and identification fails.
+\end{theorem}
+
+The proof is a direct partialling-out computation. It absorbs the spatial
+confounder into the control-measurable part of the model under
+Assumptions~\ref{as:id-U} and \ref{as:id-basis}, and its necessity half shows that
+a control basis missing the discrete geographic channel leaves the exact bias
+$\beta bd/(d^2+1)$; the full argument is deferred to
+Appendix~\ref{app:idproofs}. The location basis must therefore span the discrete
+identifiers through which the encoder leaks geography, not coordinates alone, and
+New York, whose leading text direction loads on borough and neighborhood names, is
+the empirical instance of the boundary where $\mathbb{E}[\tilde T^2]$ approaches
+zero and identification thins.

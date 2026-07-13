@@ -8,52 +8,12 @@
 % Robinson moment. Compiles into the paper with zero undefined refs/cites. NOT yet
 % \input into the committed manuscript, pending the author's final read.
 
-\subsection{Identification of a representation-derived treatment}
-\label{sec:thm-id}
+\subsection{Proof of Theorem~\ref{thm:id} (identification)}
+\label{app:idproofs}
 
-Let $\ell$ denote location, $x$ the structured attributes, and $W$ the text
-embedding, and let the scalar treatment $T$ be a fixed linear summary of $W$, the
-oriented leading pooled principal component. Write $L=L(\ell)$ for a basis of
-functions of location used as controls. We take the outcome to follow the
-structural model
-\begin{equation}
-Y=\theta\,T+\beta\,U+f(x)+\varepsilon,
-\label{eq:struct}
-\end{equation}
-in which $U$ is an unobserved, spatially patterned driver of price.
+The setup, assumptions, and statement are given in Section~\ref{sec:identification}.
 
-\begin{assumption}[Spatial confounder]\label{as:id-U}
-The unobserved confounder is location-measurable, $U=h(\ell)$ for a measurable $h$.
-\end{assumption}
-\begin{assumption}[Basis richness]\label{as:id-basis}
-$h$ lies in the closed linear span of $L$, so that $\mathbb{E}[U\mid L,x]=U$ almost
-surely. Concretely $L$ includes the discrete geographic identifiers (borough,
-neighborhood, school, and street indicators) through which the encoder leaks
-location; a coordinate-polynomial basis alone does not satisfy this when $h$ varies
-discontinuously across geographic units.
-\end{assumption}
-\begin{assumption}[Residual overlap]\label{as:id-overlap}
-$\mathbb{E}\big[(T-\mathbb{E}[T\mid L,x])^2\big]>0$.
-\end{assumption}
-\begin{assumption}[Exogeneity]\label{as:id-exog}
-$\mathbb{E}[\varepsilon\mid T,\ell,x]=0$.
-\end{assumption}
-
-\begin{theorem}[Identification]\label{thm:id}
-Under Assumptions~\ref{as:id-U}--\ref{as:id-exog}, the treatment coefficient in
-\eqref{eq:struct} equals the Robinson functional
-\[
-\theta=\frac{\mathbb{E}\!\left[\tilde Y\,\tilde T\right]}{\mathbb{E}\!\left[\tilde T^{2}\right]},
-\qquad
-\tilde Y=Y-\mathbb{E}[Y\mid L,x],\quad \tilde T=T-\mathbb{E}[T\mid L,x].
-\]
-The parameter $\theta$ is point-identified if and only if $\mathbb{E}[\tilde T^{2}]>0$;
-the concept-erasure diagnostic probes whether the treatment retains the
-location-orthogonal variation this requires, and as $R^2_{T\sim(L,x)}\to1$ the
-denominator vanishes and identification fails.
-\end{theorem}
-
-\begin{proof}
+\begin{proof}[Proof of Theorem~\ref{thm:id}]
 \emph{Step 1 (the confounding is absorbed).} By
 Assumptions~\ref{as:id-U}--\ref{as:id-basis}, $U=h(\ell)$ with $h$ in the span of
 $L$, so $\beta U+f(x)=g(L,x)$ for the fixed $(L,x)$-measurable function
