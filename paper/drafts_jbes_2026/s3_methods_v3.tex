@@ -37,8 +37,12 @@ independent of it or irrelevant to price. We do not impose that condition, so th
 quantity we isolate is the price effect of the leading text direction
 marginalizing over whatever else the language encodes, an associational object
 rather than the effect of a fully separated semantic attribute, and we are
-explicit about that reading throughout. A second lesson from this literature bears
-on estimation rather than interpretation, since \citet{egami2022texts} establish
+explicit about that reading throughout. That we treat text as the causal variable
+rather than as a confounder to adjust for places the paper on the treatment side of
+the causal-text program surveyed by \citet{keith2020text}, whose adjustment strand
+runs from the text-matching of \citet{roberts2020adjusting} to the
+linguistic-property effects of \citet{pryzant2021causal}. A second lesson from this
+literature bears on estimation rather than interpretation, since \citet{egami2022texts} establish
 that when the treatment representation is learned from the documents it must be
 formed on data held apart from the outcome, which is the role the out-of-fold
 construction of the treatment direction described below plays here.
@@ -144,7 +148,16 @@ strength an unobserved confounder would need to overturn the estimate against th
 strength of the strongest control actually observed. The assumption is therefore
 not credible on its own but increasingly credible as those three probes fail to
 unseat it, which is the structure we ask the reader to weigh rather than a claim
-of ignorability by fiat.
+of ignorability by fiat. The design also meets a critique the erasure-and-adjust
+step invites directly. Recovering a stand-in for an unobserved confounder from an
+observed proxy is the move of the multiple-causes deconfounder of
+\citet{wangblei2019}, and \citet{ogburn2019comment} show that such a stand-in,
+estimated on the same sample used to estimate the effect, need not satisfy the
+independence conditions it is asked to. This is why the paper does not rest on
+erasure and adjustment alone but escalates to the within-building and twin-unit
+designs of Section~\ref{sec:within-building}, where location is held fixed by
+construction rather than reconstructed from the embedding and controlled for
+in-sample.
 
 The
 Robinson partialling-out estimator \citep{robinson1988root} recovers $\theta$ from
