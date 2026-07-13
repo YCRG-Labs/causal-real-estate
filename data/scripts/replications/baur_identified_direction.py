@@ -72,9 +72,9 @@ def main():
         tl = s["Tc"] @ v_lead; tl = (tl - tl.mean()) / (tl.std() or 1)
         ti = s["R"] @ v_id;     ti = (ti - ti.mean()) / (ti.std() or 1)
         dl = run_dml(tl[:, None], s["conf"], s["Y"], label=f"{c}-lead",
-                     ci_method="if", use_ridge=False, n_pca=1)
+                     ci_method="if", use_ridge=True, n_pca=1)
         di = run_dml(ti[:, None], s["conf"], s["Y"], label=f"{c}-id",
-                     ci_method="if", use_ridge=False, n_pca=1)
+                     ci_method="if", use_ridge=True, n_pca=1)
         if dl is None or di is None:
             print(f"  {c}: DML failed", flush=True); continue
         rows.append({"market": c, "n": s["n"], "nconf": s["nconf"], "cos_il": cos_il,

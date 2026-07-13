@@ -53,11 +53,11 @@ def fe_dml(Y, T, X, g, seed=42):
     Xs = StandardScaler().fit_transform(Xd)
     kf = KFold(5, shuffle=True, random_state=seed)
     Yr = np.zeros(n); Tr = np.zeros(n)
+    from sklearn.linear_model import RidgeCV
+    alphas = np.logspace(-3, 3, 13)
     for tr, te in kf.split(np.arange(n)):
-        my = make_regressor(n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42, n_jobs=1)
-        my.fit(Xs[tr], Yd[tr]); Yr[te] = Yd[te] - my.predict(Xs[te])
-        mt = make_regressor(n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42, n_jobs=1)
-        mt.fit(Xs[tr], Td[tr]); Tr[te] = Td[te] - mt.predict(Xs[te])
+        my = RidgeCV(alphas=alphas); my.fit(Xs[tr], Yd[tr]); Yr[te] = Yd[te] - my.predict(Xs[te])
+        mt = RidgeCV(alphas=alphas); mt.fit(Xs[tr], Td[tr]); Tr[te] = Td[te] - mt.predict(Xs[te])
     den = float(np.mean(Tr**2))
     if den < 1e-12:
         return None
