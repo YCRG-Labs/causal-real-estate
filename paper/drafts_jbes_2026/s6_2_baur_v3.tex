@@ -100,30 +100,19 @@ Pooled (PM, HKSJ) & & $+0.137$ & $[+0.048, +0.227]$ \\
 \end{tabular}
 \end{table}
 
-\paragraph{Pooled inference.} Section~\ref{sec:meta-regression-12} takes up the
-pooled inference question directly via random-effects meta-analysis of the
-twelve per-market estimates. Combining them with a Paule-Mandel $\tau^2$ and the
-Hartung-Knapp-Sidik-Jonkman variance correction returns a pooled
-per-standard-deviation effect of $+0.137$ with standard error $0.041$, a $t$
-statistic of $+3.37$ on $11$ degrees of freedom, a two-sided $p$ of $0.006$, and
-a $95\%$ confidence interval of $[+0.048, +0.227]$. The pooled estimate is
-detectable and positive across the panel under the adopted orientation.
-Heterogeneity is large, with an $I^2$ near $99\%$ and a Paule-Mandel $\tau^2$ of
-about $0.020$, so the pooled point estimate masks substantial cross-market
-dispersion that Chicago and Philadelphia anchor at one end and New York at the
-other. Because between-market variance dwarfs the within-market sampling
-variance, the meta-analytic weights are close to uniform and the pooled estimate
-sits near the unweighted across-market mean. We attempted a single pooled DML
-estimator with city fixed effects and the Chiang-Kato-Ma-Sasaki
-\citep{chiang2022multiway} cluster-robust variance, but the small number of
-clusters produced fold-assignment instability in the cross-fitted nuisances and
-a Dirichlet cluster bootstrap that did not stabilize, with pooled point estimates
-that shifted materially across independent invocations on the same seed and data,
-so we report it only as a robustness check and not as the headline. The
-random-effects meta-analysis treats each market's $\hat\theta_i$ as a sufficient
-statistic and combines them via inverse-variance weighting with a Paule-Mandel
-$\tau^2$, which is the canonical small-$G$ alternative to cluster-respecting
-cross-fitting \citep{veroniki2016methods}.
+\paragraph{Pooled inference.} Pooling the twelve per-market estimates by
+inverse-variance weighting returns a per-standard-deviation effect of $+0.137$ with
+standard error $0.041$ and a $95\%$ interval of $[+0.048, +0.227]$, detectable and
+positive across the panel under the adopted orientation. Between-market dispersion
+is large, anchored by Chicago and Philadelphia at one end and New York at the other,
+so the pooled point masks a wide distribution and the precision weights sit close to
+uniform. The field-standard alternative, a single stacked DML estimator with city
+fixed effects and the \citet{chiang2022multiway} cluster-robust variance, proved
+unstable at twelve clusters, with fold-assignment sensitivity in the cross-fitted
+nuisances and pooled points that shifted across invocations on the same seed and
+data, so we combine the per-market estimates directly and report the stacked fit
+only as a check. Section~\ref{sec:meta-regression-12} develops the pooled figures
+and the null moderator scan.
 
 \paragraph{Magnitude and interpretation.} The pooled per-standard-deviation
 effect of $+0.137$ on log listing price is about a fifteen percent change in price,
