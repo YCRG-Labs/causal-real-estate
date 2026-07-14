@@ -2,17 +2,7 @@
 \subsection{Cross-method concordance}
 \label{sec:cross-method-12}
 
-Sections~\ref{sec:shen-12city} and~\ref{sec:baur-12city} estimate the
-text-on-price relationship through two different encodings of the same listing
-language, a Doc2Vec uniqueness score read through the Shen-Ross hedonic
-specification and the leading principal component of a sentence-BERT
-representation read through a partialling-out score. The auxiliary rewriting
-intervention of Appendix~\ref{sec:counterfactual-12} supplies a third measurement
-of a different kind, the price differential an LLM edit implies. The question this
-section answers is whether the two encoders agree on which markets carry an
-effect, and, where they agree, whether the agreement reflects independent evidence
-or the same signal recovered twice; the rewriting channel is reported alongside as
-a corroborating check.
+Sections~\ref{sec:shen-12city} and~\ref{sec:baur-12city} estimate the text-on-price relationship through two different encodings of the same listing language. One is a Doc2Vec uniqueness score read through the Shen-Ross hedonic specification. The other is the leading principal component of a sentence-BERT representation read through a partialling-out score. The auxiliary rewriting intervention of Appendix~\ref{sec:counterfactual-12} supplies a third measurement of a different kind, the price differential an LLM edit implies. This section asks whether the two encoders agree on which markets carry an effect. Where they agree, we ask whether the agreement reflects independent evidence or the same signal recovered twice. The rewriting channel is reported alongside as a corroborating check.
 
 \begin{table}[H]
 \centering
@@ -48,119 +38,40 @@ Pooled (RE)   & $+0.060\;(0.019)$ & $+0.137\;(0.041)$ & $+0.002$ \\
 \end{tabular}
 \end{table}
 
-\paragraph{Sign convention.} The sign of a principal component is not
-identified, since a component and its negation span the same axis, so the sign
-of the Baur estimand is a convention rather than a finding. We orient the
-common pooled axis so that the random-effects pooled estimate is non-negative,
-which makes the per-market Baur estimate sign-comparable to the hedonic channel
-and to the counterfactual differential. This is an interpretability convention
-and nothing more. It cannot create agreement between the channels, because the
-cross-market correlation between any two channels is invariant in magnitude
-under a global sign flip of either one. The orientation fixes only how the
+\paragraph{Sign convention.} A component and its negation span the same axis, so the sign of a principal component is not identified. The sign of the Baur estimand is therefore a convention rather than a finding. We orient the common pooled axis so that the random-effects pooled estimate is non-negative. This makes the per-market Baur estimate sign-comparable to the hedonic channel and to the counterfactual differential. This is an interpretability convention
+and nothing more. It cannot create agreement between the channels. The cross-market correlation between any two channels is invariant in magnitude under a global sign flip of either one. The orientation fixes only how the
 shared signal is displayed, not whether it is shared.
 
 \paragraph{The two embedding channels track a shared signal.}
 Table~\ref{tab:cross-method-12} reports the per-market point estimates, and
 Figure~\ref{fig:forest-12} arranges all three channels as per-market intervals
-side by side. Across
-the twelve markets the Shen and Baur estimates move together closely,
-with a Pearson correlation of $+0.94$ (Figure~\ref{fig:concordance}), a Spearman rank correlation of $+0.66$
-($p = 0.018$), and a Lin concordance coefficient of $+0.74$, and they share the
-sign of their point estimate in eleven of the twelve markets. This full-panel
-correlation is driven by leverage: Chicago and Philadelphia, the two markets both
-channels place far above the rest, dominate it, and dropping the two leaves a
-Pearson of only $+0.47$ that is no longer significant at conventional levels
-($p = 0.18$). The concordance is therefore best read as strong agreement on the
+side by side. Across the twelve markets the Shen and Baur estimates move together closely. The Pearson correlation is $+0.94$ (Figure~\ref{fig:concordance}), the Spearman rank correlation $+0.66$ ($p = 0.018$), and the Lin concordance coefficient $+0.74$. They share the sign of their point estimate in eleven of the twelve markets. This full-panel correlation is driven by leverage. Chicago and Philadelphia, the two markets both channels place far above the rest, dominate it. Dropping the two leaves a Pearson of only $+0.47$, no longer significant at conventional levels ($p = 0.18$). The concordance is therefore best read as strong agreement on the
 sign and ranking of the markets that carry a clear effect rather than as a tight
 point-by-point identity across the whole panel. We read it not
 as two independent methods corroborating one another but as a robustness result
-about a single underlying quantity. The Shen and Baur channels are two
-encodings of the same listing text, applied to the same listings under the same
-confounder adjustment, so their agreement establishes that the
-text-on-price signal does not depend on whether the text is summarized by a
-Doc2Vec rarity score or by a sentence-BERT principal component, without adding an
-independent, bias-disjoint observation of that effect. The single market where
-the two channels separate is New York, where the Shen estimate is essentially
-zero and the Baur estimate is small and negative, the only market in which the
-oriented Baur axis points opposite the pooled direction.
+about a single underlying quantity. The Shen and Baur channels are two encodings of the same listing text, applied to the same listings under the same confounder adjustment. Their agreement establishes that the text-on-price signal does not depend on whether the text is summarized by a Doc2Vec rarity score or by a sentence-BERT principal component. It does not add an independent, bias-disjoint observation of that effect. The single market where the two channels separate is New York. There the Shen estimate is essentially zero and the Baur estimate is small and negative, the only market in which the oriented Baur axis points opposite the pooled direction.
 
 \paragraph{The counterfactual channel is weaker and more nearly distinct.}
-The LLM rewriting differential is the one channel whose bias structure is not
-shared with the embedding channels, since it relies on a within-listing
-minimal-edit substitution rather than the cross-listing geometry of a fixed
-encoder. It is also the weakest. Its rank correlation with the Shen channel is
-$+0.77$ ($p = 0.003$) and with the Baur channel $+0.57$ ($p = 0.05$), but its
-Lin concordance coefficients are only $+0.21$ and $+0.14$, reflecting that the
-submarket-swap contrast pools to approximately zero across markets even
-where its rank tracks the others. The counterfactual channel therefore agrees
-with the embedding channels on the ordering of markets more than on the
-magnitude or the presence of an effect, and we treat it as a corroborating
-probe with limited power rather than as a co-equal estimate, consistent with
-the minimum-detectable-effect caveat recorded in
-Appendix~\ref{sec:counterfactual-12}.
+The LLM rewriting differential is the one channel whose bias structure is not shared with the embedding channels. It relies on a within-listing minimal-edit substitution rather than the cross-listing geometry of a fixed encoder. It is also the weakest. Its rank correlation with the Shen channel is $+0.77$ ($p = 0.003$) and with the Baur channel $+0.57$ ($p = 0.05$). Its Lin concordance coefficients are only $+0.21$ and $+0.14$. This reflects that the submarket-swap contrast pools to approximately zero across markets even where its rank tracks the others. The counterfactual channel therefore agrees with the embedding channels on the ordering of markets more than on the magnitude or the presence of an effect. We treat it as a corroborating probe with limited power rather than as a co-equal estimate, consistent with the minimum-detectable-effect caveat recorded in Appendix~\ref{sec:counterfactual-12}.
 
 \paragraph{Identification overlap.} A more decision-relevant summary than rank
 agreement is which markets each channel identifies at the $95\%$ level, where
-the per-method interval excludes zero. The Shen channel identifies ten of the
-twelve markets, the counterfactual channel nine, and the Baur channel eleven, with
-Seattle the one market whose Baur interval covers zero and New York a small but
-distinguishable negative. Six markets,
-San Francisco, Washington, Philadelphia, Denver, Portland, and Phoenix, are
-identified by all three channels jointly, all twelve are identified by
-at least two, and no market is left unidentified by every channel.
-The breadth of the Baur identification set should be read together with the
-collinearity above and with the sensitivity analysis of
-Section~\ref{sec:sensitivity-12}: the embedding channel detects an association
-in eleven of the twelve markets, but whether that association survives unmeasured confounding is
-the separate question those robustness values address, and it is there rather
-than in the count of identified markets that the strength of the causal claim is
-adjudicated.
+the per-method interval excludes zero. The Shen channel identifies ten of the twelve markets, the counterfactual channel nine, and the Baur channel eleven. Seattle is the one market whose Baur interval covers zero; New York shows a small but distinguishable negative. Six markets, San Francisco, Washington, Philadelphia, Denver, Portland, and Phoenix, are identified by all three channels jointly. All twelve are identified by at least two, and no market is left unidentified by every channel.
+The breadth of the Baur identification set should be read together with the collinearity above and with the sensitivity analysis of Section~\ref{sec:sensitivity-12}. The embedding channel detects an association in eleven of the twelve markets. Whether that association survives unmeasured confounding is a separate question, addressed by those robustness values. The strength of the causal claim is adjudicated there, not in the count of identified markets.
 
 \paragraph{How many independent measurements the panel carries.} Because the two
 embedding channels are nearly collinear, the three per-market $z$-statistics do
-not constitute three independent observations. The across-market correlation
-matrix of the standardized estimates has a Shen-Baur entry of $+0.94$ and
-Shen-counterfactual and Baur-counterfactual entries near $+0.39$, and its
-effective dimension, computed as $\operatorname{tr}(R)^2 / \operatorname{tr}(R^2)$,
-is $1.7$ of a possible $3$. The panel thus carries on the order of one and
+not constitute three independent observations. The across-market correlation matrix of the standardized estimates has a Shen-Baur entry of $+0.94$, with Shen-counterfactual and Baur-counterfactual entries near $+0.39$. Its effective dimension, computed as $\operatorname{tr}(R)^2 / \operatorname{tr}(R^2)$, is $1.7$ of a possible $3$. The panel thus carries on the order of one and
 two-thirds effectively-independent text-price measurements per market, one
 shared by the two encodings and a partial second contributed by the rewriting
-intervention. We state this explicitly because it bounds what the joint test
-below can claim: the convergent evidence is robustness across text
-representation plus weak intervention-based corroboration, not the triangulation
-of three estimators with unrelated biases.
+intervention. We state this explicitly because it bounds what the joint test below can claim. The convergent evidence is robustness across text representation plus weak intervention-based corroboration, not the triangulation of three estimators with unrelated biases.
 
 \paragraph{Joint-null test.} For each market we test the joint null
 $H_0: (\theta_{\mathrm{Shen}}, \theta_{\mathrm{Baur}}, \theta_{\mathrm{CF}}) =
-(0, 0, 0)$. Because the three estimates are correlated rather than independent,
-the naive statistic $z^2_{\mathrm{Shen}} + z^2_{\mathrm{Baur}} +
-z^2_{\mathrm{CF}}$ referred to a $\chi^2_3$ distribution over-rejects, so we use
-the Mahalanobis form $z_m^\top R^{-1} z_m$ with $R$ estimated from the
-across-market correlation of the standardized estimates, which remains
-$\chi^2_3$ under the null while accounting for the collinearity. The joint null
-is rejected in all twelve markets at the five-percent level under the corrected
-reference, and the rejection survives Benjamini-Hochberg correction across the
-twelve markets, with every adjusted $q$-value below $0.05$. The weakest
-rejection is Boston. We do not read the unanimous rejection as twelve
-independent discoveries, both because the joint power is dominated by the
-high-precision Baur channel and because that channel is collinear with the Shen
-channel. The defensible reading is that the post-2020 panel contains no market
-in which the text-on-price association is absent under either embedding, while
-the magnitude and the causal status of that association are governed by the
-heterogeneity documented in Section~\ref{sec:baur-12city} and the sensitivity
-bounds of Section~\ref{sec:sensitivity-12}.
+(0, 0, 0)$. Because the three estimates are correlated rather than independent, the naive statistic $z^2_{\mathrm{Shen}} + z^2_{\mathrm{Baur}} + z^2_{\mathrm{CF}}$ referred to a $\chi^2_3$ distribution over-rejects. We instead use the Mahalanobis form $z_m^\top R^{-1} z_m$ with $R$ estimated from the across-market correlation of the standardized estimates. This statistic remains $\chi^2_3$ under the null while accounting for the collinearity. The joint null is rejected in all twelve markets at the five-percent level under the corrected reference. The rejection survives Benjamini-Hochberg correction across the twelve markets, with every adjusted $q$-value below $0.05$. The weakest
+rejection is Boston. We do not read the unanimous rejection as twelve independent discoveries. The joint power is dominated by the high-precision Baur channel, and that channel is collinear with the Shen channel. The defensible reading is that the post-2020 panel contains no market in which the text-on-price association is absent under either embedding. The magnitude and the causal status of that association are governed by the heterogeneity documented in Section~\ref{sec:baur-12city} and the sensitivity bounds of Section~\ref{sec:sensitivity-12}.
 
-We favor the reading that a text-on-price association is present and robust
-across text encodings in essentially every metropolitan market, that its
-magnitude is heterogeneous, and that the independent rewriting probe corroborates
-the ordering of markets while pooling to a near-zero average effect of its own. A
-constructive complement would treat the per-market estimates as noisy indicators
-of a single latent market-level text-price effect and pool them through an
-anchored one-factor measurement model, recovering a precision-weighted posterior
-for each market. We have not fit that model on the present panel and report it
-as a planned extension, so the identification-overlap counts and the
-collinearity-corrected joint test remain the cross-method evidence on which this
-section rests.
+We favor the reading that a text-on-price association is present and robust across text encodings in essentially every metropolitan market. Its magnitude is heterogeneous, and the independent rewriting probe corroborates the ordering of markets while pooling to a near-zero average effect of its own. A constructive complement would treat the per-market estimates as noisy indicators of a single latent market-level text-price effect. Pooling them through an anchored one-factor measurement model would recover a precision-weighted posterior for each market. We have not fit that model on the present panel and report it as a planned extension. The identification-overlap counts and the collinearity-corrected joint test remain the cross-method evidence on which this section rests.
 
 \begin{figure}[H]
 \centering

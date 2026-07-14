@@ -2,56 +2,14 @@
 \subsection{Cross-market heterogeneity and a null moderator}
 \label{sec:meta-regression-12}
 
-The twelve per-market estimates are heterogeneous, ranging from a small negative in
-New York to several times the mean in Chicago and Philadelphia, so a pooled figure
-summarizes a dispersed distribution rather than a single generalizable effect.
-Combining the markets by inverse-variance weighting, the Shen-Ross uniqueness
-channel pools to $+0.060$ with a $95\%$ interval of $[+0.018, +0.102]$ and the
-sentence-BERT axis, under the price-positive orientation of
-Section~\ref{sec:baur-12city}, to $+0.137$ with $[+0.048, +0.227]$. Both channels
-are positive and detectable in the pool, and the conclusion is stable across the
-weighting choice: weighting each market equally and weighting by sample size return
-Baur pooled estimates of $+0.137$ and $+0.130$, and the precision-weighted value is
-$+0.122$, the gap reflecting only that New York carries a fifth of the listings at a
-small negative effect, so that dropping it lifts the market-weighted mean to
-$+0.152$. What moves the pool is the single market the rest of the paper already
+The twelve per-market estimates are heterogeneous, ranging from a small negative in New York to several times the mean in Chicago and Philadelphia. A pooled figure therefore summarizes a dispersed distribution rather than a single generalizable effect.
+Combining the markets by inverse-variance weighting, the Shen-Ross uniqueness channel pools to $+0.060$ with a $95\%$ interval of $[+0.018, +0.102]$. The sentence-BERT axis, under the price-positive orientation of Section~\ref{sec:baur-12city}, pools to $+0.137$ with $[+0.048, +0.227]$. Both channels are positive and detectable in the pool, and the conclusion is stable across the weighting choice. Weighting each market equally and weighting by sample size return Baur pooled estimates of $+0.137$ and $+0.130$, and the precision-weighted value is $+0.122$. The gap reflects only that New York carries a fifth of the listings at a small negative effect; dropping it lifts the market-weighted mean to $+0.152$. What moves the pool is the single market the rest of the paper already
 isolates.
 
 The spread across markets is not left as noise, since a part of it is accounted for
-by the same mechanism the paper studies. The two markets that sit highest, Chicago
-and Philadelphia, are the ones whose leading text direction carries the most residual
-geography, and the identified-direction estimates of
-Section~\ref{sec:identified-direction}, which project that geography out of the
-treatment, attenuate exactly those markets the most, Chicago from $+0.46$ to $+0.37$
-and Philadelphia from $+0.37$ to $+0.27$, while the markets whose leading axis already
-lay near the identified direction barely move. Part of the raw dispersion is therefore
-the differing amount of location each market's variance-maximal axis absorbs rather
-than a differing price of language, and the deconfounded estimates occupy a narrower
-band than the leading-component ones. A residual heterogeneity remains after that
-projection, which the moderator scan below does not resolve, so we rest the
-cross-market claim on the pooled effect and read the per-market magnitudes as a
+by the same mechanism the paper studies. The two markets that sit highest, Chicago and Philadelphia, are the ones whose leading text direction carries the most residual geography. The identified-direction estimates of Section~\ref{sec:identified-direction} project that geography out of the treatment, and they attenuate exactly those markets the most, Chicago from $+0.46$ to $+0.37$ and Philadelphia from $+0.37$ to $+0.27$. The markets whose leading axis already lay near the identified direction barely move. Part of the raw dispersion is therefore the differing amount of location each market's variance-maximal axis absorbs, rather than a differing price of language. The deconfounded estimates occupy a narrower band than the leading-component ones. A residual heterogeneity remains after that projection, and the moderator scan below does not resolve it. We rest the cross-market claim on the pooled effect and read the per-market magnitudes as a
 distribution whose extremes are the markets in which text and location are most
 entangled.
 
 We looked for a metropolitan-level moderator of the effect and found none that
-survives correction. Regressing each channel's per-market estimate on eleven
-metropolitan covariates, eight from the American Community Survey and three from
-federal series, no covariate approaches significance on the sentence-BERT channel,
-where the smallest raw $p$, carried by the renter share of the housing stock, is
-$0.24$. On the Shen-Ross channel that same renter share does reach a nominal raw
-significance, at $p=0.03$ with a negative sign, but it survives neither the
-Romano-Wolf multiplicity adjustment across the eleven candidates, which lifts its
-$p$ to $0.10$, nor a leave-one-out check, which traces the association almost
-entirely to New York, whose Cook's distance dominates the regression and whose
-removal alone returns the coefficient to insignificance. With twelve markets a
-regression on site-level estimates is underpowered by construction, so the reading we
-take is the absence of a moderator that survives correction for multiplicity and
-influence rather than a demonstrated absence of moderation, and a properly powered
-treatment would carry the covariate as an interaction in a stacked specification
-rather than a regression on twelve site estimates. We record one correction. An
-earlier draft reported a positive and significant renter-share moderator, which
-turned out to be produced by a corrupted confounder in a single market that the
-winsorization of Section~\ref{sec:data} removes; once corrected the coefficient
-reverses sign, and what nominal significance remains rests on New York alone and
-does not survive the multiplicity adjustment, so we report the null rather than
-carry the superseded claim.
+survives correction. We regress each channel's per-market estimate on eleven metropolitan covariates, eight from the American Community Survey and three from federal series. No covariate approaches significance on the sentence-BERT channel, where the smallest raw $p$, carried by the renter share of the housing stock, is $0.24$. On the Shen-Ross channel that same renter share does reach a nominal raw significance, at $p=0.03$ with a negative sign. It survives neither the Romano-Wolf multiplicity adjustment across the eleven candidates, which lifts its $p$ to $0.10$, nor a leave-one-out check. That check traces the association almost entirely to New York, whose Cook's distance dominates the regression and whose removal alone returns the coefficient to insignificance. With twelve markets a regression on site-level estimates is underpowered by construction. The reading we take is the absence of a moderator that survives correction for multiplicity and influence, not a demonstrated absence of moderation. A properly powered treatment would carry the covariate as an interaction in a stacked specification rather than a regression on twelve site estimates. We record one correction. An earlier draft reported a positive and significant renter-share moderator. This turned out to be produced by a corrupted confounder in a single market that the winsorization of Section~\ref{sec:data} removes. Once corrected the coefficient reverses sign, and what nominal significance remains rests on New York alone and does not survive the multiplicity adjustment. We therefore report the null rather than carry the superseded claim.

@@ -11,76 +11,76 @@ to separate semantic content about a property's condition or amenities from the
 geographic information that correlates with its neighborhood. If the embedding
 carries location-targeted information into the leading principal component, the
 per-standard-deviation effect reported in Section~\ref{sec:baur-12city} inherits
-a spatial confounder mediated through the encoder, and the identification claim
+a spatial confounder mediated through the encoder. The identification claim
 is correspondingly weaker. We assess how far this concern can be addressed by
-erasing the lat-lon concept from the representation, and we report where the erasure
+erasing the lat-lon concept from the representation. We report where the erasure
 is complete and where it is only partial.
 
 The deconfounding runs a linear projection and then a nonlinear correction, and
 the linear step carries most of the load. Applying the LEACE projection of
 \citet{belrose2023leace} to the BERT embedding removes the linear subspace that
 the mean-conditional-covariance estimator identifies with the concept variable,
-here the latitude-longitude coordinate pair of the listing, and it comes with the
+here the latitude-longitude coordinate pair of the listing. It comes with the
 exact-guardedness guarantee that no linear predictor of the residual embedding can
 recover the concept any better than a constant baseline would. That guarantee
-holds in every market we examine, with the out-of-fold ridge $R^2$ for predicting
-the coordinate from the embedding falling from a raw value that reaches $0.50$ in
-New York and $0.42$ in Dallas to within $0.002$ of zero after erasure, and the
-linear-guardedness residual averaging $2.7\text{e-}8$ across the twelve markets,
+holds in every market we examine. The out-of-fold ridge $R^2$ for predicting
+the coordinate from the embedding falls from a raw value that reaches $0.50$ in
+New York and $0.42$ in Dallas to within $0.002$ of zero after erasure. The
+linear-guardedness residual averages $2.7\text{e-}8$ across the twelve markets,
 ranging from $8.3\text{e-}9$ to $6.0\text{e-}8$, which is the floating-point floor
-of the single-precision computation, so the linear erasure comes out complete
+of the single-precision computation. The linear erasure therefore comes out complete
 throughout the panel (Figure~\ref{fig:erasure-12}).
 
 The concept is routed through the continuous coordinate representation rather
 than the categorical ZIP-code identifier in every market. Categorical LEACE has
 known instability when the categorical cardinality is large, and our panel ranges
-from $30$ ZIP codes in San Francisco to $158$ in New York. Although the
-per-market test folds are now large, from $296$ listings in San Francisco to
-$4{,}569$ in New York, the continuous routing sidesteps the cardinality question
+from $30$ ZIP codes in San Francisco to $158$ in New York. The per-market test
+folds are now large, from $296$ listings in San Francisco to
+$4{,}569$ in New York. Even so, the continuous routing sidesteps the cardinality question
 entirely without discarding the spatial information the projection is designed to
 remove, since the coordinate pair is a sufficient statistic for location at the
 resolution that matters here.
 
 What a linear projection cannot reach is the location the embedding encodes
-nonlinearly, and the iterative gradient-based correction of
-\citet{iskander2023shielded} is aimed at exactly that residual, alternating between fitting
+nonlinearly. The iterative gradient-based correction of
+\citet{iskander2023shielded} is aimed at exactly that residual. It alternates between fitting
 a multilayer-perceptron probe of the coordinate on the residual and projecting out
 the direction in which that probe gathers its predictive mass. The correction cuts
 the nonlinear leakage substantially without removing it, taking the average
 nonlinear probe $R^2$ from $0.44$ on the raw embedding down to $0.20$ after five
-outer passes, a reduction of roughly a half, while the residual that remains
+outer passes, a reduction of roughly a half. The residual that remains
 varies sharply across markets. San Francisco is left with a nonlinear $R^2$ of
 $0.01$, which is erasure for any practical purpose, whereas New York, Dallas, and
-Phoenix hold onto residuals near $0.30$ to $0.34$ and Portland near $0.26$, and
-the markets that keep the most are the larger corpora whose listing language
-carries the richest location-targeted structure, which is also where a nonlinear
+Phoenix hold onto residuals near $0.30$ to $0.34$ and Portland near $0.26$. The
+markets that keep the most are the larger corpora whose listing language
+carries the richest location-targeted structure. This is also where a nonlinear
 probe has the most left to find.
 
 \paragraph{Why closed-form erasure rather than adversarial training.} We prefer
 the closed-form projection to the adversarial alternative the disentanglement
 literature more often reaches for, for a reason we develop in
 Appendix~\ref{app:adversarial}. An adversarially trained encoder can drive its own
-location discriminator to chance and still leave the coordinate recoverable: a
+location discriminator to chance and still leave the coordinate recoverable. A
 fresh probe of the frozen representation reads latitude and longitude back at an
 $R^2$ between $0.16$ and $0.42$ across the twelve markets, and the ZIP code at nine
 to forty-seven times the uniform rate. The adversarial training does not remove
 location; it teaches its discriminator not to look. The closed-form projection, by
-contrast, is guarded against any probe by construction, and it is the erasure on
+contrast, is guarded against any probe by construction. It is the erasure on
 which we rest the decomposition that follows.
 
 \paragraph{What the diagnostic does and does not settle.} The Baur estimates of
 Table~\ref{tab:baur-12city} are computed on the unprojected embedding, in keeping
-with the published Baur, Rosenfelder, and Lutz protocol, so the erasure here is a
+with the published Baur, Rosenfelder, and Lutz protocol. The erasure here is a
 diagnostic of what the representation contains rather than a change to any
 per-market number. As a diagnostic it speaks directly to the part of the problem
-the linear treatment can actually express, since the leading principal component
-is a linear functional of the embedding and the linear erasure is exact in every
-market, so whatever location a linear treatment could carry has been shown to be
+the linear treatment can actually express. The leading principal component
+is a linear functional of the embedding, and the linear erasure is exact in every
+market. Whatever location a linear treatment could carry has been shown to be
 removable in full, while the nonlinear residual that survives IGBP in the larger
 markets bounds the rest, fixing how much location a nonlinear function of the
 deconfounded representation could still smuggle back. Showing that the embedding
 encodes geography is not, however, the same as showing that the price effect is
-confounded by it, and the diagnostic on its own cannot close that gap, because a
+confounded by it, and the diagnostic on its own cannot close that gap. A
 representation may carry a confounder along directions that have nothing to do
 with the one on which it acts. The question of whether the location the embedding
 demonstrably encodes is the location that actually moves the price is taken up

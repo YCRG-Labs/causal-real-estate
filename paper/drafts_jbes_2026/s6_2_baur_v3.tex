@@ -7,24 +7,24 @@ listing language as a $768$-dimensional vector from a frozen sentence-BERT
 encoder and uses the leading principal component direction as a scalar
 treatment in a partially-linear DML estimator. The original study computes the
 PCA per market on the local listing distribution. On a single-market analysis
-this is the canonical choice, but on a twelve-market panel it produces a
-treatment whose direction is identified only locally and only up to a sign, so
-per-market PC1 estimates can carry opposite signs across markets even when the
+this is the canonical choice. On a twelve-market panel, though, it produces a
+treatment whose direction is identified only locally and only up to a sign.
+Per-market PC1 estimates can therefore carry opposite signs across markets even when the
 underlying language-price relationship is direction-consistent. A panel built
-on per-market axes therefore mixes true heterogeneity with an accident of
-local sign and orientation, and it cannot be pooled coherently.
+on per-market axes mixes true heterogeneity with an accident of
+local sign and orientation. It cannot be pooled coherently.
 
 \paragraph{Pooled within-city-centered PCA.} To obtain a treatment definition
 that is comparable across markets, we replace the per-market PCAs with a single
 global principal-component direction extracted from the pooled within-city
 covariance of the stacked embeddings. We center each city's embeddings at its
-own mean before pooling, which removes between-city vocabulary differences from
+own mean before pooling. This removes between-city vocabulary differences from
 the global covariance and produces a leading eigenvector identified as the
 within-city common axis. This is the standard pooling for cross-population PCA
 discussed in \citet{flury1984}, equivalent in construction to a linear
 discriminant analysis pooled covariance. We do not standardize individual
-embedding dimensions before pooling because sentence-BERT outputs are
-L2-normalized by design and per-dimension scaling would inflate the anisotropic
+embedding dimensions before pooling. Sentence-BERT outputs are
+L2-normalized by design, and per-dimension scaling would inflate the anisotropic
 noise structure documented by \citet{ethayarajh2019contextual}. We $z$-score the
 per-listing projection within each city, so the estimand on each market is a
 per-city-standard-deviation move along the common axis. The global axis is
@@ -35,14 +35,14 @@ San Francisco to $15{,}255$ in New York.
 \paragraph{Sign convention.} A principal component and its negation span the
 same axis, so the sign of the per-standard-deviation effect is a convention
 rather than a finding. We adopt the convention that orients the common axis so
-that the pooled effect on log listing price is non-negative, which renders the
+that the pooled effect on log listing price is non-negative. This renders the
 per-market estimates sign-comparable to the hedonic uniqueness channel of
 Section~\ref{sec:shen-12city} and to the counterfactual differential of
 Appendix~\ref{sec:counterfactual-12}. Under the opposite convention every sign
 reported below reverses; the magnitudes, the cross-market dispersion, and the
 concordance with the other channels are invariant to it. What the orientation
 does not do is manufacture agreement between channels, a point we develop in
-Section~\ref{sec:cross-method-12}, because the across-market correlation between
+Section~\ref{sec:cross-method-12}. The across-market correlation between
 the BERT axis and the hedonic channel is invariant in magnitude under any global
 sign flip of either one.
 
@@ -53,18 +53,18 @@ axes and delivers a single direction of effect across the panel. Eleven of the
 twelve markets return a confidence interval that excludes zero at the $95\%$
 level, and eleven carry a positive point estimate. New York is the
 sole negative, at $-0.016$ on $[-0.031, -0.002]$, a small effect that is
-statistically distinguishable from zero but economically close to it, and Seattle
+statistically distinguishable from zero but economically close to it. Seattle
 is the one market whose interval covers zero, at $+0.030$ on
 $[-0.002, +0.062]$. Chicago and Philadelphia anchor the high end at $+0.464$ on
 $[+0.428, +0.501]$ and $+0.374$ on $[+0.356, +0.392]$, followed by the District
 of Columbia at $+0.151$ and Dallas at $+0.142$. Atlanta sits at $+0.134$ and
-San Francisco at $+0.106$ on $[+0.056, +0.155]$, and Portland, Boston, and Denver
+San Francisco at $+0.106$ on $[+0.056, +0.155]$. Portland, Boston, and Denver
 fall between $+0.061$ and $+0.076$, while Phoenix at $+0.055$ and Seattle at
 $+0.030$ return the smallest positive effects. Portland, which the per-market PCA had
 rendered a degenerate outlier, now sits squarely inside the panel at $+0.076$ on
-$[+0.051, +0.101]$, so the panel is well-behaved at twelve markets and there is no
+$[+0.051, +0.101]$. The panel is well-behaved at twelve markets, and there is no
 market we exclude. The wide gap between Chicago and Philadelphia and the rest is not
-intrinsic to the language of those cities, since they are also the two markets whose
+intrinsic to the language of those cities. They are also the two markets whose
 leading direction carries the most location, and
 Section~\ref{sec:identified-direction} shows the gap narrows once that location is
 projected out of the treatment. The per-market intervals are tight
@@ -106,70 +106,70 @@ Pooled (PM, HKSJ) & & $+0.137$ & $[+0.048, +0.227]$ \\
 
 \paragraph{Pooled inference.} Pooling the twelve per-market estimates by
 inverse-variance weighting returns a per-standard-deviation effect of $+0.137$ with
-standard error $0.041$ and a $95\%$ interval of $[+0.048, +0.227]$, detectable and
+standard error $0.041$ and a $95\%$ interval of $[+0.048, +0.227]$. The effect is detectable and
 positive across the panel under the adopted orientation. Between-market dispersion
-is large, anchored by Chicago and Philadelphia at one end and New York at the other,
-so the pooled point masks a wide distribution and the precision weights sit close to
+is large, anchored by Chicago and Philadelphia at one end and New York at the other.
+The pooled point therefore masks a wide distribution, and the precision weights sit close to
 uniform. The field-standard alternative, a single stacked DML estimator with city
 fixed effects and the \citet{chiang2022multiway} cluster-robust variance, proved
-unstable at twelve clusters, with fold-assignment sensitivity in the cross-fitted
-nuisances and pooled points that shifted across invocations on the same seed and
-data, so we combine the per-market estimates directly and report the stacked fit
+unstable at twelve clusters. Fold-assignment sensitivity in the cross-fitted
+nuisances produced pooled points that shifted across invocations on the same seed and
+data. We therefore combine the per-market estimates directly and report the stacked fit
 only as a check. Section~\ref{sec:meta-regression-12} develops the pooled figures
 and the null moderator scan. Because listing text clusters geographically, the
 influence-function interval, which treats within-market listings as independent, is
-too narrow; clustering the influence function at the zip level, or applying a Conley
+too narrow. Clustering the influence function at the zip level, or applying a Conley
 spatial kernel on the coordinates, widens the per-market intervals by roughly forty
-percent, and the effect nonetheless remains significant in every market where the
+percent. The effect nonetheless remains significant in every market where the
 independent interval already excluded zero, so accounting for spatial dependence does
 not disturb the pattern (Appendix~\ref{app:simulation}).
 
 \paragraph{Magnitude and interpretation.} The pooled per-standard-deviation
-effect of $+0.137$ on log listing price is about a fifteen percent change in price,
-which is small as a fraction of value but substantial against the magnitudes
+effect of $+0.137$ on log listing price is about a fifteen percent change in price.
+This is small as a fraction of value but substantial against the magnitudes
 published in the housing and text-as-treatment literatures. A single additional
 bedroom in the canonical \citet{sirmans2005composition} meta-analysis of
-forty-five hedonic studies carries a mean effect of $+3.8\%$ on log price, so that
-if the association were read as an effect it would be several times the marginal
-price of an additional bedroom, a scale comparison we intend as illustrative
+forty-five hedonic studies carries a mean effect of $+3.8\%$ on log price. If
+the association were read as an effect, it would be several times the marginal
+price of an additional bedroom. We intend this scale comparison as illustrative
 rather than as a claim that a standard-deviation move along a text axis is a
 manipulable quantity.
 The more informative comparison is internal. The Doc2Vec uniqueness construct of
 \citet{shen2021information} runs in the same direction as the oriented BERT axis,
 both within markets and across the panel. In San Francisco, where both channels
 are estimated on the identical sample, the same DML pipeline recovers a
-uniqueness effect of $+0.124$ and a BERT-PC1 effect of $+0.106$, and pooled across
-the twelve markets the uniqueness effect is about $+0.060$ against the $+0.137$ of
+uniqueness effect of $+0.124$ and a BERT-PC1 effect of $+0.106$. Pooled across
+the twelve markets, the uniqueness effect is about $+0.060$ against the $+0.137$ of
 the BERT axis. The two text treatments therefore concord in sign and in
 cross-market ranking, with the BERT axis roughly twice the hedonic channel in
 pooled magnitude. What the concordance establishes needs care, because two agreeing
 estimates are easily mistaken for two independent ones. The two channels are
 alternative encodings of the same listing text applied to the same listings under the
 same confounder adjustment, and Section~\ref{sec:cross-method-12} shows they are
-strongly correlated across markets, so their agreement is evidence that the
+strongly correlated across markets. Their agreement is evidence that the
 text-on-price signal is robust to the choice of text representation rather than
 evidence from two independent sources. Both textual distinctiveness in the Shen sense
 and the utilitarian-to-amenity axis the leading sentence-BERT component recovers move
-price in the same direction, and the difference between them is one of magnitude and
+price in the same direction. The difference between them is one of magnitude and
 of which markets each detects, not of sign.
 
 \paragraph{What the leading axis prices.} To make concrete what the leading axis
 encodes, we regress each listing's projection onto it on a TF-IDF vocabulary of
 the description, pooled across the twelve markets, and read off the terms with the
 largest coefficients. Table~\ref{tab:loadings} reports them. The high-price end of
-the axis is dominated by property-quality and amenity language, words like
+the axis is dominated by property-quality and amenity language: words like
 \emph{spacious}, \emph{modern}, \emph{designed}, \emph{chef}, \emph{owner suite},
 and \emph{great room} that describe condition, finish, and layout rather than
 location. The low-price end is dominated by land and transactional boilerplate,
 \emph{vacant}, \emph{lot}, \emph{acres}, \emph{zoned}, \emph{hoa}, \emph{mls}, and
-\emph{seller}, the vocabulary of undeveloped parcels and the mechanics of a sale
-rather than of a home. The axis does also carry some lexical geography:
-premium-neighborhood terms such as \emph{center city} and \emph{rittenhouse
+\emph{seller}. This is the vocabulary of undeveloped parcels and the mechanics of a sale
+rather than of a home. The axis also carries some lexical geography.
+Premium-neighborhood terms such as \emph{center city} and \emph{rittenhouse
 square} load near the top, and the bare city names that head the pooled list
 reflect between-market price differences that the within-city centering only
 partly removes. This is the mixture the deconfounding test of
 Section~\ref{sec:decomposition} is built to separate. The axis encodes both the
-semantic content of a property and the neighborhood it sits in, and holding
+semantic content of a property and the neighborhood it sits in. Holding
 location fixed is what shows that it is the quality language, not the geography,
 that carries the price effect.
 

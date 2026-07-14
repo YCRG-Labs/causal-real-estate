@@ -5,10 +5,10 @@
 This paper has asked whether the predictive gains that text embeddings deliver in
 automated valuation models reflect causal semantic content or spatial confounding
 mediated through language, and whether the answer travels across metropolitan
-housing markets. Working with $69{,}204$ deduplicated Redfin listings across twelve
+housing markets. We work with $69{,}204$ deduplicated Redfin listings across twelve
 metropolitan areas, a panel from which we exclude no market and whose
 confounders we winsorize at the median plus or minus five median absolute
-deviations to neutralize parcel data-entry errors, we built a framework that
+deviations to neutralize parcel data-entry errors. On it we built a framework that
 joins a partially-linear Double Machine Learning estimator, LEACE concept erasure
 with an iterative nonlinear polish, a counterfactual rewriting intervention with
 two open-weight language models, and a finite-sample calibration study. What
@@ -19,18 +19,18 @@ basis into the controls leaves its per-standard-deviation effect on log price
 almost exactly where it began across eleven of the twelve markets, even though
 that same direction provably encodes location. The one place where the
 adjustment does bite is New York, whose own text is the most geographic of the
-twelve. The effect that survives is robust as well to how the text is encoded,
-since a Doc2Vec uniqueness channel pools to $+0.060$ and a sentence-BERT
+twelve. The effect that survives is robust as well to how the text is encoded.
+A Doc2Vec uniqueness channel pools to $+0.060$ and a sentence-BERT
 principal-component axis to $+0.137$, and the two run correlated across the
-markets at a Pearson of $+0.94$, so that they track one signal under
-two representations rather than two independent observations of it, though that
-full-panel agreement is carried by Chicago and Philadelphia and weakens to a
-non-significant correlation once the two are set aside. That signal ranges from a small negative
+markets at a Pearson of $+0.94$. They track one signal under two representations
+rather than two independent observations of it. That full-panel agreement is
+carried by Chicago and Philadelphia, and it weakens to a non-significant
+correlation once the two are set aside. That signal ranges from a small negative
 in New York to several times the pooled mean in Chicago and Philadelphia, and a
 collinearity-corrected Hotelling test rejects the joint zero null in every one of
 the twelve markets. The counterfactual intervention sharpens the reading. A
 contrast that strips stylistic content while holding the model's inferred location
-fixed isolates a positive style effect of $+0.074$ on log price, while a contrast
+fixed isolates a positive style effect of $+0.074$ on log price. A contrast
 that also swaps the targeted submarket nets to approximately zero, the per-market
 swap effects dividing in sign across the twelve markets and averaging away rather
 than a second channel of comparable size offsetting the first. We

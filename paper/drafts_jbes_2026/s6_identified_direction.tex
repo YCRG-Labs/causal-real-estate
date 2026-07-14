@@ -3,7 +3,7 @@
 
 Theorem~\ref{thm:idprime} prescribes a direction. The effect it identifies is
 carried by the component of the text that survives after the location-predictable
-part of the embedding is removed, and the leading direction of largest variance,
+part of the embedding is removed. The leading direction of largest variance,
 which the Baur channel uses, need not coincide with it. We re-estimate the panel on
 the identified direction, holding the full confounder set fixed, and read the
 difference from the leading-component estimate as the geography the leading
@@ -13,70 +13,70 @@ The construction follows the theorem. Within each market we residualize every
 coordinate of the sentence-BERT embedding on a location basis that includes a
 quadratic in latitude and longitude together with a full set of zip indicators, the
 discrete geographic channel Assumption~\ref{as:id-basis} requires the control basis
-to span, and we take the leading principal component of the pooled residualized
+to span. We take the leading principal component of the pooled residualized
 embedding as the identified direction. It sits at a cosine of $0.98$ to the raw
-leading component, so the two directions largely agree, which is why the
+leading component, so the two directions largely agree. This is why the
 decomposition of Section~\ref{sec:decomposition} finds the coefficient moving only
 modestly when geography enters the controls. Where they disagree is exactly the
 confounded content the theorem isolates.
 
 Estimated on the identified direction under the full confounder set, the effect is
 robust. Market by market it stays close to its leading-component value, with a
-median ratio near $0.9$, and it is significant in all twelve markets rather than
+median ratio near $0.9$. It is significant in all twelve markets rather than
 eleven. The direction earns its keep just where the leading component is most
 geographic. Chicago and Philadelphia, whose leading directions carry the most
 location, attenuate the most, from $+0.464$ to $+0.370$ and from $+0.374$ to
-$+0.272$, while the markets whose leading component already lay near the identified
+$+0.272$. The markets whose leading component already lay near the identified
 direction, San Francisco, Washington, and Denver among them, barely move. The most
 telling case is New York, whose leading direction is the most geographic in the
 panel and whose effect on that direction is a significant $-0.016$ ($t=-2.2$).
-Removing the location channel does not merely restore the New York effect, it
+Removing the location channel does not merely restore the New York effect. It
 reverses its sign: on the identified direction it is a significant $+0.021$
 ($t=3.3$). The variance-maximal component had been reporting a negative effect
 because it pointed at borough and neighborhood names, whose price gradient runs the
-other way, rather than at the text's own pricing content, and the identified
+other way, rather than at the text's own pricing content. The identified
 direction recovers the positive effect that geography had been masking with its own.
 
 The reading this supports is the one the paper has argued throughout, now carried
 out on the direction the theory identifies rather than the one variance selects.
 The effect is not laundered geography, since it survives estimation on a direction
-orthogonal to location by construction; and the theorem is not decorative, since it
+orthogonal to location by construction. The theorem is not decorative either, since it
 changes the answer, trimming the inflated markets and recovering the suppressed one.
 One qualification belongs with the numbers. Residualizing on the full zip basis
-removes some non-spatial variation along with the confound, so for the markets that
-attenuate the identified estimate is a conservative floor, with the deconfounded
-effect lying between it and the leading-component value; the direction of the New
+removes some non-spatial variation along with the confound. For the markets that
+attenuate, the identified estimate is a conservative floor, with the deconfounded
+effect lying between it and the leading-component value. The direction of the New
 York correction, where the identified estimate exceeds the leading one, is not
 subject to that caveat.
 
 \paragraph{Spatially honest inference on the identified direction.}
 Theorem~\ref{thm:estimated-direction} holds that the estimated direction contributes
 to the sampling error only at second order, provided it is formed out of sample and
-the pooled corpus dominates each market in size, and that the interval to read is the
+the pooled corpus dominates each market in size. It also holds that the interval to read is the
 spatial-HAC one rather than the influence-function one. We realize both. Forming the
 identified direction on the pooled embedding with the market in question left out, the
 out-of-fold construction the theorem requires, reproduces the per-market estimates
 above to within a hundredth of a log point in every market, the largest movement six
-thousandths in Chicago, which is the second-order contribution of the direction made
+thousandths in Chicago. This is the second-order contribution of the direction made
 visible: the point estimate barely moves when the direction is refit without the
 market's own listings. The conditions the theorem asks of the pooled second moment
-hold with room to spare, the leading eigenvalue of the residualized embedding
-covariance running near twice the second and its effective rank near thirteen against
+hold with room to spare. The leading eigenvalue of the residualized embedding
+covariance runs near twice the second, and its effective rank sits near thirteen against
 a pooled sample of sixty-nine thousand, so the spectral gap is clear and the effective
 rank is negligible relative to the sample. The influence-function interval,
 which treats within-market listings as independent, is then too narrow. Replacing it
 with the Conley spatial-HAC standard error at a five-kilometre Bartlett cutoff, more
 conservative than the zip clustering of Section~\ref{sec:baur-12city}, widens the
-per-market intervals by a median factor near two, and the identified effect remains
+per-market intervals by a median factor near two. The identified effect remains
 significant in nine of the twelve markets, with $t$ statistics from $2.9$ in Portland
 to $7.3$ in Philadelphia. The three that lose significance, Boston, New York, and
 Seattle, are exactly the markets whose identified effect is closest to zero to begin
 with. The finding does not hinge on the cutoff. The same nine markets clear
-significance whether the kernel reaches one, five, or ten kilometres, and the median
+significance whether the kernel reaches one, five, or ten kilometres. The median
 inflation runs from one and a half to two and a half times the independent interval as
 the cutoff widens, so the spatial dependence has a finite range rather than growing
 without bound. The construction keeps the two estimated objects apart from a market's
-own score: the direction is fit on the pooled corpus with the market left out, and the
+own score. The direction is fit on the pooled corpus with the market left out, and the
 nuisances are cross-fitted within the market, so neither is formed on the observations
 that enter that market's influence-function sum. The pooled identified effect near eleven percent survives the widening with a
 $t$ statistic above fourteen. The spatially honest inference the theorem prescribes

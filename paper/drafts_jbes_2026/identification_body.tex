@@ -10,7 +10,7 @@
 \label{sec:identification}
 
 Let $\ell$ denote location, $x$ the structured attributes, and $W$ the text
-embedding, and let the scalar treatment $T$ be a fixed linear summary of $W$, the
+embedding. Let the scalar treatment $T$ be a fixed linear summary of $W$, the
 oriented leading pooled principal component. Write $L=L(\ell)$ for a basis of
 functions of location used as controls. We take the outcome to follow the
 structural model
@@ -49,8 +49,8 @@ partially-linear model.
 We take a deliberately limited view of what these four buy. Together
 Assumptions~\ref{as:id-U} and~\ref{as:id-basis} make the confounding a function of
 location that the control basis can span, which is what the designs of
-Section~\ref{sec:results} hold fixed; what we do not assume is that the text carries no
-confounder outside location, unmeasured interior quality above all, and against that
+Section~\ref{sec:results} hold fixed. What we do not assume is that the text carries no
+confounder outside location, unmeasured interior quality above all. Against that
 residual the effect is not identified but bounded, by the sensitivity analysis of
 Section~\ref{sec:sensitivity-12}. The identification is design-based against observed
 location and sensitivity-bounded against the rest, one claim read from its two sides,
@@ -72,11 +72,11 @@ denominator vanishes and identification fails.
 
 The proof is a direct partialling-out computation. It absorbs the spatial
 confounder into the control-measurable part of the model under
-Assumptions~\ref{as:id-U} and \ref{as:id-basis}, and its necessity half shows that
+Assumptions~\ref{as:id-U} and \ref{as:id-basis}. Its necessity half shows that
 a control basis missing the discrete geographic channel leaves the exact bias
-$\beta bd/(d^2+1)$; the full argument is deferred to
+$\beta bd/(d^2+1)$. The full argument is deferred to
 Appendix~\ref{app:idproofs}. The location basis must therefore span the discrete
-identifiers through which the encoder leaks geography, not coordinates alone, and
+identifiers through which the encoder leaks geography, not coordinates alone.
 New York, whose leading text direction loads on borough and neighborhood names, is
 the empirical instance of the boundary where $\mathbb{E}[\tilde T^2]$ approaches
 zero and identification thins.

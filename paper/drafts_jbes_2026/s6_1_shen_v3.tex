@@ -3,12 +3,12 @@
 \label{sec:shen-12city}
 
 The Shen-Ross uniqueness channel \citep{shen2021information} measures how far the
-language in a listing departs from the language its neighbors use, quantifying
+language in a listing departs from the language its neighbors use. It quantifies
 departure as the cosine distance between each listing's vector-space text
 representation and the centroid of its $K = 5$ nearest peers in
 latitude-longitude space. We apply the resulting per-listing uniqueness score as
 the treatment in a partially-linear DML estimator with cross-fitted ridge
-nuisances solved through a Cholesky factorization, following the Shen-Ross
+nuisances solved through a Cholesky factorization. This follows the Shen-Ross
 uniqueness construction as a close adaptation rather than a verbatim replication
 of the original Doc2Vec and MLS-area-by-year cell pipeline. Effects are reported
 per standard deviation of the uniqueness score, and the $95\%$ confidence
@@ -17,24 +17,24 @@ intervals are formed from the cross-fitting influence-function standard error.
 Table~\ref{tab:shen-12city} reports the per-$\sigma$ uniqueness effect for each
 of the twelve metropolitan markets, together with the influence-function
 confidence interval and the indicator for whether that interval excludes zero.
-The panel is well-behaved throughout, with no degenerate market and no exclusion, and
-the per-market samples range from $986$ deduplicated listings in San Francisco to
+The panel is well-behaved throughout, with no degenerate market and no exclusion.
+The per-market samples range from $986$ deduplicated listings in San Francisco to
 $15{,}087$ in New York. The DML interval excludes zero in ten of the twelve
 markets, and every one of those ten carries a positive uniqueness premium. The
 effect is largest in Chicago at $+0.280$ with interval $[+0.245, +0.315]$
-and in Philadelphia at $+0.222$ $[+0.202, +0.242]$, followed by San Francisco at
-$+0.117$ $[+0.069, +0.165]$, and then a cluster of mid-sized markets, with Dallas
+and in Philadelphia at $+0.222$ $[+0.202, +0.242]$. San Francisco follows at
+$+0.117$ $[+0.069, +0.165]$. A cluster of mid-sized markets comes next: Dallas
 at $+0.082$ $[+0.066, +0.097]$, Denver at $+0.072$ $[+0.055, +0.088]$, Phoenix at
 $+0.054$ $[+0.037, +0.070]$, the District of Columbia at $+0.046$
 $[+0.025, +0.067]$, and Portland and Seattle both near $+0.042$. Atlanta, the
 market on which Shen's identification was originally established, returns a
-positive and significant per-$\sigma$ effect of $+0.033$, of the same sign as her
+positive and significant per-$\sigma$ effect of $+0.033$. This is the same sign as her
 published Atlanta estimate but a fraction of its magnitude, recovered
 under a far more conservative confounder set. The two markets whose intervals
 straddle zero are Boston at $+0.020$ $[-0.009, +0.049]$ and New York at $+0.002$
-$[-0.010, +0.014]$, the latter the largest market and the one whose estimate is
-indistinguishable from zero. No market returns a significant negative effect, so
-the panel is uniformly signed on the markets it identifies.
+$[-0.010, +0.014]$. New York is the largest market, and its estimate is
+indistinguishable from zero. No market returns a significant negative effect. The
+panel is uniformly signed on the markets it identifies.
 
 \begin{table}[H]
 \centering
@@ -68,33 +68,33 @@ Pooled (PM, HKSJ) & & $+0.060$ & $[+0.018, +0.102]$ & \\
 
 The twelve per-market estimates pool to a positive effect. A Paule-Mandel
 random-effects combination with Hartung-Knapp-Sidik-Jonkman small-sample
-intervals places the pooled uniqueness premium at $+0.060$ per standard deviation
-with $95\%$ confidence interval $[+0.018, +0.102]$ and two-sided $p = 0.009$, and
-the REML variant returns $+0.083$ with $p = 0.006$. The dispersion around this
+intervals places the pooled uniqueness premium at $+0.060$ per standard deviation,
+with $95\%$ confidence interval $[+0.018, +0.102]$ and two-sided $p = 0.009$. The
+REML variant returns $+0.083$ with $p = 0.006$. The dispersion around this
 central tendency is large and is not merely sampling noise. The
 heterogeneity statistic is $I^2 = 98.6\%$ with Cochran's $Q = 777$ on eleven
-degrees of freedom, so almost all of the variation across markets reflects
+degrees of freedom. Almost all of the variation across markets reflects
 true between-market differences in the operative effect rather than estimation
 error within markets. Section~\ref{sec:meta-regression-12} takes up this
 heterogeneity directly, pooling the twelve estimates by inverse-variance weighting
-and scanning for a moderator, and we defer that analysis to there rather than
+and scanning for a moderator. We defer that analysis to there rather than
 adjudicate it here.
 
 \paragraph{Design analysis.} The cross-market pattern cannot be read as
 a symptom of low power, because the panel, free of any degenerate market, is well powered. A Gelman-Carlin
-\citep{gelman2014beyond} retrodesign of each per-market estimator against the
-published Shen-Ross Atlanta estimate of $+0.140$ per standard deviation, used as
-the external benchmark true effect, returns a per-market power at or near $1.00$
-in every one of the twelve markets, far above the conventional $0.80$ target,
-because the per-market influence-function standard errors on samples in the
+\citep{gelman2014beyond} retrodesign of each per-market estimator uses the
+published Shen-Ross Atlanta estimate of $+0.140$ per standard deviation as
+the external benchmark true effect. It returns a per-market power at or near $1.00$
+in every one of the twelve markets, far above the conventional $0.80$ target.
+The per-market influence-function standard errors on samples in the
 thousands are small relative to a $0.140$ signal. The Type-S sign-error rate is
 negligible throughout, below $10^{-14}$ in every market, so the sign of any
-detected effect is reliable, and the median Type-M exaggeration factor is $1.00$,
+detected effect is reliable. The median Type-M exaggeration factor is $1.00$,
 indicating essentially no magnitude inflation in the typical market. San
 Francisco, the smallest sample at $986$ listings, carries the mild
 anti-conservatism that the analytic variance can show near a thousand
-observations, a feature we document directly in the coverage simulation of
-Appendix~\ref{app:simulation}, but even there the retrodesign power against the
+observations. We document this feature directly in the coverage simulation of
+Appendix~\ref{app:simulation}. Even there, the retrodesign power against the
 $0.140$ benchmark remains high. The design analysis therefore supports reading
 both the significant detections and the heterogeneity across markets at face
 value.
@@ -103,14 +103,14 @@ value.
 coefficients translate directly into percentage differences in price. A
 one-standard-deviation increase in listing uniqueness corresponds to a price
 difference of roughly $+32.3\%$ in Chicago, $+24.8\%$ in Philadelphia, and
-$+12.4\%$ in San Francisco, falling through a mid-range of about $+8.5\%$ in
-Dallas, $+7.5\%$ in Denver, and $+5.5\%$ in Phoenix, to the smallest significant
-effects near $+4\%$ in Washington, Portland, and Seattle and $+3.4\%$ in Atlanta.
+$+12.4\%$ in San Francisco. The effect falls through a mid-range of about $+8.5\%$ in
+Dallas, $+7.5\%$ in Denver, and $+5.5\%$ in Phoenix. The smallest significant
+effects are near $+4\%$ in Washington, Portland, and Seattle and $+3.4\%$ in Atlanta.
 The external anchor for these figures is the published Shen-Ross Atlanta
 estimate of $+0.140$ per standard deviation, obtained on a sample of roughly
 forty thousand listings under MLS-area-by-year fixed effects. Our Atlanta
 estimate of $+0.033$ recovers the same sign at a fraction of that
-magnitude, and the pooled $+0.060$ sits below that single-market benchmark, so
-the panel as a whole is consistent with a positive Shen-Ross uniqueness premium
+magnitude. The pooled $+0.060$ sits below that single-market benchmark. The
+panel as a whole is consistent with a positive Shen-Ross uniqueness premium
 that is present, heterogeneous across markets, and smaller on average than the
 single-market published benchmark would suggest.
