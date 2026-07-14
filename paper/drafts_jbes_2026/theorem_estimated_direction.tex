@@ -34,9 +34,12 @@ independent of the observations used to form $\hat\theta_k$, in practice by leav
 market $k$ out of the pooled direction fit.
 \end{assumption}
 \begin{assumption}[Spatial weak dependence]\label{as:ed-spatial}
-Within each market the listings form a near-epoch-dependent random field on geographic
-distance satisfying the conditions of \citet{jenish2009central}, and the cross-fitted
-nuisances satisfy the rates of \citet{chernozhukov2018double}.
+Within each market the listings occupy distinct locations separated by a minimum
+distance, so the sampling region expands rather than fills in, and the
+influence-function terms form an $\alpha$-mixing random field on geographic distance
+whose mixing coefficients satisfy the summability conditions of
+\citet{jenish2009central}; the cross-fitted nuisances satisfy the rates of
+\citet{chernozhukov2018double}.
 \end{assumption}
 
 \begin{theorem}[Estimated-direction spatial DML]\label{thm:estimated-direction}
