@@ -1,0 +1,139 @@
+\subsection{Proof of Theorem~\ref{thm:estimated-direction}}
+\label{app:estimated-direction-proof}
+
+The argument composes four lemmas: a distributional rate for the estimated direction,
+the resulting second-order negligibility of its error in the per-market estimate, the
+asymptotic linearity of the fixed-direction estimator, and a central limit theorem for
+the spatially dependent score. Throughout, $\tilde W_i$ is the residualized embedding
+in market $k$, $\Sigma=\mathbb{E}[\tilde W\tilde W^\top]$ the pooled residualized
+second moment with leading unit eigenvector $v^\ast$, $\hat v$ its sample analogue on
+the pooled sample of size $N$, and $\theta_k(v)=v^\top a_k/(v^\top\Sigma_k v)$ the
+direction-indexed estimand of \eqref{eq:thetav-estimable}.
+
+\begin{lemma}[Direction rate and linear approximation]\label{lem:ed-direction}
+Let $\hat v$ be the leading unit eigenvector of the pooled sample second moment of
+sub-Gaussian residualized embeddings with a spectral gap $\bar g$ bounded away from
+zero and effective rank $r(\Sigma)=\operatorname{tr}(\Sigma)/\lVert\Sigma\rVert$
+satisfying $r(\Sigma)=o(\sqrt N)$. Then, orienting $\hat v$ toward $v^\ast$,
+\[
+\lVert\hat v-v^\ast\rVert=O_p\!\bigl(\sqrt{r(\Sigma)/N}\,\bigr),
+\qquad
+\sqrt N\,\langle\hat v-v^\ast,u\rangle\xrightarrow{d}\mathcal N\!\bigl(0,\Gamma(u)\bigr)
+\text{ for each fixed }u,
+\]
+where $\Gamma$ is the Koltchinskii--Lounici covariance kernel, and the projector bias
+$\mathbb{E}\hat v-v^\ast$ is $O(r(\Sigma)/N)=o(N^{-1/2})$.
+\end{lemma}
+
+\begin{proof}
+The residualized sentence-embedding is bounded, hence sub-Gaussian, so
+\citet[Theorem~1]{koltchinskii2016asymptotics} gives $\lVert\hat\Sigma-\Sigma\rVert
+\asymp\lVert\Sigma\rVert\max\{\sqrt{r(\Sigma)/N},\,r(\Sigma)/N\}$, and the
+resolvent perturbation bound for a simple eigenvalue with gap $\bar g$ turns this into
+$\lVert\hat v-v^\ast\rVert=O_p(\lVert\Sigma\rVert/(\bar g\sqrt N))=
+O_p(\sqrt{r(\Sigma)/N})$ under the bounded relative gap. The linear-form central limit
+theorem is their Theorem~7, whose conclusion is stated for the recentered eigenvector
+$\sqrt{1+b}\,v^\ast$ with multiplicative bias $|b|\lesssim
+(\lVert\Sigma\rVert/\bar g)^2 r(\Sigma)/N$. By their Remark~4 the recentering is
+unnecessary once $r(\Sigma)=o(\sqrt N)$, since then $b=o(N^{-1/2})$ and the projector
+bias $\lVert\mathbb{E}\hat v-v^\ast\rVert=O(r(\Sigma)/N)=o(N^{-1/2})$, so centering at
+$v^\ast$ itself gives the stated normal limit at rate $N^{-1/2}$.
+\end{proof}
+
+\begin{lemma}[The direction error is second order]\label{lem:ed-second-order}
+Under Lemma~\ref{lem:ed-direction} and Assumption~\ref{as:ed-rate}, with $\hat v$
+formed out of sample relative to market $k$,
+\[
+\sqrt{n_k}\,\bigl(\theta_k(\hat v)-\theta_k(v^\ast)\bigr)=o_p(1).
+\]
+\end{lemma}
+
+\begin{proof}
+The map $v\mapsto\theta_k(v)=v^\top a_k/(v^\top\Sigma_k v)$ is twice continuously
+differentiable at $v^\ast$ with $v^{\ast\top}\Sigma_k v^\ast$ bounded away from zero by
+positivity, and a second-order Taylor expansion gives $\theta_k(\hat
+v)=\theta_k(v^\ast)+(\partial\theta_k/\partial v)^\top(\hat v-v^\ast)+O_p(\lVert\hat
+v-v^\ast\rVert^2)$. By Lemma~\ref{lem:ed-direction} the linear term is
+$O_p(\sqrt{r(\Sigma)/N})$ and the remainder is $O_p(r(\Sigma)/N)$, so
+$\sqrt{n_k}(\theta_k(\hat v)-\theta_k(v^\ast))=O_p(\sqrt{n_k\,r(\Sigma)/N})=o_p(1)$
+under Assumption~\ref{as:ed-rate}, $n_k\,r(\Sigma)/N\to0$. Because $\hat v$ is fit on a
+sample independent of the observations forming $\theta_k(\cdot)$ in market $k$, the
+linear term is uncorrelated with the market-$k$ score, so it contributes neither a
+first-order term nor a covariance to the limiting variance. This is the point at which
+a generated regressor formed in sample would instead leave the correction of
+\citet{pagan1984econometric} and \citet{hahn2013asymptotic}; the out-of-fold, pooled
+construction removes it.
+\end{proof}
+
+\begin{lemma}[Fixed-direction asymptotic linearity]\label{lem:ed-linearity}
+Fix the direction at $v^\ast$. Under Assumption~\ref{as:ed-spatial} the cross-fitted
+Robinson estimator $\hat\theta_k(v^\ast)$ is asymptotically linear,
+\[
+\sqrt{n_k}\,\bigl(\hat\theta_k(v^\ast)-\theta_k(v^\ast)\bigr)
+=n_k^{-1/2}\sum_{i\in k}\psi_i+o_p(1),
+\qquad
+\psi_i=\mathbb{E}[\tilde T^2]^{-1}\,\tilde T_i\,(\tilde Y_i-\theta_k\tilde T_i),
+\]
+with the nuisance estimation error entering at second order.
+\end{lemma}
+
+\begin{proof}
+With $v^\ast$ fixed the treatment $T=\tilde W^\top v^\ast$ is a fixed scalar summary and
+the estimator is the partially-linear Robinson estimator of
+\citet[Theorems~3.1--3.2]{chernozhukov2018double}. The partialling-out moment is
+Neyman-orthogonal in the outcome and treatment regressions, so under the cross-fitting
+and product-rate conditions of Assumption~\ref{as:ed-spatial} the first-stage error
+enters only at second order and the estimator admits the stated influence-function
+representation. This is the same argument that yields
+Theorem~\ref{thm:decomp}\,(i) for the decomposition contrast.
+\end{proof}
+
+\begin{lemma}[Spatial central limit theorem for the score]\label{lem:ed-spatial-clt}
+Under Assumption~\ref{as:ed-spatial}, writing $\sigma_{n_k}^2=\operatorname{Var}
+(\sum_{i\in k}\psi_i)$,
+\[
+\sigma_{n_k}^{-1}\sum_{i\in k}\psi_i\xrightarrow{d}\mathcal N(0,1),
+\]
+and $\sigma_{n_k}^2/n_k$ is consistently estimated by a spatial
+heteroskedasticity- and autocorrelation-consistent estimator with a distance kernel.
+\end{lemma}
+
+\begin{proof}
+Index listings by their coordinates in $\mathbb{R}^2$. The minimum-distance clause of
+Assumption~\ref{as:ed-spatial} is the increasing-domain condition of
+\citet[Assumption~1]{jenish2009central}, ruling out infill. Each score $\psi_i$ is a
+measurable function of the covariates and shocks of a bounded geographic neighborhood
+of listing $i$, and $\alpha$-mixing is preserved under measurable transformation, so
+$\{\psi_i\}$ inherits the $\alpha$-mixing structure of the underlying field with the
+summable coefficients Assumption~\ref{as:ed-spatial} imposes. With the uniform
+$L^{2+\delta}$ integrability of $\psi_i$ and the non-degeneracy $\liminf n_k^{-1}
+\sigma_{n_k}^2>0$, \citet[Theorem~1]{jenish2009central} gives the stated central limit
+theorem. Consistency of the distance-kernel variance estimator is standard for such
+mixing fields \citep{conley1999gmm,bester2011inference}.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:estimated-direction}]
+Write $\sqrt{n_k}(\hat\theta_k(\hat v)-\theta_k(v^\ast))=\sqrt{n_k}(\hat\theta_k(\hat
+v)-\hat\theta_k(v^\ast))+\sqrt{n_k}(\hat\theta_k(v^\ast)-\theta_k(v^\ast))$. The first
+term is $o_p(1)$ by Lemma~\ref{lem:ed-second-order}, since evaluating the estimator at
+$\hat v$ rather than $v^\ast$ perturbs it only through the estimand map, whose
+sensitivity to the direction is the object Lemma~\ref{lem:ed-second-order} bounds. The
+second term is asymptotically linear by Lemma~\ref{lem:ed-linearity} and, by
+Lemma~\ref{lem:ed-spatial-clt}, its normalized influence sum is asymptotically normal
+with variance $V_k=\lim n_k^{-1}\sigma_{n_k}^2$. Combining, $\sqrt{n_k}(\hat\theta_k
+(\hat v)-\theta_k(v^\ast))\xrightarrow{d}\mathcal N(0,V_k)$, and $V_k$ is the
+fixed-direction spatial-DML variance estimated by the spatial-HAC estimator of
+Lemma~\ref{lem:ed-spatial-clt}.
+\end{proof}
+
+The conditions the proof imposes are met in the panel. The pooled residualized
+embedding covariance has a leading eigenvalue near twice the second, so the spectral
+gap $\bar g$ is bounded away from zero, and its effective rank is $r(\Sigma)\approx
+13.2$ against $N=69{,}204$, so $r(\Sigma)/\sqrt N\approx0.05$ and the condition
+$r(\Sigma)=o(\sqrt N)$ that
+Lemma~\ref{lem:ed-direction} needs for clean centering holds with the projector bias
+$b\approx8\times10^{-4}$. The direction error the analysis calls second order is
+directly visible: refitting the direction with each market left out moves its estimate
+by at most six thousandths of a log point, in Chicago, and by less than one thousandth
+at the median, well inside the spatial-HAC intervals that
+Section~\ref{sec:identified-direction} reports.
