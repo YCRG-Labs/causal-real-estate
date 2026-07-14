@@ -48,3 +48,25 @@ attenuate the identified estimate is a conservative floor, with the deconfounded
 effect lying between it and the leading-component value; the direction of the New
 York correction, where the identified estimate exceeds the leading one, is not
 subject to that caveat.
+
+\paragraph{Spatially honest inference on the identified direction.}
+Theorem~\ref{thm:estimated-direction} holds that the estimated direction contributes
+to the sampling error only at second order, provided it is formed out of sample and
+the pooled corpus dominates each market in size, and that the interval to read is the
+spatial-HAC one rather than the influence-function one. We realize both. Forming the
+identified direction on the pooled embedding with the market in question left out, the
+out-of-fold construction the theorem requires, reproduces the per-market estimates
+above to within a hundredth of a log point in every market, which is the second-order
+contribution of the direction made visible: the point estimate does not move when the
+direction is refit without the market's own listings. The influence-function interval,
+which treats within-market listings as independent, is then too narrow. Replacing it
+with the Conley spatial-HAC standard error at a five-kilometre Bartlett cutoff, more
+conservative than the zip clustering of Section~\ref{sec:baur-12city}, widens the
+per-market intervals by a median factor near two, and the identified effect remains
+significant in nine of the twelve markets, with $t$ statistics from $2.9$ in Portland
+to $7.3$ in Philadelphia. The three that lose significance, Boston, New York, and
+Seattle, are exactly the markets whose identified effect is closest to zero to begin
+with. The pooled identified effect near eleven percent survives the widening with a
+$t$ statistic above fourteen. The spatially honest inference the theorem prescribes
+therefore leaves the reading intact: the effect the theory identifies is not an
+accident of treating spatially clustered listings as independent.

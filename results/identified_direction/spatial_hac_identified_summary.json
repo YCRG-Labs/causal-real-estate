@@ -1,0 +1,18 @@
+{
+  "cutoffs_km": [
+    1.0,
+    5.0,
+    10.0
+  ],
+  "median_conley5_over_if": 2.1082118371799554,
+  "sig_markets_if": 12,
+  "sig_markets_conley5": 9,
+  "pooled_if": {
+    "theta": -0.11076542785083694,
+    "se": 0.0030301063000989217
+  },
+  "pooled_conley5": {
+    "theta": -0.08853868257386086,
+    "se": 0.0063093277880539875
+  }
+}
