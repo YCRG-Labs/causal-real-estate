@@ -1,0 +1,92 @@
+\subsection{Inference when the direction is estimated}
+\label{sec:estimated-direction-inference}
+
+Theorem~\ref{thm:idprime} fixes the direction and asks what it identifies. In
+practice the direction is not fixed; it is read off the data, as the leading
+eigenvector of the residualized embedding covariance or as the concept-orthogonal
+projection the erasure supplies, and an interval that treats it as known understates
+the sampling variability. This section gives the limiting distribution of the
+estimator that accounts for the estimated direction, under the spatial dependence the
+panel carries.
+
+Write $\hat v$ for the estimated direction, formed on the pooled sample of $N$
+listings across the panel, and $\hat\theta_k=\hat v'\hat a_k/(\hat v'\hat\Sigma_k\hat
+v)$ for the per-market estimate on $n_k$ listings, the sample analogue of
+\eqref{eq:thetav-estimable} with $\hat a_k$, $\hat\Sigma_k$ the cross-fitted residual
+moments in market $k$. Two facts shape the analysis. The estimand is not orthogonal to
+the direction: the gradient
+\[
+\frac{\partial\theta}{\partial v}=\frac{a-2\,\theta(v)\,\Sigma v}{v'\Sigma v}
+\]
+does not vanish at the identified direction, so a Neyman-orthogonality argument cannot
+make $\hat v$'s error disappear. What makes it negligible instead is a comparison of
+rates. The direction is estimated on the pooled corpus, whose size $N$ exceeds any
+single market's $n_k$ by construction, and its error enters $\hat\theta_k$ scaled by
+that larger sample.
+
+\begin{assumption}[Spectral gap]\label{as:ed-gap}
+The pooled residualized embedding covariance has a bounded eigen-gap separating the
+direction $v^\ast$ from the remainder of its spectrum.
+\end{assumption}
+\begin{assumption}[Rate domination and independence]\label{as:ed-rate}
+$n_k/N\to0$ for each market, and $\hat v$ is formed out-of-fold, on a sample
+independent of the observations used to form $\hat\theta_k$, in practice by leaving
+market $k$ out of the pooled direction fit.
+\end{assumption}
+\begin{assumption}[Spatial weak dependence]\label{as:ed-spatial}
+Within each market the listings form a near-epoch-dependent random field on geographic
+distance satisfying the conditions of \citet{jenish2009central}, and the cross-fitted
+nuisances satisfy the rates of \citet{chernozhukov2018double}.
+\end{assumption}
+
+\begin{theorem}[Estimated-direction spatial DML]\label{thm:estimated-direction}
+Under Assumptions~\ref{as:ed-gap}--\ref{as:ed-spatial}, for each market
+\[
+\sqrt{n_k}\,\bigl(\hat\theta_k-\theta_k(v^\ast)\bigr)\;\xrightarrow{d}\;\mathcal
+N(0,V_k),
+\]
+where $\theta_k(v^\ast)$ is the direction-indexed estimand \eqref{eq:thetav-estimable}
+and $V_k$ is the asymptotic variance of the Robinson influence function
+$\psi_i=\mathbb{E}[\tilde T^2]^{-1}\,\tilde T_i(\tilde Y_i-\theta_k\tilde T_i)$ under
+spatial dependence. The estimated direction contributes at $o_p(n_k^{-1/2})$, so $V_k$
+is the fixed-direction DML variance, consistently estimated by a spatial
+heteroskedasticity- and autocorrelation-consistent estimator of the
+influence-function sum \citep{conley1999gmm,bester2011inference}.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+The argument composes four steps. First, under the spectral gap of
+Assumption~\ref{as:ed-gap} the estimated direction obeys a normal approximation for
+bilinear forms of the sample spectral projector at rate $N^{-1/2}$
+\citep{koltchinskii2016asymptotics}, so $\|\hat v-v^\ast\|=O_p(N^{-1/2})$; the
+deterministic subspace bound of \citet{yu2015useful} certifies this rate but does not
+supply a distribution, and is used only for the former. Second, a first-order
+expansion of $\hat\theta_k$ in the direction gives
+$\hat\theta_k=\theta_k(v^\ast)+(\partial\theta/\partial v)'(\hat v-v^\ast)+r_k$, and by
+Assumption~\ref{as:ed-rate} the linear term is $O_p(N^{-1/2})=o_p(n_k^{-1/2})$, while
+the out-of-fold construction makes $\hat v$ independent of the market-$k$ score, so no
+covariance between the two enters the limiting variance. Third, with the direction held
+at $v^\ast$, the cross-fitted Robinson estimator is asymptotically linear with
+influence function $\psi_i$, the nuisance error entering at second order by Neyman
+orthogonality \citep{chernozhukov2018double}. Fourth, the normalized sum of $\psi_i$
+over the spatially dependent field is asymptotically normal by the central limit
+theorem of \citet{jenish2009central}, with variance consistently estimated by the
+spatial-HAC estimator. Composing the four steps, the direction's error is
+asymptotically negligible and the limit is the fixed-direction spatial-DML normal law.
+\end{proof}
+
+Two remarks fix the scope. The negligibility of the direction's error is earned by the
+rate comparison of Assumption~\ref{as:ed-rate}, not by orthogonality; were the
+direction formed in sample, or were a single market as large as the pool, the
+generated-regressor correction of \citet{pagan1984econometric} and
+\citet{hahn2013asymptotic} would enter, and $V_k$ would carry an added term in the
+asymptotic covariance of $\hat v$ that the spectral theory of
+\citet{koltchinskii2016asymptotics} makes estimable. We avoid that term by the pooled,
+out-of-fold construction, and say so rather than assume it away. And the result is what
+\citet{guiveitch2023} lack: their central limit theorem for a text-treatment effect
+handles a learned representation through the usual nuisance-rate condition, but their
+treatment is not a direction, so it carries no term for an estimated direction entering
+as a generated regressor. Theorem~\ref{thm:estimated-direction} supplies exactly that
+term and shows it is second order, which is what licenses the per-market intervals the
+panel reports once they are widened to the spatial-HAC scale of
+Appendix~\ref{app:simulation}.

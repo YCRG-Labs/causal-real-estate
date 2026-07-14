@@ -80,6 +80,44 @@ Section~\ref{sec:identified-direction} carries this prescription out on the
 twelve-market panel, re-estimating the effect on the identified direction and
 reading the difference from the leading component as the geography it removes.
 
+\paragraph{The estimand in estimable form.} Equation~\eqref{eq:thetav} is written in
+the channel geometry that makes identification transparent, but the same estimand has
+a form that depends only on quantities the data deliver. Writing $a=\mathbb{E}[\tilde
+W\tilde Y]$ for the residualized embedding--price covariance vector and
+$\Sigma=\mathbb{E}[\tilde W\tilde W']$ for the residualized embedding covariance, the
+Robinson estimand on the direction $v$ is
+\begin{equation}
+\theta(v)=\frac{v'a}{v'\Sigma v},
+\label{eq:thetav-estimable}
+\end{equation}
+of which \eqref{eq:thetav} is the two-channel special case. The identified subspace
+$\mathcal{V}_0$ is the set of directions along which the numerator carries only the
+semantic covariance, and positivity is $v'\Sigma v>0$. This is the object the panel
+estimates, market by market, once $a$ and $\Sigma$ are replaced by their cross-fitted
+sample analogues and $v$ by the identified or the leading direction.
+
+\begin{corollary}[The variance-maximal direction can reverse the sign]
+\label{cor:signflip}
+Let the residualized embedding covariance place more variance on the missed spatial
+channel than on the semantic one, $\sigma_s^2>\sigma_q^2$. Then the leading principal
+component, the direction that maximizes $v'\Sigma v$, aligns with the spatial channel,
+and $\theta(v_{\mathrm{PC}})\to b$, the price coefficient of the confounder itself
+rather than the semantic effect $\theta$. When
+$\operatorname{sign}(b)\neq\operatorname{sign}(\theta)$ the reported effect is
+sign-reversed: the default summary of the text returns a coefficient of the wrong
+sign.
+\end{corollary}
+
+The corollary is the theory behind New York. Its leading text direction is the most
+geographic in the panel, so it loads on the borough and neighborhood channel whose
+price gradient runs opposite the semantic effect, and the naive estimate on that
+direction is a significant negative while the identified estimate is a significant
+positive. \citet{guiveitch2023} observe a naive-versus-adjusted sign reversal
+empirically in a different text setting, a politeness effect that moves from $-0.038$
+to $+0.200$ under adjustment, but state no condition for it; Corollary~\ref{cor:signflip}
+supplies the condition and identifies the variance-maximal direction, the one an
+analyst reaches for by default, as the case at risk.
+
 \paragraph{A spectral reading.} When the field is stationary with matrix spectral
 density $\Sigma_W(\omega)$ and the confounder concentrates its mass on a
 low-frequency band $\Omega_0$, the projected quantities become frequency integrals,
