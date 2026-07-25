@@ -12,11 +12,11 @@ Beyond Location? Deconfounding Text and Geography in Automated Home Valuation*
 
 Automated valuation models increasingly read a listing's prose alongside its
 structured attributes, and the language reliably sharpens their price predictions.
-But better prediction cannot say *why*: does the text carry genuine information
-about a property, or does it merely relabel the neighborhood an agent's description
-inevitably encodes? A model that prices laundered geography offers nothing beyond
-location and inherits its biases; one that prices semantic content adds real
-information. Predictive accuracy alone cannot tell the two apart.
+But better prediction cannot say *why*: does the text describe the property itself,
+or does it merely relabel the neighborhood an agent's description inevitably encodes?
+A model that prices laundered geography offers nothing beyond location and inherits
+its biases; one that prices semantic content adds information the structured
+attributes miss. Predictive accuracy alone cannot tell the two apart.
 
 This project puts the question to a design-based test. We summarize each description
 by the leading direction of its sentence embedding, treat that direction as a
@@ -54,7 +54,7 @@ paper/          LaTeX source and compiled PDF (causalrealestate.tex)
 data/scripts/   acquisition, confounder construction, and the replication pipeline
   replications/   the estimators: hedonic, DML, Gelbach, sensitivity, meta-analysis
 release/        ToS-compliant data release + datasheet (Hugging Face card)
-verification/   computational verification artifact for every analytic claim
+verification/   independent computational checks for every analytic claim
 research/        design notes and the revision report
 results/         per-market estimates and intermediate outputs
 ```

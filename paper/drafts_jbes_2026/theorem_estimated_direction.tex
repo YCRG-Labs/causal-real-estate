@@ -57,26 +57,20 @@ heteroskedasticity- and autocorrelation-consistent estimator of the
 influence-function sum \citep{conley1999gmm,bester2011inference}.
 \end{theorem}
 
-\begin{proof}[Proof sketch]
-The argument composes four steps. First, under the spectral gap of
-Assumption~\ref{as:ed-gap} the estimated direction obeys a normal approximation for
-bilinear forms of the sample spectral projector at rate $N^{-1/2}$
-\citep{koltchinskii2016asymptotics}, so $\|\hat v-v^\ast\|=O_p(N^{-1/2})$; the
-deterministic subspace bound of \citet{yu2015useful} certifies this rate but does not
-supply a distribution, and is used only for the former. Second, a first-order
-expansion of $\hat\theta_k$ in the direction gives
-$\hat\theta_k=\theta_k(v^\ast)+(\partial\theta/\partial v)'(\hat v-v^\ast)+r_k$, and by
-Assumption~\ref{as:ed-rate} the linear term is $O_p(N^{-1/2})=o_p(n_k^{-1/2})$, while
-the out-of-fold construction makes $\hat v$ independent of the market-$k$ score, so no
-covariance between the two enters the limiting variance. Third, with the direction held
-at $v^\ast$, the cross-fitted Robinson estimator is asymptotically linear with
-influence function $\psi_i$, the nuisance error entering at second order by Neyman
-orthogonality \citep{chernozhukov2018double}. Fourth, the normalized sum of $\psi_i$
-over the spatially dependent field is asymptotically normal by the central limit
-theorem of \citet{jenish2009central}, with variance consistently estimated by the
-spatial-HAC estimator. Composing the four steps, the direction's error is
-asymptotically negligible and the limit is the fixed-direction spatial-DML normal law.
-\end{proof}
+The argument combines a spectral perturbation bound for the estimated direction with
+the orthogonal-score expansion of the fixed-direction estimator. Under the spectral gap
+of Assumption~\ref{as:ed-gap} the estimated direction converges at rate $N^{-1/2}$,
+with the bilinear normal approximation of \citet{koltchinskii2016asymptotics} supplying
+the distribution and the deterministic subspace bound of \citet{yu2015useful} the rate.
+The rate comparison of Assumption~\ref{as:ed-rate}, together with the out-of-fold
+construction that makes $\hat v$ independent of the market-$k$ score, renders the linear
+direction term $o_p(n_k^{-1/2})$ and admits no covariance into the limiting variance.
+With the direction held at $v^\ast$ the cross-fitted Robinson estimator is
+asymptotically linear, the nuisance error entering at second order by Neyman
+orthogonality \citep{chernozhukov2018double}, and its sum over the spatially dependent
+field is asymptotically normal by \citet{jenish2009central} with variance estimated by
+the spatial-HAC estimator. Appendix~\ref{app:estimated-direction-proof} carries out each
+step in full.
 
 Two remarks fix the scope. The negligibility of the direction's error is earned by the
 rate comparison of Assumption~\ref{as:ed-rate}, not by orthogonality; were the

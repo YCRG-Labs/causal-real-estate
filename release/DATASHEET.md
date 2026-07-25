@@ -7,8 +7,8 @@ Following the schema of Gebru et al., *Datasheets for Datasets* (CACM 2021).
 **Purpose.** Released to support and enable independent replication of
 *Does Listing Language Add Value Beyond Location? Deconfounding Text and Geography
 in Automated Home Valuation* (Crainic, 2026), which evaluates whether the price
-effect of property-listing language is genuine semantic content or spatial
-confounding mediated through the text.
+effect of property-listing language is semantic content about the property or
+spatial confounding mediated through the text.
 
 > **Note (scope).** This packaged release describes the earlier three-city
 > (Boston / NYC / SF) parcel subset. The published study spans twelve metropolitan
@@ -88,8 +88,8 @@ within 50m. **Not redistributed** in this dataset.
 
 **Intended.** Replication of the paper's causal-inference analysis; benchmarking
 spatial-confounding diagnostics; teaching examples for DML, doubly-robust
-estimation, and adversarial deconfounding on a real dataset where the SCM is
-well-justified.
+estimation, and adversarial deconfounding on an observational dataset where the SCM
+is well-justified.
 
 **Out of scope / discouraged.**
 

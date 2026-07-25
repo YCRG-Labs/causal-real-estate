@@ -101,10 +101,11 @@ sample analogues and $v$ by the identified or the leading direction.
 Let the residualized embedding covariance place more variance on the missed spatial
 channel than on the semantic one, $\sigma_s^2>\sigma_q^2$. Then the leading principal
 component, the direction that maximizes $v'\Sigma v$, aligns with the spatial channel,
-and $\theta(v_{\mathrm{PC}})\to b$, the price coefficient of the confounder itself
-rather than the semantic effect $\theta$. When
-$\operatorname{sign}(b)\neq\operatorname{sign}(\theta)$ the reported effect is
-sign-reversed: the default summary of the text returns a coefficient of the wrong
+so $D(v_{\mathrm{PC}})\to1$ and $E(v_{\mathrm{PC}})\to0$, and by \eqref{eq:thetav}
+$\theta(v_{\mathrm{PC}})\to\theta+\beta b$, the fully geography-confounded estimand in
+which the confounding term $\beta b$ swamps the semantic effect $\theta$. When
+$\beta b$ is opposite in sign to $\theta$ and larger in magnitude, the reported effect
+is sign-reversed: the default summary of the text returns a coefficient of the wrong
 sign.
 \end{corollary}
 

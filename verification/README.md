@@ -1,6 +1,6 @@
 # Computational Verification Appendix
 
-This directory provides a **computational verification artifact** for every analytic
+This directory provides **independent computational checks** for every analytic
 claim in the paper. It is **not** a machine-checked formal proof — those would
 require Lean 4 / Coq / Isabelle, and as of late 2025 no proof assistant has a
 causal-DAG library, which would gate even the d-separation lemma.
@@ -47,7 +47,7 @@ python 06_xor_construction.py
 Each script writes `results/<script-name>.json` with the verdict and any numerical
 quantities cited in the paper.
 
-## What this artifact does and does not claim
+## What these checks do and do not claim
 
 **Does claim:**
 - Every analytic statement in the paper has been re-derived by an independent,
@@ -62,5 +62,5 @@ quantities cited in the paper.
 - Soundness in the sense of an interactive theorem prover.
 - That the tools (pgmpy, DoWhy, SymPy) are themselves bug-free.
 
-The honest summary: this is a *reproducibility artifact for the analytic claims*,
+The honest summary: this *reproduces the analytic claims*,
 at the bar that current top stats journals (JBES, JASA, AoS, Biometrika) accept.
