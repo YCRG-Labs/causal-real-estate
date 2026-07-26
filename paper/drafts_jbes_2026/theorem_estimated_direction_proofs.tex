@@ -113,17 +113,22 @@ mixing fields \citep{conley1999gmm,bester2011inference}.
 \end{proof}
 
 \begin{proof}[Proof of Theorem~\ref{thm:estimated-direction}]
-Write $\sqrt{n_k}(\hat\theta_k(\hat v)-\theta_k(v^\ast))=\sqrt{n_k}(\hat\theta_k(\hat
-v)-\hat\theta_k(v^\ast))+\sqrt{n_k}(\hat\theta_k(v^\ast)-\theta_k(v^\ast))$. The first
-term is $o_p(1)$ by Lemma~\ref{lem:ed-second-order}, since evaluating the estimator at
-$\hat v$ rather than $v^\ast$ perturbs it only through the estimand map, whose
-sensitivity to the direction is the object Lemma~\ref{lem:ed-second-order} bounds. The
-second term is asymptotically linear by Lemma~\ref{lem:ed-linearity} and, by
-Lemma~\ref{lem:ed-spatial-clt}, its normalized influence sum is asymptotically normal
-with variance $V_k=\lim n_k^{-1}\sigma_{n_k}^2$. Combining, $\sqrt{n_k}(\hat\theta_k
-(\hat v)-\theta_k(v^\ast))\xrightarrow{d}\mathcal N(0,V_k)$, and $V_k$ is the
-fixed-direction spatial-DML variance estimated by the spatial-HAC estimator of
-Lemma~\ref{lem:ed-spatial-clt}.
+Because $\hat v$ is formed out of fold, condition on it; on the market-$k$ sample it is
+then a fixed direction, and
+\[
+\sqrt{n_k}\bigl(\hat\theta_k(\hat v)-\theta_k(v^\ast)\bigr)
+=\sqrt{n_k}\bigl(\hat\theta_k(\hat v)-\theta_k(\hat v)\bigr)
++\sqrt{n_k}\bigl(\theta_k(\hat v)-\theta_k(v^\ast)\bigr).
+\]
+The second term is the estimand difference that Lemma~\ref{lem:ed-second-order} bounds,
+hence $o_p(1)$. The first term is the sampling error of the fixed-direction Robinson
+estimator at the conditionally fixed $\hat v$; by Lemma~\ref{lem:ed-linearity} it is
+asymptotically linear with influence function $\psi_i$ evaluated at $\hat v$, and by
+Lemma~\ref{lem:ed-spatial-clt} its normalized sum is asymptotically normal with variance
+$V_k=\lim n_k^{-1}\sigma_{n_k}^2$. Since $\hat v\xrightarrow{p}v^\ast$ and $\psi_i$ is
+continuous in the direction, that variance is the fixed-direction value at $v^\ast$.
+Combining, $\sqrt{n_k}(\hat\theta_k(\hat v)-\theta_k(v^\ast))\xrightarrow{d}\mathcal
+N(0,V_k)$, estimated by the spatial-HAC estimator of Lemma~\ref{lem:ed-spatial-clt}.
 \end{proof}
 
 The conditions the proof imposes are met in the panel. The pooled residualized
@@ -132,8 +137,11 @@ gap $\bar g$ is bounded away from zero, and its effective rank is $r(\Sigma)\app
 13.2$ against $N=69{,}204$, so $r(\Sigma)/\sqrt N\approx0.05$ and the condition
 $r(\Sigma)=o(\sqrt N)$ that
 Lemma~\ref{lem:ed-direction} needs for clean centering holds with the projector bias
-$b\approx8\times10^{-4}$. The direction error the analysis calls second order is
-directly visible: refitting the direction with each market left out moves its estimate
-by at most six thousandths of a log point, in Chicago, and by less than one thousandth
-at the median, well inside the spatial-HAC intervals that
-Section~\ref{sec:identified-direction} reports.
+$b\approx8\times10^{-4}$. The stronger rate that Lemma~\ref{lem:ed-second-order} invokes, $n_k\,r(\Sigma)/N\to0$,
+is more demanding than that centering condition, and in the finite panel the largest
+market stresses it, since New York's $n_k=15{,}270$ gives $n_k\,r(\Sigma)/N\approx2.9$
+rather than a small number. That the direction error is nonetheless second order there
+we read from the data rather than the worst-case rate: refitting the direction with each
+market left out moves its estimate by at most six thousandths of a log point, in
+Chicago, and by less than one thousandth at the median, well inside the spatial-HAC
+intervals that Section~\ref{sec:identified-direction} reports.
